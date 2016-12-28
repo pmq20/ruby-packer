@@ -11,9 +11,9 @@ describe ::Ruby::Compiler do
   it "has a version number" do
     expect(::Ruby::Compiler::VERSION).not_to be nil
   end
-
-  it "passes all original and our tests" do
-    x = ::Ruby::Compiler::Test.new(tmpdir)
-    x.run!
-  end
+  #
+  # it "passes all original and our tests" do
+  #   x = ::Ruby::Compiler::Test.new(tmpdir)
+  #   x.run!
+  # end
 end

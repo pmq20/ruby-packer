@@ -102,8 +102,8 @@ module Ruby
       Utils.chdir(@vendor_squash_build_dir) do
         Utils.run("cmake ..")
         Utils.run("cmake --build .")
-        Utils.remove_dynamic_libs(@vendor_libsquash_build_dir)
-        Utils.copy_static_libs(@vendor_libsquash_build_dir, @vendor_ruby)
+        Utils.remove_dynamic_libs(@vendor_squash_build_dir)
+        Utils.copy_static_libs(@vendor_squash_build_dir, @vendor_ruby)
       end
     end
   end

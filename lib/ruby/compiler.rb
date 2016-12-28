@@ -69,7 +69,7 @@ module Ruby
       init_zlib
       init_yaml
       init_openssl
-      init_libsquash
+      init_squash
 
       init_ruby
     end
@@ -222,7 +222,7 @@ module Ruby
       compile_zlib
       compile_yaml
       compile_openssl
-      compile_libsquash
+      compile_squash
     end
 
     def bundle_deploy
@@ -291,6 +291,7 @@ module Ruby
             STDERR.puts "-> Detected a RubyGem project, trying to build the gem first"
             STDERR.puts "-> FileUtils.rm_f('./*.gem')"
             FileUtils.rm_f('./*.gem')
+            Utils.run("bundle")
             Utils.run("gem build #{Shellwords.escape gemspecs.first}")
             gems = Dir['./*.gem']
             raise 'gem building failed' unless 1 == gems.size

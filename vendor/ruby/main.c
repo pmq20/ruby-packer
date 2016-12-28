@@ -39,6 +39,7 @@ main(int argc, char **argv)
     	ENCLOSE_IO_ENTRANCE;
     }
 
+    // TODO child processes might inherit bad GEM_HOME
     setenv("GEM_HOME", "/__enclose_io_memfs__/_gems_", 1);
     setenv("GEM_PATH", "/__enclose_io_memfs__/_gems_", 1);
 

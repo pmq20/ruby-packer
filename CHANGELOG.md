@@ -2,5 +2,4 @@
 
 ## v0.1.1
 
-(work in progress)
-
+Made it work to compile CLI projects.

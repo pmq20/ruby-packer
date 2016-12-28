@@ -20,7 +20,7 @@ Usage: rubyc [OPTION]... [ENTRANCE]
 EXAMPLES = %Q{
 
 Example 1: Compiling a CLI project
-    git clone https://github.com/enclose-io/ruby-compiler.git
+    git clone https://github.com/pmq20/ruby-compiler.git
     cd ruby-compiler
     rubyc rubyc
 

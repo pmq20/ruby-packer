@@ -27,7 +27,7 @@ You might need to `sudo` if prompted with no-permission errors.
 
 ### Compiling a CLI project
 
-    git clone https://github.com/enclose-io/ruby-compiler.git
+    git clone https://github.com/pmq20/ruby-compiler.git
     cd ruby-compiler
     rubyc rubyc
 
@@ -47,7 +47,7 @@ To release a new version, update the version number in `version.rb`, and then ru
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/enclose-io/ruby-compiler.
+Bug reports and pull requests are welcome on GitHub at https://github.com/pmq20/ruby-compiler.
 
 ## License
 
