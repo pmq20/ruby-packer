@@ -1,0 +1,227 @@
+BUNDLE-UPDATE(1)					      BUNDLE-UPDATE(1)
+
+
+
+1mNAME0m
+       1mbundle-update 22m- Update your gems to the latest available versions
+
+1mSYNOPSIS0m
+       1mbundle update 4m22m*gems24m [--group=NAME] [--source=NAME] [--local] [--ruby]
+
+1mDESCRIPTION0m
+       Update  the  gems specified (all gems, if none are specified), ignoring
+       the previously installed gems specified in the  1mGemfile.lock22m.  In  gen-
+       eral, you should use bundle install(1) 4mbundle-install.1.html24m to install
+       the same exact gems and versions across machines.
+
+       You would use 1mbundle update 22mto explicitly update the version of a gem.
+
+1mOPTIONS0m
+       1m--group=<name>0m
+	      Only update the gems in the specified group. For	instance,  you
+	      can  update all gems in the development group with 1mbundle update0m
+	      1m--group development22m. You  can  also	call  1mbundle	update	rails0m
+	      1m--group  test  22mto  update the rails gem and all gems in the test
+	      group, for example.
+
+       1m--source=<name>0m
+	      The name of a 1m:git 22mor 1m:path 22msource used in the	Gemfile(5).  For
+	      instance,        with	   a	    1m:git	 22msource	 of
+	      1mhttp://github.com/rails/rails.git22m, you would call 1mbundle  update0m
+	      1m--source rails0m
+
+       1m--local0m
+	      Do  not  attempt	to  fetch  gems remotely and use the gem cache
+	      instead.
+
+       1m--ruby 22mUpdate the locked version of Ruby  to  the  current	version  of
+	      Ruby.
+
+       1m--bundler0m
+	      Update the locked version of bundler to the invoked bundler ver-
+	      sion.
+
+1mUPDATING ALL GEMS0m
+       If you run 1mbundle update 22mwith no parameters, bundler  will	ignore	any
+       previously  installed  gems and resolve all dependencies again based on
+       the latest versions of all gems available in the sources.
+
+       Consider the following Gemfile(5):
+
+
+
+	   source "https://rubygems.org"
+
+	   gem "rails", "3.0.0.rc"
+	   gem "nokogiri"
+
+
+
+       When you run bundle install(1) 4mbundle-install.1.html24m  the  first  time,
+       bundler	will  resolve  all  of the dependencies, all the way down, and
+       install what you need:
+
+
+
+	   Fetching gem metadata from https://rubygems.org/.........
+	   Resolving dependencies...
+	   Installing builder 2.1.2
+	   Installing abstract 1.0.0
+	   Installing rack 1.2.8
+	   Using bundler 1.7.6
+	   Installing rake 10.4.0
+	   Installing polyglot 0.3.5
+	   Installing mime-types 1.25.1
+	   Installing i18n 0.4.2
+	   Installing mini_portile 0.6.1
+	   Installing tzinfo 0.3.42
+	   Installing rack-mount 0.6.14
+	   Installing rack-test 0.5.7
+	   Installing treetop 1.4.15
+	   Installing thor 0.14.6
+	   Installing activesupport 3.0.0.rc
+	   Installing erubis 2.6.6
+	   Installing activemodel 3.0.0.rc
+	   Installing arel 0.4.0
+	   Installing mail 2.2.20
+	   Installing activeresource 3.0.0.rc
+	   Installing actionpack 3.0.0.rc
+	   Installing activerecord 3.0.0.rc
+	   Installing actionmailer 3.0.0.rc
+	   Installing railties 3.0.0.rc
+	   Installing rails 3.0.0.rc
+	   Installing nokogiri 1.6.5
+
+	   Bundle complete! 2 Gemfile dependencies, 26 gems total.
+	   Use `bundle show [gemname]` to see where a bundled gem is installed.
+
+
+
+       As you can see, even though you have two gems in the  Gemfile(5),  your
+       application  needs 26 different gems in order to run. Bundler remembers
+       the exact versions it installed in 1mGemfile.lock22m. The next time you	run
+       bundle  install(1)  4mbundle-install.1.html24m, bundler skips the dependency
+       resolution and installs the same gems as it installed last time.
+
+       After checking in the 1mGemfile.lock 22minto version control and cloning  it
+       on  another  machine,  running  bundle install(1) 4mbundle-install.1.html0m
+       will 4mstill24m install the gems that you installed  last  time.  You  don't
+       need to worry that a new release of 1merubis 22mor 1mmail 22mchanges the gems you
+       use.
+
+       However, from time to time, you might want to update the gems  you  are
+       using  to  the  newest  versions that still match the gems in your Gem-
+       file(5).
+
+       To do this, run 1mbundle update22m, which will ignore the 1mGemfile.lock22m,  and
+       resolve	all the dependencies again. Keep in mind that this process can
+       result in a significantly different set of the 25 gems,	based  on  the
+       requirements  of  new gems that the gem authors released since the last
+       time you ran 1mbundle update22m.
+
+1mUPDATING A LIST OF GEMS0m
+       Sometimes, you want to update a single gem in the Gemfile(5), and leave
+       the  rest  of the gems that you specified locked to the versions in the
+       1mGemfile.lock22m.
+
+       For instance, in the scenario above,  imagine  that  1mnokogiri	22mreleases
+       version 1m1.4.422m, and you want to update it 4mwithout24m updating Rails and all
+       of its dependencies. To do this, run 1mbundle update nokogiri22m.
+
+       Bundler will update 1mnokogiri 22mand any of  its  dependencies,  but  leave
+       alone Rails and its dependencies.
+
+1mOVERLAPPING DEPENDENCIES0m
+       Sometimes,  multiple  gems declared in your Gemfile(5) are satisfied by
+       the same second-level dependency. For instance, consider  the  case  of
+       1mthin 22mand 1mrack-perftools-profiler22m.
+
+
+
+	   source "https://rubygems.org"
+
+	   gem "thin"
+	   gem "rack-perftools-profiler"
+
+
+
+       The  1mthin  22mgem  depends  on  1mrack >= 1.022m, while 1mrack-perftools-profiler0m
+       depends on 1mrack ~> 1.022m. If you run bundle install, you get:
+
+
+
+	   Fetching source index for https://rubygems.org/
+	   Installing daemons (1.1.0)
+	   Installing eventmachine (0.12.10) with native extensions
+	   Installing open4 (1.0.1)
+	   Installing perftools.rb (0.4.7) with native extensions
+	   Installing rack (1.2.1)
+	   Installing rack-perftools_profiler (0.0.2)
+	   Installing thin (1.2.7) with native extensions
+	   Using bundler (1.0.0.rc.3)
+
+
+
+       In this case, the two gems have their own set of dependencies, but they
+       share  1mrack  22min  common.  If  you  run 1mbundle update thin22m, bundler will
+       update 1mdaemons22m, 1meventmachine 22mand 1mrack22m, which are dependencies of	1mthin22m,
+       but   not   1mopen4   22mor   1mperftools.rb22m,   which   are	dependencies  of
+       1mrack-perftools_profiler22m. Note that 1mbundle update thin 22mwill update  1mrack0m
+       even though it's 4malso24m a dependency of 1mrack-perftools_profiler22m.
+
+       1mIn  short22m,	when  you  update  a  gem using 1mbundle update22m, bundler will
+       update all dependencies of that gem,  including	those  that  are  also
+       dependencies of another gem.
+
+       In this scenario, updating the 1mthin 22mversion manually in the Gemfile(5),
+       and then running  bundle  install(1)  4mbundle-install.1.html24m  will  only
+       update  1mdaemons  22mand  1meventmachine22m, but not 1mrack22m. For more information,
+       see  the  1mCONSERVATIVE  UPDATING  22msection  of  bundle  install(1)  4mbun-0m
+       4mdle-install.1.html24m.
+
+1mRECOMMENDED WORKFLOW0m
+       In  general, when working with an application managed with bundler, you
+       should use the following workflow:
+
+       o   After you create your Gemfile(5) for the first time, run
+
+	   $ bundle install
+
+       o   Check the resulting 1mGemfile.lock 22minto version control
+
+	   $ git add Gemfile.lock
+
+       o   When checking out this repository on another  development  machine,
+	   run
+
+	   $ bundle install
+
+       o   When checking out this repository on a deployment machine, run
+
+	   $ bundle install --deployment
+
+       o   After  changing  the  Gemfile(5)  to reflect a new or update depen-
+	   dency, run
+
+	   $ bundle install
+
+       o   Make sure to check the updated 1mGemfile.lock 22minto version control
+
+	   $ git add Gemfile.lock
+
+       o   If bundle install(1) 4mbundle-install.1.html24m reports a conflict, man-
+	   ually update the specific gems that you changed in the Gemfile(5)
+
+	   $ bundle update rails thin
+
+       o   If  you want to update all the gems to the latest possible versions
+	   that still match the gems listed in the Gemfile(5), run
+
+	   $ bundle update
+
+
+
+
+
+
+				 October 2016		      BUNDLE-UPDATE(1)

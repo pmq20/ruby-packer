@@ -1,0 +1,102 @@
+#!/usr/bin/env ruby
+
+# Copyright (c) 2016-2017 Minqi Pan
+# 
+# This file is part of Ruby Compiler, distributed under the MIT License
+# For full terms see the included LICENSE file
+
+require "ruby/compiler"
+require 'optparse'
+
+USAGE = %Q{
+
+Ruby Compiler (rubyc) v#{::Ruby::Compiler::VERSION} (runtime #{::Ruby::Compiler.ruby_version})
+Compiler for Ruby which compiles your project into a single executable.
+
+Usage: rubyc [OPTION]... [ENTRANCE]
+
+}.strip
+
+EXAMPLES = %Q{
+
+Example 1: Compiling a CLI project
+    git clone https://github.com/enclose-io/ruby-compiler.git
+    cd ruby-compiler
+    rubyc rubyc
+
+Example 2: Compiling a Rails project
+    git clone https://github.com/errbit/errbit.git
+    cd errbit
+    rubyc rails
+
+}.strip
+
+options = {}
+
+outer_opts = nil
+
+usage = lambda do |out|
+  out.puts outer_opts
+  out.puts
+  out.puts EXAMPLES
+end
+
+OptionParser.new do |opts|
+  opts.banner = USAGE
+
+  opts.on("-pDIR", "--project-root=DIR", "The path to the root of the project (default: .)") do |dir|
+    options[:project_root] = dir
+  end
+
+  opts.on("-oFILE", "--output=FILE", "The path of the output file (default: ./a.out or ./a.exe)") do |file|
+    options[:output] = file
+  end
+
+  opts.on("-dDIR", "--tmpdir=DIR", "The directory for temporary files") do |dir|
+    options[:tmpdir] = dir
+  end
+
+  opts.on("--make-args=ARGS", "Extra arguments to be passed to make") do |args|
+    options[:make_args] = args
+  end
+
+  opts.on("--nmake-args=ARGS", "Extra arguments to be passed to nmake") do |args|
+    options[:nmake_args] = args
+  end
+
+  opts.on("-v", "--version", "Prints the version of rubyc and exit") do
+    puts ::Ruby::Compiler::VERSION
+    exit 0
+  end
+
+  opts.on("--ruby-version", "Prints the version of the Ruby runtime and exit") do
+    puts ::Ruby::Compiler.ruby_version
+    exit 0
+  end
+
+  opts.on("--ruby-api-version", "Prints the version of the Ruby API and exit") do
+    puts ::Ruby::Compiler.ruby_api_version
+    exit 0
+  end
+
+  opts.on("-h", "--help", "Prints this help and exit") do
+    usage.call(STDOUT)
+    exit 0
+  end
+
+  outer_opts = opts
+end.parse!
+
+entrance = ARGV[-1]
+unless entrance.kind_of?(String) && entrance.length > 0
+  usage.call(STDERR)
+  exit 1
+end
+
+begin
+  instance = ::Ruby::Compiler.new entrance, options
+  instance.run!
+rescue ::Ruby::Compiler::Error => e
+  STDERR.puts e.message
+  exit 1
+end
