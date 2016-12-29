@@ -33,8 +33,8 @@ You might need to `sudo` if prompted with no-permission errors.
 
 ### Compiling a Rails project
 
-    git clone https://github.com/errbit/errbit.git
-    cd errbit
+    git clone https://github.com/ruby-china/homeland.git
+    cd homeland
     rubyc rails
 
 ## Development

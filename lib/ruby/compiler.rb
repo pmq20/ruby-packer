@@ -104,7 +104,7 @@ module Ruby
 
       Utils.prepare_tmpdir(@options[:tmpdir])
       @vendor_ruby = File.join(@options[:tmpdir], 'ruby')
-      @vendor_bundler = File.join(@options[:tmpdir], 'bundler')
+      @vendor_bundler = File.join(@options[:tmpdir], 'bundler-1.13.7.gem')
     end
 
     def init_ruby
@@ -266,65 +266,72 @@ module Ruby
         STDERR.puts "-> FileUtils.cp(#{src_rbconfig}, #{dst_ruby_lib})"
         FileUtils.cp(src_rbconfig, dst_ruby_lib)
 
-        src_bundler = File.join(@vendor_bundler, 'lib/bundler.rb')
-        src_bundler_lib = File.join(@vendor_bundler, 'lib/bundler')
-        src_bundler_exe = File.join(@vendor_bundler, 'exe/bundle')
-        STDERR.puts "-> FileUtils.cp(#{src_bundler}, #{dst_ruby_lib})"
-        FileUtils.cp(src_bundler, dst_ruby_lib)
-        STDERR.puts "-> FileUtils.cp_r(#{src_bundler_lib}, #{dst_ruby_lib})"
-        FileUtils.cp_r(src_bundler_lib, dst_ruby_lib)
-        STDERR.puts "-> FileUtils.cp(#{src_bundler_exe}, #{@work_dir_inner})"
-        FileUtils.cp(src_bundler_exe, @work_dir_inner)
-
         @gems_dir = File.join(@work_dir_inner, '_gems_')
         STDERR.puts "-> FileUtils.rm_rf(#{@gems_dir})"
         FileUtils.rm_rf(@gems_dir)
         STDERR.puts "-> FileUtils.mkdir_p #{@gems_dir}"
         FileUtils.mkdir_p(@gems_dir)
+        Dir["#{@vendor_ruby}/gems/*.gem"].each do |the_gem|
+          Utils.run("gem install #{Shellwords.escape the_gem} --force --local --no-rdoc --no-ri --install-dir #{Shellwords.escape @gems_dir}")
+        end
+        dst = File.join(@gems_dir, 'specifications/default')
+        FileUtils.mkdir_p(dst)
+        Dir["#{@vendor_ruby}/ext/**/*.gemspec"].each do |the_gemspec|
+          STDERR.puts "-> FileUtils.cp(#{the_gemspec}, #{dst})"
+          FileUtils.cp(the_gemspec, dst)
+        end
 
-        @pre_prepare_dir = File.join(@options[:tmpdir], '__pre_prepare__')
-        STDERR.puts "-> FileUtils.rm_rf(#{@pre_prepare_dir})"
-        FileUtils.rm_rf(@pre_prepare_dir)
-        STDERR.puts "-> FileUtils.cp_r(#{@project_root}, #{@pre_prepare_dir})"
-        FileUtils.cp_r(@project_root, @pre_prepare_dir)
-        Utils.chdir(@pre_prepare_dir) do
+        Utils.chdir(@project_root) do
           gemspecs = Dir['./*.gemspec']
           if gemspecs.size > 0
             raise 'Multiple gemspecs detected' unless 1 == gemspecs.size
-            STDERR.puts "-> Detected a RubyGem project, trying to build the gem first"
-            STDERR.puts "-> FileUtils.rm_f('./*.gem')"
-            FileUtils.rm_f('./*.gem')
-            Utils.run("bundle")
-            Utils.run("bundle exec gem build #{Shellwords.escape gemspecs.first}")
-            gems = Dir['./*.gem']
-            raise 'gem building failed' unless 1 == gems.size
-            the_gem = gems.first
-            Utils.run("gem install #{Shellwords.escape the_gem} --force --local --no-rdoc --no-ri --install-dir #{Shellwords.escape @gems_dir}")
-            STDERR.puts "-> FileUtils.rm_rf(#{File.join(@gems_dir, 'cache')})"
-            FileUtils.rm_rf(File.join(@gems_dir, 'cache'))
-            if File.exist?(File.join(@gems_dir, "bin/#{@entrance}"))
-              @memfs_entrance = "#{MEMFS}/_gems_/bin/#{@entrance}"
-            else
-              Utils.chdir(File.join(@gems_dir, "bin")) do
-                raise Error, "Cannot find entrance #{@entrance}, available entrances are #{ Dir['*'].join(', ') }."
+            @pre_prepare_dir = File.join(@options[:tmpdir], '__pre_prepare__')
+            STDERR.puts "-> FileUtils.rm_rf(#{@pre_prepare_dir})"
+            FileUtils.rm_rf(@pre_prepare_dir)
+            STDERR.puts "-> FileUtils.cp_r(#{@project_root}, #{@pre_prepare_dir})"
+            FileUtils.cp_r(@project_root, @pre_prepare_dir)
+            Utils.chdir(@pre_prepare_dir) do
+              STDERR.puts "-> Detected a RubyGem project, trying to build the gem first"
+              STDERR.puts "-> FileUtils.rm_f('./*.gem')"
+              FileUtils.rm_f('./*.gem')
+              Utils.run("bundle")
+              Utils.run("bundle exec gem build #{Shellwords.escape gemspecs.first}")
+              gems = Dir['./*.gem']
+              raise 'gem building failed' unless 1 == gems.size
+              the_gem = gems.first
+              Utils.run("gem install #{Shellwords.escape the_gem} --force --local --no-rdoc --no-ri --install-dir #{Shellwords.escape @gems_dir}")
+              if File.exist?(File.join(@gems_dir, "bin/#{@entrance}"))
+                @memfs_entrance = "#{MEMFS}/_gems_/bin/#{@entrance}"
+              else
+                Utils.chdir(File.join(@gems_dir, "bin")) do
+                  raise Error, "Cannot find entrance #{@entrance}, available entrances are #{ Dir['*'].join(', ') }."
+                end
               end
             end
           else
-            raise 'TODO: Compiling a Rails project'
             @work_dir_local = File.join(@work_dir_inner, '_local_')
-            # STDERR.puts "-> FileUtils.cp_r(#{@project_root}, #{@work_dir_local})"
-            # FileUtils.cp_r(@project_root, @work_dir_local)
-            # Utils.chdir(@work_dir_local) do
-            #   Utils.run('bundle install --deployment --binstubs')
-            #   if File.exist?("bin/#{@entrance}")
-            #     @memfs_entrance = "#{MEMFS}/_local_/bin/#{@entrance}"
-            #   else
-            #     Utils.chdir('bin') do
-            #       raise Error, "Cannot find entrance #{@entrance}, available entrances are #{ Dir['*'].join(', ') }."
-            #     end
-            #   end
-            # end
+            @chdir_at_startup = '/__enclose_io_memfs__/_local_'
+            Utils.run("gem install #{Shellwords.escape @vendor_bundler} --force --local --no-rdoc --no-ri --install-dir #{Shellwords.escape @gems_dir}")
+            STDERR.puts "-> FileUtils.cp_r(#{@project_root}, #{@work_dir_local})"
+            FileUtils.cp_r(@project_root, @work_dir_local)
+            Utils.chdir(@work_dir_local) do
+              Utils.run('bundle install --deployment --binstubs')
+              if File.exist?("bin/#{@entrance}")
+                @memfs_entrance = "#{MEMFS}/_local_/bin/#{@entrance}"
+              else
+                Utils.chdir('bin') do
+                  raise Error, "Cannot find entrance #{@entrance}, available entrances are #{ Dir['*'].join(', ') }."
+                end
+              end
+            end
+            Utils.chdir(@work_dir_local) do
+              STDERR.puts "-> FileUtils.rm_rf('.git')"
+              FileUtils.rm_rf('.git')
+            end
           end
+          
+          STDERR.puts "-> FileUtils.rm_rf(#{File.join(@gems_dir, 'cache')})"
+          FileUtils.rm_rf(File.join(@gems_dir, 'cache'))
         end
       end
     end
@@ -370,6 +377,7 @@ module Ruby
           f.puts '#include "enclose_io_common.h"'
           f.puts '#include "enclose_io_intercept.h"'
           f.puts ''
+          f.puts "#define ENCLOSE_IO_CHDIR_AT_STARTUP #{@chdir_at_startup.inspect}" if @chdir_at_startup
           f.puts %Q!
 #define ENCLOSE_IO_ENTRANCE do { \\\n\
 		new_argv = malloc( (argc + 1 + 1) * sizeof(char *)); \\\n\

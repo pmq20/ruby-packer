@@ -36,8 +36,13 @@ main(int argc, char **argv)
     int new_argc = argc;
     char **new_argv = argv;
     if (NULL == getenv("ENCLOSE_IO_USE_ORIGINAL_RUBY")) {
-    	ENCLOSE_IO_ENTRANCE;
+	ENCLOSE_IO_ENTRANCE;
+
+	#ifdef ENCLOSE_IO_CHDIR_AT_STARTUP
+	chdir(ENCLOSE_IO_CHDIR_AT_STARTUP);
+	#endif
     }
+
 
 #ifdef RUBY_DEBUG_ENV
     ruby_set_debug_option(getenv("RUBY_DEBUG"));

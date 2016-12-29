@@ -25,11 +25,11 @@ Example 1: Compiling a CLI project
     rubyc rubyc
 
 Example 2: Compiling a Rails project
-    git clone https://github.com/errbit/errbit.git
-    cd errbit
+    git clone https://github.com/ruby-china/homeland.git
+    cd homeland
     rubyc rails
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/pmq20/ruby-compiler.
+Bug reports and pull requests are welcome on GitHub at https://github.com/pmq20/ruby-compiler
 
 }.strip
 
