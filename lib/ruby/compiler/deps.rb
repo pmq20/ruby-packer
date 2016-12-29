@@ -32,6 +32,8 @@ module Ruby
       STDERR.puts "-> FileUtils.mkdir_p #{@vendor_zlib_build_dir}"
       FileUtils.mkdir_p(@vendor_zlib_build_dir)
       raise "#{@vendor_zlib_build_dir} does not exist" unless Dir.exist?(@vendor_zlib_build_dir)
+      @vendor_zlib_build_include_dir = File.join(@vendor_zlib_build_dir, 'include')
+      @vendor_zlib_build_zlibfile = File.join(@vendor_zlib_build_dir, 'lib/libz.a')
     end
     
     def compile_zlib
@@ -100,10 +102,30 @@ module Ruby
     
     def compile_squash
       Utils.chdir(@vendor_squash_build_dir) do
-        Utils.run("cmake ..")
+        # TODO ZLIB_LIBRARY_DEBUG:FILEPATH and ZLIB_LIBRARY_RELEASE:FILEPATH
+        Utils.run("cmake -DZLIB_INCLUDE_DIR:PATH=#{Shellwords.escape @vendor_zlib_build_include_dir} -DZLIB_LIBRARY_RELEASE:FILEPATH=#{Shellwords.escape @vendor_zlib_build_zlibfile} ..")
         Utils.run("cmake --build .")
         Utils.remove_dynamic_libs(@vendor_squash_build_dir)
         Utils.copy_static_libs(@vendor_squash_build_dir, @vendor_ruby)
+      end
+    end
+
+    def init_gdbm
+      @vendor_gdbm_dir = File.join @options[:tmpdir], 'gdbm'
+      raise "#{@vendor_gdbm_dir} does not exist" unless Dir.exist?(@vendor_gdbm_dir)
+      @vendor_gdbm_build_dir = File.join(@vendor_gdbm_dir, 'build')
+      STDERR.puts "-> FileUtils.mkdir_p #{@vendor_gdbm_build_dir}"
+      FileUtils.mkdir_p(@vendor_gdbm_build_dir)
+      raise "#{@vendor_gdbm_build_dir} does not exist" unless Dir.exist?(@vendor_gdbm_build_dir)
+    end
+    
+    def compile_gdbm
+      Utils.chdir(@vendor_gdbm_dir) do
+        Utils.run("./configure --enable-static --prefix=#{Shellwords.escape @vendor_gdbm_build_dir}")
+        Utils.run("make #{@options[:make_args]}")
+        Utils.run('make install')
+        Utils.remove_dynamic_libs(@vendor_gdbm_build_dir)
+        Utils.copy_static_libs(File.join(@vendor_gdbm_build_dir, 'lib'), @vendor_ruby)
       end
     end
   end

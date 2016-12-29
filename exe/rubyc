@@ -29,6 +29,8 @@ Example 2: Compiling a Rails project
     cd errbit
     rubyc rails
 
+Bug reports and pull requests are welcome on GitHub at https://github.com/pmq20/ruby-compiler.
+
 }.strip
 
 options = {}

@@ -168,6 +168,20 @@ off_t enclose_io_lseek(int fildes, off_t offset, int whence)
 	}
 }
 
+ssize_t enclose_io_readlink(const char *path, char *buf, size_t bufsize)
+{
+	if (enclose_io_cwd_inside && '/' != *path) {
+		sqfs_err enclose_io_ret;
+		ENCLOSE_IO_GEN_EXPANDED_NAME(path);
+		return squash_readlink(&enclose_io_ret, enclose_io_fs, path, buf, bufsize);
+	} else if (IS_ENCLOSE_IO_PATH(path)) {
+		sqfs_err enclose_io_ret;
+		return squash_readlink(&enclose_io_ret, enclose_io_fs, path, buf, bufsize);
+	} else {
+		return readlink(path, buf, bufsize);
+	}
+}
+
 DIR * enclose_io_opendir(const char *filename)
 {
 	if (enclose_io_cwd_inside && '/' != *filename) {

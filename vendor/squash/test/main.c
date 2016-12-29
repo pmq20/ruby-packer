@@ -341,6 +341,51 @@ static void test_dirent()
 	fflush(stderr);
 }
 
+static void test_squash_readlink()
+{
+	fprintf(stderr, "Testing squash_readlink...\n");
+	fflush(stderr);
+
+	sqfs_inode root, node;
+	sqfs fs;
+	sqfs_err error;
+	int ret;
+	int fd;
+	bool found = false;
+
+	sqfs_name name;
+	size_t name_size = sizeof(name);
+	struct stat st;
+	memset(&st, 0, sizeof(st));
+
+	memset(&fs, 0, sizeof(sqfs));
+	sqfs_open_image(&fs, libsquash_fixture, 0);
+
+	ssize_t  readsize = 0;
+	readsize = squash_readlink(&error, &fs, "/dir1/something4" ,(char *)&name, name_size);
+	expect(SQFS_OK == error, "squash_readlink is happy");
+	char content[] = ".0.0.4@something4";
+	expect(0 == strcmp(name, content), "something4 links to .0.0.4@something4");
+	expect(sizeof(content) == readsize, "squash_readlink return value is happy");
+
+	readsize = squash_readlink(0, &fs, "/dir1/something4" ,(char *)&name, name_size);
+	expect(-1 == readsize, "squash_readlink ‘error’ is null");
+
+	char smallbuf[2] = {0,0};
+	readsize = squash_readlink(&error, &fs, "/dir1/something4" ,smallbuf, 2);
+	expect(-1 == readsize, "squash_readlink ‘buf’ is too small ret val");
+	expect(SQFS_ERR == error, "squash_readlink ‘buf’ is too small");
+
+	readsize = squash_readlink(&error, &fs, "/dir1/something123456" ,smallbuf, 2);
+	expect(-1 == readsize, "squash_readlink no such file ret val");
+	expect(SQFS_NOENT == error, "squash_readlink no such file error");
+
+	fflush(stderr);
+
+
+
+}
+
 int main(int argc, char const *argv[])
 {
 	squash_start();
@@ -349,6 +394,7 @@ int main(int argc, char const *argv[])
 	test_stat();
 	test_virtual_fd();
 	test_dirent();
+	test_squash_readlink();
 
 	squash_halt();
 	return 0;

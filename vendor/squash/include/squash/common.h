@@ -51,6 +51,7 @@ typedef enum {
 	SQFS_NOMEM,			/* Cannot allocate memory */
 	SQFS_NOENT,			/* No such file or directory */
 	SQFS_INVALFD,		/* Invalid virtual file descriptor */
+	SQFS_NULLPTR		/* Null pointer exception*/
 } sqfs_err;
 
 #define SQFS_INODE_ID_BYTES 6

@@ -8,24 +8,6 @@
 #ifndef ENCLOSE_IO_INTERCEPT_H_1B3D379C
 #define ENCLOSE_IO_INTERCEPT_H_1B3D379C
 
-#define chdir(x) enclose_io_chdir(x)
-int enclose_io_chdir(const char *path);
-
-#define getcwd(x, y) enclose_io_getcwd(x, y)
-char *enclose_io_getcwd(char *buf, size_t size);
-
-#define getwd(x) enclose_io_getwd(x)
-char *enclose_io_getwd(char *buf);
-
-#define stat(x, y)	enclose_io_stat((x), (y))
-int enclose_io_stat(const char *path, struct stat *buf);
-
-#define lstat(x, y)	enclose_io_lstat((x), (y))
-int enclose_io_lstat(const char *path, struct stat *buf);
-
-#define fstat(x, y)	enclose_io_fstat((x), (y))
-int enclose_io_fstat(int fildes, struct stat *buf);
-
 #define ENCLOSE_IO_PP_NARG(...) \
     ENCLOSE_IO_PP_NARG_(__VA_ARGS__,ENCLOSE_IO_PP_RSEQ_N())
 #define ENCLOSE_IO_PP_NARG_(...) \
@@ -47,6 +29,24 @@ int enclose_io_fstat(int fildes, struct stat *buf);
     19,18,17,16,15,14,13,12,11,10, \
      9, 8, 7, 6, 5, 4, 3, 2, 1, 0
 
+#define chdir(x) enclose_io_chdir((x))
+int enclose_io_chdir(const char *path);
+
+#define getcwd(x, y) enclose_io_getcwd((x), (y))
+char *enclose_io_getcwd(char *buf, size_t size);
+
+#define getwd(x) enclose_io_getwd((x))
+char *enclose_io_getwd(char *buf);
+
+#define stat(x, y)	enclose_io_stat((x), (y))
+int enclose_io_stat(const char *path, struct stat *buf);
+
+#define lstat(x, y)	enclose_io_lstat((x), (y))
+int enclose_io_lstat(const char *path, struct stat *buf);
+
+#define fstat(x, y)	enclose_io_fstat((x), (y))
+int enclose_io_fstat(int fildes, struct stat *buf);
+
 #define open(...)	enclose_io_open(ENCLOSE_IO_PP_NARG(__VA_ARGS__), __VA_ARGS__)
 int enclose_io_open(int nargs, const char *pathname, int flags, ...);
 
@@ -58,6 +58,9 @@ ssize_t enclose_io_read(int fildes, void *buf, size_t nbyte);
 
 #define lseek(x, y, z)	enclose_io_lseek((x), (y), (z))
 off_t enclose_io_lseek(int fildes, off_t offset, int whence);
+
+#define readlink(x, y, z) enclose_io_readlink((x), (y), (z))
+ssize_t enclose_io_readlink(const char *path, char *buf, size_t bufsize);
 
 #define opendir(x)	enclose_io_opendir((x))
 DIR * enclose_io_opendir(const char *filename);

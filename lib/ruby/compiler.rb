@@ -70,6 +70,7 @@ module Ruby
       init_yaml
       init_openssl
       init_squash
+      init_gdbm
 
       init_ruby
     end
@@ -211,6 +212,7 @@ module Ruby
             libyaml.a
             libz.a
             libsquash.a
+            libgdbm.a
           }.map { |x| File.exist?(x) }.reduce(true) { |m,o| m && o }
         end
       end
@@ -223,6 +225,7 @@ module Ruby
       compile_yaml
       compile_openssl
       compile_squash
+      compile_gdbm
     end
 
     def bundle_deploy
@@ -292,7 +295,7 @@ module Ruby
             STDERR.puts "-> FileUtils.rm_f('./*.gem')"
             FileUtils.rm_f('./*.gem')
             Utils.run("bundle")
-            Utils.run("gem build #{Shellwords.escape gemspecs.first}")
+            Utils.run("bundle exec gem build #{Shellwords.escape gemspecs.first}")
             gems = Dir['./*.gem']
             raise 'gem building failed' unless 1 == gems.size
             the_gem = gems.first
