@@ -1,4 +1,4 @@
-# Copyright (c) 2016-2017 Minqi Pan
+# Copyright (c) 2016-2017 Minqi Pan <pmq2001@gmail.com>
 # 
 # This file is part of Ruby Compiler, distributed under the MIT License
 # For full terms see the included LICENSE file
@@ -69,7 +69,7 @@ module Ruby
       init_zlib
       init_yaml
       init_openssl
-      init_squash
+      init_libsquash
       init_gdbm
 
       init_ruby
@@ -224,7 +224,7 @@ module Ruby
       compile_zlib
       compile_yaml
       compile_openssl
-      compile_squash
+      compile_libsquash
       compile_gdbm
     end
 
@@ -315,18 +315,24 @@ module Ruby
             STDERR.puts "-> FileUtils.cp_r(#{@project_root}, #{@work_dir_local})"
             FileUtils.cp_r(@project_root, @work_dir_local)
             Utils.chdir(@work_dir_local) do
-              Utils.run('bundle install --deployment --binstubs')
+              Utils.run('bundle install --deployment')
               if File.exist?("bin/#{@entrance}")
                 @memfs_entrance = "#{MEMFS}/_local_/bin/#{@entrance}"
               else
-                Utils.chdir('bin') do
-                  raise Error, "Cannot find entrance #{@entrance}, available entrances are #{ Dir['*'].join(', ') }."
+                Utils.run('bundle install --deployment --binstubs')
+                if File.exist?("bin/#{@entrance}")
+                  @memfs_entrance = "#{MEMFS}/_local_/bin/#{@entrance}"
+                else
+                  Utils.chdir('bin') do
+                    raise Error, "Cannot find entrance #{@entrance}, available entrances are #{ Dir['*'].join(', ') }."
+                  end
                 end
               end
-            end
-            Utils.chdir(@work_dir_local) do
-              STDERR.puts "-> FileUtils.rm_rf('.git')"
-              FileUtils.rm_rf('.git')
+              if Dir.exist?('.git')
+                STDERR.puts `git status`
+                STDERR.puts "-> FileUtils.rm_rf('.git')"
+                FileUtils.rm_rf('.git')
+              end
             end
           end
           
@@ -367,7 +373,6 @@ module Ruby
 
     def make_enclose_io_vars
       Utils.chdir(@vendor_ruby) do
-        entrances = @entrance.split
         File.open("include/enclose_io.h", "w") do |f|
           # remember to change vendor/ruby/include/enclose_io.h as well
           # might need to remove some object files at the 2nd pass

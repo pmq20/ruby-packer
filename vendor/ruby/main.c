@@ -32,7 +32,6 @@ main(int argc, char **argv)
     enclose_io_ret = sqfs_open_image(enclose_io_fs, enclose_io_memfs, 0);
     assert(SQFS_OK == enclose_io_ret);
 
-    // ... bundle exec ENCLOSE_IO_VAR_ENTRANCE ...
     int new_argc = argc;
     char **new_argv = argv;
     if (NULL == getenv("ENCLOSE_IO_USE_ORIGINAL_RUBY")) {

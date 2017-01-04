@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-# Copyright (c) 2016-2017 Minqi Pan
+# Copyright (c) 2016-2017 Minqi Pan <pmq2001@gmail.com>
 # 
 # This file is part of Ruby Compiler, distributed under the MIT License
 # For full terms see the included LICENSE file
@@ -29,7 +29,8 @@ Example 2: Compiling a Rails project
     cd homeland
     rubyc rails
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/pmq20/ruby-compiler
+Bug reports and pull requests are welcome on GitHub at
+https://github.com/pmq20/ruby-compiler
 
 }.strip
 
@@ -46,11 +47,11 @@ end
 OptionParser.new do |opts|
   opts.banner = USAGE
 
-  opts.on("-pDIR", "--project-root=DIR", "The path to the root of the project (default: .)") do |dir|
+  opts.on("-pDIR", "--project-root=DIR", "The path to the root of the project") do |dir|
     options[:project_root] = dir
   end
 
-  opts.on("-oFILE", "--output=FILE", "The path of the output file (default: ./a.out or ./a.exe)") do |file|
+  opts.on("-oFILE", "--output=FILE", "The path of the output file") do |file|
     options[:output] = file
   end
 

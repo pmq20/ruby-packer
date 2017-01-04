@@ -33,7 +33,6 @@ module Ruby
       FileUtils.mkdir_p(@vendor_zlib_build_dir)
       raise "#{@vendor_zlib_build_dir} does not exist" unless Dir.exist?(@vendor_zlib_build_dir)
       @vendor_zlib_build_include_dir = File.join(@vendor_zlib_build_dir, 'include')
-      @vendor_zlib_build_zlibfile = File.join(@vendor_zlib_build_dir, 'lib/libz.a')
     end
     
     def compile_zlib
@@ -90,8 +89,8 @@ module Ruby
       end
     end
     
-    def init_squash
-      @vendor_squash_dir = File.join @options[:tmpdir], 'squash'
+    def init_libsquash
+      @vendor_squash_dir = File.join @options[:tmpdir], 'libsquash'
       raise "#{@vendor_squash_dir} does not exist" unless Dir.exist?(@vendor_squash_dir)
       @vendor_squash_include_dir = File.join(@vendor_squash_dir, 'include')
       @vendor_squash_build_dir = File.join(@vendor_squash_dir, 'build')
@@ -100,10 +99,9 @@ module Ruby
       raise "#{@vendor_squash_build_dir} does not exist" unless Dir.exist?(@vendor_squash_build_dir)
     end
     
-    def compile_squash
+    def compile_libsquash
       Utils.chdir(@vendor_squash_build_dir) do
-        # TODO ZLIB_LIBRARY_DEBUG:FILEPATH and ZLIB_LIBRARY_RELEASE:FILEPATH
-        Utils.run("cmake -DZLIB_INCLUDE_DIR:PATH=#{Shellwords.escape @vendor_zlib_build_include_dir} -DZLIB_LIBRARY_RELEASE:FILEPATH=#{Shellwords.escape @vendor_zlib_build_zlibfile} ..")
+        Utils.run("cmake -DZLIB_INCLUDE_DIR:PATH=#{Shellwords.escape @vendor_zlib_build_include_dir} ..")
         Utils.run("cmake --build .")
         Utils.remove_dynamic_libs(@vendor_squash_build_dir)
         Utils.copy_static_libs(@vendor_squash_build_dir, @vendor_ruby)

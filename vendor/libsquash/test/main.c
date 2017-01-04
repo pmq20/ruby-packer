@@ -183,8 +183,16 @@ static void test_stat()
 	expect(S_ISREG(st.st_mode), "/bombing is a regular file");
 	squash_close(&error, fd);
 	
-	// TODO test a link
-	
+	//stat /dir/something4
+	ret = squash_lstat(&error, &fs, "/dir1/something4", &st);
+	expect(0 == ret, "Upon successful completion a value of 0 is returned");
+	expect(S_ISLNK(st.st_mode), "/dir1/something4 is a symbolic link file");
+
+	//stat /dir/something4
+	ret = squash_stat(&error, &fs, "/dir1/something4", &st);
+	expect(0 == ret, "Upon successful completion a value of 0 is returned");
+	expect(S_ISDIR(st.st_mode), "/dir1/something4 is a symbolic link file and references is a dir");
+
 	// RIP.
 	sqfs_destroy(&fs);
 
@@ -269,6 +277,21 @@ static void test_virtual_fd()
 	fflush(stderr);
 }
 
+int filter_scandir(const struct dirent * ent)
+{
+	return (strncmp(ent->d_name,".",1) == 0);
+}
+
+int reverse_alpha_compar(const struct dirent **a, const struct dirent **b){
+	return -strcmp((*a)->d_name, (*b)->d_name);
+}
+#ifndef __linux__
+int alphasort(const struct dirent **a, const struct dirent **b){
+	return strcmp((*a)->d_name, (*b)->d_name);
+}
+
+#endif
+
 static void test_dirent()
 {
 	fprintf(stderr, "Testing dirent APIs\n");
@@ -337,6 +360,60 @@ static void test_dirent()
 	mydirent = squash_readdir(&error, dir);
 	expect(NULL == mydirent, "oops empty dir");
 
+	struct dirent **namelist = 0;
+
+	int numEntries = squash_scandir(&error, &fs, "/dir1", &namelist, filter_scandir, alphasort);
+
+	expect(2 == numEntries, "scandir_filter is happy");
+
+
+	expect(NULL != namelist[0], "returns a pointer to the next directory entry");
+	expect(0 == strcmp(".0.0.4@something4", namelist[0]->d_name), "got .0.0.4@something4");
+#ifndef __linux__
+	expect(strlen(".0.0.4@something4") == namelist[0]->d_namlen, "got a str len");
+#endif
+	expect(DT_DIR == namelist[0]->d_type, "this ia dir");
+
+	expect(NULL != namelist[1], "returns a pointer to the next directory entry");
+	expect(0 == strcmp(".bin", namelist[1]->d_name), "got a .bin");
+#ifndef __linux__
+	expect(strlen(".bin") == namelist[1]->d_namlen, "got a str len");
+#endif
+
+	int i = 0;
+
+	for(i = 0; i < numEntries; i++){
+		free(namelist[i]);
+	}
+	free(namelist);
+
+
+	namelist = 0;
+	numEntries = squash_scandir(&error, &fs, "/", &namelist, NULL, reverse_alpha_compar);
+	expect(2 == numEntries, "scandir_alphasort is happy");
+
+
+	expect(NULL != namelist[0], "returns a pointer to the next directory entry");
+	expect(0 == strcmp("dir1", namelist[0]->d_name), "got a dir1");
+	expect(DT_DIR == namelist[0]->d_type, "this is a reg");
+#ifndef __linux__
+	expect(strlen("dir1") == namelist[0]->d_namlen, "got a str len");
+#endif
+
+	expect(NULL != namelist[1], "returns a pointer to the next directory entry");
+	expect(0 == strcmp("bombing", namelist[1]->d_name), "got bombing");
+#ifndef __linux__
+	expect(strlen("bombing") == namelist[1]->d_namlen, "got a str len");
+#endif
+	expect(DT_REG == namelist[1]->d_type, "this is a reg");
+
+
+
+	for(i = 0; i < numEntries; i++){
+		free(namelist[i]);
+	}
+	free(namelist);
+
 	fprintf(stderr, "\n");
 	fflush(stderr);
 }
@@ -366,7 +443,7 @@ static void test_squash_readlink()
 	expect(SQFS_OK == error, "squash_readlink is happy");
 	char content[] = ".0.0.4@something4";
 	expect(0 == strcmp(name, content), "something4 links to .0.0.4@something4");
-	expect(sizeof(content) == readsize, "squash_readlink return value is happy");
+	expect(strlen(content) == readsize, "squash_readlink return value is happy");
 
 	readsize = squash_readlink(0, &fs, "/dir1/something4" ,(char *)&name, name_size);
 	expect(-1 == readsize, "squash_readlink ‘error’ is null");
@@ -379,7 +456,7 @@ static void test_squash_readlink()
 	readsize = squash_readlink(&error, &fs, "/dir1/something123456" ,smallbuf, 2);
 	expect(-1 == readsize, "squash_readlink no such file ret val");
 	expect(SQFS_NOENT == error, "squash_readlink no such file error");
-
+	fprintf(stderr, "\n");
 	fflush(stderr);
 
 
