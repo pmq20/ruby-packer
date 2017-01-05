@@ -1,29 +1,11 @@
-version: '{build}'
-build_script:
-- cmd: >-
-    set PATH=C:\Ruby23\bin;%PATH%
-
-
-    ruby -v
-
-    gem update --system
-
-    gem -v
-
-    gem install bundler
-
-    gem install certified
-
-    echo gem 'certified' >> Gemfile
-
-    certified-update
-
-    bundle -v
-
-    bundle install
+version: 1.0.{build}
+build: off
 test_script:
 - cmd: >-
-    set PATH=C:\Ruby23\bin;%PATH%
+    dir C:\
 
+    set PATH=C:\Ruby24\bin;%PATH%
 
-    bundle exec rake
+    tests\ruby-compiler.bat
+
+    tests\homeland.bat

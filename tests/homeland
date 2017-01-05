@@ -1,0 +1,5 @@
+#!/bin/sh -x
+
+git clone --depth 1 https://github.com/ruby-china/homeland.git
+cd homeland
+../bin/rubyc rails

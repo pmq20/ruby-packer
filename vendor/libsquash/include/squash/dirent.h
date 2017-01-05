@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2016-2017 Minqi Pan and Shengyuan Liu
+ * Copyright (c) 2016-2017 Minqi Pan <pmq2001@gmail.com>
+ *                         Shengyuan Liu <sounder.liu@gmail.com>
  *
  * This file is part of libsquash, distributed under the MIT License
  * For full terms see the included LICENSE file
@@ -31,7 +32,5 @@ typedef struct {
 	int actual_nr; /* actual number of entries read */
 	long loc;	/* offset in current buffer */
 } SQUASH_DIR;
-
-sqfs_err squash_dir_realloc(SQUASH_DIR *dir, size_t nr);
 
 #endif /* end of include guard: DIRENT_H_245C4278 */

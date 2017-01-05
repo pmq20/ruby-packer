@@ -5,27 +5,31 @@
 # This file is part of Ruby Compiler, distributed under the MIT License
 # For full terms see the included LICENSE file
 
-require "ruby/compiler"
+$LOAD_PATH.unshift File.expand_path("../../lib", __FILE__)
+
+require "compiler"
 require 'optparse'
 
 USAGE = %Q{
 
-Ruby Compiler (rubyc) v#{::Ruby::Compiler::VERSION} (runtime #{::Ruby::Compiler.ruby_version})
-Compiler for Ruby which compiles your project into a single executable.
+Ruby Compiler (rubyc) v#{::Compiler::VERSION} (runtime #{::Compiler.ruby_version})
+Compiler for Ruby which compiles your Ruby application into a single executable.
 
-Usage: rubyc [OPTION]... [ENTRANCE]
+Usage
+  rubyc [OPTION]... [ENTRANCE]
 
 }.strip
 
 EXAMPLES = %Q{
 
-Example 1: Compiling a CLI project
-    git clone https://github.com/pmq20/ruby-compiler.git
+Examples:
+  Compiling a command-line application:
+    git clone --depth 1 https://github.com/pmq20/ruby-compiler.git
     cd ruby-compiler
     rubyc rubyc
 
-Example 2: Compiling a Rails project
-    git clone https://github.com/ruby-china/homeland.git
+  Compiling a web application:
+    git clone --depth 1 https://github.com/ruby-china/homeland.git
     cd homeland
     rubyc rails
 
@@ -47,8 +51,8 @@ end
 OptionParser.new do |opts|
   opts.banner = USAGE
 
-  opts.on("-pDIR", "--project-root=DIR", "The path to the root of the project") do |dir|
-    options[:project_root] = dir
+  opts.on("-rDIR", "--root=DIR", "The path to the root of the application") do |dir|
+    options[:root] = dir
   end
 
   opts.on("-oFILE", "--output=FILE", "The path of the output file") do |file|
@@ -97,9 +101,9 @@ unless entrance.kind_of?(String) && entrance.length > 0
 end
 
 begin
-  instance = ::Ruby::Compiler.new entrance, options
+  instance = ::Compiler.new entrance, options
   instance.run!
-rescue ::Ruby::Compiler::Error => e
+rescue ::Compiler::Error => e
   STDERR.puts e.message
   exit 1
 end

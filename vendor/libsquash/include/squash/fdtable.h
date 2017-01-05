@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2016-2017 Minqi Pan and Shengyuan Liu
+ * Copyright (c) 2016-2017 Minqi Pan <pmq2001@gmail.com>
+ *                         Shengyuan Liu <sounder.liu@gmail.com>
  *
  * This file is part of libsquash, distributed under the MIT License
  * For full terms see the included LICENSE file
@@ -23,7 +24,5 @@ struct squash_fdtable {
 };
 
 extern struct squash_fdtable squash_global_fdtable;
-
-sqfs_err squash_fdtable_realloc(size_t nr);
 
 #endif /* end of include guard: FDTABLE_H_60F13289 */

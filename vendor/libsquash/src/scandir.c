@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2016-2017 Minqi Pan and Shengyuan Liu
+ * Copyright (c) 2016-2017 Minqi Pan <pmq2001@gmail.com>
+ *                         Shengyuan Liu <sounder.liu@gmail.com>
  *
  * This file is part of libsquash, distributed under the MIT License
  * For full terms see the included LICENSE file
@@ -11,7 +12,7 @@
 
 typedef int(*qsort_compar)(const void *, const void *);
 
-int squash_scandir(sqfs_err *error, sqfs *fs, const char *dirname, struct dirent ***namelist,
+int squash_scandir(sqfs *fs, const char *dirname, struct dirent ***namelist,
 	int (*select)(const struct dirent *),
 	int (*compar)(const struct dirent **, const struct dirent **))
 {
@@ -23,7 +24,7 @@ int squash_scandir(sqfs_err *error, sqfs *fs, const char *dirname, struct dirent
 	if((dirname == NULL) || (namelist == NULL))
 		return -1;
 
-	openeddir = squash_opendir(error, fs, dirname);
+	openeddir = squash_opendir(fs, dirname);
 	if(openeddir == NULL)
 		return -1;
 
@@ -31,7 +32,7 @@ int squash_scandir(sqfs_err *error, sqfs *fs, const char *dirname, struct dirent
 	list = (struct dirent **)malloc(MAX_DIR_ENT*sizeof(struct dirent *));
 
 
-	while(( ent = squash_readdir(error, openeddir)) != NULL)
+	while(( ent = squash_readdir(openeddir)) != NULL)
 	{
 		if( select && !select(ent))
 			continue;
@@ -48,7 +49,7 @@ int squash_scandir(sqfs_err *error, sqfs *fs, const char *dirname, struct dirent
 	}
 
 	//close the squash_dir
-	squash_closedir(error, openeddir);
+	squash_closedir(openeddir);
 
 	//realloc the array
 	*namelist = realloc((void *)list,n*sizeof(struct dirent *));

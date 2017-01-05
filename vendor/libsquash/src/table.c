@@ -25,22 +25,21 @@
 #include "squash/table.h"
 
 #include "squash/fs.h"
-#include "squash/nonstd.h"
-#include "squash/squashfs_fs.h"
 
-#include <stdlib.h>
 #include <string.h>
 
 sqfs_err sqfs_table_init(sqfs_table *table, sqfs_fd_t fd, sqfs_off_t start, size_t each,
 		size_t count) {
-	size_t nblocks, bread;
+	//size_t nblocks, bread;
 	
 	if (count == 0)
 		return SQFS_OK;
 	
-	nblocks = sqfs_divceil(each * count, SQUASHFS_METADATA_SIZE);
-	bread = nblocks * sizeof(uint64_t);
-	
+	//nblocks = sqfs_divceil(each * count, SQUASHFS_METADATA_SIZE);
+
+	//unused
+	//bread = nblocks * sizeof(uint64_t);
+
 	table->each = each;
 	table->blocks = (uint64_t *)(fd + start);
 	

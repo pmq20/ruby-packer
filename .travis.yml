@@ -1,19 +1,24 @@
-sudo: required
+language: ruby
 
-dist: trusty
-
-language: c
+rvm: 2.4.0
 
 os:
   - linux
   - osx
 
-compiler:
-  - gcc
-  - clang
+env:
+  matrix:
+    - RUBYC_TEST=ruby-compiler
+    - RUBYC_TEST=homeland
+
+addons:
+  apt:
+    packages:
+      - cmake
+      - squashfs-tools
+
+install:
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew install squashfs; fi
 
 script:
-  - gem install bundler --no-ri --no-rdoc
-  - bundle
-  - bundle exec rake
-
+  - /bin/sh -x tests/$RUBYC_TEST

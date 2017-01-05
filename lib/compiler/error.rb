@@ -3,8 +3,6 @@
 # This file is part of Ruby Compiler, distributed under the MIT License
 # For full terms see the included LICENSE file
 
-module Ruby
-  class Compiler
-    class Error < ::RuntimeError; end
-  end
+class Compiler
+  class Error < ::RuntimeError; end
 end

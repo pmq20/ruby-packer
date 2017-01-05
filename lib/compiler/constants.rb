@@ -1,14 +1,10 @@
-#!/usr/bin/env bash
-
 # Copyright (c) 2016-2017 Minqi Pan <pmq2001@gmail.com>
 # 
 # This file is part of Ruby Compiler, distributed under the MIT License
 # For full terms see the included LICENSE file
 
-set -euo pipefail
-IFS=$'\n\t'
-set -vx
-
-bundle install
-
-# Do any other automated setup that you need to do here
+class Compiler
+  VERSION = '0.1.2'
+  VENDOR_DIR = File.expand_path('../../../vendor', __FILE__)
+  MEMFS = '/__enclose_io_memfs__'
+end
