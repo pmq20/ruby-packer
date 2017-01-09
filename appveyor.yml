@@ -1,11 +1,31 @@
-version: 1.0.{build}
-build: off
+version: '{build}'
+
+build_script:
+- ps: |
+    $ErrorActionPreference="Stop"
+
+    Start-FileDownload https://github.com/pmq20/rubyinstaller/files/689117/rb240-win32.zip -FileName C:\projects\ruby-compiler\ruby240_win32.zip
+
+    Start-FileDownload https://github.com/pmq20/squashfuse/files/691217/sqfs43-win32.zip -FileName C:\projects\ruby-compiler\sqfs43-win32.zip
+
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+
+    [System.IO.Compression.ZipFile]::ExtractToDirectory("C:\projects\ruby-compiler\ruby240_win32.zip", "C:\projects\ruby-compiler")
+
+    [System.IO.Compression.ZipFile]::ExtractToDirectory("C:\projects\ruby-compiler\sqfs43-win32.zip", "C:\projects\ruby-compiler\usr\bin")
+
 test_script:
-- cmd: >-
-    dir C:\
+- cmd: |
+    set PATH=C:\projects\ruby-compiler\usr\bin;%PATH%
 
-    set PATH=C:\Ruby24\bin;%PATH%
+    call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" amd64_x86
 
-    tests\ruby-compiler.bat
+    cmake --version
 
-    tests\homeland.bat
+    mksquashfs -version
+
+    ruby --version
+
+    ruby tests\ruby-compiler
+
+    ruby tests\homeland

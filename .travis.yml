@@ -6,19 +6,24 @@ os:
   - linux
   - osx
 
-env:
-  matrix:
-    - RUBYC_TEST=ruby-compiler
-    - RUBYC_TEST=homeland
-
 addons:
   apt:
+    sources:
+      - ubuntu-toolchain-r-test
     packages:
-      - cmake
       - squashfs-tools
+      - gcc-4.8
+      - g++-4.8
 
 install:
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew install squashfs; fi
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
+
+before_script:
+  - cmake --version
+  - mksquashfs -version
+  - ruby --version
 
 script:
-  - /bin/sh -x tests/$RUBYC_TEST
+  - ruby tests/ruby-compiler
+  - ruby tests/homeland

@@ -1,5 +1,13 @@
-#!/bin/sh -x
+#!/usr/bin/env ruby
 
-git clone --depth 1 https://github.com/ruby-china/homeland.git
-cd homeland
-../bin/rubyc rails
+# Copyright (c) 2016-2017 Minqi Pan <pmq2001@gmail.com>
+# 
+# This file is part of Ruby Compiler, distributed under the MIT License
+# For full terms see the included LICENSE file
+
+puts `git clone --depth 1 https://github.com/ruby-china/homeland.git`
+raise 'git failed' unless $?.success?
+Dir.chdir('homeland')
+pid = spawn('ruby ../bin/rubyc puma')
+pid, status = Process.wait2(pid)
+raise "Failed running rubyc puma" unless status.success?

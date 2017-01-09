@@ -9,6 +9,7 @@
 #ifndef ENCLOSE_IO_INTERCEPT_H_1B3D379C
 #define ENCLOSE_IO_INTERCEPT_H_1B3D379C
 #ifndef __cplusplus
+#ifndef _WIN32
 
 #define ENCLOSE_IO_PP_NARG(...) \
     ENCLOSE_IO_PP_NARG_(__VA_ARGS__,ENCLOSE_IO_PP_RSEQ_N())
@@ -90,5 +91,6 @@ int enclose_io_scandir(const char *dirname, struct dirent ***namelist,
 	int (*select)(const struct dirent *),
 	int (*compar)(const struct dirent **, const struct dirent **));
 
+#endif
 #endif
 #endif

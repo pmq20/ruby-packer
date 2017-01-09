@@ -5,11 +5,13 @@ Compiler for Ruby which compiles your Ruby application into a single executable.
 [![Travis CI status](https://travis-ci.org/pmq20/ruby-compiler.svg?branch=master)](https://travis-ci.org/pmq20/ruby-compiler)
 [![AppVeyor status](https://ci.appveyor.com/api/projects/status/93i36eliiy6v3686/branch/master?svg=true)](https://ci.appveyor.com/project/pmq20/ruby-compiler/branch/master)
 
-## Installation
+## Download
 
-    gem install ruby-compiler
-
-You might need to `sudo` if prompted with no-permission errors.
+| Operating System | Architecture | Link |
+|:----------------:|:------------:|------|
+|     Mac OS X     |     x86-64   |      |
+|       Linux      |     x86-64   |      |
+|      Windows     |      x86     |      |
 
 ## Usage
 
@@ -30,13 +32,13 @@ You might need to `sudo` if prompted with no-permission errors.
 
     git clone --depth 1 https://github.com/pmq20/ruby-compiler.git
     cd ruby-compiler
-    rubyc rubyc
+    rubyc bin/rubyc
 
 ### Compiling a web application
 
     git clone --depth 1 https://github.com/ruby-china/homeland.git
     cd homeland
-    rubyc rails
+    rubyc puma
 
 ## Contributing
 

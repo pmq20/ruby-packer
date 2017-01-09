@@ -16,7 +16,7 @@ class Compiler
   
   def compile_gmp
     Utils.chdir(@vendor_gmp_dir) do
-      Utils.run("./configure --prefix=#{Shellwords.escape @vendor_gmp_build_dir}")
+      Utils.run("./configure --prefix=#{Utils.escape @vendor_gmp_build_dir}")
       Utils.run("make #{@options[:make_args]}")
       Utils.run('make install')
       Utils.remove_dynamic_libs(@vendor_gmp_build_dir)
@@ -36,7 +36,7 @@ class Compiler
   
   def compile_zlib
     Utils.chdir(@vendor_zlib_dir) do
-      Utils.run("./configure --static --prefix=#{Shellwords.escape @vendor_zlib_build_dir}")
+      Utils.run("./configure --static --prefix=#{Utils.escape @vendor_zlib_build_dir}")
       Utils.run("make #{@options[:make_args]}")
       Utils.run('make install')
       Utils.remove_dynamic_libs(@vendor_zlib_build_dir)
@@ -55,7 +55,7 @@ class Compiler
   
   def compile_yaml
     Utils.chdir(@vendor_yaml_dir) do
-      Utils.run("./configure --enable-static --prefix=#{Shellwords.escape @vendor_yaml_build_dir}")
+      Utils.run("./configure --enable-static --prefix=#{Utils.escape @vendor_yaml_build_dir}")
       Utils.run("make #{@options[:make_args]}")
       Utils.run('make install')
       Utils.remove_dynamic_libs(@vendor_yaml_build_dir)
@@ -75,11 +75,11 @@ class Compiler
   def compile_openssl
     Utils.chdir(@vendor_openssl_dir) do
       if Gem.win_platform?
-        Utils.run("perl Configure --prefix=#{Shellwords.escape @vendor_openssl_build_dir} VC-WIN64A")
+        Utils.run("perl Configure --prefix=#{Utils.escape @vendor_openssl_build_dir} VC-WIN64A")
         Utils.run("nmake #{@options[:nmake_args]}")
         Utils.run("nmake install")
       else
-        Utils.run("./config --prefix=#{Shellwords.escape @vendor_openssl_build_dir}")
+        Utils.run("./config --prefix=#{Utils.escape @vendor_openssl_build_dir}")
         Utils.run("make #{@options[:make_args]}")
         Utils.run('make install')
       end
@@ -93,6 +93,7 @@ class Compiler
     raise "#{@vendor_squash_dir} does not exist" unless Dir.exist?(@vendor_squash_dir)
     @vendor_squash_include_dir = File.join(@vendor_squash_dir, 'include')
     @vendor_squash_build_dir = File.join(@vendor_squash_dir, 'build')
+    @vendor_squash_sample_dir = File.join(@vendor_squash_dir, 'sample')
     STDERR.puts "-> FileUtils.mkdir_p #{@vendor_squash_build_dir}"
     FileUtils.mkdir_p(@vendor_squash_build_dir)
     raise "#{@vendor_squash_build_dir} does not exist" unless Dir.exist?(@vendor_squash_build_dir)
@@ -100,7 +101,7 @@ class Compiler
   
   def compile_libsquash
     Utils.chdir(@vendor_squash_build_dir) do
-      Utils.run("cmake -DZLIB_INCLUDE_DIR:PATH=#{Shellwords.escape @vendor_zlib_build_include_dir} ..")
+      Utils.run("cmake -DZLIB_INCLUDE_DIR:PATH=#{Utils.escape @vendor_zlib_build_include_dir} ..")
       Utils.run("cmake --build .")
       Utils.remove_dynamic_libs(@vendor_squash_build_dir)
       Utils.copy_static_libs(@vendor_squash_build_dir, @vendor_ruby)
@@ -118,7 +119,7 @@ class Compiler
   
   def compile_gdbm
     Utils.chdir(@vendor_gdbm_dir) do
-      Utils.run("./configure --enable-static --prefix=#{Shellwords.escape @vendor_gdbm_build_dir}")
+      Utils.run("./configure --enable-static --prefix=#{Utils.escape @vendor_gdbm_build_dir}")
       Utils.run("make #{@options[:make_args]}")
       Utils.run('make install')
       Utils.remove_dynamic_libs(@vendor_gdbm_build_dir)

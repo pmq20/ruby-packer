@@ -537,9 +537,8 @@ dir_initialize(int argc, VALUE *argv, VALUE dir)
 	    u_int32_t attrbuf[1];
 	    struct attrlist al = {ATTR_BIT_MAP_COUNT, 0};
 	    if (IS_ENCLOSE_IO_PATH(path)) {
-    		sqfs_err enclose_io_ret;
 		struct stat buf;
-		if (0 == squash_lstat(&enclose_io_ret, enclose_io_fs, path, &buf)) {
+		if (0 == squash_lstat(enclose_io_fs, path, &buf)) {
 			dp->dir = opendir(path);
 		}
 	    } else if (getattrlist(path, &al, attrbuf, sizeof(attrbuf), FSOPT_NOFOLLOW) == 0) {

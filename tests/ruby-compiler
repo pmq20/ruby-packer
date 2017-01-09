@@ -1,5 +1,11 @@
-#!/bin/sh -x
+#!/usr/bin/env ruby
 
-git clone --depth 1 https://github.com/pmq20/ruby-compiler.git
-cd ruby-compiler
-../bin/rubyc rubyc
+# Copyright (c) 2016-2017 Minqi Pan <pmq2001@gmail.com>
+# 
+# This file is part of Ruby Compiler, distributed under the MIT License
+# For full terms see the included LICENSE file
+
+Dir.chdir(File.expand_path('../..', __FILE__))
+pid = spawn('ruby bin/rubyc bin/rubyc')
+pid, status = Process.wait2(pid)
+raise "Failed running rubyc bin/rubyc" unless status.success?
