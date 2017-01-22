@@ -106,6 +106,10 @@ char *strchr(char*,char);
 # define NORMALIZE_UTF8PATH 0
 #endif
 
+// ======= [Enclose.io Hack start] =========
+#include "enclose_io.h"
+// ======= [Enclose.io Hack end] =========
+
 #if NORMALIZE_UTF8PATH
 #include <sys/param.h>
 #include <sys/mount.h>
@@ -123,7 +127,7 @@ need_normalization(DIR *dirp, const char *path)
     u_int32_t attrbuf[SIZEUP32(fsobj_tag_t)];
     struct attrlist al = {ATTR_BIT_MAP_COUNT, 0, ATTR_CMN_OBJTAG,};
 #   if defined HAVE_FGETATTRLIST
-    if (SQUASH_VALID_DIR(dirp)) { return FALSE; }
+    if (squash_find_entry(dirp)) { return FALSE; }
     int ret = fgetattrlist(dirfd(dirp), &al, attrbuf, sizeof(attrbuf), 0);
 #   else
     if (IS_ENCLOSE_IO_PATH(path)) { return FALSE; }
@@ -1535,7 +1539,7 @@ is_case_sensitive(DIR *dirp)
     const int idx = VOL_CAPABILITIES_FORMAT;
     const uint32_t mask = VOL_CAP_FMT_CASE_SENSITIVE;
 
-    if (SQUASH_VALID_DIR(dirp)) { return 1; }
+    if (squash_find_entry(dirp)) { return 1; }
 
     if (fgetattrlist(dirfd(dirp), &al, attrbuf, sizeof(attrbuf), FSOPT_NOFOLLOW))
 	return -1;

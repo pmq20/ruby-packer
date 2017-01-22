@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2016-2017 Minqi Pan <pmq2001@gmail.com>
- *                         Shengyuan Liu <sounder.liu@gmail.com>
+ * Copyright (c) 2017 Minqi Pan <pmq2001@gmail.com>
+ *                    Shengyuan Liu <sounder.liu@gmail.com>
  *
  * This file is part of libsquash, distributed under the MIT License
  * For full terms see the included LICENSE file
@@ -30,7 +30,7 @@ int squash_open(sqfs *fs, const char *path)
 	{
 		goto failure;
 	}
-	error = sqfs_lookup_path(fs, &file->node, path, &found);
+	error = sqfs_lookup_path_inner(fs, &file->node, path, &found, true);
 	if (SQFS_OK != error)
 	{
 		goto failure;
@@ -71,7 +71,9 @@ int squash_open(sqfs *fs, const char *path)
 	}
 
 	// insert the fd into the global fd table
+	file->fd = fd;
 	squash_global_fdtable.fds[fd] = file;
+	squash_global_fdtable.end = fd + 1;
 	return fd;
 
 failure:
@@ -89,6 +91,10 @@ int squash_close(int vfd)
 	close(vfd);
 	free(squash_global_fdtable.fds[vfd]);
 	squash_global_fdtable.fds[vfd] = NULL;
+	while (vfd >= 0 && NULL == squash_global_fdtable.fds[vfd]) {
+		vfd -= 1;
+	}
+	squash_global_fdtable.end = vfd + 1;
 	return 0;
 }
 
@@ -133,4 +139,28 @@ off_t squash_lseek(int vfd, off_t offset, int whence)
 		file->pos = file->node.xtra.reg.file_size;
 	}
 	return file->pos;
+}
+
+sqfs_err squash_start()
+{
+	squash_global_fdtable.nr = 0;
+	squash_global_fdtable.fds = NULL;
+	return SQFS_OK;
+}
+
+sqfs_err squash_halt()
+{
+	free(squash_global_fdtable.fds);
+	return SQFS_OK;
+}
+
+struct squash_file * squash_find_entry(void *ptr)
+{
+	size_t i;
+	for (i = 0; i < squash_global_fdtable.end; ++i) {
+		if (squash_global_fdtable.fds[i] && ptr == squash_global_fdtable.fds[i]->payload) {
+			return squash_global_fdtable.fds[i];
+		}
+	}
+	return NULL;
 }

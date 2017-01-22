@@ -1,4 +1,4 @@
-# Copyright (c) 2016-2017 Minqi Pan <pmq2001@gmail.com>
+# Copyright (c) 2017 Minqi Pan <pmq2001@gmail.com>
 # 
 # This file is part of Ruby Compiler, distributed under the MIT License
 # For full terms see the included LICENSE file
@@ -23,7 +23,7 @@ class Compiler
   end
   
   def self.peek_ruby_version
-    version_info = File.read(File.join(VENDOR_DIR, 'ruby/version.h'))
+    version_info = File.read(File.join(PRJ_ROOT, 'ruby/version.h'))
     if version_info =~ /RUBY_VERSION\s+"([^"]+)"$/
       return $1.dup
     else
@@ -32,7 +32,7 @@ class Compiler
   end
   
   def self.peek_ruby_api_version
-    version_info = File.read(File.join(VENDOR_DIR, 'ruby/include/ruby/version.h'))
+    version_info = File.read(File.join(PRJ_ROOT, 'ruby/include/ruby/version.h'))
     versions = []
     if version_info =~ /RUBY_API_VERSION_MAJOR\s+(\d+)/
       versions << $1.dup
@@ -56,6 +56,14 @@ class Compiler
     @entrance = entrance
     @options = options
 
+    if RbConfig::CONFIG['host_os'] =~ /darwin|mac os/i
+      @extra_cflags = ' -mmacosx-version-min=10.7 '
+      @extra_envvar = { 'CFLAGS' => @extra_cflags }
+    else
+      @extra_cflags = ''
+      @extra_envvar = { }
+    end
+
     check_base_ruby_version!
 
     init_options
@@ -73,7 +81,7 @@ class Compiler
   end
 
   def init_options
-    @options[:make_args] ||= '-j4'
+    @options[:make_args] ||= 'V=1'
     if Gem.win_platform?
       @options[:output] ||= 'a.exe'
     else
@@ -104,8 +112,7 @@ class Compiler
 
   def init_ruby
     @vendor_ruby_build_dir = File.join(@vendor_ruby, 'build')
-    STDERR.puts "-> FileUtils.mkdir_p #{@vendor_ruby_build_dir}"
-    FileUtils.mkdir_p(@vendor_ruby_build_dir)
+    Utils.mkdir_p(@vendor_ruby_build_dir)
     raise "#{@vendor_ruby_build_dir} does not exist" unless Dir.exist?(@vendor_ruby_build_dir)
   end
   
@@ -128,21 +135,18 @@ class Compiler
                       'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1',
                       'PKG_CONFIG_PATH' => "#{File.join @vendor_openssl_build_dir, 'lib/pkgconfig'}#{sep}#{File.join @vendor_yaml_build_dir, 'lib/pkgconfig'}#{sep}#{File.join @vendor_zlib_build_dir, 'lib/pkgconfig'}",
                       'LDFLAGS' => "-L.",
-                      'CFLAGS' => "-I#{Utils.escape @vendor_squash_include_dir}",
+                      'CFLAGS' => "-I#{Utils.escape @vendor_squash_include_dir} -Ienclose_io #{@extra_cflags}",
                     }
+
       # enclose_io/enclose_io_memfs.o - 1st pass
-      STDERR.puts "-> FileUtils.rm_rf('enclose_io/')"
-      FileUtils.rm_rf('enclose_io/')
-      STDERR.puts "-> FileUtils.cp_r(#{@vendor_squash_sample_dir}, 'enclose_io/')"
-      FileUtils.cp_r(@vendor_squash_sample_dir, 'enclose_io/')
-      Dir['enclose_io/*.h'].each do |header_path|
-        STDERR.puts "-> FileUtils.cp(#{header_path}, 'include')"
-        FileUtils.cp(header_path, 'include')
-      end
+      Utils.rm_rf('enclose_io/')
+      Utils.cp_r(@vendor_squash_sample_dir, 'enclose_io/')
       Utils.run("cc #{@compile_env['CFLAGS']} -c enclose_io/enclose_io_memfs.c -o enclose_io/enclose_io_memfs.o")
       raise 'enclose_io/enclose_io_memfs error' unless File.exist?('enclose_io/enclose_io_memfs.o')
-      Utils.run("cc #{@compile_env['CFLAGS']} -Ienclose_io -c enclose_io/enclose_io_intercept.c -o enclose_io/enclose_io_intercept.o")
-      raise 'enclose_io/enclose_io_intercept error' unless File.exist?('enclose_io/enclose_io_intercept.o')
+      Utils.run("cc #{@compile_env['CFLAGS']} -c enclose_io/enclose_io_unix.c -o enclose_io/enclose_io_unix.o")
+      raise 'enclose_io/enclose_io_unix error' unless File.exist?('enclose_io/enclose_io_unix.o')
+      Utils.run("cc #{@compile_env['CFLAGS']} -c enclose_io/enclose_io_win32.c -o enclose_io/enclose_io_win32.o")
+      raise 'enclose_io/enclose_io_win32 error' unless File.exist?('enclose_io/enclose_io_win32.o')
       if Gem.win_platform?
         Utils.run(@compile_env, "call win32\\configure.bat                                              \
                                 --prefix=#{Utils.escape @vendor_ruby_build_dir}              \
@@ -154,19 +158,15 @@ class Compiler
                                 --with-libyaml-dir=#{Utils.escape @vendor_yaml_build_dir}             \
                                 --with-openssl-dir=#{Utils.escape @vendor_openssl_build_dir}")
         Utils.run(@compile_env, "nmake #{@options[:nmake_args]}")
-        STDERR.puts "-> FileUtils.rm('ruby.exe')"
-        FileUtils.rm('ruby.exe')
-        STDERR.puts "-> FileUtils.rm_rf('enclose_io/')"
-        FileUtils.rm_rf('enclose_io/')
-        STDERR.puts "-> FileUtils.rm('main.o')"
-        FileUtils.rm('main.o')
+        Utils.rm('ruby.exe')
+        Utils.rm_rf('enclose_io/')
+        Utils.rm('main.o')
         # enclose_io/enclose_io_memfs.o - 2nd pass
         bundle_deploy
         make_enclose_io_memfs
         make_enclose_io_vars
         Utils.run(@compile_env, "nmake #{@options[:nmake_args]}")
-        STDERR.puts "-> FileUtils.cp('ruby.exe', #{@options[:output]})"
-        FileUtils.cp('ruby.exe', @options[:output])
+        Utils.cp('ruby.exe', @options[:output])
       else
         Utils.run(@compile_env, "./configure                                                           \
                                --prefix=#{Utils.escape @vendor_ruby_build_dir}              \
@@ -181,19 +181,15 @@ class Compiler
                                --with-libyaml-dir=#{Utils.escape @vendor_yaml_build_dir}             \
                                --with-openssl-dir=#{Utils.escape @vendor_openssl_build_dir} ")
         Utils.run(@compile_env, "make #{@options[:make_args]}")
-        STDERR.puts "-> FileUtils.rm('ruby')"
-        FileUtils.rm('ruby')
-        STDERR.puts "-> FileUtils.rm_rf('enclose_io/')"
-        FileUtils.rm_rf('enclose_io/')
-        STDERR.puts "-> FileUtils.rm('main.o')"
-        FileUtils.rm('main.o')
+        Utils.rm('ruby')
+        Utils.rm_rf('enclose_io/')
+        Utils.rm('main.o')
         # enclose_io/enclose_io_memfs.o - 2nd pass
         bundle_deploy
         make_enclose_io_memfs
         make_enclose_io_vars
         Utils.run(@compile_env, "make #{@options[:make_args]}")
-        STDERR.puts "-> FileUtils.cp('ruby', #{@options[:output]})"
-        FileUtils.cp('ruby', @options[:output])
+        Utils.cp('ruby', @options[:output])
       end
     end
   end
@@ -229,23 +225,18 @@ class Compiler
 
   def bundle_deploy
     @work_dir = File.join(@options[:tmpdir], '__work_dir__')
-    STDERR.puts "-> FileUtils.rm_rf(#{@work_dir})"
-    FileUtils.rm_rf(@work_dir)
-    STDERR.puts "-> FileUtils.mkdir_p #{@work_dir}"
-    FileUtils.mkdir_p(@work_dir)
+    Utils.rm_rf(@work_dir)
+    Utils.mkdir_p(@work_dir)
     
     @work_dir_inner = File.join(@work_dir, '__enclose_io_memfs__')
-    STDERR.puts "-> FileUtils.mkdir_p #{@work_dir_inner}"
-    FileUtils.mkdir_p(@work_dir_inner)
+    Utils.mkdir_p(@work_dir_inner)
 
     @work_dir_global = File.join(@work_dir_inner, '_global_')
     src_ruby_lib = File.join(@vendor_ruby, 'lib')
-    STDERR.puts "-> FileUtils.mkdir_p(File.join(#{@work_dir_global}, 'lib/ruby'))"
-    FileUtils.mkdir_p(File.join(@work_dir_global, 'lib/ruby'))
+    Utils.mkdir_p(File.join(@work_dir_global, 'lib/ruby'))
     dst_ruby_lib = File.join(@work_dir_global, "lib/ruby/#{self.class.ruby_api_version}")
     raise 'logic error' unless Dir.exist?(src_ruby_lib)
-    STDERR.puts "-> FileUtils.cp_r(#{src_ruby_lib}, #{dst_ruby_lib})"
-    FileUtils.cp_r(src_ruby_lib, dst_ruby_lib)
+    Utils.cp_r(src_ruby_lib, dst_ruby_lib)
     
     src_ruby_extlib = File.join(@vendor_ruby, 'ext')
     Utils.chdir(src_ruby_extlib) do
@@ -261,22 +252,18 @@ class Compiler
     end
     
     src_rbconfig = File.join(@vendor_ruby, 'rbconfig.rb')
-    STDERR.puts "-> FileUtils.cp(#{src_rbconfig}, #{dst_ruby_lib})"
-    FileUtils.cp(src_rbconfig, dst_ruby_lib)
+    Utils.cp(src_rbconfig, dst_ruby_lib)
 
     @gems_dir = File.join(@work_dir_inner, '_gems_')
-    STDERR.puts "-> FileUtils.rm_rf(#{@gems_dir})"
-    FileUtils.rm_rf(@gems_dir)
-    STDERR.puts "-> FileUtils.mkdir_p #{@gems_dir}"
-    FileUtils.mkdir_p(@gems_dir)
+    Utils.rm_rf(@gems_dir)
+    Utils.mkdir_p(@gems_dir)
     Dir["#{@vendor_ruby}/gems/*.gem"].each do |the_gem|
       Utils.run("gem install #{Utils.escape the_gem} --force --local --no-rdoc --no-ri --install-dir #{Utils.escape @gems_dir}")
     end
     dst = File.join(@gems_dir, 'specifications/default')
     FileUtils.mkdir_p(dst)
     Dir["#{@vendor_ruby}/ext/**/*.gemspec"].each do |the_gemspec|
-      STDERR.puts "-> FileUtils.cp(#{the_gemspec}, #{dst})"
-      FileUtils.cp(the_gemspec, dst)
+      Utils.cp(the_gemspec, dst)
     end
 
     Utils.chdir(@root) do
@@ -285,14 +272,11 @@ class Compiler
       if gemspecs.size > 0
         raise 'Multiple gemspecs detected' unless 1 == gemspecs.size
         @pre_prepare_dir = File.join(@options[:tmpdir], '__pre_prepare__')
-        STDERR.puts "-> FileUtils.rm_rf(#{@pre_prepare_dir})"
-        FileUtils.rm_rf(@pre_prepare_dir)
-        STDERR.puts "-> FileUtils.cp_r(#{@root}, #{@pre_prepare_dir})"
-        FileUtils.cp_r(@root, @pre_prepare_dir)
+        Utils.rm_rf(@pre_prepare_dir)
+        Utils.cp_r(@root, @pre_prepare_dir)
         Utils.chdir(@pre_prepare_dir) do
           STDERR.puts "-> Detected a gemspec, trying to build the gem"
-          STDERR.puts "-> FileUtils.rm_f('./*.gem')"
-          FileUtils.rm_f('./*.gem')
+          Utils.rm_f('./*.gem')
           Utils.run("bundle")
           Utils.run("bundle exec gem build #{Utils.escape gemspecs.first}")
           gems = Dir['./*.gem']
@@ -312,8 +296,7 @@ class Compiler
         @work_dir_local = File.join(@work_dir_inner, '_local_')
         @chdir_at_startup = '/__enclose_io_memfs__/_local_'
         Utils.run("gem install #{Utils.escape @vendor_bundler} --force --local --no-rdoc --no-ri --install-dir #{Utils.escape @gems_dir}")
-        STDERR.puts "-> FileUtils.cp_r(#{@root}, #{@work_dir_local})"
-        FileUtils.cp_r(@root, @work_dir_local)
+        Utils.cp_r(@root, @work_dir_local)
         Utils.chdir(@work_dir_local) do
           Utils.run('bundle install --deployment')
           if File.exist?("bin/#{@entrance}")
@@ -332,8 +315,7 @@ class Compiler
       else
         @work_dir_local = File.join(@work_dir_inner, '_local_')
         @chdir_at_startup = '/__enclose_io_memfs__/_local_'
-        STDERR.puts "-> FileUtils.cp_r(#{@root}, #{@work_dir_local})"
-        FileUtils.cp_r(@root, @work_dir_local)
+        Utils.cp_r(@root, @work_dir_local)
         Utils.chdir(@work_dir_local) do
           if File.exist?("#{@entrance}")
             @memfs_entrance = "#{MEMFS}/_local_/#{@entrance}"
@@ -349,23 +331,20 @@ class Compiler
         Utils.chdir(@work_dir_local) do
           if Dir.exist?('.git')
             STDERR.puts `git status`
-            STDERR.puts "-> FileUtils.rm_rf('.git')"
-            FileUtils.rm_rf('.git')
+            Utils.rm_rf('.git')
           end
         end
       end
       
-      STDERR.puts "-> FileUtils.rm_rf(#{File.join(@gems_dir, 'cache')})"
-      FileUtils.rm_rf(File.join(@gems_dir, 'cache'))
+      Utils.rm_rf(File.join(@gems_dir, 'cache'))
     end
   end
 
   def make_enclose_io_memfs
     Utils.chdir(@vendor_ruby) do
-      STDERR.puts "-> FileUtils.cp_r(#{@vendor_squash_sample_dir}, 'enclose_io/')"
-      FileUtils.cp_r(@vendor_squash_sample_dir, 'enclose_io/')
-      FileUtils.rm_f('enclose_io/enclose_io_memfs.squashfs')
-      FileUtils.rm_f('enclose_io/enclose_io_memfs.c')
+      Utils.cp_r(@vendor_squash_sample_dir, 'enclose_io/')
+      Utils.rm_f('enclose_io/enclose_io_memfs.squashfs')
+      Utils.rm_f('enclose_io/enclose_io_memfs.c')
       Utils.run("mksquashfs -version")
       Utils.run("mksquashfs #{Utils.escape @work_dir} enclose_io/enclose_io_memfs.squashfs")
       bytes = IO.binread('enclose_io/enclose_io_memfs.squashfs').bytes
@@ -385,39 +364,31 @@ class Compiler
         f.puts '};'
         f.puts ''
       end
-      Utils.run("cc #{@compile_env['CFLAGS']} -Ienclose_io -c enclose_io/enclose_io_intercept.c -o enclose_io/enclose_io_intercept.o")
-      raise 'enclose_io/enclose_io_intercept error' unless File.exist?('enclose_io/enclose_io_intercept.o')
+      Utils.run("cc #{@compile_env['CFLAGS']} -c enclose_io/enclose_io_unix.c -o enclose_io/enclose_io_unix.o")
+      raise 'enclose_io/enclose_io_unix error' unless File.exist?('enclose_io/enclose_io_unix.o')
+      Utils.run("cc #{@compile_env['CFLAGS']} -c enclose_io/enclose_io_win32.c -o enclose_io/enclose_io_win32.o")
+      raise 'enclose_io/enclose_io_win32 error' unless File.exist?('enclose_io/enclose_io_win32.o')
       # TODO slow operation
-      Utils.run("cc -c enclose_io/enclose_io_memfs.c -o enclose_io/enclose_io_memfs.o")
+      Utils.run("cc #{@compile_env['CFLAGS']} -c enclose_io/enclose_io_memfs.c -o enclose_io/enclose_io_memfs.o")
       raise 'cannot generate enclose_io/enclose_io_memfs.o' unless File.exist?('enclose_io/enclose_io_memfs.o')
     end
   end
 
   def make_enclose_io_vars
     Utils.chdir(@vendor_ruby) do
-      File.open("include/enclose_io.h", "w") do |f|
+      File.open("enclose_io/enclose_io.h", "w") do |f|
         # remember to change vendor/libsquash/sample/enclose_io.h as well
         # might need to remove some object files at the 2nd pass  
         f.puts '#ifndef ENCLOSE_IO_H_999BC1DA'
         f.puts '#define ENCLOSE_IO_H_999BC1DA'
         f.puts ''
+        f.puts '#include "enclose_io_prelude.h"'
         f.puts '#include "enclose_io_common.h"'
-        f.puts '#include "enclose_io_intercept.h"'
+        f.puts '#include "enclose_io_win32.h"'
+        f.puts '#include "enclose_io_unix.h"'
         f.puts ''
         f.puts "#define ENCLOSE_IO_CHDIR_AT_STARTUP #{@chdir_at_startup.inspect}" if @chdir_at_startup
-        f.puts %Q!
-#define ENCLOSE_IO_ENTRANCE do { \\\n\
-	new_argv = malloc( (argc + 1 + 1) * sizeof(char *)); \\\n\
-	assert(new_argv); \\\n\
-	new_argv[0] = argv[0]; \\\n\
-	new_argv[1] = #{@memfs_entrance.inspect}; \\\n\
-	for (size_t i = 1; i < argc; ++i) { \\\n\
-		new_argv[2 + i - 1] = argv[i]; \\\n\
-	} \\\n\
-	new_argc = argc + 1; \\\n\
-	new_argv[new_argc] = ""; \\\n\
-} while(0)
-        !.strip
+        f.puts "#define ENCLOSE_IO_ENTRANCE #{@memfs_entrance.inspect}"
         f.puts '#endif'
         f.puts ''
       end

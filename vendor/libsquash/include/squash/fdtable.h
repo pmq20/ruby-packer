@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2016-2017 Minqi Pan <pmq2001@gmail.com>
- *                         Shengyuan Liu <sounder.liu@gmail.com>
+ * Copyright (c) 2017 Minqi Pan <pmq2001@gmail.com>
+ *                    Shengyuan Liu <sounder.liu@gmail.com>
  *
  * This file is part of libsquash, distributed under the MIT License
  * For full terms see the included LICENSE file
@@ -12,15 +12,18 @@
 #include "squash/common.h"
 
 struct squash_file {
+	int fd;
 	sqfs *fs;
 	sqfs_inode node;
 	struct stat st;
 	uint64_t pos;
+	void *payload;
 };
 
 struct squash_fdtable {
 	size_t nr;
 	struct squash_file **fds;
+	size_t end;
 };
 
 extern struct squash_fdtable squash_global_fdtable;

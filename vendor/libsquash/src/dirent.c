@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2016-2017 Minqi Pan <pmq2001@gmail.com>
- *                         Shengyuan Liu <sounder.liu@gmail.com>
+ * Copyright (c) 2017 Minqi Pan <pmq2001@gmail.com>
+ *                    Shengyuan Liu <sounder.liu@gmail.com>
  *
  * This file is part of libsquash, distributed under the MIT License
  * For full terms see the included LICENSE file
@@ -21,24 +21,23 @@ SQUASH_DIR *squash_opendir(sqfs *fs, const char *filename)
 		errno = ENOMEM;
 		return NULL;
 	}
-	memcpy(dir->magic, SQUASH_DIR_MAGIC, SQUASH_DIR_MAGIC_LEN);
-	dir->magic[SQUASH_DIR_MAGIC_LEN] = '\0';
 	dir->fs = fs;
 	dir->entries = NULL;
 	dir->nr = 0;
 	dir->fd = squash_open(fs, filename);
-	dir->actual_nr = 0;
-	dir->loc = 0;
 	if (-1 == dir->fd)
 	{
 		goto failure;
 	}
+	squash_global_fdtable.fds[dir->fd]->payload = (void *)dir;
+	dir->actual_nr = 0;
+	dir->loc = 0;
 	error = sqfs_inode_get(fs, &dir->node, sqfs_inode_root(fs));
 	if (SQFS_OK != error)
 	{
 		goto failure;
 	}
-	error = sqfs_lookup_path(fs, &dir->node, filename, &found);
+	error = sqfs_lookup_path_inner(fs, &dir->node, filename, &found, true);
 	if (SQFS_OK != error)
 	{
 		goto failure;

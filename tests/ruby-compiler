@@ -1,11 +1,33 @@
 #!/usr/bin/env ruby
 
-# Copyright (c) 2016-2017 Minqi Pan <pmq2001@gmail.com>
+# Copyright (c) 2017 Minqi Pan <pmq2001@gmail.com>
 # 
 # This file is part of Ruby Compiler, distributed under the MIT License
 # For full terms see the included LICENSE file
 
+require 'shellwords'
+require 'fileutils'
+
 Dir.chdir(File.expand_path('../..', __FILE__))
-pid = spawn('ruby bin/rubyc bin/rubyc')
+
+outpath = File.expand_path((Gem.win_platform? ? 'a.exe' : 'a.out'), Dir.pwd)
+FileUtils.rm_f(outpath)
+
+pid = spawn("ruby bin/rubyc bin/rubyc")
 pid, status = Process.wait2(pid)
-raise "Failed running rubyc bin/rubyc" unless status.success?
+raise "Failed running rubyc for ruby-compiler" unless status.success?
+
+raise unless File.exist?(outpath)
+raise unless File.size(outpath) >= 10_000_000
+
+if Gem.win_platform?
+  outpath = %Q{"#{outpath}"}
+else
+  File.chmod(0777, outpath)
+  outpath = Shellwords.escape(outpath)
+end
+
+raise unless `#{outpath} --help`.include?(%q{Compiler for Ruby that compiles your Ruby application into a single executable.})
+raise unless $?.success?
+raise unless `#{outpath} --ruby-version"`.to_i >= 2
+raise unless $?.success?

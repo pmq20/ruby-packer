@@ -1,4 +1,4 @@
-# Copyright (c) 2016-2017 Minqi Pan <pmq2001@gmail.com>
+# Copyright (c) 2017 Minqi Pan <pmq2001@gmail.com>
 # 
 # This file is part of Ruby Compiler, distributed under the MIT License
 # For full terms see the included LICENSE file
@@ -35,17 +35,47 @@ class Compiler
       Dir.chdir(path) { yield }
       STDERR.puts "-> cd #{Dir.pwd}"
     end
+    
+    def self.cp(x, y)
+      STDERR.puts "-> cp #{x.inspect} #{y.inspect}"
+      FileUtils.cp(x, y)
+    end
+    
+    def self.cp_r(x, y)
+      STDERR.puts "-> cp -r #{x.inspect} #{y.inspect}"
+      FileUtils.cp_r(x, y)
+    end
 
+    def self.rm(x)
+      STDERR.puts "-> rm #{x}"
+      FileUtils.rm(x)
+    end
+
+    def self.rm_f(x)
+      STDERR.puts "-> rm -f #{x}"
+      FileUtils.rm_f(x)
+    end
+
+    def self.rm_rf(x)
+      STDERR.puts "-> rm -rf #{x}"
+      FileUtils.rm_rf(x)
+    end
+    
+    def self.mkdir_p(x)
+      STDERR.puts "-> mkdir -p #{x}"
+      FileUtils.mkdir_p(x)
+    end
+    
     def self.prepare_tmpdir(tmpdir)
-      STDERR.puts "-> FileUtils.mkdir_p(#{tmpdir})"
-      FileUtils.mkdir_p(tmpdir)
+      Utils.mkdir_p(tmpdir)
       Dir[::Compiler::VENDOR_DIR + '/*'].each do |dirpath|
         target = File.join(tmpdir, File.basename(dirpath))
         unless Dir.exist?(target)
-          STDERR.puts "-> FileUtils.cp_r(#{dirpath}, #{target})"
-          FileUtils.cp_r(dirpath, target)
+          Utils.cp_r(dirpath, target)
         end
       end
+      target = File.join(tmpdir, 'ruby')
+      Utils.cp_r(File.join(PRJ_ROOT, 'ruby'), target) unless Dir.exist?(target)
     end
 
     def self.remove_dynamic_libs(path)

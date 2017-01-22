@@ -22,8 +22,8 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Copyright (c) 2016-2017 Minqi Pan <pmq2001@gmail.com>
- *                         Shengyuan Liu <sounder.liu@gmail.com>
+ * Copyright (c) 2017 Minqi Pan <pmq2001@gmail.com>
+ *                    Shengyuan Liu <sounder.liu@gmail.com>
  *
  * This file is part of libsquash, distributed under the MIT License
  * For full terms see the included LICENSE file
@@ -52,12 +52,14 @@
 
 #define SQUASH_VALID_VFD(vfd) ((vfd) < squash_global_fdtable.nr && NULL != squash_global_fdtable.fds[(vfd)])
 #define SQUASH_VFD_FILE(vfd) (squash_global_fdtable.fds[(vfd)])
-#define SQUASH_VALID_DIR(dir) (0 == strncmp(SQUASH_DIR_MAGIC, (char *)((dir)), SQUASH_DIR_MAGIC_LEN))
 
 extern sqfs_err squash_errno;
 
 sqfs_err squash_start();
 sqfs_err squash_halt();
+ssize_t squash_readlink_inode(sqfs *fs, sqfs_inode *node, char *buf, size_t bufsize);
+sqfs_err squash_follow_link(sqfs *fs, const char *path, sqfs_inode *node);
+struct squash_file * squash_find_entry(void *ptr);
 
 /*
  * Obtains information about the file pointed to by path of a SquashFS fs.

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2016-2017 Minqi Pan <pmq2001@gmail.com>
- *                         Shengyuan Liu <sounder.liu@gmail.com>
+ * Copyright (c) 2017 Minqi Pan <pmq2001@gmail.com>
+ *                    Shengyuan Liu <sounder.liu@gmail.com>
  *
  * This file is part of libsquash, distributed under the MIT License
  * For full terms see the included LICENSE file
@@ -51,14 +51,14 @@ static void test_basic_func()
 	memset(&fs, 0, sizeof(sqfs));
 	ret = sqfs_open_image(&fs, libsquash_fixture, 0);
 	expect(SQFS_OK == ret, "sqfs_open_image should succeed");
-	expect(1481779989 == fs.sb->mkfs_time, "fs made at 2016-12-15 13:33:09 +0800");
+	expect(1484142037 == fs.sb->mkfs_time, "fs made at Wed Jan 11 21:40:37 2017 +0800");
 	
 	// sqfs => root sqfs_inode
 	memset(&root, 0, sizeof(sqfs_inode));
 	ret = sqfs_inode_get(&fs, &root, sqfs_inode_root(&fs));
 	expect(SQFS_OK == ret, "successfully read the root inode");
 	expect(SQUASHFS_DIR_TYPE == root.base.inode_type, "got a dir as the root");
-	expect(1481778144 == root.base.mtime, "2016-12-15 13:02:24 +0800");
+	expect(1484142005 == root.base.mtime, "Jan 11 21:40:05 2017 +0800");
 	
 	// "/" => sqfs_inode and stat
 	memcpy(&node, &root, sizeof(sqfs_inode));
@@ -90,7 +90,11 @@ static void test_basic_func()
 	has_next = sqfs_dir_next(&fs, &dir, &entry, &ret);
 	expect(0 == strcmp(sqfs_dentry_name(&entry), "bombing"), "/bombing");
 	expect(S_ISREG(sqfs_dentry_mode(&entry)), "bombing is a regular file");
-	expect(has_next, "bombing -> dir1/");
+	expect(has_next, "bombing -> dir0/");
+	has_next = sqfs_dir_next(&fs, &dir, &entry, &ret);
+	expect(0 == strcmp(sqfs_dentry_name(&entry), "dir0"), "/dir0/");
+	expect(S_ISDIR(sqfs_dentry_mode(&entry)), "dir0/ is a dir");
+	expect(has_next, "bombing -> dir0/");
 	has_next = sqfs_dir_next(&fs, &dir, &entry, &ret);
 	expect(0 == strcmp(sqfs_dentry_name(&entry), "dir1"), "/dir1/");
 	expect(S_ISDIR(sqfs_dentry_mode(&entry)), "dir1/ is a dir");
@@ -195,6 +199,30 @@ static void test_stat()
 	expect(0 == ret, "Upon successful completion a value of 0 is returned");
 	expect(S_ISDIR(st.st_mode), "/dir1/something4 is a symbolic link file and references is a dir");
 
+	//stat /dir0/level3
+	ret = squash_stat(&fs, "/dir0/level3", &st);
+	expect(0 == ret, "Upon successful completion a value of 0 is returned");
+	expect(S_ISREG(st.st_mode), "/dir0/level3 is a symbolic link file and references is a regular file");
+
+	//stat /dir0/level2
+	ret = squash_stat(&fs, "/dir0/level2", &st);
+	expect(0 == ret, "Upon successful completion a value of 0 is returned");
+	expect(S_ISREG(st.st_mode), "/dir0/level2 is a symbolic link file and references is a regular file");
+
+	//sl1 -> sl3
+	//sl2 -> sl1
+	//sl3 -> sl2
+	ret = squash_stat(&fs, "/dir0/sl1", &st);
+	expect(-1 == ret, "sl1 is a loop symbolic link stat return -1");
+	expect(ELOOP == errno, "errno is ELOOP");
+
+	ret = squash_stat(&fs, "/dir0/sl2", &st);
+	expect(-1 == ret, "sl2 is a loop symbolic link stat return -1");
+	expect(ELOOP == errno, "errno is ELOOP");
+
+	ret = squash_stat(&fs, "/dir0/sl3", &st);
+	expect(-1 == ret, "sl3 is a loop symbolic link stat return -1");
+	expect(ELOOP == errno, "errno is ELOOP");
 	// RIP.
 	sqfs_destroy(&fs);
 
@@ -311,7 +339,7 @@ static void test_dirent()
 	expect(NULL == dir, "on error NULL is returned");
 	dir = squash_opendir(&fs, "/dir1");
 	expect(NULL != dir, "returns a pointer to be used to identify the dir stream");
-	expect(SQUASH_VALID_DIR(dir), "got a valid SQUASH_DIR");
+	expect(squash_find_entry(dir), "could find a valid SQUASH_DIR in our fd table");
 	fd = squash_dirfd(dir);
 	expect(fd > 0, "returns a vfs associated with the named diretory stream");
 	mydirent = squash_readdir(dir);
@@ -390,7 +418,7 @@ static void test_dirent()
 
 	namelist = 0;
 	numEntries = squash_scandir(&fs, "/", &namelist, NULL, reverse_alpha_compar);
-	expect(2 == numEntries, "scandir_alphasort is happy");
+	expect(3 == numEntries, "scandir_alphasort is happy");
 
 
 	expect(NULL != namelist[0], "returns a pointer to the next directory entry");
@@ -401,11 +429,18 @@ static void test_dirent()
 #endif
 
 	expect(NULL != namelist[1], "returns a pointer to the next directory entry");
-	expect(0 == strcmp("bombing", namelist[1]->d_name), "got bombing");
+	expect(0 == strcmp("dir0", namelist[1]->d_name), "got a dir0");
+	expect(DT_DIR == namelist[1]->d_type, "this is a reg");
 #ifndef __linux__
-	expect(strlen("bombing") == namelist[1]->d_namlen, "got a str len");
+	expect(strlen("dir0") == namelist[1]->d_namlen, "got a str len");
 #endif
-	expect(DT_REG == namelist[1]->d_type, "this is a reg");
+
+	expect(NULL != namelist[2], "returns a pointer to the next directory entry");
+	expect(0 == strcmp("bombing", namelist[2]->d_name), "got bombing");
+#ifndef __linux__
+	expect(strlen("bombing") == namelist[2]->d_namlen, "got a str len");
+#endif
+	expect(DT_REG == namelist[2]->d_type, "this is a reg");
 
 
 
@@ -423,11 +458,7 @@ static void test_squash_readlink()
 	fprintf(stderr, "Testing squash_readlink...\n");
 	fflush(stderr);
 
-	sqfs_inode root, node;
 	sqfs fs;
-	int ret;
-	int fd;
-	bool found = false;
 
 	sqfs_name name;
 	size_t name_size = sizeof(name);
@@ -451,6 +482,32 @@ static void test_squash_readlink()
 	readsize = squash_readlink(&fs, "/dir1/something123456" ,smallbuf, 2);
 	expect(-1 == readsize, "squash_readlink no such file ret val");
 	expect(ENOENT == errno, "squash_readlink no such file error");
+
+	fprintf(stderr, "\n");
+	fflush(stderr);
+}
+
+static void test_open_read_with_links()
+{
+	sqfs fs;
+	int fd;
+        char buf[1024];
+	ssize_t x;
+
+	fprintf(stderr, "Testing open & read with links\n");
+	fflush(stderr);
+	memset(&fs, 0, sizeof(sqfs));
+	sqfs_open_image(&fs, libsquash_fixture, 0);
+	
+	fd = squash_open(&fs, "/dir1/something4/Egyptian");
+	expect(fd > 0, "successfully got a fd");
+
+	x = squash_read(fd, buf, 1024);
+	expect(551 == x, "we can read 551");
+	buf[x+1] = '\0';
+	expect(buf == strstr(buf, "Abdel Fattah el-Sisi, the Egyptian President"), "read some content of the file");
+	expect(0 == strcmp(buf + 501, "to Greece and arrived in Cairo that evening.[18]\n\n"), "read some content of the file");
+
 	fprintf(stderr, "\n");
 	fflush(stderr);
 }
@@ -464,6 +521,7 @@ int main(int argc, char const *argv[])
 	test_virtual_fd();
 	test_dirent();
 	test_squash_readlink();
+	test_open_read_with_links();
 
 	squash_halt();
 	return 0;

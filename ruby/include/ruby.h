@@ -12,8 +12,6 @@
 #ifndef RUBY_H
 #define RUBY_H 1
 
-#include "enclose_io.h"
-
 #define HAVE_RUBY_DEFINES_H     1
 #define HAVE_RUBY_ENCODING_H    1
 #define HAVE_RUBY_INTERN_H      1

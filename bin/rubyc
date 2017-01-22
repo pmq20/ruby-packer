@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-# Copyright (c) 2016-2017 Minqi Pan <pmq2001@gmail.com>
+# Copyright (c) 2017 Minqi Pan <pmq2001@gmail.com>
 # 
 # This file is part of Ruby Compiler, distributed under the MIT License
 # For full terms see the included LICENSE file
@@ -13,7 +13,7 @@ require 'optparse'
 USAGE = %Q{
 
 Ruby Compiler (rubyc) v#{::Compiler::VERSION} (runtime #{::Compiler.ruby_version})
-Compiler for Ruby which compiles your Ruby application into a single executable.
+Compiler for Ruby that compiles your Ruby application into a single executable.
 
 Usage
   rubyc [OPTION]... [ENTRANCE]
@@ -26,7 +26,7 @@ Examples:
   Compiling a command-line application:
     git clone --depth 1 https://github.com/pmq20/ruby-compiler.git
     cd ruby-compiler
-    rubyc rubyc
+    rubyc bin/rubyc
 
   Compiling a web application:
     git clone --depth 1 https://github.com/ruby-china/homeland.git
@@ -71,18 +71,22 @@ OptionParser.new do |opts|
     options[:nmake_args] = args
   end
 
+  opts.on("--debug", "Enable debug mode") do
+    options[:debug] = true
+  end
+
   opts.on("-v", "--version", "Prints the version of rubyc and exit") do
-    puts ::Ruby::Compiler::VERSION
+    puts ::Compiler::VERSION
     exit 0
   end
 
   opts.on("--ruby-version", "Prints the version of the Ruby runtime and exit") do
-    puts ::Ruby::Compiler.ruby_version
+    puts ::Compiler.ruby_version
     exit 0
   end
 
   opts.on("--ruby-api-version", "Prints the version of the Ruby API and exit") do
-    puts ::Ruby::Compiler.ruby_api_version
+    puts ::Compiler.ruby_api_version
     exit 0
   end
 
