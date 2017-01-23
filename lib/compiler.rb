@@ -136,16 +136,25 @@ class Compiler
       # enclose_io/enclose_io_memfs.o - 1st pass
       Utils.rm_rf('enclose_io/')
       Utils.cp_r(@vendor_squash_sample_dir, 'enclose_io/')
-      Utils.run("cc #{@compile_env['CFLAGS']} -c enclose_io/enclose_io_memfs.c -o enclose_io/enclose_io_memfs.o")
-      raise 'enclose_io/enclose_io_memfs error' unless File.exist?('enclose_io/enclose_io_memfs.o')
-      Utils.run("cc #{@compile_env['CFLAGS']} -c enclose_io/enclose_io_unix.c -o enclose_io/enclose_io_unix.o")
-      raise 'enclose_io/enclose_io_unix error' unless File.exist?('enclose_io/enclose_io_unix.o')
-      Utils.run("cc #{@compile_env['CFLAGS']} -c enclose_io/enclose_io_win32.c -o enclose_io/enclose_io_win32.o")
-      raise 'enclose_io/enclose_io_win32 error' unless File.exist?('enclose_io/enclose_io_win32.o')
+      if Gem.win_platform?
+        Utils.run("cl #{@compile_env['CFLAGS']} -c enclose_io/enclose_io_memfs.c")
+        raise 'enclose_io_memfs.obj error' unless File.exist?('enclose_io_memfs.obj')
+        Utils.run("cl #{@compile_env['CFLAGS']} -c enclose_io/enclose_io_unix.c")
+        raise 'enclose_io_unix.obj error' unless File.exist?('enclose_io_unix.obj')
+        Utils.run("cl #{@compile_env['CFLAGS']} -c enclose_io/enclose_io_win32.c")
+        raise 'enclose_io_win32.obj error' unless File.exist?('enclose_io_win32.obj')
+      else
+        Utils.run("cc #{@compile_env['CFLAGS']} -c enclose_io/enclose_io_memfs.c -o enclose_io/enclose_io_memfs.o")
+        raise 'enclose_io/enclose_io_memfs error' unless File.exist?('enclose_io/enclose_io_memfs.o')
+        Utils.run("cc #{@compile_env['CFLAGS']} -c enclose_io/enclose_io_unix.c -o enclose_io/enclose_io_unix.o")
+        raise 'enclose_io/enclose_io_unix error' unless File.exist?('enclose_io/enclose_io_unix.o')
+        Utils.run("cc #{@compile_env['CFLAGS']} -c enclose_io/enclose_io_win32.c -o enclose_io/enclose_io_win32.o")
+        raise 'enclose_io/enclose_io_win32 error' unless File.exist?('enclose_io/enclose_io_win32.o')  
+      end
+      Utils.cp(File.join(PRJ_ROOT, 'ruby', 'parse.c'), @vendor_ruby)
       if Gem.win_platform?
         Utils.run(@compile_env, "call win32\\configure.bat                                              \
                                 --prefix=#{Utils.escape @vendor_ruby_build_dir}              \
-                                --with-gmp-dir=#{Utils.escape @vendor_gmp_build_dir}             \
                                 --with-exts=pathname,win32,win32ole,zlib,stringio \
                                 --without-ext=bigdecimal,cgi/escape,continuation,coverage,date,dbm,digest/bubblebabble,digest,digest/md5,digest/rmd160,digest/sha1,digest/sha2,etc,fcntl,fiber,fiddle,gdbm,io/console,io/nonblock,io/wait,json,json/generator,json/parser,mathn/complex,mathn/rational,nkf,objspace,openssl,psych,pty,racc/cparse,rbconfig/sizeof,readline,ripper,sdbm,socket,strscan,syslog \
                                 --enable-debug-env \
@@ -192,7 +201,10 @@ class Compiler
     ret = false
     Utils.chdir(@vendor_ruby) do
       if Gem.win_platform?
-        # TODO
+        ret = %w{
+          zlib.lib
+          squash.lib
+        }.map { |x| File.exist?(x) }.reduce(true) { |m,o| m && o }
       else
         ret = %w{
           libz.a
@@ -357,13 +369,23 @@ class Compiler
         f.puts '};'
         f.puts ''
       end
-      Utils.run("cc #{@compile_env['CFLAGS']} -c enclose_io/enclose_io_unix.c -o enclose_io/enclose_io_unix.o")
-      raise 'enclose_io/enclose_io_unix error' unless File.exist?('enclose_io/enclose_io_unix.o')
-      Utils.run("cc #{@compile_env['CFLAGS']} -c enclose_io/enclose_io_win32.c -o enclose_io/enclose_io_win32.o")
-      raise 'enclose_io/enclose_io_win32 error' unless File.exist?('enclose_io/enclose_io_win32.o')
-      # TODO slow operation
-      Utils.run("cc #{@compile_env['CFLAGS']} -c enclose_io/enclose_io_memfs.c -o enclose_io/enclose_io_memfs.o")
-      raise 'cannot generate enclose_io/enclose_io_memfs.o' unless File.exist?('enclose_io/enclose_io_memfs.o')
+      if Gem.win_platform?
+        Utils.run("cl #{@compile_env['CFLAGS']} -c enclose_io/enclose_io_unix.c")
+        raise 'enclose_io_unix.obj error' unless File.exist?('enclose_io_unix.obj')
+        Utils.run("cl #{@compile_env['CFLAGS']} -c enclose_io/enclose_io_win32.c")
+        raise 'enclose_io_win32.obj error' unless File.exist?('enclose_io_win32.obj')
+        # TODO slow operation
+        Utils.run("cl #{@compile_env['CFLAGS']} -c enclose_io/enclose_io_memfs.c")
+        raise 'cannot generate enclose_io_memfs.obj' unless File.exist?('enclose_io_memfs.obj')
+      else
+        Utils.run("cc #{@compile_env['CFLAGS']} -c enclose_io/enclose_io_unix.c -o enclose_io/enclose_io_unix.o")
+        raise 'enclose_io/enclose_io_unix error' unless File.exist?('enclose_io/enclose_io_unix.o')
+        Utils.run("cc #{@compile_env['CFLAGS']} -c enclose_io/enclose_io_win32.c -o enclose_io/enclose_io_win32.o")
+        raise 'enclose_io/enclose_io_win32 error' unless File.exist?('enclose_io/enclose_io_win32.o')
+        # TODO slow operation
+        Utils.run("cc #{@compile_env['CFLAGS']} -c enclose_io/enclose_io_memfs.c -o enclose_io/enclose_io_memfs.o")
+        raise 'cannot generate enclose_io/enclose_io_memfs.o' unless File.exist?('enclose_io/enclose_io_memfs.o')
+      end
     end
   end
 

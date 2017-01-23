@@ -14,6 +14,7 @@
 typedef unsigned short sqfs_mode_t;
 typedef uint32_t sqfs_id_t;
 typedef DWORD64 sqfs_off_t;
+#ifndef RUBY_WIN32_DIR_H
 struct dirent
 {
 	long d_namlen;
@@ -23,6 +24,7 @@ struct dirent
 	short d_altlen;
 	uint8_t d_type;
 };
+#endif // !RUBY_WIN32_DIR_H
 #endif
 
 #endif /* end of include guard: ENCLOSE_IO_PRELUDE_H_E46A560C */
