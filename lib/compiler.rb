@@ -12,6 +12,7 @@ require 'tmpdir'
 require 'fileutils'
 require 'json'
 require 'open3'
+require 'pathname'
 
 class Compiler
   def self.ruby_api_version
@@ -81,7 +82,7 @@ class Compiler
   end
 
   def init_options
-    @options[:make_args] ||= 'V=1'
+    @options[:make_args] ||= '-j4'
     if Gem.win_platform?
       @options[:output] ||= 'a.exe'
     else
@@ -317,6 +318,12 @@ class Compiler
         @chdir_at_startup = '/__enclose_io_memfs__/_local_'
         Utils.cp_r(@root, @work_dir_local)
         Utils.chdir(@work_dir_local) do
+          x = Pathname.new @entrance
+          y = Pathname.new @root
+          if x.absolute?
+            raise 'Entrance is not in the project root' unless @entrance.include?(@root)
+            @entrance = x.relative_path_from y
+          end
           if File.exist?("#{@entrance}")
             @memfs_entrance = "#{MEMFS}/_local_/#{@entrance}"
           else

@@ -44,7 +44,8 @@ main(int argc, char **argv)
         assert(new_argv);
         new_argv[0] = argv[0];
         new_argv[1] = ENCLOSE_IO_ENTRANCE;
-        for (size_t i = 1; i < argc; ++i) {
+        size_t i;
+        for (i = 1; i < argc; ++i) {
                new_argv[2 + i - 1] = argv[i];
         }
         new_argc = argc + 1;
@@ -52,12 +53,12 @@ main(int argc, char **argv)
         #ifndef _WIN32
         /* argv memory should be adjacent. */
         size_t total_argv_size = 0;
-        for (size_t i = 0; i < new_argc; ++i) {
+        for (i = 0; i < new_argc; ++i) {
                total_argv_size += strlen(new_argv[i]) + 1;
         }
         argv_memory = (char *)malloc( (total_argv_size) * sizeof(char));
         assert(argv_memory);
-        for (size_t i = 0; i < new_argc; ++i) {
+        for (i = 0; i < new_argc; ++i) {
                memcpy(argv_memory, new_argv[i], strlen(new_argv[i]) + 1);
                new_argv[i] = argv_memory;
                argv_memory += strlen(new_argv[i]) + 1;

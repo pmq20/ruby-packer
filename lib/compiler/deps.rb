@@ -110,6 +110,7 @@ class Compiler
     Utils.chdir(@vendor_squash_build_dir) do
       Utils.run(@extra_envvar, "cmake -DZLIB_INCLUDE_DIR:PATH=#{Utils.escape @vendor_zlib_build_include_dir} ..")
       Utils.run(@extra_envvar, "cmake --build .")
+      Utils.run(@extra_envvar, "make") if !Gem.win_platform? && !File.exist?('libsquash.a')
       Utils.remove_dynamic_libs(@vendor_squash_build_dir)
       Utils.copy_static_libs(@vendor_squash_build_dir, @vendor_ruby)
     end
