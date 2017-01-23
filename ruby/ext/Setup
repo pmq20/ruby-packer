@@ -1,4 +1,4 @@
-#option nodynamic
+option nodynamic
 
 #bigdecimal
 #cgi/escape
@@ -28,7 +28,7 @@
 #nkf
 #objspace
 #openssl
-#pathname
+pathname
 #psych
 #pty
 #racc/cparse
@@ -42,4 +42,4 @@
 #syslog
 #win32
 #win32ole
-#zlib
+zlib

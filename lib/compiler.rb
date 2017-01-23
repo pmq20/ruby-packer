@@ -10,7 +10,6 @@ require "compiler/deps"
 require 'shellwords'
 require 'tmpdir'
 require 'fileutils'
-require 'json'
 require 'open3'
 require 'pathname'
 
@@ -70,14 +69,9 @@ class Compiler
     init_options
     init_entrance
     init_tmpdir
-
     init_gmp
     init_zlib
-    init_yaml
-    init_openssl
     init_libsquash
-    init_gdbm
-
     init_ruby
   end
 
@@ -134,7 +128,7 @@ class Compiler
       sep = Gem.win_platform? ? ';' : ':'
       @compile_env = {
                       'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1',
-                      'PKG_CONFIG_PATH' => "#{File.join @vendor_openssl_build_dir, 'lib/pkgconfig'}#{sep}#{File.join @vendor_yaml_build_dir, 'lib/pkgconfig'}#{sep}#{File.join @vendor_zlib_build_dir, 'lib/pkgconfig'}",
+                      'PKG_CONFIG_PATH' => "#{File.join @vendor_zlib_build_dir, 'lib/pkgconfig'}",
                       'LDFLAGS' => "-L.",
                       'CFLAGS' => "-I#{Utils.escape @vendor_squash_include_dir} -Ienclose_io #{@extra_cflags}",
                     }
@@ -151,13 +145,13 @@ class Compiler
       if Gem.win_platform?
         Utils.run(@compile_env, "call win32\\configure.bat                                              \
                                 --prefix=#{Utils.escape @vendor_ruby_build_dir}              \
+                                --with-gmp-dir=#{Utils.escape @vendor_gmp_build_dir}             \
+                                --with-exts=pathname,win32,win32ole,zlib,stringio \
+                                --without-ext=bigdecimal,cgi/escape,continuation,coverage,date,dbm,digest/bubblebabble,digest,digest/md5,digest/rmd160,digest/sha1,digest/sha2,etc,fcntl,fiber,fiddle,gdbm,io/console,io/nonblock,io/wait,json,json/generator,json/parser,mathn/complex,mathn/rational,nkf,objspace,openssl,psych,pty,racc/cparse,rbconfig/sizeof,readline,ripper,sdbm,socket,strscan,syslog \
                                 --enable-debug-env \
                                 --disable-install-doc                                             \
                                 --with-static-linked-ext                                          \
-                                --with-gmp-dir=#{Utils.escape @vendor_gmp_build_dir}             \
-                                --with-zlib-dir=#{Utils.escape @vendor_zlib_build_dir}             \
-                                --with-libyaml-dir=#{Utils.escape @vendor_yaml_build_dir}             \
-                                --with-openssl-dir=#{Utils.escape @vendor_openssl_build_dir}")
+                                --with-zlib-dir=#{Utils.escape @vendor_zlib_build_dir}")
         Utils.run(@compile_env, "nmake #{@options[:nmake_args]}")
         Utils.rm('ruby.exe')
         Utils.rm_rf('enclose_io/')
@@ -171,16 +165,15 @@ class Compiler
       else
         Utils.run(@compile_env, "./configure                                                           \
                                --prefix=#{Utils.escape @vendor_ruby_build_dir}              \
-                               --with-out-ext=bigdecimal \
+                               --with-gmp-dir=#{Utils.escape @vendor_gmp_build_dir}             \
+                               --with-exts=pathname,zlib,stringio \
+                               --with-out-ext=bigdecimal,cgi/escape,continuation,coverage,date,dbm,digest/bubblebabble,digest,digest/md5,digest/rmd160,digest/sha1,digest/sha2,etc,fcntl,fiber,fiddle,gdbm,io/console,io/nonblock,io/wait,json,json/generator,json/parser,mathn/complex,mathn/rational,nkf,objspace,openssl,psych,pty,racc/cparse,rbconfig/sizeof,readline,ripper,sdbm,socket,strscan,syslog,win32,win32ole \
                                --enable-debug-env \
                                --with-sitearchdir=no \
                                --with-vendordir=no \
                                --disable-install-rdoc                                            \
                                --with-static-linked-ext                                          \
-                               --with-gmp-dir=#{Utils.escape @vendor_gmp_build_dir}             \
-                               --with-zlib-dir=#{Utils.escape @vendor_zlib_build_dir}             \
-                               --with-libyaml-dir=#{Utils.escape @vendor_yaml_build_dir}             \
-                               --with-openssl-dir=#{Utils.escape @vendor_openssl_build_dir} ")
+                               --with-zlib-dir=#{Utils.escape @vendor_zlib_build_dir}")
         Utils.run(@compile_env, "make #{@options[:make_args]}")
         Utils.rm('ruby')
         Utils.rm_rf('enclose_io/')
@@ -202,13 +195,9 @@ class Compiler
         # TODO
       else
         ret = %w{
-          libcrypto.a
-          libgmp.a
-          libssl.a
-          libyaml.a
           libz.a
+          libgmp.a
           libsquash.a
-          libgdbm.a
         }.map { |x| File.exist?(x) }.reduce(true) { |m,o| m && o }
       end
     end
@@ -218,10 +207,7 @@ class Compiler
   def prepare!
     compile_gmp
     compile_zlib
-    compile_yaml
-    compile_openssl
     compile_libsquash
-    compile_gdbm
   end
 
   def bundle_deploy
