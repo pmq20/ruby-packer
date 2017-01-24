@@ -40,9 +40,9 @@ class Compiler
       FileUtils.cp(x, y)
     end
     
-    def self.cp_r(x, y)
+    def self.cp_r(x, y, options = {})
       STDERR.puts "-> cp -r #{x.inspect} #{y.inspect}"
-      FileUtils.cp_r(x, y)
+      FileUtils.cp_r(x, y, options)
     end
 
     def self.rm(x)
@@ -70,11 +70,11 @@ class Compiler
       Dir[::Compiler::VENDOR_DIR + '/*'].each do |dirpath|
         target = File.join(tmpdir, File.basename(dirpath))
         unless Dir.exist?(target)
-          Utils.cp_r(dirpath, target)
+          Utils.cp_r(dirpath, target, preserve: true)
         end
       end
       target = File.join(tmpdir, 'ruby')
-      Utils.cp_r(File.join(PRJ_ROOT, 'ruby'), target) unless Dir.exist?(target)
+      Utils.cp_r(File.join(PRJ_ROOT, 'ruby'), target, preserve: true) unless Dir.exist?(target)
     end
 
     def self.remove_dynamic_libs(path)
