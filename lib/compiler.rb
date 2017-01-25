@@ -132,6 +132,12 @@ class Compiler
                        'LDFLAGS' => (Gem.win_platform? ? "#{Utils.escape File.expand_path('enclose_io_memfs.obj')} #{Utils.escape File.expand_path('enclose_io_win32.obj')} #{Utils.escape File.expand_path('enclose_io_unix.obj')} #{Utils.escape File.expand_path('squash.lib')} #{Utils.escape File.expand_path('zlib.lib')} vcruntime.lib" : "-L."),
                        'CFLAGS' => "-DEncloseIORubyCompiler -I#{Utils.escape @vendor_squash_include_dir} -Ienclose_io #{@extra_cflags}",
                      }
+      if @options[:debug]
+        if Gem.win_platform?
+          @compile_env['CFLAGS'] += " /DEBUG:FULL /Od -Zi "
+          @compile_env['LDFLAGS'] += " -debug "
+        end  
+      end
 
       # enclose_io/enclose_io_memfs.o - 1st pass
       Utils.rm_rf('enclose_io/')

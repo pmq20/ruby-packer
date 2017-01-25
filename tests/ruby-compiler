@@ -13,7 +13,7 @@ Dir.chdir(File.expand_path('../..', __FILE__))
 outpath = File.expand_path((Gem.win_platform? ? 'a.exe' : 'a.out'), Dir.pwd)
 FileUtils.rm_f(outpath)
 
-pid = spawn("ruby bin/rubyc bin/rubyc")
+pid = spawn("ruby bin/rubyc --debug bin/rubyc")
 pid, status = Process.wait2(pid)
 raise "Failed running rubyc for ruby-compiler" unless status.success?
 

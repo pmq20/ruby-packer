@@ -10,7 +10,7 @@
 
 #ifdef _WIN32
 
-int enclose_io_wopen(int nargs, const wchar_t *pathname, int flags, ...)
+int enclose_io_wopen(const wchar_t *pathname, int flags, int mode)
 {
 	if (enclose_io_cwd[0] && W_IS_ENCLOSE_IO_RELATIVE(pathname)) {
 		W_ENCLOSE_IO_PATH_CONVERT(pathname);
@@ -20,16 +20,7 @@ int enclose_io_wopen(int nargs, const wchar_t *pathname, int flags, ...)
 		W_ENCLOSE_IO_PATH_CONVERT(pathname);
 		return squash_open(enclose_io_fs, enclose_io_converted);
 	} else {
-		if (2 == nargs) {
-			return _wopen(pathname, flags);
-		} else {
-			assert(3 == nargs);
-			va_list args;
-			va_start(args, flags);
-			int mode = va_arg(args, int);
-			va_end(args);
-			return _wopen(pathname, flags, mode);
-		}
+		return _wopen(pathname, flags, mode);
 	}
 }
 

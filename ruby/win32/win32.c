@@ -53,6 +53,11 @@
 #include "win32/file.h"
 #include "internal.h"
 #include "encindex.h"
+
+// ======= [Enclose.io Hack start] =========
+#include "enclose_io.h"
+// ======= [Enclose.io Hack end] =========
+
 #define isdirsep(x) ((x) == '/' || (x) == '\\')
 
 #if defined _MSC_VER && _MSC_VER <= 1200
