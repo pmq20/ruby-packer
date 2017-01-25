@@ -29,11 +29,14 @@
 #define _lseeki64(...)	enclose_io_lseeki64(__VA_ARGS__)
 
 #define CreateFileW(...) EncloseIOCreateFileW(__VA_ARGS__)
-#define pNtQueryDirectoryFile(...) EncloseIOpNtQueryDirectoryFile(__VA_ARGS__)
 #define CloseHandle(...) EncloseIOCloseHandle(__VA_ARGS__)
+#define ReadFile(...) EncloseIOReadFile(__VA_ARGS__)
+
+#ifndef EncloseIORubyCompiler
+#define pNtQueryDirectoryFile(...) EncloseIOpNtQueryDirectoryFile(__VA_ARGS__)
 #define pNtQueryInformationFile(...) EncloseIOpNtQueryInformationFile(__VA_ARGS__)
 #define pNtQueryVolumeInformationFile(...) EncloseIOpNtQueryVolumeInformationFile(__VA_ARGS__)
-#define ReadFile(...) EncloseIOReadFile(__VA_ARGS__)
+#endif //!EncloseIORubyCompiler
 
 #endif //_WIN32
 #endif //!__cplusplus

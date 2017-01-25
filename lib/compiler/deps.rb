@@ -62,13 +62,12 @@ class Compiler
   
   def compile_libsquash
     Utils.chdir(@vendor_squash_build_dir) do
-      Utils.run(@extra_envvar, "cmake -DZLIB_INCLUDE_DIR:PATH=#{Utils.escape @vendor_zlib_dir} ..")
-      Utils.run(@extra_envvar, "cmake --build .")
+      Utils.run(@extra_envvar, "cmake -DCMAKE_BUILD_TYPE=#{@options[:debug] ? 'Debug' : 'Release'} -DZLIB_INCLUDE_DIR:PATH=#{Utils.escape @vendor_zlib_dir} ..")
+      Utils.run(@extra_envvar, "cmake --build . --config #{@options[:debug] ? 'Debug' : 'Release'}")
       Utils.run(@extra_envvar, "make") if !Gem.win_platform? && !File.exist?('libsquash.a')
       Utils.remove_dynamic_libs(@vendor_squash_build_dir)
       Utils.copy_static_libs(@vendor_squash_build_dir, @vendor_ruby)
-      Utils.copy_static_libs(File.join(@vendor_squash_build_dir, 'Debug'), @vendor_ruby)
-      Utils.copy_static_libs(File.join(@vendor_squash_build_dir, 'Release'), @vendor_ruby)
+      Utils.copy_static_libs(File.join(@vendor_squash_build_dir, @options[:debug] ? 'Debug' : 'Release'), @vendor_ruby)
     end
   end
 end
