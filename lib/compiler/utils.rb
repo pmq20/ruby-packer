@@ -65,18 +65,6 @@ class Compiler
       FileUtils.mkdir_p(x)
     end
     
-    def self.prepare_tmpdir(tmpdir)
-      Utils.mkdir_p(tmpdir)
-      Dir[::Compiler::VENDOR_DIR + '/*'].each do |dirpath|
-        target = File.join(tmpdir, File.basename(dirpath))
-        unless Dir.exist?(target)
-          Utils.cp_r(dirpath, target, preserve: true)
-        end
-      end
-      target = File.join(tmpdir, 'ruby')
-      Utils.cp_r(File.join(PRJ_ROOT, 'ruby'), target, preserve: true) unless Dir.exist?(target)
-    end
-
     def self.remove_dynamic_libs(path)
       ['dll', 'dylib', 'so'].each do |extname|
         Dir["#{path}/**/*.#{extname}"].each do |x|

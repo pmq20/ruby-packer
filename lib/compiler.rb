@@ -6,7 +6,6 @@
 require "compiler/constants"
 require "compiler/error"
 require "compiler/utils"
-require "compiler/deps"
 require 'shellwords'
 require 'tmpdir'
 require 'fileutils'
@@ -69,9 +68,6 @@ class Compiler
     init_options
     init_entrance
     init_tmpdir
-    init_gmp
-    init_zlib
-    init_libsquash
     init_ruby
   end
 
@@ -99,10 +95,14 @@ class Compiler
     if @options[:tmpdir].include? @root
       raise Error, "Tempdir #{@options[:tmpdir]} cannot reside inside #{@root}."
     end
-
-    Utils.prepare_tmpdir(@options[:tmpdir])
+    
+    Utils.mkdir_p(@options[:tmpdir])
+    target = File.join(@options[:tmpdir], 'ruby')
+    Utils.cp_r(File.join(PRJ_ROOT, 'ruby'), target, preserve: true) unless Dir.exist?(target)
+    
     @vendor_ruby = File.join(@options[:tmpdir], 'ruby')
-    @vendor_bundler = File.join(@options[:tmpdir], 'bundler-1.13.7.gem')
+    @vendor_bundler = File.join(@options[:tmpdir], 'ruby', 'gems', 'bundler-1.13.7.gem')
+    @vendor_zlib_dir = File.join(@options[:tmpdir], 'ruby', 'zlib')
   end
 
   def init_ruby
@@ -122,41 +122,8 @@ class Compiler
   end
   
   def run!
-    prepare! unless prepared?
-    raise 'Unable to prepare for Ruby compilations' unless prepared?
     Utils.chdir(@vendor_ruby) do
       sep = Gem.win_platform? ? ';' : ':'
-      @compile_env = {
-                       'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1',
-                       'PKG_CONFIG_PATH' => "#{File.join @vendor_zlib_build_dir, 'lib/pkgconfig'}",
-                       'LDFLAGS' => (Gem.win_platform? ? "#{Utils.escape File.expand_path('enclose_io_memfs.obj')} #{Utils.escape File.expand_path('enclose_io_win32.obj')} #{Utils.escape File.expand_path('enclose_io_unix.obj')} #{Utils.escape File.expand_path('squash.lib')} #{Utils.escape File.expand_path('zlib.lib')} vcruntime.lib" : "-L."),
-                       'CFLAGS' => "-DEncloseIORubyCompiler -I#{Utils.escape @vendor_squash_include_dir} -Ienclose_io #{@extra_cflags}",
-                     }
-      if @options[:debug]
-        if Gem.win_platform?
-          @compile_env['CFLAGS'] += " /DEBUG:FULL /Od -Zi "
-          @compile_env['LDFLAGS'] += " -debug "
-        end  
-      end
-
-      # enclose_io/enclose_io_memfs.o - 1st pass
-      Utils.rm_rf('enclose_io/')
-      Utils.cp_r(@vendor_squash_sample_dir, 'enclose_io/')
-      if Gem.win_platform?
-        Utils.run("cl #{@compile_env['CFLAGS']} -c enclose_io/enclose_io_memfs.c")
-        raise 'enclose_io_memfs.obj error' unless File.exist?('enclose_io_memfs.obj')
-        Utils.run("cl #{@compile_env['CFLAGS']} -c enclose_io/enclose_io_unix.c")
-        raise 'enclose_io_unix.obj error' unless File.exist?('enclose_io_unix.obj')
-        Utils.run("cl #{@compile_env['CFLAGS']} -c enclose_io/enclose_io_win32.c")
-        raise 'enclose_io_win32.obj error' unless File.exist?('enclose_io_win32.obj')
-      else
-        Utils.run("cc #{@compile_env['CFLAGS']} -c enclose_io/enclose_io_memfs.c -o enclose_io/enclose_io_memfs.o")
-        raise 'enclose_io/enclose_io_memfs error' unless File.exist?('enclose_io/enclose_io_memfs.o')
-        Utils.run("cc #{@compile_env['CFLAGS']} -c enclose_io/enclose_io_unix.c -o enclose_io/enclose_io_unix.o")
-        raise 'enclose_io/enclose_io_unix error' unless File.exist?('enclose_io/enclose_io_unix.o')
-        Utils.run("cc #{@compile_env['CFLAGS']} -c enclose_io/enclose_io_win32.c -o enclose_io/enclose_io_win32.o")
-        raise 'enclose_io/enclose_io_win32 error' unless File.exist?('enclose_io/enclose_io_win32.o')  
-      end
       Utils.cp(File.join(PRJ_ROOT, 'ruby', 'parse.c'), @vendor_ruby)
       if Gem.win_platform?
         Utils.run(@compile_env, "call win32\\configure.bat                                              \
@@ -166,7 +133,7 @@ class Compiler
                                 --enable-debug-env \
                                 --disable-install-doc                                             \
                                 --with-static-linked-ext                                          \
-                                --with-zlib-dir=#{Utils.escape @vendor_zlib_build_dir}")
+                                --with-zlib-dir=#{Utils.escape @vendor_zlib_dir}")
         Utils.run(@compile_env, "nmake #{@options[:nmake_args]}")
         Utils.rm('ruby.exe')
         Utils.rm_rf('enclose_io/')
@@ -180,7 +147,6 @@ class Compiler
       else
         Utils.run(@compile_env, "./configure                                                           \
                                --prefix=#{Utils.escape @vendor_ruby_build_dir}              \
-                               --with-gmp-dir=#{Utils.escape @vendor_gmp_build_dir}             \
                                --with-exts=pathname,zlib,stringio \
                                --with-out-ext=bigdecimal,cgi/escape,continuation,coverage,date,dbm,digest/bubblebabble,digest,digest/md5,digest/rmd160,digest/sha1,digest/sha2,etc,fcntl,fiber,fiddle,gdbm,io/console,io/nonblock,io/wait,json,json/generator,json/parser,mathn/complex,mathn/rational,nkf,objspace,openssl,psych,pty,racc/cparse,rbconfig/sizeof,readline,ripper,sdbm,socket,strscan,syslog,win32,win32ole \
                                --enable-debug-env \
@@ -188,7 +154,7 @@ class Compiler
                                --with-vendordir=no \
                                --disable-install-rdoc                                            \
                                --with-static-linked-ext                                          \
-                               --with-zlib-dir=#{Utils.escape @vendor_zlib_build_dir}")
+                               --with-zlib-dir=#{Utils.escape @vendor_zlib_dir}")
         Utils.run(@compile_env, "make #{@options[:make_args]}")
         Utils.rm('ruby')
         Utils.rm_rf('enclose_io/')
@@ -201,31 +167,6 @@ class Compiler
         Utils.cp('ruby', @options[:output])
       end
     end
-  end
-  
-  def prepared?
-    ret = false
-    Utils.chdir(@vendor_ruby) do
-      if Gem.win_platform?
-        ret = %w{
-          zlib.lib
-          squash.lib
-        }.map { |x| File.exist?(x) }.reduce(true) { |m,o| m && o }
-      else
-        ret = %w{
-          libz.a
-          libgmp.a
-          libsquash.a
-        }.map { |x| File.exist?(x) }.reduce(true) { |m,o| m && o }
-      end
-    end
-    ret
-  end
-
-  def prepare!
-    compile_gmp
-    compile_zlib
-    compile_libsquash
   end
 
   def bundle_deploy
