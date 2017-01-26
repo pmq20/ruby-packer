@@ -68,7 +68,6 @@ class Compiler
     init_options
     init_entrance
     init_tmpdir
-    init_ruby
   end
 
   def init_options
@@ -104,12 +103,6 @@ class Compiler
     @vendor_bundler = File.join(@options[:tmpdir], 'ruby', 'gems', 'bundler-1.13.7.gem')
     @vendor_zlib_dir = File.join(@options[:tmpdir], 'ruby', 'zlib')
   end
-
-  def init_ruby
-    @vendor_ruby_build_dir = File.join(@vendor_ruby, 'build')
-    Utils.mkdir_p(@vendor_ruby_build_dir)
-    raise "#{@vendor_ruby_build_dir} does not exist" unless Dir.exist?(@vendor_ruby_build_dir)
-  end
   
   def check_base_ruby_version!
     expectation = "ruby #{self.class.ruby_version}"
@@ -131,7 +124,6 @@ class Compiler
       Utils.cp(File.join(PRJ_ROOT, 'ruby', 'enclose_io_memfs.c'), @vendor_ruby)
       if Gem.win_platform?
         Utils.run("call win32\\configure.bat                                              \
-                                --prefix=#{Utils.escape @vendor_ruby_build_dir}              \
                                 --with-exts=pathname,win32,win32ole,zlib,stringio \
                                 --without-ext=bigdecimal,cgi/escape,continuation,coverage,date,dbm,digest/bubblebabble,digest,digest/md5,digest/rmd160,digest/sha1,digest/sha2,etc,fcntl,fiber,fiddle,gdbm,io/console,io/nonblock,io/wait,json,json/generator,json/parser,mathn/complex,mathn/rational,nkf,objspace,openssl,psych,pty,racc/cparse,rbconfig/sizeof,readline,ripper,sdbm,socket,strscan,syslog \
                                 --enable-debug-env \
@@ -139,12 +131,12 @@ class Compiler
                                 --with-static-linked-ext                                          \
                                 --with-zlib-dir=#{Utils.escape @vendor_zlib_dir}")
         Utils.run("nmake #{@options[:nmake_args]}")
-        Utils.rm('dir.o')
-        Utils.rm('file.o')
-        Utils.rm('io.o')
-        Utils.rm('main.o')
-        Utils.rm('win32/file.o')
-        Utils.rm('win32/win32.o')
+        Utils.rm('dir.obj')
+        Utils.rm('file.obj')
+        Utils.rm('io.obj')
+        Utils.rm('main.obj')
+        Utils.rm('win32/file.obj')
+        Utils.rm('win32/win32.obj')
         Utils.rm('ruby.exe')
         Utils.rm('include/enclose_io.h')
         Utils.rm('enclose_io_memfs.c')
@@ -156,7 +148,6 @@ class Compiler
         Utils.cp('ruby.exe', @options[:output])
       else
         Utils.run("./configure                                                           \
-                               --prefix=#{Utils.escape @vendor_ruby_build_dir}              \
                                --with-exts=pathname,zlib,stringio \
                                --with-out-ext=bigdecimal,cgi/escape,continuation,coverage,date,dbm,digest/bubblebabble,digest,digest/md5,digest/rmd160,digest/sha1,digest/sha2,etc,fcntl,fiber,fiddle,gdbm,io/console,io/nonblock,io/wait,json,json/generator,json/parser,mathn/complex,mathn/rational,nkf,objspace,openssl,psych,pty,racc/cparse,rbconfig/sizeof,readline,ripper,sdbm,socket,strscan,syslog,win32,win32ole \
                                --enable-debug-env \
