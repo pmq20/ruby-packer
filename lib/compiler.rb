@@ -124,9 +124,13 @@ class Compiler
   def run!
     Utils.chdir(@vendor_ruby) do
       sep = Gem.win_platform? ? ';' : ':'
-      Utils.cp(File.join(PRJ_ROOT, 'ruby', 'parse.c'), @vendor_ruby)
+      # enclose_io_memfs.o - 1st pass
+      Utils.rm_f('include/enclose_io.h')
+      Utils.rm_f('enclose_io_memfs.c')
+      Utils.cp(File.join(PRJ_ROOT, 'ruby', 'include', 'enclose_io.h'), File.join(@vendor_ruby, 'include'))
+      Utils.cp(File.join(PRJ_ROOT, 'ruby', 'enclose_io_memfs.c'), @vendor_ruby)
       if Gem.win_platform?
-        Utils.run(@compile_env, "call win32\\configure.bat                                              \
+        Utils.run("call win32\\configure.bat                                              \
                                 --prefix=#{Utils.escape @vendor_ruby_build_dir}              \
                                 --with-exts=pathname,win32,win32ole,zlib,stringio \
                                 --without-ext=bigdecimal,cgi/escape,continuation,coverage,date,dbm,digest/bubblebabble,digest,digest/md5,digest/rmd160,digest/sha1,digest/sha2,etc,fcntl,fiber,fiddle,gdbm,io/console,io/nonblock,io/wait,json,json/generator,json/parser,mathn/complex,mathn/rational,nkf,objspace,openssl,psych,pty,racc/cparse,rbconfig/sizeof,readline,ripper,sdbm,socket,strscan,syslog \
@@ -134,18 +138,24 @@ class Compiler
                                 --disable-install-doc                                             \
                                 --with-static-linked-ext                                          \
                                 --with-zlib-dir=#{Utils.escape @vendor_zlib_dir}")
-        Utils.run(@compile_env, "nmake #{@options[:nmake_args]}")
-        Utils.rm('ruby.exe')
-        Utils.rm_rf('enclose_io/')
+        Utils.run("nmake #{@options[:nmake_args]}")
+        Utils.rm('dir.o')
+        Utils.rm('file.o')
+        Utils.rm('io.o')
         Utils.rm('main.o')
-        # enclose_io/enclose_io_memfs.o - 2nd pass
+        Utils.rm('win32/file.o')
+        Utils.rm('win32/win32.o')
+        Utils.rm('ruby.exe')
+        Utils.rm('include/enclose_io.h')
+        Utils.rm('enclose_io_memfs.c')
+        # enclose_io_memfs.o - 2nd pass
         bundle_deploy
         make_enclose_io_memfs
         make_enclose_io_vars
-        Utils.run(@compile_env, "nmake #{@options[:nmake_args]}")
+        Utils.run("nmake #{@options[:nmake_args]}")
         Utils.cp('ruby.exe', @options[:output])
       else
-        Utils.run(@compile_env, "./configure                                                           \
+        Utils.run("./configure                                                           \
                                --prefix=#{Utils.escape @vendor_ruby_build_dir}              \
                                --with-exts=pathname,zlib,stringio \
                                --with-out-ext=bigdecimal,cgi/escape,continuation,coverage,date,dbm,digest/bubblebabble,digest,digest/md5,digest/rmd160,digest/sha1,digest/sha2,etc,fcntl,fiber,fiddle,gdbm,io/console,io/nonblock,io/wait,json,json/generator,json/parser,mathn/complex,mathn/rational,nkf,objspace,openssl,psych,pty,racc/cparse,rbconfig/sizeof,readline,ripper,sdbm,socket,strscan,syslog,win32,win32ole \
@@ -155,15 +165,19 @@ class Compiler
                                --disable-install-rdoc                                            \
                                --with-static-linked-ext                                          \
                                --with-zlib-dir=#{Utils.escape @vendor_zlib_dir}")
-        Utils.run(@compile_env, "make #{@options[:make_args]}")
-        Utils.rm('ruby')
-        Utils.rm_rf('enclose_io/')
+        Utils.run("make #{@options[:make_args]}")
+        Utils.rm('dir.o')
+        Utils.rm('file.o')
+        Utils.rm('io.o')
         Utils.rm('main.o')
-        # enclose_io/enclose_io_memfs.o - 2nd pass
+        Utils.rm('ruby')
+        Utils.rm('include/enclose_io.h')
+        Utils.rm('enclose_io_memfs.c')
+        # enclose_io_memfs.o - 2nd pass
         bundle_deploy
         make_enclose_io_memfs
         make_enclose_io_vars
-        Utils.run(@compile_env, "make #{@options[:make_args]}")
+        Utils.run("make #{@options[:make_args]}")
         Utils.cp('ruby', @options[:output])
       end
     end
@@ -294,15 +308,14 @@ class Compiler
 
   def make_enclose_io_memfs
     Utils.chdir(@vendor_ruby) do
-      Utils.cp_r(@vendor_squash_sample_dir, 'enclose_io/')
-      Utils.rm_f('enclose_io/enclose_io_memfs.squashfs')
-      Utils.rm_f('enclose_io/enclose_io_memfs.c')
+      Utils.rm_f('enclose_io_memfs.squashfs')
+      Utils.rm_f('enclose_io_memfs.c')
       Utils.run("mksquashfs -version")
-      Utils.run("mksquashfs #{Utils.escape @work_dir} enclose_io/enclose_io_memfs.squashfs")
-      bytes = IO.binread('enclose_io/enclose_io_memfs.squashfs').bytes
+      Utils.run("mksquashfs #{Utils.escape @work_dir} enclose_io_memfs.squashfs")
+      bytes = IO.binread('enclose_io_memfs.squashfs').bytes
       # TODO slow operation
-      # remember to change vendor/libsquash/sample/enclose_io_memfs.c as well
-      File.open("enclose_io/enclose_io_memfs.c", "w") do |f|
+      # remember to change libsquash's sample/enclose_io_memfs.c as well
+      File.open("enclose_io_memfs.c", "w") do |f|
         f.puts '#include <stdint.h>'
         f.puts '#include <stddef.h>'
         f.puts ''
@@ -316,30 +329,13 @@ class Compiler
         f.puts '};'
         f.puts ''
       end
-      if Gem.win_platform?
-        Utils.run("cl #{@compile_env['CFLAGS']} -c enclose_io/enclose_io_unix.c")
-        raise 'enclose_io_unix.obj error' unless File.exist?('enclose_io_unix.obj')
-        Utils.run("cl #{@compile_env['CFLAGS']} -c enclose_io/enclose_io_win32.c")
-        raise 'enclose_io_win32.obj error' unless File.exist?('enclose_io_win32.obj')
-        # TODO slow operation
-        Utils.run("cl #{@compile_env['CFLAGS']} -c enclose_io/enclose_io_memfs.c")
-        raise 'cannot generate enclose_io_memfs.obj' unless File.exist?('enclose_io_memfs.obj')
-      else
-        Utils.run("cc #{@compile_env['CFLAGS']} -c enclose_io/enclose_io_unix.c -o enclose_io/enclose_io_unix.o")
-        raise 'enclose_io/enclose_io_unix error' unless File.exist?('enclose_io/enclose_io_unix.o')
-        Utils.run("cc #{@compile_env['CFLAGS']} -c enclose_io/enclose_io_win32.c -o enclose_io/enclose_io_win32.o")
-        raise 'enclose_io/enclose_io_win32 error' unless File.exist?('enclose_io/enclose_io_win32.o')
-        # TODO slow operation
-        Utils.run("cc #{@compile_env['CFLAGS']} -c enclose_io/enclose_io_memfs.c -o enclose_io/enclose_io_memfs.o")
-        raise 'cannot generate enclose_io/enclose_io_memfs.o' unless File.exist?('enclose_io/enclose_io_memfs.o')
-      end
     end
   end
 
   def make_enclose_io_vars
     Utils.chdir(@vendor_ruby) do
-      File.open("enclose_io/enclose_io.h", "w") do |f|
-        # remember to change vendor/libsquash/sample/enclose_io.h as well
+      File.open("include/enclose_io.h", "w") do |f|
+        # remember to change libsquash's sample/enclose_io.h as well
         # might need to remove some object files at the 2nd pass  
         f.puts '#ifndef ENCLOSE_IO_H_999BC1DA'
         f.puts '#define ENCLOSE_IO_H_999BC1DA'

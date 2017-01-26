@@ -232,7 +232,7 @@ EncloseIOReadFile(
 	}
 }
 
-#ifndef EncloseIORubyCompiler
+#ifndef RUBY_EXPORT
 NTSTATUS
 EncloseIOpNtQueryInformationFile(
 	HANDLE FileHandle,
@@ -357,5 +357,5 @@ EncloseIOpNtQueryDirectoryFile(
 	}
 }
 
-#endif // !EncloseIORubyCompiler
+#endif // !RUBY_EXPORT
 #endif

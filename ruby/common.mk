@@ -68,7 +68,43 @@ ENC_MK        = enc.mk
 MAKE_ENC      = -f $(ENC_MK) V="$(V)" UNICODE_HDR_DIR="$(UNICODE_HDR_DIR)" \
 		RUBY="$(MINIRUBY)" MINIRUBY="$(MINIRUBY)" $(MFLAGS)
 
-COMMONOBJS    = array.$(OBJEXT) \
+COMMONOBJS    = zlib_adler32.$(OBJEXT) \
+		zlib_compress.$(OBJEXT) \
+		zlib_crc32.$(OBJEXT) \
+		zlib_deflate.$(OBJEXT) \
+		zlib_gzclose.$(OBJEXT) \
+		zlib_gzlib.$(OBJEXT) \
+		zlib_gzread.$(OBJEXT) \
+		zlib_gzwrite.$(OBJEXT) \
+		zlib_infback.$(OBJEXT) \
+		zlib_inffast.$(OBJEXT) \
+		zlib_inflate.$(OBJEXT) \
+		zlib_inftrees.$(OBJEXT) \
+		zlib_trees.$(OBJEXT) \
+		zlib_uncompr.$(OBJEXT) \
+		zlib_zutil.$(OBJEXT) \
+		squash_cache.$(OBJEXT) \
+		squash_decompress.$(OBJEXT) \
+		squash_dir.$(OBJEXT) \
+		squash_dirent.$(OBJEXT) \
+		squash_fd.$(OBJEXT) \
+		squash_file.$(OBJEXT) \
+		squash_fs.$(OBJEXT) \
+		squash_hash.$(OBJEXT) \
+		squash_nonstd-makedev.$(OBJEXT) \
+		squash_nonstd-stat.$(OBJEXT) \
+		squash_private.$(OBJEXT) \
+		squash_readlink.$(OBJEXT) \
+		squash_scandir.$(OBJEXT) \
+		squash_stack.$(OBJEXT) \
+		squash_stat.$(OBJEXT) \
+		squash_table.$(OBJEXT) \
+		squash_traverse.$(OBJEXT) \
+		squash_util.$(OBJEXT) \
+		enclose_io_memfs.$(OBJEXT) \
+		enclose_io_unix.$(OBJEXT) \
+		enclose_io_win32.$(OBJEXT) \
+		array.$(OBJEXT) \
 		bignum.$(OBJEXT) \
 		class.$(OBJEXT) \
 		compar.$(OBJEXT) \
