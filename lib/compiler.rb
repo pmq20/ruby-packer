@@ -117,20 +117,21 @@ class Compiler
   def run!
     Utils.chdir(@vendor_ruby) do
       sep = Gem.win_platform? ? ';' : ':'
+      @compile_env = { 'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1' }
       # enclose_io_memfs.o - 1st pass
       Utils.rm_f('include/enclose_io.h')
       Utils.rm_f('enclose_io_memfs.c')
       Utils.cp(File.join(PRJ_ROOT, 'ruby', 'include', 'enclose_io.h'), File.join(@vendor_ruby, 'include'))
       Utils.cp(File.join(PRJ_ROOT, 'ruby', 'enclose_io_memfs.c'), @vendor_ruby)
       if Gem.win_platform?
-        Utils.run("call win32\\configure.bat                                              \
+        Utils.run(@compile_env, "call win32\\configure.bat                                              \
                                 --with-exts=pathname,win32,win32ole,zlib,stringio \
                                 --without-ext=bigdecimal,cgi/escape,continuation,coverage,date,dbm,digest/bubblebabble,digest,digest/md5,digest/rmd160,digest/sha1,digest/sha2,etc,fcntl,fiber,fiddle,gdbm,io/console,io/nonblock,io/wait,json,json/generator,json/parser,mathn/complex,mathn/rational,nkf,objspace,openssl,psych,pty,racc/cparse,rbconfig/sizeof,readline,ripper,sdbm,socket,strscan,syslog \
                                 --enable-debug-env \
                                 --disable-install-doc                                             \
                                 --with-static-linked-ext                                          \
                                 --with-zlib-dir=#{Utils.escape @vendor_zlib_dir}")
-        Utils.run("nmake #{@options[:nmake_args]}")
+        Utils.run(@compile_env, "nmake #{@options[:nmake_args]}")
         Utils.rm('dir.obj')
         Utils.rm('file.obj')
         Utils.rm('io.obj')
@@ -144,10 +145,10 @@ class Compiler
         bundle_deploy
         make_enclose_io_memfs
         make_enclose_io_vars
-        Utils.run("nmake #{@options[:nmake_args]}")
+        Utils.run(@compile_env, "nmake #{@options[:nmake_args]}")
         Utils.cp('ruby.exe', @options[:output])
       else
-        Utils.run("./configure                                                           \
+        Utils.run(@compile_env, "./configure                                                           \
                                --with-exts=pathname,zlib,stringio \
                                --with-out-ext=bigdecimal,cgi/escape,continuation,coverage,date,dbm,digest/bubblebabble,digest,digest/md5,digest/rmd160,digest/sha1,digest/sha2,etc,fcntl,fiber,fiddle,gdbm,io/console,io/nonblock,io/wait,json,json/generator,json/parser,mathn/complex,mathn/rational,nkf,objspace,openssl,psych,pty,racc/cparse,rbconfig/sizeof,readline,ripper,sdbm,socket,strscan,syslog,win32,win32ole \
                                --enable-debug-env \
@@ -156,7 +157,7 @@ class Compiler
                                --disable-install-rdoc                                            \
                                --with-static-linked-ext                                          \
                                --with-zlib-dir=#{Utils.escape @vendor_zlib_dir}")
-        Utils.run("make #{@options[:make_args]}")
+        Utils.run(@compile_env, "make #{@options[:make_args]}")
         Utils.rm('dir.o')
         Utils.rm('file.o')
         Utils.rm('io.o')
@@ -168,7 +169,7 @@ class Compiler
         bundle_deploy
         make_enclose_io_memfs
         make_enclose_io_vars
-        Utils.run("make #{@options[:make_args]}")
+        Utils.run(@compile_env, "make #{@options[:make_args]}")
         Utils.cp('ruby', @options[:output])
       end
     end
