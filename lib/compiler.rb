@@ -113,6 +113,15 @@ class Compiler
     end
   end
   
+  def nmake!
+    STDERR.puts "-> Running nmake #{@options[:nmake_args]}"
+    pid = spawn("nmake #{@options[:nmake_args]}")
+    pid, status = Process.wait2(pid)
+    Utils.run(@compile_env, %Q{nmake #{@options[:nmake_args]} -f enc.mk V="0" UNICODE_HDR_DIR="./enc/unicode/9.0.0"  RUBY=".\\miniruby.exe -I./lib -I. " MINIRUBY=".\\miniruby.exe -I./lib -I. " -l libenc})
+    Utils.run(@compile_env, %Q{nmake #{@options[:nmake_args]} -f enc.mk V="0" UNICODE_HDR_DIR="./enc/unicode/9.0.0"  RUBY=".\\miniruby.exe -I./lib -I. " MINIRUBY=".\\miniruby.exe -I./lib -I. " -l libtrans})
+    Utils.run(@compile_env, "nmake #{@options[:nmake_args]}")
+  end
+
   def run!
     Utils.chdir(@vendor_ruby) do
       sep = Gem.win_platform? ? ';' : ':'
@@ -128,7 +137,7 @@ class Compiler
                                 --enable-debug-env \
                                 --disable-install-doc \
                                 --with-static-linked-ext")
-        Utils.run(@compile_env, "nmake #{@options[:nmake_args]}")
+        nmake!
         Utils.rm('dir.obj')
         Utils.rm('file.obj')
         Utils.rm('io.obj')
@@ -142,7 +151,7 @@ class Compiler
         bundle_deploy
         make_enclose_io_memfs
         make_enclose_io_vars
-        Utils.run(@compile_env, "nmake #{@options[:nmake_args]}")
+        nmake!
         Utils.cp('ruby.exe', @options[:output])
       else
         Utils.run(@compile_env, "./configure                                                           \
