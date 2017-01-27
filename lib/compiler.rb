@@ -101,7 +101,6 @@ class Compiler
     
     @vendor_ruby = File.join(@options[:tmpdir], 'ruby')
     @vendor_bundler = File.join(@options[:tmpdir], 'ruby', 'gems', 'bundler-1.13.7.gem')
-    @vendor_zlib_dir = File.join(@options[:tmpdir], 'ruby', 'zlib')
   end
   
   def check_base_ruby_version!
@@ -125,12 +124,10 @@ class Compiler
       Utils.cp(File.join(PRJ_ROOT, 'ruby', 'enclose_io_memfs.c'), @vendor_ruby)
       if Gem.win_platform?
         Utils.run(@compile_env, "call win32\\configure.bat                                              \
-                                --with-exts=pathname,win32,win32ole,zlib,stringio \
-                                --without-ext=bigdecimal,cgi/escape,continuation,coverage,date,dbm,digest/bubblebabble,digest,digest/md5,digest/rmd160,digest/sha1,digest/sha2,etc,fcntl,fiber,fiddle,gdbm,io/console,io/nonblock,io/wait,json,json/generator,json/parser,mathn/complex,mathn/rational,nkf,objspace,openssl,psych,pty,racc/cparse,rbconfig/sizeof,readline,ripper,sdbm,socket,strscan,syslog \
+                                --with-exts=pathname,stringio \
                                 --enable-debug-env \
-                                --disable-install-doc                                             \
-                                --with-static-linked-ext                                          \
-                                --with-zlib-dir=#{Utils.escape @vendor_zlib_dir}")
+                                --disable-install-doc \
+                                --with-static-linked-ext")
         Utils.run(@compile_env, "nmake #{@options[:nmake_args]}")
         Utils.rm('dir.obj')
         Utils.rm('file.obj')
@@ -149,14 +146,12 @@ class Compiler
         Utils.cp('ruby.exe', @options[:output])
       else
         Utils.run(@compile_env, "./configure                                                           \
-                               --with-exts=pathname,zlib,stringio \
-                               --with-out-ext=bigdecimal,cgi/escape,continuation,coverage,date,dbm,digest/bubblebabble,digest,digest/md5,digest/rmd160,digest/sha1,digest/sha2,etc,fcntl,fiber,fiddle,gdbm,io/console,io/nonblock,io/wait,json,json/generator,json/parser,mathn/complex,mathn/rational,nkf,objspace,openssl,psych,pty,racc/cparse,rbconfig/sizeof,readline,ripper,sdbm,socket,strscan,syslog,win32,win32ole \
+                               --with-exts=pathname,stringio \
                                --enable-debug-env \
                                --with-sitearchdir=no \
                                --with-vendordir=no \
-                               --disable-install-rdoc                                            \
-                               --with-static-linked-ext                                          \
-                               --with-zlib-dir=#{Utils.escape @vendor_zlib_dir}")
+                               --disable-install-rdoc \
+                               --with-static-linked-ext")
         Utils.run(@compile_env, "make #{@options[:make_args]}")
         Utils.rm('dir.o')
         Utils.rm('file.o')
