@@ -100,7 +100,6 @@ class Compiler
     Utils.cp_r(File.join(PRJ_ROOT, 'ruby'), target, preserve: true) unless Dir.exist?(target)
     
     @vendor_ruby = File.join(@options[:tmpdir], 'ruby')
-    @vendor_bundler = File.join(@options[:tmpdir], 'ruby', 'gems', 'bundler-1.13.7.gem')
   end
   
   def check_base_ruby_version!
@@ -251,7 +250,6 @@ class Compiler
         raise 'Multiple Gemfiles detected' unless 1 == gemfiles.size
         @work_dir_local = File.join(@work_dir_inner, '_local_')
         @chdir_at_startup = '/__enclose_io_memfs__/_local_'
-        Utils.run("gem install #{Utils.escape @vendor_bundler} --force --local --no-rdoc --no-ri --install-dir #{Utils.escape @gems_dir}")
         Utils.cp_r(@root, @work_dir_local)
         Utils.chdir(@work_dir_local) do
           Utils.run('bundle install --deployment')
