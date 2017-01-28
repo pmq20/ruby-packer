@@ -55,14 +55,6 @@ class Compiler
     @entrance = entrance
     @options = options
 
-    if RbConfig::CONFIG['host_os'] =~ /darwin|mac os/i
-      @extra_cflags = ' -mmacosx-version-min=10.7 '
-      @extra_envvar = { 'CFLAGS' => @extra_cflags }
-    else
-      @extra_cflags = ''
-      @extra_envvar = { }
-    end
-
     check_base_ruby_version!
 
     init_options
@@ -150,7 +142,7 @@ class Compiler
         bundle_deploy
         make_enclose_io_memfs
         make_enclose_io_vars
-        nmake!
+        Utils.run(@compile_env, "nmake #{@options[:nmake_args]}")
         Utils.cp('ruby.exe', @options[:output])
       else
         Utils.run(@compile_env, "./configure                                                           \
@@ -268,7 +260,6 @@ class Compiler
         end
       else
         @work_dir_local = File.join(@work_dir_inner, '_local_')
-        @chdir_at_startup = '/__enclose_io_memfs__/_local_'
         Utils.cp_r(@root, @work_dir_local)
         Utils.chdir(@work_dir_local) do
           x = Pathname.new @entrance
