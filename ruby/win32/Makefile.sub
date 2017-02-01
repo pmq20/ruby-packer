@@ -989,8 +989,8 @@ miniruby.rc:
 !if "$(PROGRAM)" != ""
 $(PROGRAM):	$(MAINOBJ) $(LIBRUBY_SO) $(RUBY_INSTALL_NAME).res
 		$(ECHO) linking $(@:\=/)
-		$(Q) $(PURIFY) $(CC) $(MAINOBJ) enclose_io_*.obj squash_*.obj zlib_*.obj $(RUBY_INSTALL_NAME).res \
-			$(OUTFLAG)$@ -link $(LDFLAGS) $(XLDFLAGS)
+		$(Q) $(PURIFY) $(CC) $(MAINOBJ) $(RUBY_INSTALL_NAME).res \
+			$(OUTFLAG)$@ $(LIBRUBY_A) $(LIBS) -link $(LDFLAGS) $(XLDFLAGS)
 		$(Q) $(LDSHARED_0)
 		$(Q) $(LDSHARED_1)
 		$(Q) $(LDSHARED_2)
@@ -999,8 +999,8 @@ $(PROGRAM):	$(MAINOBJ) $(LIBRUBY_SO) $(RUBY_INSTALL_NAME).res
 !if "$(WPROGRAM)" != ""
 $(WPROGRAM):	$(MAINOBJ) $(WINMAINOBJ) $(LIBRUBY_SO) $(RUBYW_INSTALL_NAME).res
 		$(ECHO) linking $(@:\=/)
-		$(Q) $(PURIFY) $(CC) $(MAINOBJ) enclose_io_*.obj squash_*.obj zlib_*.obj $(WINMAINOBJ) \
-			$(RUBYW_INSTALL_NAME).res $(OUTFLAG)$@ \
+		$(Q) $(PURIFY) $(CC) $(MAINOBJ) $(WINMAINOBJ) \
+			$(RUBYW_INSTALL_NAME).res $(OUTFLAG)$@ $(LIBRUBY_A) $(LIBS) \
 			-link $(LDFLAGS) $(XLDFLAGS) -subsystem:Windows
 		$(Q) $(LDSHARED_0)
 		$(Q) $(LDSHARED_1)
