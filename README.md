@@ -40,7 +40,3 @@ Compiler for Ruby that compiles your Ruby application into a single executable.
     git clone --depth 1 https://github.com/ruby-china/homeland.git
     cd homeland
     rubyc puma
-
-## Contributing
-
-Bug reports and pull requests are welcome on GitHub at https://github.com/pmq20/ruby-compiler.
