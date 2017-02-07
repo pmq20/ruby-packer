@@ -70,6 +70,15 @@ int squash_open(sqfs *fs, const char *path)
 		squash_global_fdtable.nr = nr;
 	}
 
+        // construct a handle (mainly) for win32
+        int *handle = (int *)malloc(sizeof(int));
+	if (NULL == handle) {
+		errno = ENOMEM;
+                goto failure;
+	}
+        *handle = fd;
+        file->payload = (void *)handle;
+        
 	// insert the fd into the global fd table
 	file->fd = fd;
 	squash_global_fdtable.fds[fd] = file;
@@ -89,6 +98,13 @@ int squash_close(int vfd)
 		return -1;
 	}
 	close(vfd);
+        if (S_ISDIR(squash_global_fdtable.fds[vfd]->st.st_mode)) {
+	        SQUASH_DIR *dir = (SQUASH_DIR *)(squash_global_fdtable.fds[vfd]->payload);
+                free(dir);
+        } else {
+                int *handle = (int *)(squash_global_fdtable.fds[vfd]->payload);
+                free(handle);
+        }
 	free(squash_global_fdtable.fds[vfd]);
 	squash_global_fdtable.fds[vfd] = NULL;
 	while (vfd >= 0 && NULL == squash_global_fdtable.fds[vfd]) {

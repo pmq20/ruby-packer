@@ -772,6 +772,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define RUBY_DEBUG_ENV 1
 !endif
 #define LOAD_RELATIVE 1
+#undef LOAD_RELATIVE
 #define DLEXT ".so"
 !if "$(EXTSTATIC)" == "static"
 #define EXTSTATIC 1

@@ -7,11 +7,11 @@ Compiler for Ruby that compiles your Ruby application into a single executable.
 
 ## Download
 
-| Operating System | Architecture | Link |
-|:----------------:|:------------:|------|
-|     Mac OS X     |     x86-64   |      |
-|       Linux      |     x86-64   |      |
-|      Windows     |      x86     |      |
+| Operating System | Architecture | Link                                                               |
+|:----------------:|:------------:|--------------------------------------------------------------------|
+|      Windows     |      x86     |       |
+|     Mac OS X     |     x86-64   |       |
+|       Linux      |     x86-64   |       |
 
 ## Usage
 

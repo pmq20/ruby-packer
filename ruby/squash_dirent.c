@@ -29,6 +29,8 @@ SQUASH_DIR *squash_opendir(sqfs *fs, const char *filename)
 	{
 		goto failure;
 	}
+        int *handle = (int *)(squash_global_fdtable.fds[dir->fd]->payload);
+        free(handle);
 	squash_global_fdtable.fds[dir->fd]->payload = (void *)dir;
 	dir->actual_nr = 0;
 	dir->loc = 0;
@@ -61,13 +63,13 @@ failure:
 int squash_closedir(SQUASH_DIR *dirp)
 {
 	assert(-1 != dirp->fd);
-	int ret = squash_close(dirp->fd);
+	free(dirp->entries);
+	// dirp itself will be freed by squash_close as `payload`
+        int ret = squash_close(dirp->fd);
 	if (0 != ret)
 	{
 		return -1;
 	}
-	free(dirp->entries);
-	free(dirp);
 	return 0;
 }
 

@@ -12,11 +12,11 @@
 
 int enclose_io_wopen(const wchar_t *pathname, int flags, int mode)
 {
-	if (enclose_io_cwd[0] && W_IS_ENCLOSE_IO_RELATIVE(pathname)) {
+	if (enclose_io_cwd[0] && enclose_io_is_relative_w(pathname)) {
 		W_ENCLOSE_IO_PATH_CONVERT(pathname);
 		ENCLOSE_IO_GEN_EXPANDED_NAME(enclose_io_converted);
 		return squash_open(enclose_io_fs, enclose_io_expanded);
-	} else if (W_IS_ENCLOSE_IO_PATH(pathname)) {
+	} else if (enclose_io_is_path_w(pathname)) {
 		W_ENCLOSE_IO_PATH_CONVERT(pathname);
 		return squash_open(enclose_io_fs, enclose_io_converted);
 	} else {
@@ -37,6 +37,7 @@ int enclose_io_open_osfhandle(intptr_t osfhandle, int flags)
 intptr_t enclose_io_get_osfhandle(int fd)
 {
 	if (SQUASH_VALID_VFD(fd)) {
+                assert(!(S_ISDIR(squash_global_fdtable.fds[fd]->st.st_mode)));
 		return (intptr_t)(squash_global_fdtable.fds[fd]->payload);
 	}
 	else {
@@ -46,7 +47,7 @@ intptr_t enclose_io_get_osfhandle(int fd)
 
 int enclose_io_wchdir(const wchar_t *path)
 {
-	if (W_IS_ENCLOSE_IO_PATH(path)) {
+	if (enclose_io_is_path_w(path)) {
 		W_ENCLOSE_IO_PATH_CONVERT(path);
 		return enclose_io_chdir_helper(enclose_io_converted);
 	} else {
@@ -128,23 +129,13 @@ static HANDLE EncloseIOCreateFileWHelper(char * incoming)
 		return INVALID_HANDLE_VALUE;
 	}
 	if (S_ISDIR(buf.st_mode)) {
-		SQUASH_DIR *handle = squash_opendir(enclose_io_fs, incoming);
-		assert(NULL != handle);
-		return (void *)handle;
-	}
-	else {
+		SQUASH_DIR *dirp = squash_opendir(enclose_io_fs, incoming);
+		assert(NULL != dirp);
+	} else {
 		ret = squash_open(enclose_io_fs, incoming);
 		assert(ret >= 0);
-		// TODO free it
-		int *handle = (int *)malloc(sizeof(int));
-		if (NULL == handle) {
-			SetLastError(ERROR_NOT_ENOUGH_MEMORY);
-			return INVALID_HANDLE_VALUE;
-		}
-		*handle = ret;
-		squash_global_fdtable.fds[*handle]->payload = (void *)handle;
-		return (void *)handle;
 	}
+        return squash_global_fdtable.fds[ret]->payload;
 }
 
 HANDLE
@@ -158,11 +149,11 @@ EncloseIOCreateFileW(
 	HANDLE hTemplateFile
 )
 {
-	if (enclose_io_cwd[0] && W_IS_ENCLOSE_IO_RELATIVE(lpFileName)) {
+	if (enclose_io_cwd[0] && enclose_io_is_relative_w(lpFileName)) {
 		W_ENCLOSE_IO_PATH_CONVERT(lpFileName);
 		ENCLOSE_IO_GEN_EXPANDED_NAME(enclose_io_converted);
 		return EncloseIOCreateFileWHelper(enclose_io_expanded);
-	} else if (W_IS_ENCLOSE_IO_PATH(lpFileName)) {
+	} else if (enclose_io_is_path_w(lpFileName)) {
 		W_ENCLOSE_IO_PATH_CONVERT(lpFileName);
 		return EncloseIOCreateFileWHelper(enclose_io_converted);
 	} else {
@@ -190,7 +181,6 @@ EncloseIOCloseHandle(
 			return TRUE;
 		} else {
 			squash_close(*((int *)hObject));
-			free((int *)hObject);
 			return TRUE;
 		}
 	} else {
@@ -232,6 +222,115 @@ EncloseIOReadFile(
 	}
 }
 
+static DWORD EncloseIOGetFileAttributesHelper(struct stat *st)
+{
+	DWORD fa = FILE_ATTRIBUTE_READONLY;
+	if (S_ISCHR(st->st_mode)) {
+		fa |= FILE_ATTRIBUTE_DEVICE;
+	} else if (S_ISLNK(st->st_mode)) {
+		fa |= FILE_ATTRIBUTE_REPARSE_POINT;
+	} else if (S_ISDIR(st->st_mode)) {
+		fa |= FILE_ATTRIBUTE_DIRECTORY;
+	} else {
+		fa |= FILE_ATTRIBUTE_NORMAL;
+	}
+	return fa;
+}
+
+DWORD
+EncloseIOGetFileAttributesW(
+    LPCWSTR lpFileName
+)
+{
+	if (enclose_io_cwd[0] && enclose_io_is_relative_w(lpFileName)) {
+		W_ENCLOSE_IO_PATH_CONVERT(lpFileName);
+		ENCLOSE_IO_GEN_EXPANDED_NAME(enclose_io_converted);
+		int ret;
+		struct stat buf;
+		ret = squash_stat(enclose_io_fs, enclose_io_expanded, &buf);
+		if (-1 == ret) {
+			ENCLOSE_IO_SET_LAST_ERROR;
+			return INVALID_FILE_ATTRIBUTES;
+		}
+		return EncloseIOGetFileAttributesHelper(&buf);
+	} else if (enclose_io_is_path_w(lpFileName)) {
+		W_ENCLOSE_IO_PATH_CONVERT(lpFileName);
+		int ret;
+		struct stat buf;
+		ret = squash_stat(enclose_io_fs, enclose_io_converted, &buf);
+		if (-1 == ret) {
+			ENCLOSE_IO_SET_LAST_ERROR;
+			return INVALID_FILE_ATTRIBUTES;
+		}		
+		return EncloseIOGetFileAttributesHelper(&buf);
+	} else {
+		return GetFileAttributesW(
+			lpFileName
+		);
+	}
+}
+
+BOOL
+EncloseIOGetFileAttributesExW(
+    LPCWSTR lpFileName,
+    GET_FILEEX_INFO_LEVELS fInfoLevelId,
+    LPVOID lpFileInformation
+)
+{
+	if (enclose_io_cwd[0] && enclose_io_is_relative_w(lpFileName)) {
+		W_ENCLOSE_IO_PATH_CONVERT(lpFileName);
+		ENCLOSE_IO_GEN_EXPANDED_NAME(enclose_io_converted);
+		assert(GetFileExInfoStandard == fInfoLevelId);
+		int ret;
+		struct stat buf;
+		ret = squash_stat(enclose_io_fs, enclose_io_expanded, &buf);
+		if (-1 == ret) {
+			ENCLOSE_IO_SET_LAST_ERROR;
+			return 0;
+		}
+		WIN32_FILE_ATTRIBUTE_DATA *fa = (WIN32_FILE_ATTRIBUTE_DATA *)lpFileInformation;
+		fa->dwFileAttributes = EncloseIOGetFileAttributesHelper(&buf);
+		return 1;
+	} else if (enclose_io_is_path_w(lpFileName)) {
+		W_ENCLOSE_IO_PATH_CONVERT(lpFileName);
+		assert(GetFileExInfoStandard == fInfoLevelId);
+		int ret;
+		struct stat buf;
+		ret = squash_stat(enclose_io_fs, enclose_io_converted, &buf);
+		if (-1 == ret) {
+			ENCLOSE_IO_SET_LAST_ERROR;
+			return 0;
+		}
+		WIN32_FILE_ATTRIBUTE_DATA *fa = (WIN32_FILE_ATTRIBUTE_DATA *)lpFileInformation;
+		fa->dwFileAttributes = EncloseIOGetFileAttributesHelper(&buf);
+		return 1;
+	} else {
+		return GetFileAttributesExW(
+			lpFileName,
+			fInfoLevelId,
+			lpFileInformation
+		);
+	}
+}
+
+BOOL
+EncloseIOGetHandleInformation(
+    HANDLE hObject,
+    LPDWORD lpdwFlags
+)
+{
+	struct squash_file *sqf = squash_find_entry((void *)hObject);
+        if (sqf) {
+                *lpdwFlags = 0;
+                return 1;
+        } else {
+                return GetHandleInformation(
+                        hObject,
+                        lpdwFlags
+                );
+        }
+}
+
 #ifndef RUBY_EXPORT
 NTSTATUS
 EncloseIOpNtQueryInformationFile(
@@ -246,16 +345,7 @@ EncloseIOpNtQueryInformationFile(
 		struct stat st = sqf->st;
 		IoStatusBlock->Status = STATUS_NOT_IMPLEMENTED;
 		FILE_ALL_INFORMATION *file_info = (FILE_ALL_INFORMATION *)FileInformation;
-		file_info->BasicInformation.FileAttributes = FILE_ATTRIBUTE_READONLY;
-		if (S_ISCHR(st.st_mode)) {
-			file_info->BasicInformation.FileAttributes |= FILE_ATTRIBUTE_DEVICE;
-		} else if (S_ISLNK(st.st_mode)) {
-			file_info->BasicInformation.FileAttributes |= FILE_ATTRIBUTE_REPARSE_POINT;
-		} else if (S_ISDIR(st.st_mode)) {
-			file_info->BasicInformation.FileAttributes |= FILE_ATTRIBUTE_DIRECTORY;
-		} else {
-			file_info->BasicInformation.FileAttributes |= FILE_ATTRIBUTE_NORMAL;
-		}
+		file_info->BasicInformation.FileAttributes = EncloseIOGetFileAttributesHelper(&st);
 		file_info->StandardInformation.EndOfFile.QuadPart = st.st_size;
 
 		file_info->BasicInformation.LastAccessTime.QuadPart = st.st_atime * 10000000ULL + 116444736000000000ULL;
