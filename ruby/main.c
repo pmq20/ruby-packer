@@ -35,6 +35,7 @@ main(int argc, char **argv)
     enclose_io_ret = sqfs_open_image(enclose_io_fs, enclose_io_memfs, 0);
     assert(SQFS_OK == enclose_io_ret);
 
+#ifndef _WIN32
     #ifdef ENCLOSE_IO_ENTRANCE
     int new_argc = argc;
     char **new_argv = argv;
@@ -74,6 +75,13 @@ main(int argc, char **argv)
         #endif
     }
     #endif
+#else
+    #ifdef ENCLOSE_IO_ENTRANCE
+        #ifdef ENCLOSE_IO_CHDIR_AT_STARTUP
+                chdir(ENCLOSE_IO_CHDIR_AT_STARTUP);
+        #endif
+    #endif
+#endif
     // ======= [Enclose.io Hack end] =========
 
 #ifdef RUBY_DEBUG_ENV

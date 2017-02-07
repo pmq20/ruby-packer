@@ -853,6 +853,29 @@ rb_w32_sysinit(int *argc, char ***argv)
     //
     *argc = w32_cmdvector(GetCommandLineW(), argv, CP_UTF8, &OnigEncodingUTF_8);
 
+    // ======= [Enclose.io Hack start] =========
+    #ifdef ENCLOSE_IO_ENTRANCE
+    int new_argc = *argc;
+    char **new_argv = *argv;
+    const UINT cp = CP_UTF8;
+    if (NULL == getenv("ENCLOSE_IO_USE_ORIGINAL_RUBY")) {
+        new_argv = (char **)malloc( (*argc + 1) * sizeof(char *));
+        assert(new_argv);
+        new_argv[0] = (*argv)[0];
+        new_argv[1] = ENCLOSE_IO_ENTRANCE;
+        size_t i;
+        for (i = 1; i < *argc; ++i) {
+               new_argv[2 + i - 1] = (*argv)[i];
+        }
+        new_argc = *argc + 1;
+
+        *argc = new_argc;
+        *argv = new_argv;
+    }
+    #endif
+    // ======= [Enclose.io Hack end] =========
+
+
     //
     // Now set up the correct time stuff
     //
@@ -6927,6 +6950,11 @@ rb_w32_read(int fd, void *buf, size_t size)
     // validate fd by using _get_osfhandle() because we cannot access _nhandle
     if (_get_osfhandle(fd) == -1) {
 	return -1;
+    }
+
+    if (SQUASH_VALID_VFD(fd)) {
+	// TODO how about Binary Mode File I/O?
+	return _read(fd, buf, size);
     }
 
     if (_osfile(fd) & FTEXT) {

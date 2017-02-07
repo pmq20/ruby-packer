@@ -131,11 +131,12 @@ static HANDLE EncloseIOCreateFileWHelper(char * incoming)
 	if (S_ISDIR(buf.st_mode)) {
 		SQUASH_DIR *dirp = squash_opendir(enclose_io_fs, incoming);
 		assert(NULL != dirp);
+                return (HANDLE)(dirp);
 	} else {
 		ret = squash_open(enclose_io_fs, incoming);
 		assert(ret >= 0);
+                return (HANDLE)(squash_global_fdtable.fds[ret]->payload);
 	}
-        return squash_global_fdtable.fds[ret]->payload;
 }
 
 HANDLE
