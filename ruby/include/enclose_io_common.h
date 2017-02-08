@@ -198,6 +198,11 @@ EncloseIOGetHandleInformation(
     LPDWORD lpdwFlags
 );
 
+DWORD
+EncloseIOGetFileType(
+        HANDLE hFile
+);
+
 #else
 int enclose_io_lstat(const char *path, struct stat *buf);
 ssize_t enclose_io_readlink(const char *path, char *buf, size_t bufsize);

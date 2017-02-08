@@ -332,6 +332,30 @@ EncloseIOGetHandleInformation(
         }
 }
 
+DWORD
+EncloseIOGetFileType(
+        HANDLE hFile
+)
+{
+	struct squash_file *sqf = squash_find_entry((void *)hFile);
+        if (sqf) {
+		struct stat st = sqf->st;
+                if (S_ISCHR(st.st_mode)) {
+                        return FILE_TYPE_CHAR;
+                } else if (S_ISREG(st.st_mode)) {
+                        return FILE_TYPE_DISK;
+                } else if (S_ISFIFO(st.st_mode)) {
+                        return FILE_TYPE_PIPE;
+                } else {
+                        return FILE_TYPE_UNKNOWN;
+                }
+        } else {
+                return GetFileType(
+                        hFile
+                );
+        }
+}
+
 #ifndef RUBY_EXPORT
 NTSTATUS
 EncloseIOpNtQueryInformationFile(

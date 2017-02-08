@@ -23,7 +23,7 @@ class Compiler
   
   def self.peek_ruby_version
     version_info = File.read(File.join(PRJ_ROOT, 'ruby/version.h'))
-    if version_info =~ /RUBY_VERSION\s+"([^"]+)"$/
+    if version_info =~ /RUBY_VERSION\s+"([^"]+)"\s*$/
       return $1.dup
     else
       raise 'Cannot peek RUBY_VERSION'
