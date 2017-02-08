@@ -1,17 +1,19 @@
 # Ruby Compiler
 
-Compiler for Ruby that compiles your Ruby application into a single executable.
+Compiling your Ruby application into a single executable.
 
 [![Travis CI status](https://travis-ci.org/pmq20/ruby-compiler.svg?branch=master)](https://travis-ci.org/pmq20/ruby-compiler)
 [![AppVeyor status](https://ci.appveyor.com/api/projects/status/93i36eliiy6v3686/branch/master?svg=true)](https://ci.appveyor.com/project/pmq20/ruby-compiler/branch/master)
 
 ## Download
 
-| Operating System | Architecture | Link                                                               |
-|:----------------:|:------------:|--------------------------------------------------------------------|
+| Operating System | Architecture | Link  |
+|:----------------:|:------------:|-------|
 |      Windows     |      x86     |       |
 |     Mac OS X     |     x86-64   |       |
 |       Linux      |     x86-64   |       |
+
+On Mac OS X and Linux, you need to execute `chmod +x` after downloading the file.
 
 ## Usage
 

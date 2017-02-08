@@ -27,7 +27,7 @@ else
   outpath = Shellwords.escape(outpath)
 end
 
-raise unless `#{outpath} --help`.include?(%q{Compiler for Ruby that compiles your Ruby application into a single executable.})
+raise unless `#{outpath} --help`.include?(%q{Compiling your Ruby application into a single executable.})
 raise unless $?.success?
 raise unless `#{outpath} --ruby-version`.to_i >= 2
 raise unless $?.success?

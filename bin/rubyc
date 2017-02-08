@@ -13,7 +13,7 @@ require 'optparse'
 USAGE = %Q{
 
 Ruby Compiler (rubyc) v#{::Compiler::VERSION} (runtime #{::Compiler.ruby_version})
-Compiler for Ruby that compiles your Ruby application into a single executable.
+Compiling your Ruby application into a single executable.
 
 Usage
   rubyc [OPTION]... [ENTRANCE]
