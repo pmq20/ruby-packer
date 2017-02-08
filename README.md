@@ -27,16 +27,8 @@ Compiler for Ruby that compiles your Ruby application into a single executable.
           --ruby-api-version           Prints the version of the Ruby API and exit
       -h, --help                       Prints this help and exit
 
-## Examples
-
-### Compiling a command-line application
+## Example
 
     git clone --depth 1 https://github.com/pmq20/ruby-compiler.git
     cd ruby-compiler
     rubyc bin/rubycc
-
-### Compiling a web application
-
-    git clone --depth 1 https://github.com/ruby-china/homeland.git
-    cd homeland
-    rubyc puma
