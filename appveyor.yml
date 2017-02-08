@@ -44,16 +44,6 @@ test_script:
 
     where bundle
 
-    gem sources -r https://rubygems.org/
-
-    copy .gemrc_for_appveyor "C:\Users\%USERNAME%\.gemrc" /Y
-
-    gem sources
-
-    bundle config mirror.https://gems.ruby-china.org http://rubygems.org
-
-    bundle config mirror.https://rubygems.org http://rubygems.org
-
     copy zlib.dll C:\projects\usr\bin
 
     move zlib.dll ruby

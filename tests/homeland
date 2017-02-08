@@ -15,6 +15,18 @@ Dir.chdir('homeland')
 outpath = File.expand_path((Gem.win_platform? ? 'a.exe' : 'a.out'), Dir.pwd)
 FileUtils.rm_f(outpath)
 
+if ENV['APPVEYOR']
+  lines = File.read("Gemfile").split("\n")
+  File.open("Gemfile", "w") do |f|
+    f.puts 'source "http://rubygems.org"'
+    lines.each do |line|
+      unless line =~ /^\s*source\s+/
+        f.puts line
+      end
+    end
+  end
+end
+
 pid = spawn("ruby ../bin/rubyc puma")
 pid, status = Process.wait2(pid)
 raise "Failed running nodec for homeland" unless status.success?
