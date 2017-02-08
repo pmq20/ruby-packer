@@ -49,6 +49,3 @@ test_script:
     move zlib.dll ruby
 
     ruby tests\ruby-compiler
-
-    ruby tests\homeland
-

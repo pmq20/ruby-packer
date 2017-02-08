@@ -22,16 +22,10 @@ Usage
 
 EXAMPLES = %Q{
 
-Examples:
-  Compiling a command-line application:
-    git clone --depth 1 https://github.com/pmq20/ruby-compiler.git
-    cd ruby-compiler
-    rubyc bin/rubyc
-
-  Compiling a web application:
-    git clone --depth 1 https://github.com/ruby-china/homeland.git
-    cd homeland
-    rubyc rails
+Example:
+  git clone --depth 1 https://github.com/pmq20/ruby-compiler.git
+  cd ruby-compiler
+  rubyc bin/rubyc
 
 Bug reports and pull requests are welcome on GitHub at
 https://github.com/pmq20/ruby-compiler

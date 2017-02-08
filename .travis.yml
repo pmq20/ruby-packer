@@ -27,4 +27,3 @@ before_script:
 
 script:
   - ruby tests/ruby-compiler
-  - ruby tests/homeland
