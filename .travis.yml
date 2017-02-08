@@ -27,3 +27,6 @@ before_script:
 
 script:
   - ruby tests/ruby-compiler
+  - mv a.out /usr/local/bin/rubyc
+  - which rubyc
+  - ruby tests/node-compiler

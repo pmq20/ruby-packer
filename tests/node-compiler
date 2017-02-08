@@ -19,7 +19,7 @@ Dir.chdir('node-compiler')
 outpath = File.expand_path((Gem.win_platform? ? 'a.exe' : 'a.out'), Dir.pwd)
 FileUtils.rm_f(outpath)
 
-pid = spawn("ruby ../bin/rubyc bin/nodec")
+pid = spawn("rubyc bin/nodec")
 pid, status = Process.wait2(pid)
 raise "Failed running rubyc for node-compiler" unless status.success?
 

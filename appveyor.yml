@@ -49,3 +49,9 @@ test_script:
     move zlib.dll ruby
 
     ruby tests\ruby-compiler
+
+    move a.exe C:\projects\usr\bin\rubyc.exe
+
+    where rubyc
+
+    ruby tests\node-compiler
