@@ -25,6 +25,9 @@ if ENV['APPVEYOR']
       end
     end
   end
+STDERR.puts '---'
+STDERR.puts File.read("Gemfile")
+STDERR.puts '---'
 end
 
 pid = spawn("ruby ../bin/rubyc puma")
