@@ -25,9 +25,16 @@ if ENV['APPVEYOR']
       end
     end
   end
-STDERR.puts '---'
-STDERR.puts File.read("Gemfile")
-STDERR.puts '---'
+  lines = File.read("Gemfile.lock").split("\n")
+  File.open("Gemfile.lock", "w") do |f|
+    lines.each_with_index do |line, index|
+      if 1 == index
+        f.puts ' remote: http://rubygems.org/'
+      else
+        f.puts line
+      end
+    end
+  end
 end
 
 pid = spawn("ruby ../bin/rubyc puma")
