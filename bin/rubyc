@@ -23,9 +23,9 @@ Usage
 EXAMPLES = %Q{
 
 Example:
-  git clone --depth 1 https://github.com/pmq20/ruby-compiler.git
-  cd ruby-compiler
-  rubyc bin/rubyc
+  git clone --depth 1 https://github.com/pmq20/node-compiler.git
+  cd node-compiler
+  rubyc bin/nodec
 
 Bug reports and pull requests are welcome on GitHub at
 https://github.com/pmq20/ruby-compiler

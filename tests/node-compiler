@@ -10,12 +10,18 @@ require 'fileutils'
 
 Dir.chdir(File.expand_path('../..', __FILE__))
 
+unless Dir.exist?('node-compiler')
+  puts `git clone --depth 1 https://github.com/pmq20/node-compiler.git`
+  raise 'git failed' unless $?.success?
+end
+Dir.chdir('node-compiler')
+
 outpath = File.expand_path((Gem.win_platform? ? 'a.exe' : 'a.out'), Dir.pwd)
 FileUtils.rm_f(outpath)
 
-pid = spawn("ruby bin/rubyc bin/rubyc")
+pid = spawn("ruby ../bin/rubyc bin/nodec")
 pid, status = Process.wait2(pid)
-raise "Failed running rubyc for ruby-compiler" unless status.success?
+raise "Failed running rubyc for node-compiler" unless status.success?
 
 raise unless File.exist?(outpath)
 raise unless File.size(outpath) >= 10_000_000
@@ -27,7 +33,7 @@ else
   outpath = Shellwords.escape(outpath)
 end
 
-raise unless `#{outpath} --help`.include?(%q{Compiler for Ruby that compiles your Ruby application into a single executable.})
+raise unless `#{outpath} --help`.include?(%q{Compiler for Node.js that compiles your Node.js application into a single executable.})
 raise unless $?.success?
-raise unless `#{outpath} --ruby-version`.to_i >= 2
+raise unless `#{outpath} --node-version`.to_i >= 7
 raise unless $?.success?

@@ -29,6 +29,6 @@ Compiler for Ruby that compiles your Ruby application into a single executable.
 
 ## Example
 
-    git clone --depth 1 https://github.com/pmq20/ruby-compiler.git
-    cd ruby-compiler
-    rubyc bin/rubycc
+    git clone --depth 1 https://github.com/pmq20/node-compiler.git
+    cd node-compiler
+    rubyc bin/nodec
