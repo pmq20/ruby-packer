@@ -12,7 +12,7 @@ http://rubyc.enclose.io
 | Operating System | Architecture | Link                                                           |
 |:----------------:|:------------:|----------------------------------------------------------------|
 |      Windows     |      x86     | http://enclose.io/pmq20/ruby-compiler/rubyc-master.exe         |
-|     Mac OS X     |     x86-64   | http://enclose.io/pmq20/ruby-compiler/rubyc-master-darwin-x64  |
+|       macOS      |     x86-64   | http://enclose.io/pmq20/ruby-compiler/rubyc-master-darwin-x64  |
 |       Linux      |     x86-64   | http://enclose.io/pmq20/ruby-compiler/rubyc-master-linux-x64   |
 
 On Mac OS X and Linux, you need to execute `chmod +x` after downloading the file.
