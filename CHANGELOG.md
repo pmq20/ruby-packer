@@ -2,4 +2,4 @@
 
 ## v0.1.0
 
-work in progress
+Feb 9, 2017. Initial Release. Bootstrapping achieved.

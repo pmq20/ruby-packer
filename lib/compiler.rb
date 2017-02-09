@@ -145,6 +145,7 @@ class Compiler
         Utils.cp('ruby.exe', @options[:output])
       else
         Utils.run(@compile_env, "./configure                                                           \
+                               --without-gmp \
                                --with-exts=pathname,stringio \
                                --enable-debug-env \
                                --with-sitearchdir=no \
