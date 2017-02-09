@@ -23,6 +23,7 @@
 
 #ifdef _WIN32
 #include <direct.h>
+#include <Shlwapi.h>
 #else
 #include <sys/param.h>
 #include <sys/uio.h>
@@ -201,6 +202,23 @@ EncloseIOGetHandleInformation(
 DWORD
 EncloseIOGetFileType(
         HANDLE hFile
+);
+
+HANDLE
+EncloseIOFindFirstFileW(
+        LPCWSTR lpFileName,
+        LPWIN32_FIND_DATAW lpFindFileData
+);
+
+BOOL
+EncloseIOFindNextFileW(
+        HANDLE hFindFile,
+        LPWIN32_FIND_DATAW lpFindFileData
+);
+
+BOOL
+EncloseIOFindClose(
+        HANDLE hFindFile
 );
 
 #else

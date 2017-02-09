@@ -356,6 +356,154 @@ EncloseIOGetFileType(
         }
 }
 
+DWORD EncloseIODType2FileAttributes(int d_type)
+{
+        DWORD x = FILE_ATTRIBUTE_READONLY;
+        if (DT_CHR == d_type) {
+                x |= FILE_ATTRIBUTE_DEVICE;
+        } else if (DT_LNK == d_type) {
+                x |= FILE_ATTRIBUTE_REPARSE_POINT;
+        } else if (DT_DIR == d_type) {
+                x |= FILE_ATTRIBUTE_DIRECTORY;
+        } else {
+                x |= FILE_ATTRIBUTE_NORMAL;
+        }
+        return x;
+}
+
+HANDLE
+EncloseIOFindFirstFileHelper(
+        char *incoming,
+        LPWIN32_FIND_DATAW lpFindFileData
+)
+{
+        char *dup_incoming = strdup(incoming);
+        char *parent = incoming + strlen(incoming);
+        while (parent >= incoming) {
+                if ('/' == *parent) {
+                        break;
+                }
+                parent -= 1;
+        }
+        *parent = '\0';
+        SQUASH_DIR *dirp = squash_opendir(enclose_io_fs, incoming);
+        dirp->payload = dup_incoming;
+        if (NULL == dirp) {
+                ENCLOSE_IO_SET_LAST_ERROR;
+                return INVALID_HANDLE_VALUE;
+        }
+        struct dirent *mydirent;
+        char *current_path = (char *)malloc(strlen(dup_incoming) + SQUASHFS_NAME_LEN + 1);
+        if (NULL == current_path) {
+                SetLastError(ERROR_NOT_ENOUGH_MEMORY);
+                return INVALID_HANDLE_VALUE;
+        }
+        memcpy(current_path, incoming, strlen(incoming) + 1);
+        strcat(current_path, "/");
+        char *current_path_tail = current_path + strlen(current_path);
+        do {
+        	mydirent = squash_readdir(dirp);
+                if (NULL == mydirent) {
+                        break;
+                }
+                memcpy(current_path_tail, mydirent->d_name, strlen(mydirent->d_name) + 1);
+        } while (!PathMatchSpecA(current_path, dup_incoming));
+        free(current_path);
+        if (NULL == mydirent) {
+                squash_closedir(dirp);
+                ENCLOSE_IO_SET_LAST_ERROR;
+                return INVALID_HANDLE_VALUE;
+        }
+        mbstowcs(lpFindFileData->cFileName, mydirent->d_name, sizeof(lpFindFileData->cFileName));
+        lpFindFileData->cAlternateFileName[0] = 0;
+        lpFindFileData->dwFileAttributes = EncloseIODType2FileAttributes(mydirent->d_type);
+        return (HANDLE)(dirp);
+}
+
+HANDLE
+EncloseIOFindFirstFileW(
+        LPCWSTR lpFileName,
+        LPWIN32_FIND_DATAW lpFindFileData
+)
+{
+	if (enclose_io_cwd[0] && enclose_io_is_relative_w(lpFileName)) {
+		W_ENCLOSE_IO_PATH_CONVERT(lpFileName);
+		ENCLOSE_IO_GEN_EXPANDED_NAME(enclose_io_converted);
+		return EncloseIOFindFirstFileHelper(enclose_io_expanded, lpFindFileData);
+	} else if (enclose_io_is_path_w(lpFileName)) {
+		W_ENCLOSE_IO_PATH_CONVERT(lpFileName);
+		return EncloseIOFindFirstFileHelper(enclose_io_converted, lpFindFileData);
+	} else {
+                return FindFirstFileW(
+                        lpFileName,
+                        lpFindFileData
+                );
+	}
+}
+
+BOOL
+EncloseIOFindNextFileW(
+        HANDLE hFindFile,
+        LPWIN32_FIND_DATAW lpFindFileData
+)
+{
+	struct squash_file *sqf = squash_find_entry((void *)hFindFile);
+	if (sqf) {
+                SQUASH_DIR *dirp = (SQUASH_DIR*)hFindFile;
+                struct dirent *mydirent;
+                char *current_path = (char *)malloc(strlen((char *)(dirp->payload)) + SQUASHFS_NAME_LEN + 1);
+                if (NULL == current_path) {
+                        SetLastError(ERROR_NOT_ENOUGH_MEMORY);
+                        return 0;
+                }
+                memcpy(current_path, dirp->filename, strlen(dirp->filename) + 1);
+                strcat(current_path, "/");
+                char *current_path_tail = current_path + strlen(current_path);
+                do {
+                        mydirent = squash_readdir(dirp);
+                        if (NULL == mydirent) {
+                                break;
+                        }
+                        memcpy(current_path_tail, mydirent->d_name, strlen(mydirent->d_name) + 1);
+                } while (!PathMatchSpecA(current_path, (char *)(dirp->payload)));
+                free(current_path);
+                if (NULL == mydirent) {
+                        SetLastError(ERROR_NO_MORE_FILES);
+                        return 0;
+                }
+                mbstowcs(lpFindFileData->cFileName, mydirent->d_name, sizeof(lpFindFileData->cFileName));
+                lpFindFileData->cAlternateFileName[0] = 0;
+                lpFindFileData->dwFileAttributes = EncloseIODType2FileAttributes(mydirent->d_type);
+                return 1;
+        } else {
+                return FindNextFileW(
+                        hFindFile,
+                        lpFindFileData
+                );
+        }
+}
+
+BOOL
+EncloseIOFindClose(
+        HANDLE hFindFile
+)
+{
+	struct squash_file *sqf = squash_find_entry((void *)hFindFile);
+	if (sqf) {
+                int ret = squash_closedir((SQUASH_DIR *)hFindFile);
+                if (0 == ret) {
+                        return 1;
+                } else {
+                        ENCLOSE_IO_SET_LAST_ERROR;
+                        return 0;
+                }
+        } else {
+                return FindClose(
+                        hFindFile
+                );
+        }
+}
+
 #ifndef RUBY_EXPORT
 NTSTATUS
 EncloseIOpNtQueryInformationFile(
@@ -443,16 +591,7 @@ EncloseIOpNtQueryDirectoryFile(
 			} else {
 				return -1;
 			}
-			ret->FileAttributes = FILE_ATTRIBUTE_READONLY;
-			if (DT_CHR == mydirent->d_type) {
-				ret->FileAttributes |= FILE_ATTRIBUTE_DEVICE;
-			} else if (DT_LNK == mydirent->d_type) {
-				ret->FileAttributes |= FILE_ATTRIBUTE_REPARSE_POINT;
-			} else if (DT_DIR == mydirent->d_type) {
-				ret->FileAttributes |= FILE_ATTRIBUTE_DIRECTORY;
-			} else {
-				ret->FileAttributes |= FILE_ATTRIBUTE_NORMAL;
-			}
+			ret->FileAttributes = EncloseIODType2FileAttributes(mydirent->d_type);
 			return STATUS_SUCCESS;
 		}
 	} else {

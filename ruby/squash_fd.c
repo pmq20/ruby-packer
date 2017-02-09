@@ -15,7 +15,7 @@ struct squash_fdtable squash_global_fdtable;
 int squash_open(sqfs *fs, const char *path)
 {
 	sqfs_err error;
-	struct squash_file *file = malloc(sizeof(struct squash_file));
+	struct squash_file *file = calloc(1, sizeof(struct squash_file));
 	bool found;
 	int fd;
 

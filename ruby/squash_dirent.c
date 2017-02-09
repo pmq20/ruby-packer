@@ -15,7 +15,7 @@ SQUASH_DIR *squash_opendir(sqfs *fs, const char *filename)
 {
 	sqfs_err error;
 	bool found;
-	SQUASH_DIR *dir = malloc(sizeof(SQUASH_DIR));
+	SQUASH_DIR *dir = calloc(1, sizeof(SQUASH_DIR));
 	if (NULL == dir)
 	{
 		errno = ENOMEM;
@@ -24,6 +24,7 @@ SQUASH_DIR *squash_opendir(sqfs *fs, const char *filename)
 	dir->fs = fs;
 	dir->entries = NULL;
 	dir->nr = 0;
+        dir->filename = strdup(filename);
 	dir->fd = squash_open(fs, filename);
 	if (-1 == dir->fd)
 	{
@@ -64,10 +65,13 @@ int squash_closedir(SQUASH_DIR *dirp)
 {
 	assert(-1 != dirp->fd);
 	free(dirp->entries);
+        free(dirp->filename);
+        if (dirp->payload) {
+                free(dirp->payload);
+        }
 	// dirp itself will be freed by squash_close as `payload`
         int ret = squash_close(dirp->fd);
-	if (0 != ret)
-	{
+	if (0 != ret) {
 		return -1;
 	}
 	return 0;

@@ -29,6 +29,8 @@ typedef struct {
 	size_t nr; /* allocated size for entries */
 	int actual_nr; /* actual number of entries read */
 	long loc;	/* offset in current buffer */
+        char *filename;
+        void *payload;
 } SQUASH_DIR;
 
 #endif /* end of include guard: DIRENT_H_245C4278 */
