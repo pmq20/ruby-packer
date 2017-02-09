@@ -225,7 +225,7 @@ EncloseIOReadFile(
 
 static DWORD EncloseIOGetFileAttributesHelper(struct stat *st)
 {
-	DWORD fa = FILE_ATTRIBUTE_READONLY;
+	DWORD fa = 0; //FILE_ATTRIBUTE_READONLY;
 	if (S_ISCHR(st->st_mode)) {
 		fa |= FILE_ATTRIBUTE_DEVICE;
 	} else if (S_ISLNK(st->st_mode)) {
@@ -358,7 +358,7 @@ EncloseIOGetFileType(
 
 DWORD EncloseIODType2FileAttributes(int d_type)
 {
-        DWORD x = FILE_ATTRIBUTE_READONLY;
+        DWORD x = 0; //FILE_ATTRIBUTE_READONLY;
         if (DT_CHR == d_type) {
                 x |= FILE_ATTRIBUTE_DEVICE;
         } else if (DT_LNK == d_type) {
