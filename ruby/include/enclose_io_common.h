@@ -226,14 +226,14 @@ int enclose_io_lstat(const char *path, struct stat *buf);
 ssize_t enclose_io_readlink(const char *path, char *buf, size_t bufsize);
 DIR * enclose_io_opendir(const char *filename);
 int enclose_io_closedir(DIR *dirp);
-struct dirent * enclose_io_readdir(DIR *dirp);
+struct SQUASH_DIRENT * enclose_io_readdir(DIR *dirp);
 long enclose_io_telldir(DIR *dirp);
 void enclose_io_seekdir(DIR *dirp, long loc);
 void enclose_io_rewinddir(DIR *dirp);
 int enclose_io_dirfd(DIR *dirp);
-int enclose_io_scandir(const char *dirname, struct dirent ***namelist,
-	int(*select)(const struct dirent *),
-	int(*compar)(const struct dirent **, const struct dirent **));
+int enclose_io_scandir(const char *dirname, struct SQUASH_DIRENT ***namelist,
+	int(*select)(const struct SQUASH_DIRENT *),
+	int(*compar)(const struct SQUASH_DIRENT **, const struct SQUASH_DIRENT **));
 #endif // !_WIN32
 
 #endif

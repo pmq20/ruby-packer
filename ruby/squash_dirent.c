@@ -14,8 +14,10 @@
 SQUASH_DIR *squash_opendir(sqfs *fs, const char *filename)
 {
 	sqfs_err error;
-	bool found;
+	short found;
 	SQUASH_DIR *dir = calloc(1, sizeof(SQUASH_DIR));
+	int *handle;
+	
 	if (NULL == dir)
 	{
 		errno = ENOMEM;
@@ -30,8 +32,8 @@ SQUASH_DIR *squash_opendir(sqfs *fs, const char *filename)
 	{
 		goto failure;
 	}
-        int *handle = (int *)(squash_global_fdtable.fds[dir->fd]->payload);
-        free(handle);
+    handle = (int *)(squash_global_fdtable.fds[dir->fd]->payload);
+	free(handle);
 	squash_global_fdtable.fds[dir->fd]->payload = (void *)dir;
 	dir->actual_nr = 0;
 	dir->loc = 0;
@@ -40,7 +42,7 @@ SQUASH_DIR *squash_opendir(sqfs *fs, const char *filename)
 	{
 		goto failure;
 	}
-	error = sqfs_lookup_path_inner(fs, &dir->node, filename, &found, true);
+	error = sqfs_lookup_path_inner(fs, &dir->node, filename, &found, 1);
 	if (SQFS_OK != error)
 	{
 		goto failure;
@@ -63,6 +65,8 @@ failure:
 
 int squash_closedir(SQUASH_DIR *dirp)
 {
+	int ret;
+
 	assert(-1 != dirp->fd);
 	free(dirp->entries);
         free(dirp->filename);
@@ -70,14 +74,14 @@ int squash_closedir(SQUASH_DIR *dirp)
                 free(dirp->payload);
         }
 	// dirp itself will be freed by squash_close as `payload`
-        int ret = squash_close(dirp->fd);
+	ret = squash_close(dirp->fd);
 	if (0 != ret) {
 		return -1;
 	}
 	return 0;
 }
 
-struct dirent * squash_readdir(SQUASH_DIR *dirp)
+struct SQUASH_DIRENT * squash_readdir(SQUASH_DIR *dirp)
 {
 	sqfs_err error;
 	size_t nr = dirp->loc + 1;
@@ -113,20 +117,18 @@ struct dirent * squash_readdir(SQUASH_DIR *dirp)
 		}
 		else {
 			sqfs_dir_entry *entry = &dirp->entries[dirp->actual_nr].entry;
-			struct dirent *sysentry = &dirp->entries[dirp->actual_nr].sysentry;
+			struct SQUASH_DIRENT *sysentry = &dirp->entries[dirp->actual_nr].sysentry;
+			size_t minsize;
+			
 			sysentry->d_ino = entry->inode_number;
-			size_t minsize = entry->name_size;
+			minsize = entry->name_size;
 			if (SQUASHFS_NAME_LEN < minsize) {
 				minsize = SQUASHFS_NAME_LEN;
 			}
-#ifdef _WIN32
-			sysentry->d_name = dirp->entries[dirp->actual_nr].name;
-#else
 			if (sizeof(sysentry->d_name) < minsize) {
 				minsize = sizeof(sysentry->d_name);
 			}
 			memcpy(sysentry->d_name, dirp->entries[dirp->actual_nr].name, minsize);
-#endif
 #ifndef __linux__
 			sysentry->d_namlen = minsize;
 #endif

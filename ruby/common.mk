@@ -29,16 +29,7 @@ RUBYLIB       = $(PATH_SEPARATOR)
 RUBYOPT       = -
 RUN_OPTS      = --disable-gems
 
-ENCLOSE_IO_CCV = $(shell $(CC) --version)
-ifeq ($(OS),Windows_NT)
 INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir) -I$(srcdir) -I$(UNICODE_HDR_DIR)
-else
-ifeq (,$(findstring LLVM,$(ENCLOSE_IO_CCV)))
-INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir) -I$(srcdir) -I$(UNICODE_HDR_DIR) -Os -fdata-sections -ffunction-sections -Wl,--gc-sections
-else
-INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir) -I$(srcdir) -I$(UNICODE_HDR_DIR) -Os -fdata-sections -ffunction-sections -Wl,-dead_strip
-endif
-endif
 
 GEM_HOME =
 GEM_PATH =

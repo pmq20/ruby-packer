@@ -392,7 +392,7 @@ EncloseIOFindFirstFileHelper(
                 ENCLOSE_IO_SET_LAST_ERROR;
                 return INVALID_HANDLE_VALUE;
         }
-        struct dirent *mydirent;
+        struct SQUASH_DIRENT *mydirent;
         char *current_path = (char *)malloc(strlen(dup_incoming) + SQUASHFS_NAME_LEN + 1);
         if (NULL == current_path) {
                 SetLastError(ERROR_NOT_ENOUGH_MEMORY);
@@ -450,7 +450,7 @@ EncloseIOFindNextFileW(
 	struct squash_file *sqf = squash_find_entry((void *)hFindFile);
 	if (sqf) {
                 SQUASH_DIR *dirp = (SQUASH_DIR*)hFindFile;
-                struct dirent *mydirent;
+                struct SQUASH_DIRENT *mydirent;
                 char *current_path = (char *)malloc(strlen((char *)(dirp->payload)) + SQUASHFS_NAME_LEN + 1);
                 if (NULL == current_path) {
                         SetLastError(ERROR_NOT_ENOUGH_MEMORY);
@@ -579,7 +579,7 @@ EncloseIOpNtQueryDirectoryFile(
 {
 	if (squash_find_entry((void *)FileHandle)) {
 		SQUASH_DIR *handle = (SQUASH_DIR *)FileHandle;
-		struct dirent *mydirent = squash_readdir(handle);
+		struct SQUASH_DIRENT *mydirent = squash_readdir(handle);
 		if (NULL == mydirent) {
 			return STATUS_NO_MORE_FILES;
 		} else {

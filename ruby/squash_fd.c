@@ -16,8 +16,10 @@ int squash_open(sqfs *fs, const char *path)
 {
 	sqfs_err error;
 	struct squash_file *file = calloc(1, sizeof(struct squash_file));
-	bool found;
+	short found;
 	int fd;
+	size_t nr;
+	int *handle;
 
 	// try locating the file and fetching its stat
 	if (NULL == file)
@@ -30,7 +32,7 @@ int squash_open(sqfs *fs, const char *path)
 	{
 		goto failure;
 	}
-	error = sqfs_lookup_path_inner(fs, &file->node, path, &found, true);
+	error = sqfs_lookup_path_inner(fs, &file->node, path, &found, 1);
 	if (SQFS_OK != error)
 	{
 		goto failure;
@@ -51,7 +53,7 @@ int squash_open(sqfs *fs, const char *path)
 	// get a dummy fd from the system
 	fd = dup(0);
 	// make sure that our global fd table is large enough
-	size_t nr = fd + 1;
+	nr = fd + 1;
 	if (squash_global_fdtable.nr < nr)
 	{
 		// we secretly extend the requested size
@@ -70,14 +72,14 @@ int squash_open(sqfs *fs, const char *path)
 		squash_global_fdtable.nr = nr;
 	}
 
-        // construct a handle (mainly) for win32
-        int *handle = (int *)malloc(sizeof(int));
+	// construct a handle (mainly) for win32
+	handle = (int *)malloc(sizeof(int));
 	if (NULL == handle) {
 		errno = ENOMEM;
                 goto failure;
 	}
-        *handle = fd;
-        file->payload = (void *)handle;
+	*handle = fd;
+	file->payload = (void *)handle;
         
 	// insert the fd into the global fd table
 	file->fd = fd;
@@ -117,12 +119,14 @@ int squash_close(int vfd)
 ssize_t squash_read(int vfd, void *buf, sqfs_off_t nbyte)
 {
 	sqfs_err error;
+	struct squash_file *file;
+
 	if (!SQUASH_VALID_VFD(vfd))
 	{
 		errno = EBADF;
 		return -1;
 	}
-	struct squash_file *file = squash_global_fdtable.fds[vfd];
+	file = squash_global_fdtable.fds[vfd];
 
 	error = sqfs_read_range(file->fs, &file->node, file->pos, &nbyte, buf);
 	if (SQFS_OK != error)
@@ -135,12 +139,13 @@ ssize_t squash_read(int vfd, void *buf, sqfs_off_t nbyte)
 
 off_t squash_lseek(int vfd, off_t offset, int whence)
 {
+	struct squash_file *file;
 	if (!SQUASH_VALID_VFD(vfd))
 	{
 		errno = EBADF;
 		return -1;
 	}
-	struct squash_file *file = squash_global_fdtable.fds[vfd];
+	file = squash_global_fdtable.fds[vfd];
 	if (SQUASH_SEEK_SET == whence)
 	{
 		file->pos = offset;

@@ -108,14 +108,8 @@ struct squash_windows_dirent
 {
 	long d_namlen;
 	ino_t d_ino;
-	char *d_name;
-	char *d_altname; /* short name */
-	short d_altlen;
+	char d_name[256 + 1]; //cf. sqfs_name
 	uint8_t d_type;
 };
-
-#ifndef dirent
-#define dirent squash_windows_dirent
-#endif
 
 #endif /* end of include guard: WINDOWS_H_A80B5674 */

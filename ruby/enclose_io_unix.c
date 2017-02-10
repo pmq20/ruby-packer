@@ -69,7 +69,7 @@ int enclose_io_closedir(DIR *dirp)
 	}
 }
 
-struct dirent * enclose_io_readdir(DIR *dirp)
+struct SQUASH_DIRENT * enclose_io_readdir(DIR *dirp)
 {
 	if (squash_find_entry(dirp)) {
 		return squash_readdir((SQUASH_DIR *)dirp);
@@ -119,9 +119,9 @@ int enclose_io_dirfd(DIR *dirp)
 	}
 }
 
-int enclose_io_scandir(const char *dirname, struct dirent ***namelist,
-	int(*select)(const struct dirent *),
-	int(*compar)(const struct dirent **, const struct dirent **))
+int enclose_io_scandir(const char *dirname, struct SQUASH_DIRENT ***namelist,
+	int(*select)(const struct SQUASH_DIRENT *),
+	int(*compar)(const struct SQUASH_DIRENT **, const struct SQUASH_DIRENT **))
 {
 	if (enclose_io_cwd[0] && '/' != *dirname) {
 		ENCLOSE_IO_GEN_EXPANDED_NAME(dirname);
