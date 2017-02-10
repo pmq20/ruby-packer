@@ -52,7 +52,7 @@ class Compiler
   end
   
   def initialize(entrance, options = {})
-    @entrance = entrance
+    @entrance = File.expand_path(entrance)
     @options = options
 
     check_base_ruby_version!
@@ -75,7 +75,18 @@ class Compiler
     if @options[:root]
       @root = File.expand_path(@options[:root])
     else
-      @root = Dir.pwd
+      @root = @entrance.dup
+      while true
+        @root = File.expand_path('..', @root)
+        if File.expand_path('..', @root) == @root
+          @root = Dir.pwd
+          break
+        end
+        if File.exist?(File.join(@root, 'Gemfile')) || Dir.exist?(File.join(@root, '.git'))
+          break 
+        end
+      end
+      STDERR.puts "-> Project root not supplied, #{@root} assumed."
     end
   end
 
@@ -242,6 +253,7 @@ class Compiler
         raise 'Multiple Gemfiles detected' unless 1 == gemfiles.size
         @work_dir_local = File.join(@work_dir_inner, '_local_')
         @chdir_at_startup = '/__enclose_io_memfs__/_local_'
+        Utils.rm_rf(@work_dir_local)
         Utils.cp_r(@root, @work_dir_local)
         Utils.chdir(@work_dir_local) do
           Utils.run('bundle install --deployment')
@@ -265,7 +277,7 @@ class Compiler
           x = Pathname.new @entrance
           y = Pathname.new @root
           if x.absolute?
-            raise 'Entrance is not in the project root' unless @entrance.include?(@root)
+            raise "Entrance #{@entrance} is not in the project root #{@root}" unless @entrance.include?(@root)
             @entrance = x.relative_path_from y
           end
           if File.exist?("#{@entrance}")
@@ -338,3 +350,4 @@ class Compiler
     end
   end
 end
+
