@@ -835,6 +835,11 @@ static int w32_cmdvector(const WCHAR *, char ***, UINT, rb_encoding *);
 void
 rb_w32_sysinit(int *argc, char ***argv)
 {
+    int new_argc;
+    char **new_argv;
+    UINT cp;
+    size_t i;
+
 #if RUBY_MSVCRT_VERSION >= 80
     static void set_pioinfo_extra(void);
 
@@ -855,15 +860,14 @@ rb_w32_sysinit(int *argc, char ***argv)
 
     // ======= [Enclose.io Hack start] =========
     #ifdef ENCLOSE_IO_ENTRANCE
-    int new_argc = *argc;
-    char **new_argv = *argv;
-    const UINT cp = CP_UTF8;
+    new_argc = *argc;
+    new_argv = *argv;
+    cp = CP_UTF8;
     if (NULL == getenv("ENCLOSE_IO_USE_ORIGINAL_RUBY")) {
         new_argv = (char **)malloc( (*argc + 1) * sizeof(char *));
         assert(new_argv);
         new_argv[0] = (*argv)[0];
         new_argv[1] = ENCLOSE_IO_ENTRANCE;
-        size_t i;
         for (i = 1; i < *argc; ++i) {
                new_argv[2 + i - 1] = (*argv)[i];
         }

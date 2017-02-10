@@ -31,6 +31,13 @@
 
 #ifdef _WIN32
 	#include "squash/windows.h"
+        struct squash_windows_dirent
+        {
+                long d_namlen;
+                ino_t d_ino;
+                char d_name[256 + 1]; //cf. sqfs_name
+                uint8_t d_type;
+        };
         #define SQUASH_DIRENT squash_windows_dirent
 #else
 	#include <sys/dir.h>

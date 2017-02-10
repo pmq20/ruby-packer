@@ -104,12 +104,4 @@ typedef uint32_t uid_t;		/* [???] user IDs */
 #define	DT_WHT		14
 #endif
 
-struct squash_windows_dirent
-{
-	long d_namlen;
-	ino_t d_ino;
-	char d_name[256 + 1]; //cf. sqfs_name
-	uint8_t d_type;
-};
-
 #endif /* end of include guard: WINDOWS_H_A80B5674 */
