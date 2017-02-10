@@ -133,7 +133,7 @@ class Compiler
       Utils.cp(File.join(PRJ_ROOT, 'ruby', 'include', 'enclose_io.h'), File.join(@vendor_ruby, 'include'))
       Utils.cp(File.join(PRJ_ROOT, 'ruby', 'enclose_io_memfs.c'), @vendor_ruby)
       if Gem.win_platform?
-        Utils.run(@compile_env, "call win32\\configure.bat                                              \
+        Utils.run(@compile_env, "call win32\\configure.bat \
                                 --with-exts=pathname,stringio \
                                 --enable-debug-env \
                                 --disable-install-doc \
@@ -155,8 +155,9 @@ class Compiler
         Utils.run(@compile_env, "nmake #{@options[:nmake_args]}")
         Utils.cp('ruby.exe', @options[:output])
       else
-        Utils.run(@compile_env, "./configure                                                           \
+        Utils.run(@compile_env, "./configure  \
                                --without-gmp \
+                               --disable-dtrace \
                                --with-exts=pathname,stringio \
                                --enable-debug-env \
                                --with-sitearchdir=no \
