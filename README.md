@@ -48,3 +48,4 @@ On Linux, you could install Ruby Compiler like this:
     git clone --depth 1 https://github.com/pmq20/ruby-compiler.git
     cd ruby-compiler
     rubyc bin/rubyc
+    ./a.out
