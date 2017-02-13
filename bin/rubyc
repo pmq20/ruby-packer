@@ -26,7 +26,7 @@ Example:
   git clone --depth 1 https://github.com/pmq20/ruby-compiler.git
   cd ruby-compiler
   rubyc bin/rubyc
-  ./a.out
+  ./a.out (or a.exe on Windows)
 
 Bug reports and pull requests are welcome on GitHub at
 https://github.com/pmq20/ruby-compiler
