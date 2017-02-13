@@ -15,7 +15,7 @@ http://enclose.io
 |       macOS      |     x86-64   | http://enclose.io/2017feb13/rubyc-darwin-x64  |
 |       Linux      |     x86-64   | http://enclose.io/2017feb13/rubyc-linux-x64   |
 
-On Windows, you could just download `rubyc.exe` and run it from the Visual Studio command line.
+On Windows, you could just download Ruby Compiler `rubyc.exe` and run it from the Visual Studio command line.
 
 On macOS, you could install Ruby Compiler like this:
 
