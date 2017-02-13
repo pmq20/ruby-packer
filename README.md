@@ -7,15 +7,27 @@ http://enclose.io
 [![Travis CI status](https://travis-ci.org/pmq20/ruby-compiler.svg?branch=master)](https://travis-ci.org/pmq20/ruby-compiler)
 [![AppVeyor status](https://ci.appveyor.com/api/projects/status/93i36eliiy6v3686/branch/master?svg=true)](https://ci.appveyor.com/project/pmq20/ruby-compiler/branch/master)
 
-## Download
+## Nightly Builds: Feb 13, 2017
 
-| Operating System | Architecture | Link                                                           |
-|:----------------:|:------------:|----------------------------------------------------------------|
-|      Windows     |      x86     | http://enclose.io/pmq20/ruby-compiler/rubyc-master.exe         |
-|       macOS      |     x86-64   | http://enclose.io/pmq20/ruby-compiler/rubyc-master-darwin-x64  |
-|       Linux      |     x86-64   | http://enclose.io/pmq20/ruby-compiler/rubyc-master-linux-x64   |
+| Operating System | Architecture | URL                                           |
+|:----------------:|:------------:|-----------------------------------------------|
+|      Windows     |      x86     | http://enclose.io/2017feb13/rubyc.exe         |
+|       macOS      |     x86-64   | http://enclose.io/2017feb13/rubyc-darwin-x64  |
+|       Linux      |     x86-64   | http://enclose.io/2017feb13/rubyc-linux-x64   |
 
-On macOS and Linux, you need to execute `chmod +x` on the downloaded file.
+On Windows, you could just download `rubyc.exe` and run it from the Visual Studio command line.
+
+On macOS, you could install Ruby Compiler like this:
+
+    sudo curl http://enclose.io/2017feb13/rubyc-darwin-x64 > /usr/local/bin/rubyc
+    chmod +x /usr/local/bin/rubyc
+    rubyc
+
+On Linux, you could install Ruby Compiler like this:
+
+    sudo curl http://enclose.io/2017feb13/rubyc-linux-x64 > /usr/local/bin/rubyc
+    chmod +x /usr/local/bin/rubyc
+    rubyc
 
 ## Usage
 
