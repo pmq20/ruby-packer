@@ -7,23 +7,23 @@ http://enclose.io
 [![Travis CI status](https://travis-ci.org/pmq20/ruby-compiler.svg?branch=master)](https://travis-ci.org/pmq20/ruby-compiler)
 [![AppVeyor status](https://ci.appveyor.com/api/projects/status/93i36eliiy6v3686/branch/master?svg=true)](https://ci.appveyor.com/project/pmq20/ruby-compiler/branch/master)
 
-## Nightly Builds: Feb 13, 2017
+## Nightly Builds: Feb 14, 2017
 
 ### Virginia, United States mirror
 
-| Operating System | Architecture | Download Link                                 |
-|:----------------:|:------------:|-----------------------------------------------|
-|      Windows     |      x86     | http://enclose.io/2017feb13/rubyc.exe         |
-|       macOS      |     x86-64   | http://enclose.io/2017feb13/rubyc-darwin-x64  |
-|       Linux      |     x86-64   | http://enclose.io/2017feb13/rubyc-linux-x64   |
+| Operating System | Architecture | Download Link                                               |
+|:----------------:|:------------:|-------------------------------------------------------------|
+|      Windows     |      x86     | https://s3.amazonaws.com/enclose-io/feb14/rubyc.exe         |
+|       macOS      |     x86-64   | https://s3.amazonaws.com/enclose-io/feb14/rubyc-darwin-x64  |
+|       Linux      |     x86-64   | https://s3.amazonaws.com/enclose-io/feb14/rubyc-linux-x64   |
 
 ### 中国北京镜像
 
 |      操作系统     |      架构     | 下载链接                                                                    |
 |:----------------:|:------------:|---------------------------------------------------------------------------|
-|      Windows     |      x86     | http://enclose-io.oss-cn-beijing.aliyuncs.com/2017feb13/rubyc.exe         |
-|       macOS      |     x86-64   | http://enclose-io.oss-cn-beijing.aliyuncs.com/2017feb13/rubyc-darwin-x64  |
-|       Linux      |     x86-64   | http://enclose-io.oss-cn-beijing.aliyuncs.com/2017feb13/rubyc-linux-x64   |
+|      Windows     |      x86     | http://enclose-io.oss-cn-beijing.aliyuncs.com/feb14/rubyc.exe         |
+|       macOS      |     x86-64   | http://enclose-io.oss-cn-beijing.aliyuncs.com/feb14/rubyc-darwin-x64  |
+|       Linux      |     x86-64   | http://enclose-io.oss-cn-beijing.aliyuncs.com/feb14/rubyc-linux-x64   |
 
 
 ## Install
@@ -32,13 +32,13 @@ On Windows, you could just download `rubyc.exe` and run it from the Visual Studi
 
 On macOS, you could download and install into your system directory like this:
 
-    sudo curl http://enclose.io/2017feb13/rubyc-darwin-x64 > /usr/local/bin/rubyc
+    sudo curl rubyc-darwin-x64-link > /usr/local/bin/rubyc
     chmod +x /usr/local/bin/rubyc
     rubyc
 
 On Linux, you could download and install into your system directory like this:
 
-    sudo curl http://enclose.io/2017feb13/rubyc-linux-x64 > /usr/local/bin/rubyc
+    sudo curl rubyc-linux-x64-link > /usr/local/bin/rubyc
     chmod +x /usr/local/bin/rubyc
     rubyc
 
