@@ -9,22 +9,11 @@ http://enclose.io
 
 ## Nightly Builds: Feb 15, 2017
 
-### Virginia, United States mirror
-
 | Operating System | Architecture | Download Link                                               |
 |:----------------:|:------------:|-------------------------------------------------------------|
 |      Windows     |      x86     | https://s3.amazonaws.com/enclose-io/feb15/rubyc.exe         |
 |       macOS      |     x86-64   | https://s3.amazonaws.com/enclose-io/feb15/rubyc-darwin-x64  |
 |       Linux      |     x86-64   | https://s3.amazonaws.com/enclose-io/feb15/rubyc-linux-x64   |
-
-### 中国北京镜像
-
-|      操作系统     |      架构     | 下载链接                                                                    |
-|:----------------:|:------------:|---------------------------------------------------------------------------|
-|      Windows     |      x86     | http://enclose-io.oss-cn-beijing.aliyuncs.com/feb15/rubyc.exe         |
-|       macOS      |     x86-64   | http://enclose-io.oss-cn-beijing.aliyuncs.com/feb15/rubyc-darwin-x64  |
-|       Linux      |     x86-64   | http://enclose-io.oss-cn-beijing.aliyuncs.com/feb15/rubyc-linux-x64   |
-
 
 ## Install
 
