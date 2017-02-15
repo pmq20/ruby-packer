@@ -99,8 +99,15 @@ class Compiler
     
     Utils.mkdir_p(@options[:tmpdir])
     target = File.join(@options[:tmpdir], 'ruby')
-    Utils.cp_r(File.join(PRJ_ROOT, 'ruby'), target, preserve: true) unless Dir.exist?(target)
-    
+    unless Dir.exist?(target)
+      Utils.cp_r(File.join(PRJ_ROOT, 'ruby'), target, preserve: true)
+      target = File.join(@options[:tmpdir], 'ruby', 'common.mk')
+      if Gem.win_platform?
+        Utils.cp(File.join(PRJ_ROOT, 'ruby', 'common.win32.mk'), target)
+      else
+        Utils.cp(File.join(PRJ_ROOT, 'ruby', 'common.unix.mk'), target)
+      end
+    end
     @vendor_ruby = File.join(@options[:tmpdir], 'ruby')
   end
   
