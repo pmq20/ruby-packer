@@ -15,19 +15,17 @@ http://enclose.io
 |       macOS      |     x86-64   | https://s3.amazonaws.com/enclose-io/feb15/rubyc-darwin-x64  |
 |       Linux      |     x86-64   | https://s3.amazonaws.com/enclose-io/feb15/rubyc-linux-x64   |
 
-## Install
-
 On Windows, you could just download `rubyc.exe` and run it from the Visual Studio Command Prompt.
 
 On macOS, you could download and install into your system directory like this:
 
-    sudo curl rubyc-darwin-x64-link --output /usr/local/bin/rubyc
+    sudo curl https://s3.amazonaws.com/enclose-io/feb15/rubyc-darwin-x64 --output /usr/local/bin/rubyc
     sudo chmod +x /usr/local/bin/rubyc
     rubyc
 
 On Linux, you could download and install into your system directory like this:
 
-    sudo curl rubyc-linux-x64-link --output /usr/local/bin/rubyc
+    sudo curl https://s3.amazonaws.com/enclose-io/feb15/rubyc-linux-x64 --output /usr/local/bin/rubyc
     sudo chmod +x /usr/local/bin/rubyc
     rubyc
 
