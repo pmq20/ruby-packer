@@ -32,14 +32,14 @@ On Windows, you could just download `rubyc.exe` and run it from the Visual Studi
 
 On macOS, you could download and install into your system directory like this:
 
-    sudo curl rubyc-darwin-x64-link > /usr/local/bin/rubyc
-    chmod +x /usr/local/bin/rubyc
+    sudo curl rubyc-darwin-x64-link --output /usr/local/bin/rubyc
+    sudo chmod +x /usr/local/bin/rubyc
     rubyc
 
 On Linux, you could download and install into your system directory like this:
 
-    sudo curl rubyc-linux-x64-link > /usr/local/bin/rubyc
-    chmod +x /usr/local/bin/rubyc
+    sudo curl rubyc-linux-x64-link --output /usr/local/bin/rubyc
+    sudo chmod +x /usr/local/bin/rubyc
     rubyc
 
 ## Usage
