@@ -17,9 +17,19 @@ http://enclose.io
 
 ## Install
 
-- Windows: download the `rubyc.exe` and run it from the Visual Studio Command Prompt
-- macOS: `sudo curl https://github.com/pmq20/ruby-compiler/releases/download/v0.1.0/rubyc-darwin-x64 --output /usr/local/bin/rubyc && sudo chmod +x /usr/local/bin/rubyc`
-- Linux: `sudo curl https://github.com/pmq20/ruby-compiler/releases/download/v0.1.0/rubyc-linux-x64 --output /usr/local/bin/rubyc && sudo chmod +x /usr/local/bin/rubyc`
+On Windows, download the executable `rubyc.exe` and run it from the Visual Studio Command Prompt.
+
+On macOS,
+
+    curl https://github.com/pmq20/ruby-compiler/releases/download/v0.1.0/rubyc-darwin-x64 > rubyc
+    chmod +x rubyc
+    ./rubyc
+
+On Linux,
+
+    curl https://github.com/pmq20/ruby-compiler/releases/download/v0.1.0/rubyc-linux-x64 > rubyc
+    chmod +x rubyc
+    ./rubyc
 
 ## Usage
 
