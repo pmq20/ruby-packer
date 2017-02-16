@@ -7,25 +7,25 @@ http://enclose.io
 [![Travis CI status](https://travis-ci.org/pmq20/ruby-compiler.svg?branch=master)](https://travis-ci.org/pmq20/ruby-compiler)
 [![AppVeyor status](https://ci.appveyor.com/api/projects/status/93i36eliiy6v3686/branch/master?svg=true)](https://ci.appveyor.com/project/pmq20/ruby-compiler/branch/master)
 
-## Nightly Builds: Feb 15, 2017
+## Latest Release: v0.1.0
 
-| Operating System | Architecture | Download Link                                               |
-|:----------------:|:------------:|-------------------------------------------------------------|
-|      Windows     |      x86     | https://s3.amazonaws.com/enclose-io/feb15/rubyc.exe         |
-|       macOS      |     x86-64   | https://s3.amazonaws.com/enclose-io/feb15/rubyc-darwin-x64  |
-|       Linux      |     x86-64   | https://s3.amazonaws.com/enclose-io/feb15/rubyc-linux-x64   |
+| Operating System | Architecture | Download Link                                                                               |
+|:----------------:|:------------:|---------------------------------------------------------------------------------------------|
+|      Windows     |      x86     | https://github.com/pmq20/ruby-compiler/releases/download/v0.1.0/rubyc.exe                   |
+|       macOS      |     x86-64   | https://github.com/pmq20/ruby-compiler/releases/download/v0.1.0/rubyc.exe/rubyc-darwin-x64  |
+|       Linux      |     x86-64   | https://github.com/pmq20/ruby-compiler/releases/download/v0.1.0/rubyc.exe/rubyc-linux-x64   |
 
 On Windows, you could just download `rubyc.exe` and run it from the Visual Studio Command Prompt.
 
 On macOS, you could download and install into your system directory like this:
 
-    sudo curl https://s3.amazonaws.com/enclose-io/feb15/rubyc-darwin-x64 --output /usr/local/bin/rubyc
+    sudo curl https://github.com/pmq20/ruby-compiler/releases/download/v0.1.0/rubyc.exe/rubyc-darwin-x64 --output /usr/local/bin/rubyc
     sudo chmod +x /usr/local/bin/rubyc
     rubyc
 
 On Linux, you could download and install into your system directory like this:
 
-    sudo curl https://s3.amazonaws.com/enclose-io/feb15/rubyc-linux-x64 --output /usr/local/bin/rubyc
+    sudo curl https://github.com/pmq20/ruby-compiler/releases/download/v0.1.0/rubyc.exe/rubyc-linux-x64 --output /usr/local/bin/rubyc
     sudo chmod +x /usr/local/bin/rubyc
     rubyc
 
