@@ -2,4 +2,6 @@
 
 ## v0.1.0
 
-Feb 9, 2017. Initial Release. Bootstrapping achieved.
+Feb 16, 2017.
+
+Initial Release. Bootstrapping achieved.
