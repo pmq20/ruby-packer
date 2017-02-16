@@ -9,7 +9,7 @@ http://enclose.io
 
 ## Latest Release: v0.1.0
 
-| Operating System | Architecture | Download Link                                                                               |
+| OS | Arch | Download Link                                                                               |
 |:----------------:|:------------:|---------------------------------------------------------------------------------------------|
 |      Windows     |      x86     | https://github.com/pmq20/ruby-compiler/releases/download/v0.1.0/rubyc.exe                   |
 |       macOS      |     x86-64   | https://github.com/pmq20/ruby-compiler/releases/download/v0.1.0/rubyc.exe/rubyc-darwin-x64  |
