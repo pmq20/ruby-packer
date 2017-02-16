@@ -9,11 +9,11 @@ http://enclose.io
 
 ## Latest Release: v0.1.0
 
-| OS | Arch | Download Link                                                                               |
-|:----------------:|:------------:|---------------------------------------------------------------------------------------------|
-|      Windows     |      x86     | https://github.com/pmq20/ruby-compiler/releases/download/v0.1.0/rubyc.exe                   |
-|       macOS      |     x86-64   | https://github.com/pmq20/ruby-compiler/releases/download/v0.1.0/rubyc.exe/rubyc-darwin-x64  |
-|       Linux      |     x86-64   | https://github.com/pmq20/ruby-compiler/releases/download/v0.1.0/rubyc.exe/rubyc-linux-x64   |
+|    OS   |  Arch  | Download Link                                                                               |
+|:-------:|:------:|---------------------------------------------------------------------------------------------|
+| Windows |  x86   | https://github.com/pmq20/ruby-compiler/releases/download/v0.1.0/rubyc.exe                   |
+|  macOS  | x86-64 | https://github.com/pmq20/ruby-compiler/releases/download/v0.1.0/rubyc.exe/rubyc-darwin-x64  |
+|  Linux  | x86-64 | https://github.com/pmq20/ruby-compiler/releases/download/v0.1.0/rubyc.exe/rubyc-linux-x64   |
 
 On Windows, you could just download `rubyc.exe` and run it from the Visual Studio Command Prompt.
 
