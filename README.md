@@ -9,17 +9,17 @@ http://enclose.io
 
 ## Latest Release: v0.1.0
 
-|    OS   |  Arch  | Download Link                                                                               |
-|:-------:|:------:|---------------------------------------------------------------------------------------------|
-| Windows |  x86   | https://github.com/pmq20/ruby-compiler/releases/download/v0.1.0/rubyc.exe                   |
-|  macOS  | x86-64 | https://github.com/pmq20/ruby-compiler/releases/download/v0.1.0/rubyc.exe/rubyc-darwin-x64  |
-|  Linux  | x86-64 | https://github.com/pmq20/ruby-compiler/releases/download/v0.1.0/rubyc.exe/rubyc-linux-x64   |
+| Operating System |  Arch.  | Download Link                                                                     |
+|:----------------:|:-------:|-----------------------------------------------------------------------------------|
+|      Windows     |   x86   | https://github.com/pmq20/ruby-compiler/releases/download/v0.1.0/rubyc.exe         |
+|       macOS      |  x86-64 | https://github.com/pmq20/ruby-compiler/releases/download/v0.1.0/rubyc-darwin-x64  |
+|       Linux      |  x86-64 | https://github.com/pmq20/ruby-compiler/releases/download/v0.1.0/rubyc-linux-x64   |
 
 ## Install
 
 - Windows: download the `rubyc.exe` and run it from the Visual Studio Command Prompt
-- macOS: `sudo curl https://github.com/pmq20/ruby-compiler/releases/download/v0.1.0/rubyc.exe/rubyc-darwin-x64 --output /usr/local/bin/rubyc && sudo chmod +x /usr/local/bin/rubyc`
-- Linux: `sudo curl https://github.com/pmq20/ruby-compiler/releases/download/v0.1.0/rubyc.exe/rubyc-linux-x64 --output /usr/local/bin/rubyc && sudo chmod +x /usr/local/bin/rubyc`
+- macOS: `sudo curl https://github.com/pmq20/ruby-compiler/releases/download/v0.1.0/rubyc-darwin-x64 --output /usr/local/bin/rubyc && sudo chmod +x /usr/local/bin/rubyc`
+- Linux: `sudo curl https://github.com/pmq20/ruby-compiler/releases/download/v0.1.0/rubyc-linux-x64 --output /usr/local/bin/rubyc && sudo chmod +x /usr/local/bin/rubyc`
 
 ## Usage
 
