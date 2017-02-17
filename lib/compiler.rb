@@ -141,7 +141,6 @@ class Compiler
       Utils.cp(File.join(PRJ_ROOT, 'ruby', 'enclose_io_memfs.c'), @vendor_ruby)
       if Gem.win_platform?
         Utils.run(@compile_env, "call win32\\configure.bat \
-                                --with-exts=pathname,stringio \
                                 --enable-debug-env \
                                 --disable-install-doc \
                                 --with-static-linked-ext")
@@ -165,7 +164,6 @@ class Compiler
         Utils.run(@compile_env, "./configure  \
                                --without-gmp \
                                --disable-dtrace \
-                               --with-exts=pathname,stringio \
                                --enable-debug-env \
                                --with-sitearchdir=no \
                                --with-vendordir=no \
