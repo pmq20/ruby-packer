@@ -7,13 +7,13 @@ http://enclose.io
 [![Travis CI status](https://travis-ci.org/pmq20/ruby-compiler.svg?branch=master)](https://travis-ci.org/pmq20/ruby-compiler)
 [![AppVeyor status](https://ci.appveyor.com/api/projects/status/93i36eliiy6v3686/branch/master?svg=true)](https://ci.appveyor.com/project/pmq20/ruby-compiler/branch/master)
 
-## Latest Release: v0.1.0
+## Download
 
-| Operating System |  Arch.  | Download Link                                                                     |
-|:----------------:|:-------:|-----------------------------------------------------------------------------------|
-|      Windows     |   x86   | https://github.com/pmq20/ruby-compiler/releases/download/v0.1.0/rubyc.exe         |
-|       macOS      |  x86-64 | https://github.com/pmq20/ruby-compiler/releases/download/v0.1.0/rubyc-darwin-x64  |
-|       Linux      |  x86-64 | https://github.com/pmq20/ruby-compiler/releases/download/v0.1.0/rubyc-linux-x64   |
+|    Operating System   |  Architecture | Download Link                                                                          |
+|:---------------------:|:-------------:|----------------------------------------------------------------------------------------|
+|        Windows        |      x86      | https://sourceforge.net/projects/ruby-compiler/files/v0.1.0/rubyc.exe/download         |
+|         macOS         |     x86-64    | https://sourceforge.net/projects/ruby-compiler/files/v0.1.0/rubyc-darwin-x64/download  |
+|         Linux         |     x86-64    | https://sourceforge.net/projects/ruby-compiler/files/v0.1.0/rubyc-linux-x64/download   |
 
 ## Install
 
@@ -21,13 +21,13 @@ On Windows, download the executable `rubyc.exe` and run it from the Visual Studi
 
 On macOS,
 
-    curl https://github.com/pmq20/ruby-compiler/releases/download/v0.1.0/rubyc-darwin-x64 > rubyc
+    curl -L https://sourceforge.net/projects/ruby-compiler/files/v0.1.0/rubyc-darwin-x64/download > rubyc
     chmod +x rubyc
     ./rubyc
 
 On Linux,
 
-    curl https://github.com/pmq20/ruby-compiler/releases/download/v0.1.0/rubyc-linux-x64 > rubyc
+    curl -L https://sourceforge.net/projects/ruby-compiler/files/v0.1.0/rubyc-linux-x64/download > rubyc
     chmod +x rubyc
     ./rubyc
 
