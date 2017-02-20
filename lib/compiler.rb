@@ -60,6 +60,12 @@ class Compiler
     init_options
     init_entrance
     init_tmpdir
+
+    STDERR.puts "Entrance: #{@entrance}"
+    STDERR.puts "Options: #{@options}"
+    STDERR.puts
+
+    stuff_tmpdir
   end
 
   def init_options
@@ -96,7 +102,10 @@ class Compiler
     if @options[:tmpdir].include? @root
       raise Error, "Tempdir #{@options[:tmpdir]} cannot reside inside #{@root}."
     end
-    
+  end
+  
+  def stuff_tmpdir
+    Utils.rm_rf(@options[:tmpdir]) if @options[:clean]
     Utils.mkdir_p(@options[:tmpdir])
     target = File.join(@options[:tmpdir], 'ruby')
     unless Dir.exist?(target)
