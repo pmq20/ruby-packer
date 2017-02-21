@@ -29,6 +29,8 @@ main(int argc, char **argv)
     // ======= [Enclose.io Hack start] =========
     int ret;
     sqfs_err enclose_io_ret;
+    enclose_io_ret = squash_start();
+    assert(SQFS_OK == enclose_io_ret);
     enclose_io_fs = malloc(sizeof(sqfs));
     assert(NULL != enclose_io_fs);
     memset(enclose_io_fs, 0, sizeof(sqfs));
