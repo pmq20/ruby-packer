@@ -61,8 +61,8 @@ short enclose_io_is_path_w(wchar_t *pathname);
 short enclose_io_is_relative_w(wchar_t *pathname);
 
 #define ENCLOSE_IO_GEN_EXPANDED_NAME(path)	\
-                        enclose_io_cwd_len = strlen(enclose_io_cwd); \
-                        memcpy(enclose_io_expanded, enclose_io_cwd, enclose_io_cwd_len); \
+			enclose_io_cwd_len = strlen(enclose_io_cwd); \
+			memcpy(enclose_io_expanded, enclose_io_cwd, enclose_io_cwd_len); \
 			memcpy_len = strlen(path); \
 			if (SQUASHFS_NAME_LEN - enclose_io_cwd_len < memcpy_len) { memcpy_len = SQUASHFS_NAME_LEN - enclose_io_cwd_len; } \
 			memcpy(&enclose_io_expanded[enclose_io_cwd_len], (path), memcpy_len); \
@@ -70,8 +70,8 @@ short enclose_io_is_relative_w(wchar_t *pathname);
 
 //TODO maybe use WideCharToMultiByte
 #define W_ENCLOSE_IO_PATH_CONVERT(path) \
-                        enclose_io_converted = (char *)enclose_io_converted_storage; \
-                        enclose_io_converted_length = wcstombs(enclose_io_converted_storage, (path), SQUASHFS_NAME_LEN); \
+			enclose_io_converted = (char *)enclose_io_converted_storage; \
+			enclose_io_converted_length = wcstombs(enclose_io_converted_storage, (path), SQUASHFS_NAME_LEN); \
 			if (strnlen(enclose_io_converted_storage, 4) >= 4 && (0 == strncmp(enclose_io_converted_storage, "\\\\?\\", 4) || 0 == strncmp(enclose_io_converted_storage, "//?/", 4))) { \
 				if (strnlen(enclose_io_converted_storage, 6) >= 6 && ':' == enclose_io_converted_storage[5]) { \
 					enclose_io_converted += 6; \
@@ -232,6 +232,8 @@ int enclose_io_dirfd(DIR *dirp);
 int enclose_io_scandir(const char *dirname, struct SQUASH_DIRENT ***namelist,
 	int(*select)(const struct SQUASH_DIRENT *),
 	int(*compar)(const struct SQUASH_DIRENT **, const struct SQUASH_DIRENT **));
+ssize_t enclose_io_pread(int d, void *buf, size_t nbyte, off_t offset);
+ssize_t enclose_io_readv(int d, const struct iovec *iov, int iovcnt);
 #endif // !_WIN32
 
 #endif
