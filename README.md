@@ -21,9 +21,10 @@ http://enclose.io
 
 First install the prerequisites:
 
-* Windows XP Professional Service Pack 3 or later
+* Windows XP Professional Service Pack 3 or newer
 * [SquashFS Tools 4.3](https://github.com/pmq20/squashfuse/files/691217/sqfs43-win32.zip)
-* [Visual Studio 2010]((https://www.visualstudio.com/)) or later
+* [Visual Studio 2010](https://www.visualstudio.com/) or newer
+* [Ruby 2.4.0](https://github.com/pmq20/rubyinstaller/files/689117/rb240-win32.zip)
 
 Then download the executable `rubyc.exe` and run it from the Visual Studio Command Prompt.
 
@@ -49,6 +50,7 @@ First install the prerequisites:
 
 * [SquashFS Tools 4.3](http://squashfs.sourceforge.net/)
 * `gcc` or `clang`
+* GNU Make
 
 Then,
 
