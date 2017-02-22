@@ -37,6 +37,7 @@ First install the prerequisites:
   * You also need to install the `Command Line Tools` via Xcode. You can find
     this under the menu `Xcode -> Preferences -> Downloads`
   * This step will install `gcc` and the related toolchain containing `make`
+* [Ruby 2.4.0](https://www.ruby-lang.org/)
 
 Then,
 
@@ -51,6 +52,7 @@ First install the prerequisites:
 * [SquashFS Tools 4.3](http://squashfs.sourceforge.net/)
 * `gcc` or `clang`
 * GNU Make
+* [Ruby 2.4.0](https://www.ruby-lang.org/)
 
 Then,
 
