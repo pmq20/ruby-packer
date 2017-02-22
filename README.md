@@ -17,15 +17,40 @@ http://enclose.io
 
 ## Install
 
-On Windows, download the executable `rubyc.exe` and run it from the Visual Studio Command Prompt.
+### Windows
 
-On macOS,
+First install the prerequisites:
+
+* Windows XP Professional Service Pack 3 or later
+* [SquashFS Tools 4.3](https://github.com/pmq20/squashfuse/files/691217/sqfs43-win32.zip)
+* [Visual Studio 2010]((https://www.visualstudio.com/)) or later
+
+Then download the executable `rubyc.exe` and run it from the Visual Studio Command Prompt.
+
+### macOS
+
+First install the prerequisites:
+
+* [SquashFS Tools 4.3](http://squashfs.sourceforge.net/): `brew install squashfs`
+* [Xcode](https://developer.apple.com/xcode/download/)
+  * You also need to install the `Command Line Tools` via Xcode. You can find
+    this under the menu `Xcode -> Preferences -> Downloads`
+  * This step will install `gcc` and the related toolchain containing `make`
+
+Then,
 
     curl -L https://sourceforge.net/projects/ruby-compiler/files/v0.1.0/rubyc-darwin-x64/download > rubyc
     chmod +x rubyc
     ./rubyc
 
-On Linux,
+### Linux
+
+First install the prerequisites:
+
+* [SquashFS Tools 4.3](http://squashfs.sourceforge.net/)
+* `gcc` or `clang`
+
+Then,
 
     curl -L https://sourceforge.net/projects/ruby-compiler/files/v0.1.0/rubyc-linux-x64/download > rubyc
     chmod +x rubyc
