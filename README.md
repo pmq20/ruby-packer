@@ -24,8 +24,7 @@ First install the prerequisites:
 * [SquashFS Tools 4.3](https://github.com/pmq20/squashfuse/files/691217/sqfs43-win32.zip)
 * [Visual Studio 2010](https://www.visualstudio.com/) or newer
 * [Ruby 2.4.0](https://github.com/pmq20/rubyinstaller/files/689117/rb240-win32.zip)
-  * make sure `require 'socket'` works, if not install the socket extension
-  * make sure `require 'zlib'` works, if not install the zlib extension
+  * make sure `require 'zlib'` works, if not then install [zlib.dll](https://github.com/pmq20/rubyinstaller/files/759632/sqfs43-win32-zlib-dll.zip) and [zlib extension](https://github.com/pmq20/rubyinstaller/files/759631/sqfs43-win32-zlib-so.zip) first
 
 Then download the executable `rubyc.exe` and run it from the Visual Studio Command Prompt.
 
