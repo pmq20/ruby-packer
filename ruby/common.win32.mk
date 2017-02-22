@@ -101,6 +101,7 @@ COMMONOBJS    = zlib_adler32.$(OBJEXT) \
 		squash_table.$(OBJEXT) \
 		squash_traverse.$(OBJEXT) \
 		squash_util.$(OBJEXT) \
+		squash_mutex.$(OBJEXT) \
 		enclose_io_memfs.$(OBJEXT) \
 		enclose_io_unix.$(OBJEXT) \
 		enclose_io_win32.$(OBJEXT) \
