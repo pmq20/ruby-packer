@@ -22,9 +22,7 @@ http://enclose.io
 First install the prerequisites:
 
 * [SquashFS Tools 4.3](https://github.com/pmq20/squashfuse/files/691217/sqfs43-win32.zip)
-* One of:
-  * [Visual Studio 2010](https://www.visualstudio.com/) or newer
-  * [Visual C++ Build Tools](http://landinghub.visualstudio.com/visual-cpp-build-tools)
+* [Visual Studio 2010](https://www.visualstudio.com/) or newer
 * [Ruby 2.4.0](https://github.com/pmq20/rubyinstaller/files/689117/rb240-win32.zip)
   * make sure that `require 'zlib'` works, if not install [zlib.dll](https://github.com/pmq20/rubyinstaller/files/759632/sqfs43-win32-zlib-dll.zip) and [zlib extension](https://github.com/pmq20/rubyinstaller/files/759631/sqfs43-win32-zlib-so.zip) first.
 
