@@ -114,16 +114,10 @@ wchar_t *enclose_io_wgetcwd(wchar_t *buf, size_t size)
 		retlen = mbstowcs(tempbuf, enclose_io_cwd, SQUASHFS_PATH_LEN);
 		if ((size_t)-1 == retlen) {
                         errno = ERANGE;
-<<<<<<< HEAD
                         ENCLOSE_IO_SET_LAST_ERROR;
 			return NULL;
 		}
                 tempbuf[retlen] = L'\0';
-=======
-			return NULL;
-		}
-                tempbuf[retlen] = '\0';
->>>>>>> 9ea2b5770007d4de708e6711769b7325f3849d02
 		if (NULL == buf) {
 			buf = malloc((retlen + 1) * sizeof(wchar_t));
 			if (NULL == buf) {
@@ -663,7 +657,6 @@ EncloseIOFindNextFileW(
                         errno = ENOENT;
                         SetLastError(ERROR_NO_MORE_FILES);
                         _doserrno = ERROR_NO_MORE_FILES;
-<<<<<<< HEAD
                         return 0;
                 }
                 mbstowcs_size = mbstowcs(lpFindFileData->cFileName, mydirent->d_name, sizeof(lpFindFileData->cFileName) / sizeof(lpFindFileData->cFileName[0]) - 1);
@@ -672,16 +665,6 @@ EncloseIOFindNextFileW(
                         ENCLOSE_IO_SET_LAST_ERROR;
                         return 0;
                 }
-=======
-                        return 0;
-                }
-                mbstowcs_size = mbstowcs(lpFindFileData->cFileName, mydirent->d_name, sizeof(lpFindFileData->cFileName) / sizeof(lpFindFileData->cFileName[0]) - 1);
-                if ((size_t)-1 == mbstowcs_size) {
-                        errno = EIO;
-                        ENCLOSE_IO_SET_LAST_ERROR;
-                        return 0;
-                }
->>>>>>> 9ea2b5770007d4de708e6711769b7325f3849d02
                 lpFindFileData->cFileName[mbstowcs_size] = 0;
                 lpFindFileData->cAlternateFileName[0] = 0;
                 lpFindFileData->dwFileAttributes = EncloseIODType2FileAttributes(mydirent->d_type);
@@ -733,7 +716,6 @@ EncloseIODeviceIoControl(
         int ret;
 
 	if (sqf) {
-<<<<<<< HEAD
                 char the_path[SQUASHFS_PATH_LEN + 1];
                 wchar_t the_wpath[SQUASHFS_PATH_LEN + 1];
                 struct stat st;
@@ -751,13 +733,6 @@ EncloseIODeviceIoControl(
 		// https://msdn.microsoft.com/en-us/library/windows/desktop/aa364571(v=vs.85).aspx
                 assert(dwIoControlCode == FSCTL_GET_REPARSE_POINT);
 		assert(NULL == lpInBuffer);
-=======
-                struct stat st;
-                sqfs_inode *node;
-
-                // TODO support more than FSCTL_GET_REPARSE_POINT
-                assert(dwIoControlCode == FSCTL_GET_REPARSE_POINT);
->>>>>>> 9ea2b5770007d4de708e6711769b7325f3849d02
 		st = sqf->st;
                 if (!S_ISLNK(st.st_mode)) {
                         errno = EINVAL;
@@ -768,19 +743,13 @@ EncloseIODeviceIoControl(
                 ret = squash_readlink_inode(
                         enclose_io_fs,
                         &sqf->node,
-<<<<<<< HEAD
                         the_path,
                         SQUASHFS_PATH_LEN
-=======
-                        lpOutBuffer,
-                        nOutBufferSize
->>>>>>> 9ea2b5770007d4de708e6711769b7325f3849d02
                       );
                 if (-1 == ret) {
                         ENCLOSE_IO_SET_LAST_ERROR;
                         return FALSE;
                 }
-<<<<<<< HEAD
                 
 		retlen = mbstowcs(the_wpath, the_path, SQUASHFS_PATH_LEN);
 		if ((size_t)-1 == retlen) {
@@ -800,9 +769,6 @@ EncloseIODeviceIoControl(
                 memcpy(reparse_data->SymbolicLinkReparseBuffer.PathBuffer, the_wpath, (retlen + 1) * sizeof(wchar_t));
                 reparse_data->SymbolicLinkReparseBuffer.SubstituteNameLength = retlen * sizeof(wchar_t);
                 reparse_data->SymbolicLinkReparseBuffer.SubstituteNameOffset = 0;
-=======
-                *lpBytesReturned = ret;
->>>>>>> 9ea2b5770007d4de708e6711769b7325f3849d02
                 return TRUE;
 	} else {
                 return DeviceIoControl(
@@ -818,7 +784,6 @@ EncloseIODeviceIoControl(
 	}
 }
 
-<<<<<<< HEAD
 HANDLE
 EncloseIOCreateIoCompletionPort(
         HANDLE FileHandle,
@@ -877,8 +842,6 @@ EncloseIOReadDirectoryChangesW(
         }
 }
 
-=======
->>>>>>> 9ea2b5770007d4de708e6711769b7325f3849d02
 #ifndef RUBY_EXPORT
 NTSTATUS
 EncloseIOpNtQueryInformationFile(

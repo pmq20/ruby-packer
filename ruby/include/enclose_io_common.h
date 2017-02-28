@@ -252,7 +252,6 @@ EncloseIODeviceIoControl(
         LPOVERLAPPED lpOverlapped
 );
 
-<<<<<<< HEAD
 HANDLE
 EncloseIOCreateIoCompletionPort(
         HANDLE FileHandle,
@@ -273,8 +272,6 @@ EncloseIOReadDirectoryChangesW(
         LPOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine
 );
 
-=======
->>>>>>> 9ea2b5770007d4de708e6711769b7325f3849d02
 #else
 int enclose_io_lstat(const char *path, struct stat *buf);
 ssize_t enclose_io_readlink(const char *path, char *buf, size_t bufsize);
