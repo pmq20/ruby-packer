@@ -40,8 +40,11 @@
 #define FindNextFileW(...) EncloseIOFindNextFileW(__VA_ARGS__)
 #define FindClose(...) EncloseIOFindClose(__VA_ARGS__)
 #define DeviceIoControl(...) EncloseIODeviceIoControl(__VA_ARGS__)
+<<<<<<< HEAD
 #define CreateIoCompletionPort(...) EncloseIOCreateIoCompletionPort(__VA_ARGS__)
 #define ReadDirectoryChangesW(...) EncloseIOReadDirectoryChangesW(__VA_ARGS__)
+=======
+>>>>>>> 9ea2b5770007d4de708e6711769b7325f3849d02
 
 #ifndef RUBY_EXPORT
 #define pNtQueryDirectoryFile(...) EncloseIOpNtQueryDirectoryFile(__VA_ARGS__)
