@@ -32,7 +32,7 @@
 #endif
 
 extern sqfs *enclose_io_fs;
-extern sqfs_name enclose_io_cwd;
+extern sqfs_path enclose_io_cwd;
 extern const uint8_t enclose_io_memfs[];
 
 #define ENCLOSE_IO_PP_NARG(...) \
@@ -62,16 +62,18 @@ short enclose_io_is_relative_w(wchar_t *pathname);
 
 #define ENCLOSE_IO_GEN_EXPANDED_NAME(path)	\
 			enclose_io_cwd_len = strlen(enclose_io_cwd); \
-			memcpy(enclose_io_expanded, enclose_io_cwd, enclose_io_cwd_len); \
+                        memcpy(enclose_io_expanded, enclose_io_cwd, enclose_io_cwd_len); \
 			memcpy_len = strlen(path); \
-			if (SQUASHFS_NAME_LEN - enclose_io_cwd_len < memcpy_len) { memcpy_len = SQUASHFS_NAME_LEN - enclose_io_cwd_len; } \
+			if (SQUASHFS_PATH_LEN - enclose_io_cwd_len < memcpy_len) { memcpy_len = SQUASHFS_PATH_LEN - enclose_io_cwd_len; } \
 			memcpy(&enclose_io_expanded[enclose_io_cwd_len], (path), memcpy_len); \
 			enclose_io_expanded[enclose_io_cwd_len + memcpy_len] = '\0'
 
 //TODO maybe use WideCharToMultiByte
 #define W_ENCLOSE_IO_PATH_CONVERT(path) \
 			enclose_io_converted = (char *)enclose_io_converted_storage; \
-			enclose_io_converted_length = wcstombs(enclose_io_converted_storage, (path), SQUASHFS_NAME_LEN); \
+			enclose_io_converted_length = wcstombs(enclose_io_converted_storage, (path), SQUASHFS_PATH_LEN); \
+                        if ((size_t)-1 == enclose_io_converted_length) { enclose_io_converted_length = 0; } \
+                        enclose_io_converted[enclose_io_converted_length] = '\0'; \
 			if (strnlen(enclose_io_converted_storage, 4) >= 4 && (0 == strncmp(enclose_io_converted_storage, "\\\\?\\", 4) || 0 == strncmp(enclose_io_converted_storage, "//?/", 4))) { \
 				if (strnlen(enclose_io_converted_storage, 6) >= 6 && ':' == enclose_io_converted_storage[5]) { \
 					enclose_io_converted += 6; \
@@ -88,18 +90,37 @@ short enclose_io_is_relative_w(wchar_t *pathname);
 #define ENCLOSE_IO_SET_LAST_ERROR do { \
 			if (ENOMEM == errno) { \
 				SetLastError(ERROR_NOT_ENOUGH_MEMORY); \
+                                _doserrno = ERROR_NOT_ENOUGH_MEMORY; \
 			} else if (ENOENT == errno) { \
 				SetLastError(ERROR_FILE_NOT_FOUND); \
+                                _doserrno = ERROR_FILE_NOT_FOUND; \
 			} else if (EBADF == errno) { \
 				SetLastError(ERROR_INVALID_HANDLE); \
+                                _doserrno = ERROR_INVALID_HANDLE; \
 			} else if (ENAMETOOLONG == errno) { \
 				SetLastError(ERROR_BUFFER_OVERFLOW); \
+                                _doserrno = ERROR_BUFFER_OVERFLOW; \
 			} else { \
 				SetLastError(ERROR_INVALID_FUNCTION); \
+                                _doserrno = ERROR_INVALID_FUNCTION; \
 			} \
 		} while (0)
 
-int enclose_io_chdir_helper(const char *path);
+#ifdef _WIN32
+#define ENCLOSE_IO_DOS_RETURN(statement) do { \
+                        int ret = (statement); \
+                        if (-1 == ret) { \
+                                ENCLOSE_IO_SET_LAST_ERROR; \
+                                return ret; \
+                        } else { \
+                                return ret; \
+                        } \
+                } while (0)
+#else
+#define ENCLOSE_IO_DOS_RETURN(statement) return (statement)
+#endif // _WIN32
+
+void enclose_io_chdir_helper(const char *path);
 int enclose_io_chdir(const char *path);
 char *enclose_io_getcwd(char *buf, size_t size);
 char *enclose_io_getwd(char *buf);
@@ -217,6 +238,38 @@ EncloseIOFindNextFileW(
 BOOL
 EncloseIOFindClose(
         HANDLE hFindFile
+);
+
+BOOL
+EncloseIODeviceIoControl(
+        HANDLE hDevice,
+        DWORD dwIoControlCode,
+        LPVOID lpInBuffer,
+        DWORD nInBufferSize,
+        LPVOID lpOutBuffer,
+        DWORD nOutBufferSize,
+        LPDWORD lpBytesReturned,
+        LPOVERLAPPED lpOverlapped
+);
+
+HANDLE
+EncloseIOCreateIoCompletionPort(
+        HANDLE FileHandle,
+        HANDLE ExistingCompletionPort,
+        ULONG_PTR CompletionKey,
+        DWORD NumberOfConcurrentThreads
+);
+
+BOOL
+EncloseIOReadDirectoryChangesW(
+        HANDLE hDirectory,
+        LPVOID lpBuffer,
+        DWORD nBufferLength,
+        BOOL bWatchSubtree,
+        DWORD dwNotifyFilter,
+        LPDWORD lpBytesReturned,
+        LPOVERLAPPED lpOverlapped,
+        LPOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine
 );
 
 #else

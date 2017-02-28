@@ -94,6 +94,8 @@ int squash_fstat(int vfd, struct stat *buf);
  */
 int squash_open(sqfs *fs, const char *path);
 
+int squash_open_inner(sqfs *fs, const char *path, short follow_link);
+
 /*
  * Deletes a vfd(virtual file descriptor) from
  * the per-process object reference table.
@@ -154,6 +156,8 @@ ssize_t squash_readlink(sqfs *fs, const char *path, char *buf, size_t bufsize);
  * The returned resource should later be closed by squash_closedir().
  */
 SQUASH_DIR * squash_opendir(sqfs *fs, const char *filename);
+
+SQUASH_DIR * squash_opendir_inner(sqfs *fs, const char *filename, short follow_link);
 
 /*
  * Closes the named directory stream and
