@@ -111,11 +111,38 @@ class Compiler
     unless Dir.exist?(target)
       Utils.cp_r(File.join(PRJ_ROOT, 'ruby'), target, preserve: true)
       target = File.join(@options[:tmpdir], 'ruby', 'common.mk')
-      if Gem.win_platform?
-        Utils.cp(File.join(PRJ_ROOT, 'ruby', 'common.win32.mk'), target)
-      else
-        Utils.cp(File.join(PRJ_ROOT, 'ruby', 'common.unix.mk'), target)
-      end
+      target_content = File.read(target)
+      found = false
+      File.open(target, 'w') do |f|
+        target_content.each_line do |line|
+          if line =~ /^INCFLAGS = (.*)$/
+            found = true
+            if Gem.win_platform?
+              if @options[:debug]
+                f.puts "INCFLAGS = #{$1} /DEBUG:FULL /Od -Zi"
+              else
+                f.puts "INCFLAGS = #{$1}"
+              end
+            else
+              if @options[:debug]
+                f.puts "INCFLAGS = #{$1} -g -O0"
+              else
+                f.puts <<-HERECODE
+ENCLOSE_IO_CCV = $(shell $(CC) --version)
+ifeq (,$(findstring LLVM,$(ENCLOSE_IO_CCV)))
+INCFLAGS = #{$1} -Os -fdata-sections -ffunction-sections -Wl,--gc-sections
+else
+INCFLAGS = #{$1} -Os -fdata-sections -ffunction-sections -Wl,-dead_strip
+endif
+HERECODE
+              end
+            end
+          else
+            f.print line
+          end
+        end
+      end;found
+      raise 'Failed to patch INCFLAGS of #{target}' unless found
     end
     @vendor_ruby = File.join(@options[:tmpdir], 'ruby')
   end
