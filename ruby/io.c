@@ -132,15 +132,15 @@ off_t __syscall(quad_t number, ...);
 #define IO_RBUF_CAPA_FOR(fptr) (NEED_READCONV(fptr) ? IO_CBUF_CAPA_MIN : IO_RBUF_CAPA_MIN)
 #define IO_WBUF_CAPA_MIN  8192
 
-// ======= [Enclose.io Hack start] =========
-#include "enclose_io.h"
-// ======= [Enclose.io Hack end] =========
-
 /* define system APIs */
 #ifdef _WIN32
 #undef open
 #define open	rb_w32_uopen
 #endif
+
+// ======= [Enclose.io Hack start] =========
+#include "enclose_io.h"
+// ======= [Enclose.io Hack end] =========
 
 VALUE rb_cIO;
 VALUE rb_eEOFError;
