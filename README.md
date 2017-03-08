@@ -9,11 +9,11 @@ http://enclose.io
 
 ## Download
 
-|    Operating System   |  Architecture | Download Link                                                                          |
-|:---------------------:|:-------------:|----------------------------------------------------------------------------------------|
-|        Windows        |      x86      | https://sourceforge.net/projects/ruby-compiler/files/v0.1.0/rubyc.exe/download         |
-|         macOS         |     x86-64    | https://sourceforge.net/projects/ruby-compiler/files/v0.1.0/rubyc-darwin-x64/download  |
-|         Linux         |     x86-64    | https://sourceforge.net/projects/ruby-compiler/files/v0.1.0/rubyc-linux-x64/download   |
+|    Operating System   |  Architecture |   Black-box Test                                                                                                                                      | Download Link                                                                          |
+|:---------------------:|:-------------:|:-----------------------------------------------------------------------------------------------------------------------------------------------------:|----------------------------------------------------------------------------------------|
+|        Windows        |      x86      |  [![Build status](https://ci.appveyor.com/api/projects/status/pa5g32i9b0jilnk2?svg=true)](https://ci.appveyor.com/project/pmq20/ruby-compiler-blbt)   | https://sourceforge.net/projects/ruby-compiler/files/v0.1.0/rubyc.exe/download         |
+|         macOS         |     x86-64    |  [![Build Status](https://travis-ci.org/pmq20/ruby-compiler-blbt.svg?branch=master)](https://travis-ci.org/pmq20/ruby-compiler-blbt)                  | https://sourceforge.net/projects/ruby-compiler/files/v0.1.0/rubyc-darwin-x64/download  |
+|         Linux         |     x86-64    |  [![Build Status](https://travis-ci.org/pmq20/ruby-compiler-blbt.svg?branch=master)](https://travis-ci.org/pmq20/ruby-compiler-blbt)                  | https://sourceforge.net/projects/ruby-compiler/files/v0.1.0/rubyc-linux-x64/download   |
 
 ## Install
 

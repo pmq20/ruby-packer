@@ -1,9 +1,10 @@
 # Ruby Compiler Changelog
 
-## v0.1.1
+## v0.2.0
 
 - add option --clean to clean temporary files before compiling
 - upgrade libsquash to https://github.com/pmq20/libsquash/commit/4cc90f9dfe83f988b982d805cec84da533bc6d33
+- add Black-box Test
 
 ## v0.1.0
 
