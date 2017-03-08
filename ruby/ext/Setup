@@ -28,7 +28,7 @@ option nodynamic
 #nkf
 #objspace
 #openssl
-pathname
+#pathname
 #psych
 #pty
 #racc/cparse
@@ -42,4 +42,4 @@ pathname
 #syslog
 #win32
 #win32ole
-zlib
+#zlib
