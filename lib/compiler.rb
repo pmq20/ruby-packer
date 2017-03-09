@@ -177,6 +177,7 @@ HERECODE
       Utils.cp(File.join(PRJ_ROOT, 'ruby', 'enclose_io_memfs.c'), @vendor_ruby)
       if Gem.win_platform?
         Utils.run(@compile_env, "call win32\\configure.bat \
+                                --enable-bundled-libyaml \
                                 --enable-debug-env \
                                 --disable-install-doc \
                                 --with-static-linked-ext")
@@ -198,6 +199,7 @@ HERECODE
         Utils.cp('ruby.exe', @options[:output])
       else
         Utils.run(@compile_env, "./configure  \
+                               --enable-bundled-libyaml \
                                --without-gmp \
                                --disable-dtrace \
                                --enable-debug-env \
