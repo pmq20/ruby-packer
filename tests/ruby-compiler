@@ -7,27 +7,70 @@
 
 require 'shellwords'
 require 'fileutils'
+require 'tmpdir'
+
+def escape(arg)
+  if Gem.win_platform?
+    if arg.include?('"')
+      raise NotImplementedError
+    end
+    %Q{"#{arg}"}
+  else
+    Shellwords.escape(arg)
+  end
+end
+
+tmpdir = File.expand_path("rubyc", Dir.tmpdir)
+tmpdir_ruby = File.join(tmpdir, 'ruby')
 
 Dir.chdir(File.expand_path('../..', __FILE__))
 
 outpath = File.expand_path((Gem.win_platform? ? 'a.exe' : 'a.out'), Dir.pwd)
-FileUtils.rm_f(outpath)
+unless File.exist?(outpath)
+  pid = spawn("ruby bin/rubyc --tmpdir=#{escape tmpdir} bin/rubyc")
+  pid, status = Process.wait2(pid)
+  raise "Failed running rubyc for ruby-compiler" unless status.success?
 
-pid = spawn("ruby bin/rubyc bin/rubyc")
-pid, status = Process.wait2(pid)
-raise "Failed running rubyc for ruby-compiler" unless status.success?
+  raise unless File.exist?(outpath)
+  raise unless File.size(outpath) >= 10_000_000
 
-raise unless File.exist?(outpath)
-raise unless File.size(outpath) >= 10_000_000
-
-if Gem.win_platform?
-  outpath = %Q{"#{outpath}"}
-else
-  File.chmod(0777, outpath)
-  outpath = Shellwords.escape(outpath)
+  if Gem.win_platform?
+    outpath = %Q{"#{outpath}"}
+  else
+    File.chmod(0777, outpath)
+    outpath = Shellwords.escape(outpath)
+  end
 end
 
+# PART 1
 raise unless `#{outpath} --help`.include?(%q{Compiling your Ruby application into a single executable.})
 raise unless $?.success?
 raise unless `#{outpath} --ruby-version`.to_i >= 2
 raise unless $?.success?
+puts "Congratulations! PART 1 passed."
+
+# PART 2
+Dir.chdir(tmpdir_ruby)
+ENV['ENCLOSE_IO_USE_ORIGINAL_RUBY'] = '1'
+ENV['ENCLOSE_IO_ALWAYS_USE_ORIGINAL_RUBY'] = '1'
+if Gem.win_platform?
+  cmds = [
+    'nmake btest',
+    'nmake test-basic',
+  ]
+else
+  cmds = [
+    "make update-rubyspec",
+    "make test",
+    "make test-all",
+    "make test-rubyspec",
+  ]
+end
+
+cmds.each do |cmd|
+  pid = spawn(cmd)
+  pid, status = Process.wait2(pid)
+  raise "Failed running #{cmd}" unless status.success?
+end
+puts "Congratulations! PART 2 passed."
+puts "All passed."
