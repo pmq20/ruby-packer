@@ -992,53 +992,6 @@ $(PROGRAM):	$(MAINOBJ) $(LIBRUBY_SO) $(RUBY_INSTALL_NAME).res
 		$(ECHO) linking $(@:\=/)
 		$(Q) $(PURIFY) $(CC) $(MAINOBJ) $(RUBY_INSTALL_NAME).res \
 			$(OUTFLAG)$@ $(LIBRUBY_A) $(LIBS) enc\*.obj enc\*.lib ext\extinit.obj \
-			ext\-test-\array\resize\resize-i386-mswin32_140.lib \
-			ext\-test-\bignum\bignum-i386-mswin32_140.lib \
-			ext\-test-\bug-3571\bug_3571-i386-mswin32_140.lib \
-			ext\-test-\bug-5832\bug_5832-i386-mswin32_140.lib \
-			ext\-test-\bug_reporter\bug_reporter-i386-mswin32_140.lib \
-			ext\-test-\class\class-i386-mswin32_140.lib \
-			ext\-test-\debug\debug-i386-mswin32_140.lib \
-			ext\-test-\dln\empty\empty-i386-mswin32_140.lib \
-			ext\-test-\exception\exception-i386-mswin32_140.lib \
-			ext\-test-\fatal\rb_fatal-i386-mswin32_140.lib \
-			ext\-test-\file\file-i386-mswin32_140.lib \
-			ext\-test-\float\float-i386-mswin32_140.lib \
-			ext\-test-\funcall\funcall-i386-mswin32_140.lib \
-			ext\-test-\gvl\call_without_gvl\call_without_gvl-i386-mswin32_140.lib \
-			ext\-test-\hash\hash-i386-mswin32_140.lib \
-			ext\-test-\integer\integer-i386-mswin32_140.lib \
-			ext\-test-\iseq_load\iseq_load-i386-mswin32_140.lib \
-			ext\-test-\iter\iter-i386-mswin32_140.lib \
-			ext\-test-\load\dot.dot\dot.dot-i386-mswin32_140.lib \
-			ext\-test-\marshal\compat\compat-i386-mswin32_140.lib \
-			ext\-test-\marshal\internal_ivar\internal_ivar-i386-mswin32_140.lib \
-			ext\-test-\marshal\usr\usr-i386-mswin32_140.lib \
-			ext\-test-\memory_status\memory_status-i386-mswin32_140.lib \
-			ext\-test-\method\method-i386-mswin32_140.lib \
-			ext\-test-\notimplement\notimplement-i386-mswin32_140.lib \
-			ext\-test-\num2int\num2int-i386-mswin32_140.lib \
-			ext\-test-\path_to_class\path_to_class-i386-mswin32_140.lib \
-			ext\-test-\postponed_job\postponed_job-i386-mswin32_140.lib \
-			ext\-test-\printf\printf-i386-mswin32_140.lib \
-			ext\-test-\proc\proc-i386-mswin32_140.lib \
-			ext\-test-\rational\rational-i386-mswin32_140.lib \
-			ext\-test-\recursion\recursion-i386-mswin32_140.lib \
-			ext\-test-\st\foreach\foreach-i386-mswin32_140.lib \
-			ext\-test-\st\numhash\numhash-i386-mswin32_140.lib \
-			ext\-test-\st\update\update-i386-mswin32_140.lib \
-			ext\-test-\string\string-i386-mswin32_140.lib \
-			ext\-test-\struct\struct-i386-mswin32_140.lib \
-			ext\-test-\symbol\symbol-i386-mswin32_140.lib \
-			ext\-test-\time\time-i386-mswin32_140.lib \
-			ext\-test-\tracepoint\tracepoint-i386-mswin32_140.lib \
-			ext\-test-\typeddata\typeddata-i386-mswin32_140.lib \
-			ext\-test-\vm\at_exit-i386-mswin32_140.lib \
-			ext\-test-\wait_for_single_fd\wait_for_single_fd-i386-mswin32_140.lib \
-			ext\-test-\win32\console\console-i386-mswin32_140.lib \
-			ext\-test-\win32\dln\dln-i386-mswin32_140.lib \
-			ext\-test-\win32\dln\dlntest.lib \
-			ext\-test-\win32\fd_setsize\fd_setsize-i386-mswin32_140.lib \
 			ext\bigdecimal\bigdecimal.lib \
 			ext\cgi\escape\escape.lib \
 			ext\continuation\continuation.lib \
@@ -1073,53 +1026,6 @@ $(WPROGRAM):	$(MAINOBJ) $(WINMAINOBJ) $(LIBRUBY_SO) $(RUBYW_INSTALL_NAME).res
 		$(ECHO) linking $(@:\=/)
 		$(Q) $(PURIFY) $(CC) $(MAINOBJ) $(WINMAINOBJ) \
 			$(RUBYW_INSTALL_NAME).res $(OUTFLAG)$@ $(LIBRUBY_A) $(LIBS) enc\*.obj enc\*.lib ext\extinit.obj \
-			ext\-test-\array\resize\resize-i386-mswin32_140.lib \
-			ext\-test-\bignum\bignum-i386-mswin32_140.lib \
-			ext\-test-\bug-3571\bug_3571-i386-mswin32_140.lib \
-			ext\-test-\bug-5832\bug_5832-i386-mswin32_140.lib \
-			ext\-test-\bug_reporter\bug_reporter-i386-mswin32_140.lib \
-			ext\-test-\class\class-i386-mswin32_140.lib \
-			ext\-test-\debug\debug-i386-mswin32_140.lib \
-			ext\-test-\dln\empty\empty-i386-mswin32_140.lib \
-			ext\-test-\exception\exception-i386-mswin32_140.lib \
-			ext\-test-\fatal\rb_fatal-i386-mswin32_140.lib \
-			ext\-test-\file\file-i386-mswin32_140.lib \
-			ext\-test-\float\float-i386-mswin32_140.lib \
-			ext\-test-\funcall\funcall-i386-mswin32_140.lib \
-			ext\-test-\gvl\call_without_gvl\call_without_gvl-i386-mswin32_140.lib \
-			ext\-test-\hash\hash-i386-mswin32_140.lib \
-			ext\-test-\integer\integer-i386-mswin32_140.lib \
-			ext\-test-\iseq_load\iseq_load-i386-mswin32_140.lib \
-			ext\-test-\iter\iter-i386-mswin32_140.lib \
-			ext\-test-\load\dot.dot\dot.dot-i386-mswin32_140.lib \
-			ext\-test-\marshal\compat\compat-i386-mswin32_140.lib \
-			ext\-test-\marshal\internal_ivar\internal_ivar-i386-mswin32_140.lib \
-			ext\-test-\marshal\usr\usr-i386-mswin32_140.lib \
-			ext\-test-\memory_status\memory_status-i386-mswin32_140.lib \
-			ext\-test-\method\method-i386-mswin32_140.lib \
-			ext\-test-\notimplement\notimplement-i386-mswin32_140.lib \
-			ext\-test-\num2int\num2int-i386-mswin32_140.lib \
-			ext\-test-\path_to_class\path_to_class-i386-mswin32_140.lib \
-			ext\-test-\postponed_job\postponed_job-i386-mswin32_140.lib \
-			ext\-test-\printf\printf-i386-mswin32_140.lib \
-			ext\-test-\proc\proc-i386-mswin32_140.lib \
-			ext\-test-\rational\rational-i386-mswin32_140.lib \
-			ext\-test-\recursion\recursion-i386-mswin32_140.lib \
-			ext\-test-\st\foreach\foreach-i386-mswin32_140.lib \
-			ext\-test-\st\numhash\numhash-i386-mswin32_140.lib \
-			ext\-test-\st\update\update-i386-mswin32_140.lib \
-			ext\-test-\string\string-i386-mswin32_140.lib \
-			ext\-test-\struct\struct-i386-mswin32_140.lib \
-			ext\-test-\symbol\symbol-i386-mswin32_140.lib \
-			ext\-test-\time\time-i386-mswin32_140.lib \
-			ext\-test-\tracepoint\tracepoint-i386-mswin32_140.lib \
-			ext\-test-\typeddata\typeddata-i386-mswin32_140.lib \
-			ext\-test-\vm\at_exit-i386-mswin32_140.lib \
-			ext\-test-\wait_for_single_fd\wait_for_single_fd-i386-mswin32_140.lib \
-			ext\-test-\win32\console\console-i386-mswin32_140.lib \
-			ext\-test-\win32\dln\dln-i386-mswin32_140.lib \
-			ext\-test-\win32\dln\dlntest.lib \
-			ext\-test-\win32\fd_setsize\fd_setsize-i386-mswin32_140.lib \
 			ext\bigdecimal\bigdecimal.lib \
 			ext\cgi\escape\escape.lib \
 			ext\continuation\continuation.lib \
