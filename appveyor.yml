@@ -6,44 +6,36 @@ build_script:
 
     dir C:\projects
 
-    Start-FileDownload https://github.com/pmq20/rubyinstaller/files/689117/rb240-win32.zip -FileName C:\projects\ruby240_win32.zip
-
     Start-FileDownload https://github.com/pmq20/squashfuse/files/691217/sqfs43-win32.zip -FileName C:\projects\sqfs43-win32.zip
-
-    Start-FileDownload https://github.com/pmq20/rubyinstaller/files/759631/sqfs43-win32-zlib-so.zip -FileName C:\projects\sqfs43-win32-zlib-so.zip
-
-    Start-FileDownload https://github.com/pmq20/rubyinstaller/files/759632/sqfs43-win32-zlib-dll.zip -FileName C:\projects\sqfs43-win32-zlib-dll.zip
 
     Add-Type -AssemblyName System.IO.Compression.FileSystem
 
-    [System.IO.Compression.ZipFile]::ExtractToDirectory("C:\projects\ruby240_win32.zip", "C:\projects")
-
     [System.IO.Compression.ZipFile]::ExtractToDirectory("C:\projects\sqfs43-win32.zip", "C:\projects\usr\bin")
-
-    [System.IO.Compression.ZipFile]::ExtractToDirectory("C:\projects\sqfs43-win32-zlib-so.zip", "C:\projects\usr\lib\ruby\site_ruby\2.4.0\i386-vcruntime140")
-
-    [System.IO.Compression.ZipFile]::ExtractToDirectory("C:\projects\sqfs43-win32-zlib-dll.zip", "C:\projects\ruby-compiler")
 
 test_script:
 - cmd: |
-    set PATH=C:\projects\usr\bin;%PATH%
+    dir C:\
+
+    set PATH=C:\Ruby241\bin;C:\projects\usr\bin;%PATH%
 
     call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" amd64_x86
 
-    mksquashfs -version
+    where mksquashfs
 
-    ruby --version
+    mksquashfs -version
 
     where ruby
 
+    ruby --version
+
     where gem
+
+    gem --version
 
     gem install C:\projects\ruby-compiler\ruby\gems\bundler-*.gem --force --local --no-rdoc --no-ri 
 
     where bundle
 
-    copy zlib.dll C:\projects\usr\bin
-
-    move zlib.dll ruby
+    bundle --version
 
     ruby tests\ruby-compiler

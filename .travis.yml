@@ -1,6 +1,6 @@
 language: ruby
 
-rvm: 2.4.0
+rvm: 2.4.1
 
 os:
   - linux
