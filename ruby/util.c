@@ -2,12 +2,16 @@
 
   util.c -
 
-  $Author: nobu $
+  $Author: naruse $
   created at: Fri Mar 10 17:22:34 JST 1995
 
   Copyright (C) 1993-2008 Yukihiro Matsumoto
 
 **********************************************************************/
+
+#if defined __MINGW32__ || defined __MINGW64__
+#define MINGW_HAS_SECURE_API 1
+#endif
 
 #include "internal.h"
 

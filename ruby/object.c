@@ -2,7 +2,7 @@
 
   object.c -
 
-  $Author: nobu $
+  $Author: naruse $
   created at: Thu Jul 15 12:01:24 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -304,6 +304,7 @@ special_object_p(VALUE obj)
     switch (BUILTIN_TYPE(obj)) {
       case T_BIGNUM:
       case T_FLOAT:
+      case T_SYMBOL:
 	return TRUE;
       default:
 	return FALSE;

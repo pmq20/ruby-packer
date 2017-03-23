@@ -3,7 +3,7 @@
 # = uri/common.rb
 #
 # Author:: Akira Yamada <akira@ruby-lang.org>
-# Revision:: $Id: common.rb 56674 2016-11-08 11:57:00Z a_matsuda $
+# Revision:: $Id: common.rb 57870 2017-03-11 17:55:02Z naruse $
 # License::
 #   You can redistribute it and/or modify it under the same term as Ruby.
 #
@@ -82,7 +82,7 @@ module URI
     # Escapes the string, replacing all unsafe characters with codes.
     #
     # This method is obsolete and should not be used. Instead, use
-    # CGI.escape, URI.www_form_encode or URI.www_form_encode_component
+    # CGI.escape, URI.encode_www_form or URI.encode_www_form_component
     # depending on your specific use case.
     #
     # == Usage

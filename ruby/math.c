@@ -2,7 +2,7 @@
 
   math.c -
 
-  $Author: nobu $
+  $Author: naruse $
   created at: Tue Jan 25 14:12:56 JST 1994
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -563,7 +563,7 @@ math_log10(VALUE unused_obj, VALUE x)
     /* check for pole error */
     if (d == 0.0) return DBL2NUM(-INFINITY);
 
-    return DBL2NUM(log10(d) + numbits * M_LN2/M_LN10); /* log10(d * 2 ** numbits) */
+    return DBL2NUM(log10(d) + numbits * log10(2)); /* log10(d * 2 ** numbits) */
 }
 
 /*

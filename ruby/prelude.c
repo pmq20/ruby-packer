@@ -84,6 +84,7 @@ static const char prelude_code0[] =
 "\n"
 "\n"
 "\n"
+"\n"
 "  def read_nonblock(len, buf = nil, exception: true)\n"
 "    __read_nonblock(len, buf, exception)\n"
 "  end\n"
