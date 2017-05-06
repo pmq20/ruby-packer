@@ -17,16 +17,35 @@ Compiling your Ruby application into a single executable.
 
 Usage
   rubyc [OPTION]... [ENTRANCE]
+  If ENTRANCE was not provided, then a single Ruby interpreter executable will be produced.
 
 }.strip
 
 EXAMPLES = %Q{
 
-Example:
-  git clone --depth 1 https://github.com/pmq20/ruby-compiler.git
-  cd ruby-compiler
-  rubyc bin/rubyc
-  ./a.out (or a.exe on Windows)
+Examples:
+
+  Producing a single Ruby interpreter executable:
+    rubyc
+    ./a.out (or a.exe on Windows)
+
+  Bootstrapping:
+    git clone --depth 1 https://github.com/pmq20/ruby-compiler.git
+    cd ruby-compiler
+    rubyc bin/rubyc
+    ./a.out (or a.exe on Windows)
+
+  Compiling a CLI tool:
+    git clone --depth 1 https://github.com/pmq20/node-compiler
+    cd node-compiler
+    rubyc bin/nodec
+    ./a.out (or a.exe on Windows)
+  
+  Compiling a Rails application
+    git clone --depth 1 https://github.com/ruby-china/homeland
+    cd homeland
+    rubyc bin/rails
+    DATABASE_URL=... ./a.out server (or a.exe on Windows)
 
 Bug reports and pull requests are welcome on GitHub at
 https://github.com/pmq20/ruby-compiler

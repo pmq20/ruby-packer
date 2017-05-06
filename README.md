@@ -2,12 +2,6 @@
 
 Compiling your Ruby application into a single executable.
 
-http://enclose.io/rubyc
-
-Also producing the most portable ruby installation ever - a single `ruby.exe` executable.
-
-http://enclose.io/ruby
-
 [![Travis CI status](https://travis-ci.org/pmq20/ruby-compiler.svg?branch=master)](https://travis-ci.org/pmq20/ruby-compiler)
 [![AppVeyor status](https://ci.appveyor.com/api/projects/status/93i36eliiy6v3686/branch/master?svg=true)](https://ci.appveyor.com/project/pmq20/ruby-compiler/branch/master)
 
@@ -67,6 +61,8 @@ Then,
 
 ## Usage
 
+If `ENTRANCE` was not provided, then a single Ruby interpreter executable will be produced.
+
     rubyc [OPTION]... [ENTRANCE]
       -r, --root=DIR                   The path to the root of the application
       -o, --output=FILE                The path of the output file
@@ -79,12 +75,33 @@ Then,
           --ruby-api-version           Prints the version of the Ruby API and exit
       -h, --help                       Prints this help and exit
 
-## Example
+## Examples
 
-    git clone --depth 1 https://github.com/pmq20/ruby-compiler.git
+### Producing a single Ruby interpreter executable
+
+    rubyc
+    ./a.out (or a.exe on Windows)
+
+### Bootstrapping
+
+    git clone --depth 1 https://github.com/pmq20/ruby-compiler
     cd ruby-compiler
     rubyc bin/rubyc
     ./a.out (or a.exe on Windows)
+
+### Compiling a CLI tool
+
+    git clone --depth 1 https://github.com/pmq20/node-compiler
+    cd node-compiler
+    rubyc bin/nodec
+    ./a.out (or a.exe on Windows)
+
+### Compiling a Rails application
+
+    git clone --depth 1 https://github.com/ruby-china/homeland
+    cd homeland
+    rubyc bin/rails
+    DATABASE_URL=... ./a.out server (or a.exe on Windows)
 
 ## See Also
 
