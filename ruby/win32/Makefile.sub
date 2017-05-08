@@ -1004,8 +1004,6 @@ $(PROGRAM):	$(MAINOBJ) $(LIBRUBY_SO) $(RUBY_INSTALL_NAME).res
 			ext\io\wait\wait.lib \
 			ext\json\generator\generator.lib \
 			ext\json\parser\parser.lib \
-			ext\mathn\complex\complex.lib \
-			ext\mathn\rational\rational.lib \
 			ext\nkf\nkf.lib \
 			ext\objspace\objspace.lib \
 			ext\pathname\pathname.lib \
@@ -1038,8 +1036,6 @@ $(WPROGRAM):	$(MAINOBJ) $(WINMAINOBJ) $(LIBRUBY_SO) $(RUBYW_INSTALL_NAME).res
 			ext\io\wait\wait.lib \
 			ext\json\generator\generator.lib \
 			ext\json\parser\parser.lib \
-			ext\mathn\complex\complex.lib \
-			ext\mathn\rational\rational.lib \
 			ext\nkf\nkf.lib \
 			ext\objspace\objspace.lib \
 			ext\pathname\pathname.lib \

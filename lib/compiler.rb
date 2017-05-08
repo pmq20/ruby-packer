@@ -141,10 +141,18 @@ HERECODE
             f.print line
           end
         end
-      end;found
+      end
       raise 'Failed to patch INCFLAGS of #{target}' unless found
     end
     @vendor_ruby = File.join(@options[:tmpdir], 'ruby')
+    if Gem.win_platform?
+      # TODO make those win32 ext work
+      Utils.chdir(@vendor_ruby) do
+        Utils.chdir('ext') do
+          Utils.rm_rf('mathn')
+        end
+      end
+    end
   end
   
   def check_base_ruby_version!
