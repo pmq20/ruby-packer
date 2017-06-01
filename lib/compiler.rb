@@ -69,6 +69,7 @@ class Compiler
   end
 
   def init_options
+    @options[:make_args] ||= '-j4'
     if Gem.win_platform?
       @options[:output] ||= 'a.exe'
     else
@@ -104,15 +105,31 @@ class Compiler
     end
   end
   
+  def stuff_zlib
+    target = File.join(@options[:tmpdir], 'zlib')
+    unless Dir.exist?(target)
+      Utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'zlib'), target, preserve: true)
+      Utils.chdir(target) do
+        Utils.run('./configure --static')
+        Utils.run("make #{@options[:make_args]}")
+      end
+    end
+  end
+  
   def stuff_tmpdir
     Utils.rm_rf(@options[:tmpdir]) if @options[:clean]
     Utils.mkdir_p(@options[:tmpdir])
+
+    stuff_zlib
+    
     target = File.join(@options[:tmpdir], 'ruby')
     unless Dir.exist?(target)
       Utils.cp_r(File.join(PRJ_ROOT, 'ruby'), target, preserve: true)
       target = File.join(@options[:tmpdir], 'ruby', 'common.mk')
       target_content = File.read(target)
       found = false
+      common_flags = ''
+      common_flags += " #{Utils.escape File.join(@options[:tmpdir], 'zlib', 'libz.a')} "
       File.open(target, 'w') do |f|
         target_content.each_line do |line|
           if line =~ /^INCFLAGS = (.*)$/
@@ -120,19 +137,24 @@ class Compiler
             if Gem.win_platform?
               if @options[:debug]
                 f.puts "INCFLAGS = #{$1} /DEBUG:FULL /Od -Zi"
+                f.puts "RUBYC_FLAGS = #{common_flags}"
               else
                 f.puts "INCFLAGS = #{$1}"
+                f.puts "RUBYC_FLAGS = #{common_flags}"
               end
             else
               if @options[:debug]
                 f.puts "INCFLAGS = #{$1} -g -O0"
+                f.puts "RUBYC_FLAGS = #{common_flags}"
               else
                 f.puts <<-HERECODE
 ENCLOSE_IO_CCV = $(shell $(CC) --version)
 ifeq (,$(findstring LLVM,$(ENCLOSE_IO_CCV)))
-INCFLAGS = #{$1} -Os -fdata-sections -ffunction-sections -Wl,--gc-sections
+INCFLAGS = #{$1} -Os -fdata-sections -ffunction-sections
+RUBYC_FLAGS = -Wl,--gc-sections #{common_flags}
 else
-INCFLAGS = #{$1} -Os -fdata-sections -ffunction-sections -Wl,-dead_strip
+INCFLAGS = #{$1} -Os -fdata-sections -ffunction-sections
+RUBYC_FLAGS = -Wl,-dead_strip #{common_flags}
 endif
 HERECODE
               end
