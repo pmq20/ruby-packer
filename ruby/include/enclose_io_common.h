@@ -29,6 +29,7 @@
 #include <sys/uio.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <dlfcn.h>
 #endif
 
 extern sqfs *enclose_io_fs;
@@ -272,6 +273,13 @@ EncloseIOReadDirectoryChangesW(
         LPOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine
 );
 
+HMODULE
+EncloseIOLoadLibraryExW(
+	LPCWSTR lpLibFileName,
+	HANDLE hFile,
+	DWORD dwFlags
+);
+
 #else
 int enclose_io_lstat(const char *path, struct stat *buf);
 ssize_t enclose_io_readlink(const char *path, char *buf, size_t bufsize);
@@ -287,6 +295,8 @@ int enclose_io_scandir(const char *dirname, struct SQUASH_DIRENT ***namelist,
 	int(*compar)(const struct SQUASH_DIRENT **, const struct SQUASH_DIRENT **));
 ssize_t enclose_io_pread(int d, void *buf, size_t nbyte, off_t offset);
 ssize_t enclose_io_readv(int d, const struct iovec *iov, int iovcnt);
+void* enclose_io_dlopen(const char* path, int mode);
+
 #endif // !_WIN32
 
 #endif
