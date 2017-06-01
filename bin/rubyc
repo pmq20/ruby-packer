@@ -117,10 +117,6 @@ OptionParser.new do |opts|
 end.parse!
 
 entrance = ARGV[-1]
-unless entrance.kind_of?(String) && entrance.length > 0
-  usage.call(STDERR)
-  exit 1
-end
 
 begin
   instance = ::Compiler.new entrance, options

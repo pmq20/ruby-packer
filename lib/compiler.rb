@@ -52,7 +52,7 @@ class Compiler
   end
   
   def initialize(entrance, options = {})
-    @entrance = File.expand_path(entrance)
+    @entrance = File.expand_path(entrance) if entrance
     @options = options
 
     check_base_ruby_version!

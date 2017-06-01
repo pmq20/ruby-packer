@@ -67,6 +67,7 @@ If `ENTRANCE` was not provided, then a single Ruby interpreter executable will b
       -r, --root=DIR                   The path to the root of the application
       -o, --output=FILE                The path of the output file
       -d, --tmpdir=DIR                 The directory for temporary files
+      -c, --clean                      Cleans temporary files before compiling
           --make-args=ARGS             Extra arguments to be passed to make
           --nmake-args=ARGS            Extra arguments to be passed to nmake
           --debug                      Enable debug mode
@@ -74,6 +75,7 @@ If `ENTRANCE` was not provided, then a single Ruby interpreter executable will b
           --ruby-version               Prints the version of the Ruby runtime and exit
           --ruby-api-version           Prints the version of the Ruby API and exit
       -h, --help                       Prints this help and exit
+          --examples                   Prints usage examples
 
 ## Examples
 
