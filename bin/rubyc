@@ -23,32 +23,29 @@ Usage
 
 EXAMPLES = %Q{
 
-Examples:
+Examples
 
-  Producing a single Ruby interpreter executable:
-    rubyc
-    ./a.out (or a.exe on Windows)
+Producing a single Ruby interpreter executable:
+  rubyc
+  ./a.out (or a.exe on Windows)
 
-  Bootstrapping:
-    git clone --depth 1 https://github.com/pmq20/ruby-compiler.git
-    cd ruby-compiler
-    rubyc bin/rubyc
-    ./a.out (or a.exe on Windows)
+Bootstrapping:
+  git clone --depth 1 https://github.com/pmq20/ruby-compiler.git
+  cd ruby-compiler
+  rubyc bin/rubyc
+  ./a.out (or a.exe on Windows)
 
-  Compiling a CLI tool:
-    git clone --depth 1 https://github.com/pmq20/node-compiler
-    cd node-compiler
-    rubyc bin/nodec
-    ./a.out (or a.exe on Windows)
-  
-  Compiling a Rails application
-    git clone --depth 1 https://github.com/ruby-china/homeland
-    cd homeland
-    rubyc bin/rails
-    DATABASE_URL=... ./a.out server (or a.exe on Windows)
+Compiling a CLI tool:
+  git clone --depth 1 https://github.com/pmq20/node-compiler
+  cd node-compiler
+  rubyc bin/nodec
+  ./a.out (or a.exe on Windows)
 
-Bug reports and pull requests are welcome on GitHub at
-https://github.com/pmq20/ruby-compiler
+Compiling a Rails application
+  git clone --depth 1 https://github.com/ruby-china/homeland
+  cd homeland
+  rubyc bin/rails
+  DATABASE_URL=... ./a.out server (or a.exe on Windows)
 
 }.strip
 
@@ -58,8 +55,6 @@ outer_opts = nil
 
 usage = lambda do |out|
   out.puts outer_opts
-  out.puts
-  out.puts EXAMPLES
 end
 
 OptionParser.new do |opts|
@@ -110,6 +105,11 @@ OptionParser.new do |opts|
 
   opts.on("-h", "--help", "Prints this help and exit") do
     usage.call(STDOUT)
+    exit 0
+  end
+
+  opts.on("--examples", "Prints usage examples") do
+    STDOUT.puts EXAMPLES
     exit 0
   end
 
