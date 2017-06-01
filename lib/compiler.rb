@@ -66,6 +66,9 @@ class Compiler
     STDERR.puts
 
     stuff_tmpdir
+
+    @ldflags = ''
+    @ldflags += " #{Utils.escape File.join(@options[:tmpdir], 'zlib', 'libz.a')} "
   end
 
   def init_options
@@ -121,15 +124,13 @@ class Compiler
     Utils.mkdir_p(@options[:tmpdir])
 
     stuff_zlib
-    
+
     target = File.join(@options[:tmpdir], 'ruby')
     unless Dir.exist?(target)
       Utils.cp_r(File.join(PRJ_ROOT, 'ruby'), target, preserve: true)
       target = File.join(@options[:tmpdir], 'ruby', 'common.mk')
       target_content = File.read(target)
       found = false
-      common_flags = ''
-      common_flags += " #{Utils.escape File.join(@options[:tmpdir], 'zlib', 'libz.a')} "
       File.open(target, 'w') do |f|
         target_content.each_line do |line|
           if line =~ /^INCFLAGS = (.*)$/
@@ -137,24 +138,19 @@ class Compiler
             if Gem.win_platform?
               if @options[:debug]
                 f.puts "INCFLAGS = #{$1} /DEBUG:FULL /Od -Zi"
-                f.puts "RUBYC_FLAGS = #{common_flags}"
               else
                 f.puts "INCFLAGS = #{$1}"
-                f.puts "RUBYC_FLAGS = #{common_flags}"
               end
             else
               if @options[:debug]
                 f.puts "INCFLAGS = #{$1} -g -O0"
-                f.puts "RUBYC_FLAGS = #{common_flags}"
               else
                 f.puts <<-HERECODE
 ENCLOSE_IO_CCV = $(shell $(CC) --version)
 ifeq (,$(findstring LLVM,$(ENCLOSE_IO_CCV)))
 INCFLAGS = #{$1} -Os -fdata-sections -ffunction-sections
-RUBYC_FLAGS = -Wl,--gc-sections #{common_flags}
 else
 INCFLAGS = #{$1} -Os -fdata-sections -ffunction-sections
-RUBYC_FLAGS = -Wl,-dead_strip #{common_flags}
 endif
 HERECODE
               end
@@ -212,6 +208,7 @@ HERECODE
                                 --disable-install-doc \
                                 --with-static-linked-ext")
         nmake!
+        # enclose_io_memfs.o - 2nd pass
         Utils.rm('dir.obj')
         Utils.rm('file.obj')
         Utils.rm('io.obj')
@@ -221,14 +218,14 @@ HERECODE
         Utils.rm('ruby.exe')
         Utils.rm('include/enclose_io.h')
         Utils.rm('enclose_io_memfs.c')
-        # enclose_io_memfs.o - 2nd pass
         bundle_deploy
         make_enclose_io_memfs
         make_enclose_io_vars
         Utils.run(@compile_env, "nmake #{@options[:nmake_args]}")
         Utils.cp('ruby.exe', @options[:output])
       else
-        Utils.run(@compile_env, "./configure  \
+        Utils.run(@compile_env.merge({'LDFLAGS' => @ldflags}),
+                              "./configure  \
                                --enable-bundled-libyaml \
                                --without-gmp \
                                --disable-dtrace \
@@ -238,6 +235,7 @@ HERECODE
                                --disable-install-rdoc \
                                --with-static-linked-ext")
         Utils.run(@compile_env, "make #{@options[:make_args]}")
+        # enclose_io_memfs.o - 2nd pass
         Utils.rm('dir.o')
         Utils.rm('file.o')
         Utils.rm('io.o')
@@ -245,7 +243,6 @@ HERECODE
         Utils.rm('ruby')
         Utils.rm('include/enclose_io.h')
         Utils.rm('enclose_io_memfs.c')
-        # enclose_io_memfs.o - 2nd pass
         bundle_deploy
         make_enclose_io_memfs
         make_enclose_io_vars
@@ -297,6 +294,8 @@ HERECODE
     Dir["#{@vendor_ruby}/ext/**/*.gemspec"].each do |the_gemspec|
       Utils.cp(the_gemspec, dst)
     end
+
+    return unless @entrance
 
     Utils.chdir(@root) do
       gemspecs = Dir['./*.gemspec']
@@ -417,7 +416,7 @@ HERECODE
         f.puts '#include "enclose_io_unix.h"'
         f.puts ''
         f.puts "#define ENCLOSE_IO_CHDIR_AT_STARTUP #{@chdir_at_startup.inspect}" if @chdir_at_startup
-        f.puts "#define ENCLOSE_IO_ENTRANCE #{@memfs_entrance.inspect}"
+        f.puts "#define ENCLOSE_IO_ENTRANCE #{@memfs_entrance.inspect}" if @entrance
         f.puts '#endif'
         f.puts ''
       end
