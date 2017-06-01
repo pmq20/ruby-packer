@@ -72,10 +72,12 @@ COMMONOBJS    = squash_cache.$(OBJEXT) \
 		squash_decompress.$(OBJEXT) \
 		squash_dir.$(OBJEXT) \
 		squash_dirent.$(OBJEXT) \
+		squash_extract.$(OBJEXT) \
 		squash_fd.$(OBJEXT) \
 		squash_file.$(OBJEXT) \
 		squash_fs.$(OBJEXT) \
 		squash_hash.$(OBJEXT) \
+		squash_mutex.$(OBJEXT) \
 		squash_nonstd-makedev.$(OBJEXT) \
 		squash_nonstd-stat.$(OBJEXT) \
 		squash_private.$(OBJEXT) \
@@ -86,7 +88,6 @@ COMMONOBJS    = squash_cache.$(OBJEXT) \
 		squash_table.$(OBJEXT) \
 		squash_traverse.$(OBJEXT) \
 		squash_util.$(OBJEXT) \
-		squash_mutex.$(OBJEXT) \
 		enclose_io_memfs.$(OBJEXT) \
 		enclose_io_unix.$(OBJEXT) \
 		enclose_io_win32.$(OBJEXT) \
