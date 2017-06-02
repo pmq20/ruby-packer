@@ -299,6 +299,19 @@ HERECODE
       Utils.cp(the_gemspec, dst)
     end
 
+    Utils.chdir(@work_dir_inner) do
+      Dir["#{@vendor_ruby}/bin/*"].each do |the_bin|
+        unless File.exist?(File.basename(the_bin))
+          Utils.cp(the_bin, File.basename(the_bin))
+        end
+      end
+      Dir["#{@gems_dir}/bin/*"].each do |the_bin|
+        unless File.exist?(File.basename(the_bin))
+          Utils.cp(the_bin, File.basename(the_bin))
+        end
+      end
+    end
+
     return unless @entrance
 
     Utils.chdir(@root) do
