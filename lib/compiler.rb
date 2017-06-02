@@ -69,10 +69,14 @@ class Compiler
     STDERR.puts "Options: #{@options}"
     STDERR.puts
 
-    stuff_tmpdir
-
     @ldflags = ''
+    @cflags = ''
     @ldflags += " #{Utils.escape File.join(@options[:tmpdir], 'zlib', 'libz.a')} "
+    @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'zlib')} "
+    @ldflags += " #{Utils.escape File.join(@options[:tmpdir], 'openssl', 'libcrypto.a')} #{Utils.escape File.join(@options[:tmpdir], 'openssl', 'libssl.a')} "
+    @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'openssl', 'include')} "
+
+    stuff_tmpdir
   end
 
   def init_options
@@ -122,12 +126,24 @@ class Compiler
       end
     end
   end
+
+  def stuff_openssl
+    target = File.join(@options[:tmpdir], 'openssl')
+    unless Dir.exist?(target)
+      Utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'openssl'), target, preserve: true)
+      Utils.chdir(target) do
+        Utils.run('./config')
+        Utils.run("make #{@options[:make_args]}")
+      end
+    end
+  end
   
   def stuff_tmpdir
     Utils.rm_rf(@options[:tmpdir]) if @options[:clean]
     Utils.mkdir_p(@options[:tmpdir])
 
     stuff_zlib
+    stuff_openssl
 
     target = File.join(@options[:tmpdir], 'ruby')
     unless Dir.exist?(target)
@@ -141,22 +157,15 @@ class Compiler
             found = true
             if Gem.win_platform?
               if @options[:debug]
-                f.puts "INCFLAGS = #{$1} /DEBUG:FULL /Od -Zi"
+                f.puts "INCFLAGS = #{@cflags} #{$1} /DEBUG:FULL /Od -Zi"
               else
-                f.puts "INCFLAGS = #{$1}"
+                f.puts "INCFLAGS = #{@cflags} #{$1}"
               end
             else
               if @options[:debug]
-                f.puts "INCFLAGS = #{$1} -g -O0"
+                f.puts "INCFLAGS = #{@cflags} #{$1} -g -O0"
               else
-                f.puts <<-HERECODE
-ENCLOSE_IO_CCV = $(shell $(CC) --version)
-ifeq (,$(findstring LLVM,$(ENCLOSE_IO_CCV)))
-INCFLAGS = #{$1} -Os -fdata-sections -ffunction-sections
-else
-INCFLAGS = #{$1} -Os -fdata-sections -ffunction-sections
-endif
-HERECODE
+                f.puts "INCFLAGS = #{@cflags} #{$1} -Os -fdata-sections -ffunction-sections"
               end
             end
           else
