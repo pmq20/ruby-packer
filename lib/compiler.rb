@@ -88,6 +88,8 @@ class Compiler
     @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'zlib')} "
     @ldflags += " #{Utils.escape File.join(@options[:tmpdir], 'openssl', 'libcrypto.a')} #{Utils.escape File.join(@options[:tmpdir], 'openssl', 'libssl.a')} "
     @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'openssl', 'include')} "
+    @ldflags += " #{Utils.escape File.join(@options[:tmpdir], 'gdbm', 'src', 'libgdbmapp.a')} "
+    @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'gdbm', 'src')} "
 
     stuff_tmpdir
   end
@@ -151,12 +153,24 @@ class Compiler
     end
   end
   
+  def stuff_gdbm
+    target = File.join(@options[:tmpdir], 'gdbm')
+    unless Dir.exist?(target)
+      Utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'gdbm'), target, preserve: true)
+      Utils.chdir(target) do
+        Utils.run('./configure --disable-shared --enable-static --without-readline')
+        Utils.run("make #{@options[:make_args]}")
+      end
+    end
+  end
+  
   def stuff_tmpdir
     Utils.rm_rf(@options[:tmpdir]) if @options[:clean]
     Utils.mkdir_p(@options[:tmpdir])
 
     stuff_zlib
     stuff_openssl
+    stuff_gdbm
 
     target = File.join(@options[:tmpdir], 'ruby')
     unless Dir.exist?(target)
