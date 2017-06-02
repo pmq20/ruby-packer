@@ -77,8 +77,8 @@ class Compiler
       @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'zlib')} "
       @ldflags += " -L#{Utils.escape File.join(@options[:tmpdir], 'openssl')}  #{Utils.escape File.join(@options[:tmpdir], 'openssl', 'libcrypto.a')} #{Utils.escape File.join(@options[:tmpdir], 'openssl', 'libssl.a')} "
       @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'openssl', 'include')} "
-      @ldflags += " -L#{Utils.escape File.join(@options[:tmpdir], 'gdbm', 'src')} #{Utils.escape File.join(@options[:tmpdir], 'gdbm', 'src', 'libgdbmapp.a')} "
-      @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'gdbm', 'src')} "
+      @ldflags += " -L#{Utils.escape File.join(@options[:tmpdir], 'gdbm', 'build', 'lib')} #{Utils.escape File.join(@options[:tmpdir], 'gdbm', 'build', 'lib', 'libgdbm.a')} "
+      @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'gdbm', 'build', 'include')} "
     end
   end
   
@@ -179,8 +179,9 @@ class Compiler
         if Gem.win_platform?
           # TODO
         else
-          Utils.run('./configure --disable-shared --enable-static --without-readline')
+          Utils.run("./configure --disable-shared --enable-static --without-readline --prefix=#{Utils.escape File.join(@options[:tmpdir], 'gdbm', 'build')}")
           Utils.run("make #{@options[:make_args]}")
+          Utils.run("make install")
         end
       end
     end
