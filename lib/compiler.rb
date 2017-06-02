@@ -79,9 +79,9 @@ class Compiler
       end
     else
       if @options[:debug]
-        @cflags += ' -g -O0 '
+        @cflags += ' -g -O0 -pipe '
       else
-        @cflags += ' -O3 -fno-fast-math -ggdb3 -Os -fdata-sections -ffunction-sections '
+        @cflags += ' -O3 -fno-fast-math -ggdb3 -Os -fdata-sections -ffunction-sections -pipe '
       end
     end
     @ldflags += " #{Utils.escape File.join(@options[:tmpdir], 'zlib', 'libz.a')} "
