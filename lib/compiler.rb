@@ -58,10 +58,14 @@ class Compiler
     check_base_ruby_version!
 
     init_options
-    init_entrance
+    init_entrance if entrance
     init_tmpdir
 
-    STDERR.puts "Entrance: #{@entrance}"
+    if entrance
+      STDERR.puts "Entrance: #{@entrance}"
+    else
+      STDERR.puts "ENTRANCE was not provided, a single Ruby interpreter executable will be produced."
+    end
     STDERR.puts "Options: #{@options}"
     STDERR.puts
 
@@ -103,7 +107,7 @@ class Compiler
   def init_tmpdir
     @options[:tmpdir] ||= File.expand_path("rubyc", Dir.tmpdir)
     @options[:tmpdir] = File.expand_path(@options[:tmpdir])
-    if @options[:tmpdir].include? @root
+    if @root && @options[:tmpdir].include?(@root)
       raise Error, "Tempdir #{@options[:tmpdir]} cannot reside inside #{@root}."
     end
   end
