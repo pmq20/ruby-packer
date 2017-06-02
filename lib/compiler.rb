@@ -71,10 +71,10 @@ class Compiler
 
     if Gem.win_platform?
       @ldflags += " -L#{Utils.escape File.join(@options[:tmpdir], 'zlib')} #{Utils.escape File.join(@options[:tmpdir], 'zlib', 'zlib.lib')} "
-      @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'zlib')} "
+      @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'zlib')} #{Utils.escape File.join(@options[:tmpdir], 'zlib', 'zlib.lib')} "
     else
       @ldflags += " -L#{Utils.escape File.join(@options[:tmpdir], 'zlib')} #{Utils.escape File.join(@options[:tmpdir], 'zlib', 'libz.a')} "
-      @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'zlib')} "
+      @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'zlib')} #{Utils.escape File.join(@options[:tmpdir], 'zlib', 'libz.a')} "
       @ldflags += " -L#{Utils.escape File.join(@options[:tmpdir], 'openssl')}  #{Utils.escape File.join(@options[:tmpdir], 'openssl', 'libcrypto.a')} #{Utils.escape File.join(@options[:tmpdir], 'openssl', 'libssl.a')} "
       @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'openssl', 'include')} "
       @ldflags += " -L#{Utils.escape File.join(@options[:tmpdir], 'gdbm', 'build', 'lib')} #{Utils.escape File.join(@options[:tmpdir], 'gdbm', 'build', 'lib', 'libgdbm.a')} "
