@@ -70,7 +70,8 @@ class Compiler
     end
 
     if Gem.win_platform?
-      # TODO
+      @ldflags += " -L#{Utils.escape File.join(@options[:tmpdir], 'zlib')} #{Utils.escape File.join(@options[:tmpdir], 'zlib', 'zlib.lib')} "
+      @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'zlib')} "
     else
       @ldflags += " -L#{Utils.escape File.join(@options[:tmpdir], 'zlib')} #{Utils.escape File.join(@options[:tmpdir], 'zlib', 'libz.a')} "
       @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'zlib')} "
@@ -146,7 +147,7 @@ class Compiler
       Utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'zlib'), target, preserve: true)
       Utils.chdir(target) do
         if Gem.win_platform?
-          # TODO
+          Utils.run('nmake /f win32\\Makefile.msc')
         else
           Utils.run('./configure --static')
           Utils.run("make #{@options[:make_args]}")
