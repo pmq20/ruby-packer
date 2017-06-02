@@ -147,6 +147,9 @@ class Compiler
           Utils.run('./configure --static')
           Utils.run("make #{@options[:make_args]}")
         end
+        Dir['*.{dylib,dll}'].each do |thisdl|
+          Utils.rm_f(thisdl)
+        end
       end
     end
   end
@@ -161,6 +164,9 @@ class Compiler
         else
           Utils.run('./config')
           Utils.run("make #{@options[:make_args]}")
+        end
+        Dir['*.{dylib,dll}'].each do |thisdl|
+          Utils.rm_f(thisdl)
         end
       end
     end
