@@ -71,6 +71,19 @@ class Compiler
 
     @ldflags = ''
     @cflags = ''
+    if Gem.win_platform?
+      if @options[:debug]
+        @cflags += ' /DEBUG:FULL /Od -Zi '
+      else
+        @cflags += ' /Ox '
+      end
+    else
+      if @options[:debug]
+        @cflags += ' -g -O0 '
+      else
+        @cflags += ' -O3 -fno-fast-math -ggdb3 -Os -fdata-sections -ffunction-sections '
+      end
+    end
     @ldflags += " #{Utils.escape File.join(@options[:tmpdir], 'zlib', 'libz.a')} "
     @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'zlib')} "
     @ldflags += " #{Utils.escape File.join(@options[:tmpdir], 'openssl', 'libcrypto.a')} #{Utils.escape File.join(@options[:tmpdir], 'openssl', 'libssl.a')} "
@@ -155,19 +168,7 @@ class Compiler
         target_content.each_line do |line|
           if line =~ /^INCFLAGS = (.*)$/
             found = true
-            if Gem.win_platform?
-              if @options[:debug]
-                f.puts "INCFLAGS = #{@cflags} #{$1} /DEBUG:FULL /Od -Zi"
-              else
-                f.puts "INCFLAGS = #{@cflags} #{$1}"
-              end
-            else
-              if @options[:debug]
-                f.puts "INCFLAGS = #{@cflags} #{$1} -g -O0"
-              else
-                f.puts "INCFLAGS = #{@cflags} #{$1} -Os -fdata-sections -ffunction-sections"
-              end
-            end
+            f.puts "INCFLAGS = #{$1} #{@cflags}"
           else
             f.print line
           end
@@ -237,7 +238,7 @@ class Compiler
         Utils.run(@compile_env, "nmake #{@options[:nmake_args]}")
         Utils.cp('ruby.exe', @options[:output])
       else
-        Utils.run(@compile_env.merge({'LDFLAGS' => @ldflags}),
+        Utils.run(@compile_env.merge({'CFLAGS' => @cflags, 'LDFLAGS' => @ldflags}),
                               "./configure  \
                                --enable-bundled-libyaml \
                                --without-gmp \
