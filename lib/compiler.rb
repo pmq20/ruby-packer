@@ -51,6 +51,36 @@ class Compiler
     versions.join('.')
   end
   
+  def prepare_flags
+    @ldflags = ''
+    @cflags = ''
+
+    if Gem.win_platform?
+      if @options[:debug]
+        @cflags += ' /DEBUG:FULL /Od -Zi '
+      else
+        @cflags += ' /Ox '
+      end
+    else
+      if @options[:debug]
+        @cflags += ' -g -O0 -pipe '
+      else
+        @cflags += ' -O3 -fno-fast-math -ggdb3 -Os -fdata-sections -ffunction-sections -pipe '
+      end
+    end
+
+    if Gem.win_platform?
+      # TODO
+    else
+      @ldflags += " #{Utils.escape File.join(@options[:tmpdir], 'zlib', 'libz.a')} "
+      @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'zlib')} "
+      @ldflags += " #{Utils.escape File.join(@options[:tmpdir], 'openssl', 'libcrypto.a')} #{Utils.escape File.join(@options[:tmpdir], 'openssl', 'libssl.a')} "
+      @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'openssl', 'include')} "
+      @ldflags += " #{Utils.escape File.join(@options[:tmpdir], 'gdbm', 'src', 'libgdbmapp.a')} "
+      @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'gdbm', 'src')} "
+    end
+  end
+  
   def initialize(entrance, options = {})
     @entrance = File.expand_path(entrance) if entrance
     @options = options
@@ -69,28 +99,7 @@ class Compiler
     STDERR.puts "Options: #{@options}"
     STDERR.puts
 
-    @ldflags = ''
-    @cflags = ''
-    if Gem.win_platform?
-      if @options[:debug]
-        @cflags += ' /DEBUG:FULL /Od -Zi '
-      else
-        @cflags += ' /Ox '
-      end
-    else
-      if @options[:debug]
-        @cflags += ' -g -O0 -pipe '
-      else
-        @cflags += ' -O3 -fno-fast-math -ggdb3 -Os -fdata-sections -ffunction-sections -pipe '
-      end
-    end
-    @ldflags += " #{Utils.escape File.join(@options[:tmpdir], 'zlib', 'libz.a')} "
-    @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'zlib')} "
-    @ldflags += " #{Utils.escape File.join(@options[:tmpdir], 'openssl', 'libcrypto.a')} #{Utils.escape File.join(@options[:tmpdir], 'openssl', 'libssl.a')} "
-    @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'openssl', 'include')} "
-    @ldflags += " #{Utils.escape File.join(@options[:tmpdir], 'gdbm', 'src', 'libgdbmapp.a')} "
-    @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'gdbm', 'src')} "
-
+    prepare_flags
     stuff_tmpdir
   end
 
@@ -136,8 +145,12 @@ class Compiler
     unless Dir.exist?(target)
       Utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'zlib'), target, preserve: true)
       Utils.chdir(target) do
-        Utils.run('./configure --static')
-        Utils.run("make #{@options[:make_args]}")
+        if Gem.win_platform?
+          # TODO
+        else
+          Utils.run('./configure --static')
+          Utils.run("make #{@options[:make_args]}")
+        end
       end
     end
   end
@@ -147,8 +160,12 @@ class Compiler
     unless Dir.exist?(target)
       Utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'openssl'), target, preserve: true)
       Utils.chdir(target) do
-        Utils.run('./config')
-        Utils.run("make #{@options[:make_args]}")
+        if Gem.win_platform?
+          # TODO
+        else
+          Utils.run('./config')
+          Utils.run("make #{@options[:make_args]}")
+        end
       end
     end
   end
@@ -158,8 +175,12 @@ class Compiler
     unless Dir.exist?(target)
       Utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'gdbm'), target, preserve: true)
       Utils.chdir(target) do
-        Utils.run('./configure --disable-shared --enable-static --without-readline')
-        Utils.run("make #{@options[:make_args]}")
+        if Gem.win_platform?
+          # TODO
+        else
+          Utils.run('./configure --disable-shared --enable-static --without-readline')
+          Utils.run("make #{@options[:make_args]}")
+        end
       end
     end
   end
@@ -195,7 +216,19 @@ class Compiler
       # TODO make those win32 ext work
       Utils.chdir(@vendor_ruby) do
         Utils.chdir('ext') do
+          Utils.rm_rf('dbm')
+          Utils.rm_rf('digest')
+          Utils.rm_rf('etc')
+          Utils.rm_rf('fiddle')
+          Utils.rm_rf('gdbm')
           Utils.rm_rf('mathn')
+          Utils.rm_rf('openssl')
+          Utils.rm_rf('pty')
+          Utils.rm_rf('readline')
+          Utils.rm_rf('ripper')
+          Utils.rm_rf('socket')
+          Utils.rm_rf('win32')
+          Utils.rm_rf('win32ole')
         end
       end
     end
