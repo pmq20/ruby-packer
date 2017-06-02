@@ -71,7 +71,7 @@ class Compiler
 
     if Gem.win_platform?
       @ldflags += " -L#{Utils.escape File.join(@options[:tmpdir], 'zlib')} #{Utils.escape File.join(@options[:tmpdir], 'zlib', 'zlib.lib')} "
-      @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'zlib')} #{Utils.escape File.join(@options[:tmpdir], 'zlib', 'zlib.lib')} "
+      @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'zlib')} "
     else
       @ldflags += " -L#{Utils.escape File.join(@options[:tmpdir], 'zlib')} #{Utils.escape File.join(@options[:tmpdir], 'zlib', 'libz.a')} "
       @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'zlib')} "
@@ -204,12 +204,14 @@ class Compiler
     target = File.join(@options[:tmpdir], 'ruby')
     unless Dir.exist?(target)
       Utils.cp_r(File.join(PRJ_ROOT, 'ruby'), target, preserve: true)
+
+      # PATCH common.mk
       target = File.join(@options[:tmpdir], 'ruby', 'common.mk')
       target_content = File.read(target)
       found = false
       File.open(target, 'w') do |f|
         target_content.each_line do |line|
-          if line =~ /^INCFLAGS = (.*)$/
+          if !found && (line =~ /^INCFLAGS = (.*)$/)
             found = true
             f.puts "INCFLAGS = #{$1} #{@cflags}"
           else
@@ -218,7 +220,26 @@ class Compiler
         end
       end
       raise 'Failed to patch INCFLAGS of #{target}' unless found
+      
+      # PATCH win32\Makefile.sub
+      if Gem.win_platform?
+        target = File.join(@options[:tmpdir], 'ruby', 'win32', 'Makefile.sub')
+        target_content = File.read(target)
+        found = false
+        File.open(target, 'w') do |f|
+          target_content.each_line do |line|
+            if !found && (line =~ /^LIBS = (.*)$/)
+              found = true
+              f.puts "LIBS = #{$1} #{@ldflags}"
+            else
+              f.print line
+            end
+          end
+        end
+        raise 'Failed to patch LIBS of #{target}' unless found
+      end
     end
+
     @vendor_ruby = File.join(@options[:tmpdir], 'ruby')
     if Gem.win_platform?
       # TODO make those win32 ext work
