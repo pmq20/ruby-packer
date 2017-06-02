@@ -1,0 +1,60 @@
+# A "magic" file for file(1).
+# Copyright (C) 2016-2017 Free Software Foundation, Inc.
+#
+# GDBM is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3, or (at your option)
+# any later version.
+#
+# GDBM is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with GDBM. If not, see <http://www.gnu.org/licenses/>. 
+
+0	lelong	0x13579acf	GNU DBM 64-bit, little endian
+!:mime	application/octet-stream
+>4	lelong	x		\b; block size=%d
+>8	lequad	x		\b; dir offset=%lld
+>16	lelong	x		\b, size=%d
+>20	lelong	x		\b, bits=%d
+>24	lelong	x		\b; bucket size=%d
+>28	lelong	x		\b, elts=%d
+
+0	belong	0x13579acf	GNU DBM 64-bit, big endian
+!:mime	application/octet-stream
+>4	belong	x		\b; block size=%d
+>8	bequad	x		\b; dir offset=%lld
+>16	belong	x		\b, size=%d
+>20	belong	x		\b, bits=%d
+>24	belong	x		\b; bucket size=%d
+>28	belong	x		\b, elts=%d
+
+0	lelong	0x13579acd	GNU DBM 32-bit, little endian
+!:mime	application/octet-stream
+
+0	belong	0x13579acd	GNU DBM 32-bit, big endian
+!:mime	application/octet-stream
+
+0	lelong	0x13579ace	GNU DBM old format, little endian
+!:mime	application/octet-stream
+
+0	belong	0x13579ace	GNU DBM old format, big endian
+!:mime	application/octet-stream
+
+0	string	\!\r\n
+>3	string	\!\040GDBM\040FLAT\040FILE\040DUMP\040--\040THIS\040IS\040NOT\040A\040TEXT\040FILE\r\n	GDBM flat dump file
+!:mime	application/octet-stream
+>53	string	!\040GDBM\040version\040
+>>&0	regex	([0-9]+\.){1,}	\b, created by GDBM version %s
+
+0	string	#\040GDBM\040dump\040file	GDBM ASCII dump file
+!:mime	text/x-gdbm-dump
+>0	search	#:version=
+>>&0	string	>\0		\b, version %s
+>0	search	#:file=
+>>&0	string	>\0		\b, for file %s
+>0	string	#\040GDBM\040dump\040file\040created\040by\040GDBM\040version\040
+>>&0	regex	([0-9.]+)\.		\b, created by GDBM version %s

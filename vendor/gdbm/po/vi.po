@@ -1,0 +1,1125 @@
+# Vietnamese translation for gdbm (GNU Database Manager).
+# Bản dịch tiếng Việt dành cho gdbm.
+# Copyright © 2016 Free Software Foundation, Inc.
+# This file is distributed under the same license as the gdbm package.
+# First translated by: Trần Ngọc Quân <vnwildman@gmail.com>, 2012-2013.
+# Trần Ngọc Quân <vnwildman@gmail.com>, 2016.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: gdbm 1.12.90\n"
+"Report-Msgid-Bugs-To: bug-gdbm@gnu.org\n"
+"POT-Creation-Date: 2017-03-11 18:13+0200\n"
+"PO-Revision-Date: 2016-08-09 09:11+0700\n"
+"Last-Translator: Trần Ngọc Quân <vnwildman@gmail.com>\n"
+"Language-Team: Vietnamese <translation-team-vi@lists.sourceforge.net>\n"
+"Language: vi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Bugs: Report translation errors to the Language-Team address.\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Poedit-SourceCharset: UTF-8\n"
+"X-Generator: Gtranslator 2.91.7\n"
+
+#: src/bucket.c:67 src/bucket.c:205
+msgid "couldn't init cache"
+msgstr "không thể khởi tạo nhớ bộ đệm"
+
+#: src/bucket.c:104 src/bucket.c:399 src/falloc.c:197 src/falloc.c:315
+#: src/findkey.c:74 src/gdbmstore.c:159 src/update.c:38 src/update.c:104
+msgid "lseek error"
+msgstr "lỗi lseek"
+
+#: src/bucket.c:255
+msgid "directory overflow"
+msgstr "tràn thư mục"
+
+#: src/bucket.c:267 src/falloc.c:285 src/findkey.c:63
+msgid "malloc error"
+msgstr "lỗi malloc"
+
+#: src/falloc.c:187
+msgid "malloc failed"
+msgstr "malloc gặp lỗi"
+
+#: src/gdbm_dump.c:25
+msgid "select dump format"
+msgstr "chọn định dạng dump"
+
+#: src/gdbm_dump.c:67
+msgid "unknown dump format"
+msgstr "không hiểu định dạng dump"
+
+#: src/gdbm_dump.c:74 src/gdbm_load.c:215
+msgid "unknown option"
+msgstr "không hiểu tùy chọn"
+
+#: src/gdbm_dump.c:90 src/gdbm_load.c:231
+#, c-format
+msgid "too many arguments; try `%s -h' for more info"
+msgstr "quá nhiều đối số; gõ “%s -h” để có thêm thông tin"
+
+#: src/gdbm_dump.c:110 src/gdbm_load.c:251
+#, c-format
+msgid "cannot open %s"
+msgstr "không thể mở %s"
+
+#: src/gdbm_dump.c:118 src/gdbm_load.c:261
+msgid "gdbm_open failed"
+msgstr "gdbm_open gặp lỗi"
+
+#: src/gdbm_dump.c:125
+msgid "dump error"
+msgstr "lỗi dump"
+
+#: src/gdbm_load.c:35
+msgid "replace records in the existing database"
+msgstr "thay thế các bản ghi trong cơ sở dữ liệu sẵn có"
+
+#: src/gdbm_load.c:36
+msgid "MODE"
+msgstr "CHẾ-ĐỘ"
+
+#: src/gdbm_load.c:36
+msgid "set file mode"
+msgstr "đặt chế độ tập tin"
+
+#: src/gdbm_load.c:37
+msgid "NAME|UID[:NAME|GID]"
+msgstr "TÊN|UID[:TÊN|GID]"
+
+#: src/gdbm_load.c:37
+msgid "set file owner"
+msgstr "đặt quyền sở hữu cho tập tin"
+
+#: src/gdbm_load.c:38
+msgid "do not attempt to set file meta-data"
+msgstr "đừng cố đặt meta-data tập tin"
+
+#: src/gdbm_load.c:39
+msgid "use memory mapping"
+msgstr "dùng ánh xạ bộ nhớ"
+
+#: src/gdbm_load.c:40 src/gdbm_load.c:41
+msgid "NUM"
+msgstr "SỐ"
+
+#: src/gdbm_load.c:40
+msgid "set the cache size"
+msgstr "đặt kích cỡ của bộ nhớ đệm"
+
+#: src/gdbm_load.c:41
+msgid "set the block size"
+msgstr "đặt kích thước khối"
+
+#: src/gdbm_load.c:79
+#, c-format
+msgid "invalid number: %s"
+msgstr "con số không hợp lệ: %s"
+
+#: src/gdbm_load.c:84
+#, c-format
+msgid "invalid number: %s: %s"
+msgstr "con số không hợp lệ: %s: %s"
+
+#: src/gdbm_load.c:136
+#, c-format
+msgid "invalid octal number"
+msgstr "số bát phân không hợp lệ"
+
+#: src/gdbm_load.c:161
+#, c-format
+msgid "invalid user name: %s"
+msgstr "tên người dùng không hợp lệ: %s"
+
+#: src/gdbm_load.c:180
+#, c-format
+msgid "invalid group name: %s"
+msgstr "tên nhóm không hợp lệ: %s"
+
+#: src/gdbm_load.c:192
+#, c-format
+msgid "no such UID: %lu"
+msgstr "không có UID nào như thế: %lu"
+
+#: src/gdbm_load.c:267 src/gdbmtool.c:103 src/gdbmtool.c:1015
+#, c-format
+msgid "gdbm_setopt failed: %s"
+msgstr "gdbm_setopt gặp lỗi: %s"
+
+#: src/gdbm_load.c:281 src/gdbm_load.c:299 src/gdbmtool.c:998
+#, c-format
+msgid "error restoring metadata: %s (%s)"
+msgstr "lỗi phục hồi metadata: %s (%s)"
+
+#: src/gdbm_load.c:290
+#, c-format
+msgid "cannot load from %s"
+msgstr "Không thể tải “%s”"
+
+#: src/gdbm_load.c:307
+msgid "gdbm_setopt failed"
+msgstr "gdbm_setopt gặp lỗi"
+
+#: src/gdbmerrno.c:97
+msgid "No error"
+msgstr "Không có lỗi"
+
+#: src/gdbmerrno.c:98
+msgid "Malloc error"
+msgstr "Lỗi malloc"
+
+#: src/gdbmerrno.c:99
+msgid "Block size error"
+msgstr "Kích cỡ khối không hợp lệ"
+
+#: src/gdbmerrno.c:100
+msgid "File open error"
+msgstr "Lỗi mở tập tin"
+
+#: src/gdbmerrno.c:101
+msgid "File write error"
+msgstr "Lỗi khi ghi tập tin"
+
+#: src/gdbmerrno.c:102
+msgid "File seek error"
+msgstr "Lỗi khi đặt vị trí tập tin"
+
+#: src/gdbmerrno.c:103
+msgid "File read error"
+msgstr "Lỗi đọc trong tập tin"
+
+#: src/gdbmerrno.c:104
+msgid "Bad magic number"
+msgstr "Số màu nhiệm (magic) sai"
+
+#: src/gdbmerrno.c:105
+msgid "Empty database"
+msgstr "Cơ sở dữ liệu rỗng"
+
+#: src/gdbmerrno.c:106
+msgid "Can't be reader"
+msgstr "Không thể là bộ đọc"
+
+#: src/gdbmerrno.c:107
+msgid "Can't be writer"
+msgstr "Không thể là bộ ghi"
+
+#: src/gdbmerrno.c:108
+msgid "Reader can't delete"
+msgstr "Bộ đọc không thể xóa"
+
+#: src/gdbmerrno.c:109
+msgid "Reader can't store"
+msgstr "Bộ đọc không thể lưu"
+
+#: src/gdbmerrno.c:110
+msgid "Reader can't reorganize"
+msgstr "Bộ đọc không thể tổ chức lại dữ liệu"
+
+#: src/gdbmerrno.c:111
+msgid "Should not happen: unused error code"
+msgstr "Không nên xảy ra như thế: mã lỗi chưa được sử dụng"
+
+#: src/gdbmerrno.c:112 src/gdbmtool.c:441
+msgid "Item not found"
+msgstr "Không tìm thấy mục tin"
+
+#: src/gdbmerrno.c:113
+msgid "Reorganize failed"
+msgstr "Tổ chức lại gặp lỗi"
+
+#: src/gdbmerrno.c:114
+msgid "Cannot replace"
+msgstr "Không thể thay thế"
+
+#: src/gdbmerrno.c:115
+msgid "Illegal data"
+msgstr "Dữ liệu không hợp lệ"
+
+#: src/gdbmerrno.c:116
+msgid "Option already set"
+msgstr "Tùy chọn đã được đặt rồi"
+
+#: src/gdbmerrno.c:117
+msgid "Illegal option"
+msgstr "Tùy chọn không hợp lệ"
+
+#: src/gdbmerrno.c:118
+msgid "Byte-swapped file"
+msgstr "Tập tin byte-swapped"
+
+#: src/gdbmerrno.c:119
+msgid "Wrong file offset"
+msgstr "Sai offset của tập tin"
+
+#: src/gdbmerrno.c:120
+msgid "Bad file flags"
+msgstr "Cờ tập tin không đúng"
+
+#: src/gdbmerrno.c:121
+msgid "Cannot stat file"
+msgstr "Không thể stat (lấy trạng thái của) tập tin"
+
+#: src/gdbmerrno.c:122
+msgid "Unexpected end of file"
+msgstr "Gặp kết thúc tập tin bất thường"
+
+#: src/gdbmerrno.c:123
+msgid "Database name not given"
+msgstr "Chưa đưa ra tên cơ sở dữ liệu"
+
+#: src/gdbmerrno.c:124
+msgid "Failed to restore file owner"
+msgstr "Gặp lỗi khi phục hồi quyền sở hữu tập tin"
+
+#: src/gdbmerrno.c:125
+msgid "Failed to restore file mode"
+msgstr "Gặp lỗi khi phục hồi chế độ của tập tin"
+
+#: src/gdbmerrno.c:126
+msgid "Database needs recovery"
+msgstr "Cơ sở dữ liệu cần phục hồi"
+
+#: src/gdbmerrno.c:127
+msgid "Failed to create backup copy"
+msgstr "Gặp lỗi khi tạo bản sao lưu dự phòng"
+
+#: src/gdbmerrno.c:128
+msgid "Bucket directory overflow"
+msgstr "Tràn thư mục chứa"
+
+#: src/parseopt.c:49
+msgid "give this help list"
+msgstr "hiển thị trợ giúp này"
+
+#: src/parseopt.c:50
+msgid "print program version"
+msgstr "hiển thị phiên bản chương trình"
+
+#: src/parseopt.c:51
+msgid "give a short usage message"
+msgstr "hiển thị cách dùng dạng tóm lược"
+
+#: src/parseopt.c:348 src/parseopt.c:432
+msgid "Usage:"
+msgstr "Cách dùng:"
+
+#: src/parseopt.c:350
+msgid "OPTION"
+msgstr "TÙY_CHỌN"
+
+#: src/parseopt.c:365
+msgid ""
+"Mandatory or optional arguments to long options are also mandatory or "
+"optional for any corresponding short options."
+msgstr ""
+"Các đối số là bắt buộc hay chỉ là tùy chọn khi dùng với tùy chọn dài thì tùy "
+"chọn ngắn tương ứng cũng vậy."
+
+#. TRANSLATORS: The placeholder indicates the bug-reporting address
+#. for this package.  Please add _another line_ saying
+#. "Report translation bugs to <...>\n" with the address for translation
+#. bugs (typically your translation team's web or email address).
+#: src/parseopt.c:376
+#, c-format
+msgid "Report bugs to %s.\n"
+msgstr ""
+"Thông báo lỗi cho %s.\n"
+"Thông báo lỗi dịch cho <translation-team-vi@lists.sourceforge.net>\n"
+
+#: src/parseopt.c:379
+#, c-format
+msgid "%s home page: <%s>\n"
+msgstr "Trang chủ %s: <%s>\n"
+
+#. TRANSLATORS: Translate "(C)" to the copyright symbol
+#. (C-in-a-circle), if this symbol is available in the user's
+#. locale.  Otherwise, do not translate "(C)"; leave it as-is.
+#: src/parseopt.c:542
+msgid "(C)"
+msgstr "©"
+
+#: src/gdbmtool.c:84
+#, c-format
+msgid "database %s already exists; overwrite"
+msgstr "cơ sở dữ liệu %s đã sẵn có; ghi đè"
+
+#: src/gdbmtool.c:96
+#, c-format
+msgid "cannot open database %s: %s"
+msgstr "không thể mở cơ sở dữ liệu %s: %s"
+
+#: src/gdbmtool.c:120
+#, c-format
+msgid "warning: using default database file %s"
+msgstr "cảnh báo: đang dùng tập tin cơ sở dữ liệu mặc định %s"
+
+#: src/gdbmtool.c:162
+#, c-format
+msgid ""
+"bits = %d\n"
+"count= %d\n"
+"Hash Table:\n"
+msgstr ""
+"bits     = %d\n"
+"số lượng = %d\n"
+"Bảng Băm:\n"
+
+#: src/gdbmtool.c:165
+#, c-format
+msgid ""
+"    #    hash value     key size    data size     data adr home  key start\n"
+msgstr ""
+"    #    giá trị băm    độ dài khóa  độ dài dữ liệu  địa chỉ dữ liệu đầu-"
+"tiên\n"
+
+#: src/gdbmtool.c:183
+#, c-format
+msgid ""
+"\n"
+"Avail count = %1d\n"
+msgstr ""
+"\n"
+"Số lượng còn dùng được = %1d\n"
+
+#: src/gdbmtool.c:184
+#, c-format
+msgid "Address           size\n"
+msgstr "Địa chỉ           kích thước\n"
+
+#: src/gdbmtool.c:247
+#, c-format
+msgid ""
+"\n"
+"header block\n"
+"size  = %d\n"
+"count = %d\n"
+msgstr ""
+"\n"
+"khối đầu\n"
+"kích thước = %d\n"
+"số lượng   = %d\n"
+
+#: src/gdbmtool.c:281
+#, c-format
+msgid ""
+"\n"
+"block = %d\n"
+"size  = %d\n"
+"count = %d\n"
+msgstr ""
+"\n"
+"khối       = %d\n"
+"kích thước = %d\n"
+"số lượng   = %d\n"
+
+#: src/gdbmtool.c:302
+#, c-format
+msgid ""
+"Bucket Cache (size %zu):\n"
+"  Index:  Address  Changed  Data_Hash \n"
+msgstr ""
+"Bộ nhớ đệm vùng chứa (kích thước %zu):\n"
+"  Chỉ-số: Địa-chỉ  Đã-thay-đổi  Dữ-liệu-Băm \n"
+
+#: src/gdbmtool.c:310
+msgid "True"
+msgstr "Đúng"
+
+#: src/gdbmtool.c:310
+msgid "False"
+msgstr "Sai"
+
+#: src/gdbmtool.c:315
+#, c-format
+msgid "Bucket cache has not been initialized.\n"
+msgstr "Khối nhớ đệm vẫn chưa được khởi tạo.\n"
+
+#: src/gdbmtool.c:380
+msgid "nothing to close"
+msgstr "không có gì để đóng cả"
+
+#: src/gdbmtool.c:424
+msgid "count buffer overflow"
+msgstr "tràn bộ đệm số lượng"
+
+#: src/gdbmtool.c:427
+#, c-format
+msgid "There is %s item in the database.\n"
+msgid_plural "There are %s items in the database.\n"
+msgstr[0] "Có %s mục tin trong cơ sở dữ liệu.\n"
+
+#: src/gdbmtool.c:443
+#, c-format
+msgid "Can't delete: %s"
+msgstr "Không thể xóa: %s"
+
+#: src/gdbmtool.c:459 src/gdbmtool.c:526
+msgid "No such item found."
+msgstr "Không tìm thấy các mục tin như vậy."
+
+#: src/gdbmtool.c:461
+#, c-format
+msgid "Can't fetch data: %s"
+msgstr "Không thể lấy dữ liệu: %s"
+
+#: src/gdbmtool.c:471
+msgid "Item not inserted."
+msgstr "Mục tin chưa được thêm vào."
+
+#: src/gdbmtool.c:494
+#, c-format
+msgid "No such item found.\n"
+msgstr "Không tìm thấy các mục tin như vậy.\n"
+
+#: src/gdbmtool.c:496 src/gdbmtool.c:531
+#, c-format
+msgid "Can't find key: %s"
+msgstr "Không thể tìm thấy khóa: %s"
+
+#: src/gdbmtool.c:539
+msgid "Reorganization failed."
+msgstr "Việc tổ chức lại gặp lỗi."
+
+#: src/gdbmtool.c:541
+#, c-format
+msgid "Reorganization succeeded."
+msgstr "Tổ chức lại thành công."
+
+#: src/gdbmtool.c:583 src/gdbmtool.c:593 src/gdbmtool.c:603 src/gdbmtool.c:697
+#: src/gdbmtool.c:706
+#, c-format
+msgid "not a number (stopped near %s)\n"
+msgstr "không phải là số (đã dừng ở gần %s)\n"
+
+#: src/gdbmtool.c:610 src/gdbmtool.c:938 src/gdbmtool.c:970
+#, c-format
+msgid "unrecognized argument: %s"
+msgstr "đối số không được thừa nhận: %s"
+
+#: src/gdbmtool.c:619
+#, c-format
+msgid "Recovery succeeded.\n"
+msgstr "Khôi phục lại thành công.\n"
+
+#: src/gdbmtool.c:623
+#, c-format
+msgid "Original database preserved in file %s"
+msgstr "Cơ sở dữ liệu gốc được bảo tồn trong tập tin %s"
+
+#: src/gdbmtool.c:631
+#, c-format
+msgid "Recovery failed: %s"
+msgstr "Phụ hồi lại gặp lỗi: %s"
+
+#: src/gdbmtool.c:675
+#, c-format
+msgid "no current bucket\n"
+msgstr "không có vùng chứa hiện tại\n"
+
+#: src/gdbmtool.c:679
+#, c-format
+msgid "Bucket #%s"
+msgstr "Vùng chứa #%s"
+
+#: src/gdbmtool.c:682
+msgid "Current bucket"
+msgstr "Vùng chứa hiện hành"
+
+#: src/gdbmtool.c:683
+#, c-format
+msgid ""
+"\n"
+" current directory entry = %d.\n"
+msgstr ""
+"\n"
+" mục tin thư mục hiện hành = %d.\n"
+
+#: src/gdbmtool.c:685
+#, c-format
+msgid " current bucket address  = %lu.\n"
+msgstr " địa chỉ vùng chứa hiện hành  = %lu.\n"
+
+#: src/gdbmtool.c:728
+msgid "Not a bucket."
+msgstr "Không phải là vùng chứa."
+
+#: src/gdbmtool.c:771
+#, c-format
+msgid "Hash table directory.\n"
+msgstr "Thư mục bảng băm.\n"
+
+#: src/gdbmtool.c:772
+#, c-format
+msgid ""
+"  Size =  %d.  Bits = %d,  Buckets = %zu.\n"
+"\n"
+msgstr ""
+"  Cỡ   =  %d.  Bits = %d. Vùng chứa = %zu.\n"
+"\n"
+
+#: src/gdbmtool.c:797
+#, c-format
+msgid ""
+"\n"
+"File Header: \n"
+"\n"
+msgstr ""
+"\n"
+"Đầu Tập tin: \n"
+"\n"
+
+#: src/gdbmtool.c:798
+#, c-format
+msgid "  table        = %lu\n"
+msgstr "  bảng        = %lu\n"
+
+#: src/gdbmtool.c:800
+#, c-format
+msgid "  table size   = %d\n"
+msgstr " kích thước bảng   = %d\n"
+
+#: src/gdbmtool.c:801
+#, c-format
+msgid "  table bits   = %d\n"
+msgstr "  số bít của bảng   = %d\n"
+
+#: src/gdbmtool.c:802
+#, c-format
+msgid "  block size   = %d\n"
+msgstr "  kích thước khối   = %d\n"
+
+#: src/gdbmtool.c:803
+#, c-format
+msgid "  bucket elems = %d\n"
+msgstr "  các phần tử vùng chứa = %d\n"
+
+#: src/gdbmtool.c:804
+#, c-format
+msgid "  bucket size  = %d\n"
+msgstr "  kích thước vùng chứa  = %d\n"
+
+#: src/gdbmtool.c:805
+#, c-format
+msgid "  header magic = %x\n"
+msgstr "  số màu nhiệm phần đầu = %x\n"
+
+#: src/gdbmtool.c:806
+#, c-format
+msgid "  next block   = %lu\n"
+msgstr "  khối kế tiếp   = %lu\n"
+
+#: src/gdbmtool.c:808
+#, c-format
+msgid "  avail size   = %d\n"
+msgstr "  kích thước còn dùng được   = %d\n"
+
+#: src/gdbmtool.c:809
+#, c-format
+msgid "  avail count  = %d\n"
+msgstr "  số lượng còn dùng được  = %d\n"
+
+#: src/gdbmtool.c:810
+#, c-format
+msgid "  avail nx blk = %lu\n"
+msgstr "  “nx blk” còn dùng được = %lu\n"
+
+#: src/gdbmtool.c:823
+#, c-format
+msgid "hash value = %x, bucket #%u, slot %u"
+msgstr "giá trị băm = %x, vùng chứa #%u, khe %u"
+
+#: src/gdbmtool.c:829
+#, c-format
+msgid "hash value = %x"
+msgstr "giá trị băm = %x"
+
+#: src/gdbmtool.c:893
+msgid "cannot fetch data; the key was:"
+msgstr "không thể lấy ra dữ liệu; khóa là:"
+
+#: src/gdbmtool.c:947
+#, c-format
+msgid "error dumping database: %s"
+msgstr "lỗi dump cơ sở dữ liệu: %s"
+
+#: src/gdbmtool.c:1007
+#, c-format
+msgid "cannot load from %s: %s"
+msgstr "không thể tải từ %s: %s"
+
+#: src/gdbmtool.c:1023
+#, c-format
+msgid "Database file: %s\n"
+msgstr "Tên của tập tin cơ sở dữ liệu: %s\n"
+
+#: src/gdbmtool.c:1025
+msgid "No database name"
+msgstr "Chưa có tên cơ sở dữ liệu"
+
+#: src/gdbmtool.c:1027
+msgid "Database is open"
+msgstr "Cơ sở dữ liệu được mở"
+
+#: src/gdbmtool.c:1029
+msgid "Database is not open"
+msgstr "Cơ sở dữ liệu không được mở"
+
+#: src/gdbmtool.c:1083
+#, c-format
+msgid "unknown debug flag: %s"
+msgstr "không hiểu cờ gỡ lỗi: %s"
+
+#: src/gdbmtool.c:1086
+#, c-format
+msgid "invalid type of argument %d"
+msgstr "kiểu tham số không hợp lệ %d"
+
+#: src/gdbmtool.c:1091
+#, c-format
+msgid "Debug flags:"
+msgstr "Cờ gỡ lỗi:"
+
+#: src/gdbmtool.c:1097
+msgid "none"
+msgstr "không"
+
+#: src/gdbmtool.c:1101
+msgid "compiled without debug support"
+msgstr "biên dịch mà không hỗ trợ gỡ lỗi"
+
+#: src/gdbmtool.c:1155
+msgid "count (number of entries)"
+msgstr "số lượng (tổng số mục tin)"
+
+#: src/gdbmtool.c:1158 src/gdbmtool.c:1173 src/gdbmtool.c:1201
+#: src/gdbmtool.c:1263
+msgid "KEY"
+msgstr "KHÓA"
+
+#: src/gdbmtool.c:1161
+msgid "delete a record"
+msgstr "xóa một bản ghi"
+
+#: src/gdbmtool.c:1164 src/gdbmtool.c:1179 src/gdbmtool.c:1498
+msgid "FILE"
+msgstr "TẬP-TIN"
+
+#: src/gdbmtool.c:1170
+msgid "export"
+msgstr "xuất ra"
+
+#: src/gdbmtool.c:1176
+msgid "fetch record"
+msgstr "lấy bản ghi"
+
+#: src/gdbmtool.c:1185
+msgid "import"
+msgstr "nhập vào"
+
+#: src/gdbmtool.c:1191
+msgid "list"
+msgstr "danh sách"
+
+#: src/gdbmtool.c:1194
+msgid "[KEY]"
+msgstr "[KHÓA]"
+
+#: src/gdbmtool.c:1198
+msgid "nextkey"
+msgstr "khóa-tiếp"
+
+#: src/gdbmtool.c:1202
+msgid "DATA"
+msgstr "DỮ-LIỆU"
+
+#: src/gdbmtool.c:1206
+msgid "store"
+msgstr "lưu"
+
+#: src/gdbmtool.c:1212
+msgid "firstkey"
+msgstr "khóa_đầu_tiên"
+
+#: src/gdbmtool.c:1218
+msgid "reorganize"
+msgstr "tổ chức lại"
+
+#: src/gdbmtool.c:1229
+msgid "recover the database"
+msgstr "phục hồi cơ sở dữ liệu"
+
+#: src/gdbmtool.c:1235
+msgid "print avail list"
+msgstr "hiển thị danh sách còn dùng được"
+
+#: src/gdbmtool.c:1238
+msgid "NUMBER"
+msgstr "SỐ"
+
+#: src/gdbmtool.c:1242
+msgid "print a bucket"
+msgstr "hiển thị một vùng chứa"
+
+#: src/gdbmtool.c:1248
+msgid "print current bucket"
+msgstr "hiển thị vùng chứa hiện hành"
+
+#: src/gdbmtool.c:1254
+msgid "print hash directory"
+msgstr "hiển thị thư mục băm"
+
+#: src/gdbmtool.c:1260
+msgid "print database file header"
+msgstr "hiển thị phần đầu tập tin cơ sở dữ liệu"
+
+#: src/gdbmtool.c:1267
+msgid "hash value of key"
+msgstr "giá trị băm của khóa"
+
+#: src/gdbmtool.c:1273
+msgid "print the bucket cache"
+msgstr "hiển thị phần đệm của vùng chứa"
+
+#: src/gdbmtool.c:1279
+msgid "print current program status"
+msgstr "hiển thị trạng thái của chương trình"
+
+#: src/gdbmtool.c:1285
+msgid "print version of gdbm"
+msgstr "in ra số hiệu phiên bản"
+
+#: src/gdbmtool.c:1291
+msgid "print this help list"
+msgstr "hiển thị trợ giúp này"
+
+#: src/gdbmtool.c:1297
+msgid "quit the program"
+msgstr "thoát khỏi chương trình"
+
+#: src/gdbmtool.c:1303
+msgid "set or list variables"
+msgstr "đặt hay liệt kê các biến"
+
+#: src/gdbmtool.c:1309
+msgid "unset variables"
+msgstr "bỏ đặt các biến"
+
+#: src/gdbmtool.c:1317
+msgid "define datum structure"
+msgstr "định nghĩa cấu trúc dữ liệu"
+
+#: src/gdbmtool.c:1324
+msgid "source command script"
+msgstr "kịch bản lệnh nguồn"
+
+#: src/gdbmtool.c:1330
+msgid "close the database"
+msgstr "đóng cơ sở dữ liệu"
+
+#: src/gdbmtool.c:1336
+msgid "open new database"
+msgstr "mở cơ sở dữ liệu mới"
+
+#: src/gdbmtool.c:1340
+msgid "[FROM]"
+msgstr "[TỪ]"
+
+#: src/gdbmtool.c:1341
+msgid "[COUNT]"
+msgstr "[SỐ_LƯỢNG]"
+
+#: src/gdbmtool.c:1345
+msgid "show input history"
+msgstr "hiển thị lịch sử đầu vào"
+
+#: src/gdbmtool.c:1352
+msgid "query/set debug level"
+msgstr "truy vấn hay đặt mức gỡ lỗi"
+
+#: src/gdbmtool.c:1483
+msgid "Invalid command. Try ? for help."
+msgstr "Lệnh không hợp lệ. Hãy thử dùng ? để xem trợ giúp."
+
+#: src/gdbmtool.c:1484
+msgid "Unknown command"
+msgstr "Lệnh không rõ"
+
+#: src/gdbmtool.c:1492
+msgid "examine and/or modify a GDBM database"
+msgstr "Xem xét và/hoặc sửa chữa cơ sở dữ liệu GDBM"
+
+#: src/gdbmtool.c:1493
+msgid "DBFILE"
+msgstr "DBFILE"
+
+#: src/gdbmtool.c:1496 src/gdbmtool.c:1497
+msgid "SIZE"
+msgstr "KÍCH-CỠ"
+
+#: src/gdbmtool.c:1496
+msgid "set block size"
+msgstr "đặt kích thước khối"
+
+#: src/gdbmtool.c:1497
+msgid "set cache size"
+msgstr "đặt kích cỡ của vùng chứa đệm"
+
+#: src/gdbmtool.c:1498
+msgid "read commands from FILE"
+msgstr "đọc các lệnh từ TẬP-TIN"
+
+#: src/gdbmtool.c:1500
+msgid "disable file locking"
+msgstr "tắt khóa tập tin"
+
+#: src/gdbmtool.c:1501
+msgid "do not use mmap"
+msgstr "không dùng mmap"
+
+#: src/gdbmtool.c:1502
+msgid "create database"
+msgstr "tạo cơ sở dữ liệu"
+
+#: src/gdbmtool.c:1503
+msgid "do not read .gdbmtoolrc file"
+msgstr "không đọc tập tin .gdbmtoolrc"
+
+#: src/gdbmtool.c:1504
+msgid "open database in read-only mode"
+msgstr "mở cơ sở dữ liệu trong chế độ chỉ cho đọc"
+
+#: src/gdbmtool.c:1505
+msgid "synchronize to disk after each write"
+msgstr "đồng bộ hóa với ổ đĩa ngay sau khi ghi lại"
+
+#: src/gdbmtool.c:1506
+msgid "don't print initial banner"
+msgstr "đừng in ra băng cờ khởi tạo"
+
+#: src/gdbmtool.c:1776
+#, c-format
+msgid "cannot coerce %s to %s"
+msgstr "không thể ép buộc %s thành %s"
+
+#: src/gdbmtool.c:1851
+#, c-format
+msgid "%s: not enough arguments"
+msgstr "%s: không đủ đối số"
+
+#: src/gdbmtool.c:1858
+msgid "unexpected eof"
+msgstr "gặp kết thúc tập tin bất thường"
+
+#: src/gdbmtool.c:1881
+#, c-format
+msgid "%s: too many arguments"
+msgstr "%s: quá nhiều đối số"
+
+#: src/gdbmtool.c:1909
+#, c-format
+msgid "cannot run pager `%s': %s"
+msgstr "không thể chạy trang “%s”: %s"
+
+#: src/gdbmtool.c:1957
+msgid "cannot find home directory"
+msgstr "không tìm thấy thư mục home"
+
+#: src/gdbmtool.c:2073
+#, c-format
+msgid "unknown option; try `%s -h' for more info"
+msgstr "không hiểu tùy chọn; thử “%s -h” để có thêm thông tin"
+
+#: src/gdbmtool.c:2083
+msgid "too many arguments"
+msgstr "quá nhiều đôi số"
+
+#: src/gdbmtool.c:2100
+#, c-format
+msgid ""
+"\n"
+"Welcome to the gdbm tool.  Type ? for help.\n"
+"\n"
+msgstr ""
+"\n"
+"Cảm ơn các bạn đã dùng công cụ gdbm.  Gõ ? để biết cách dùng.\n"
+"\n"
+
+#: src/gram.y:217
+#, c-format
+msgid "expected \"key\" or \"content\", but found \"%s\""
+msgstr "cần \"khóa\" hay \"nội dung\", nhưng lại có \"%s\""
+
+#: src/gram.y:288 src/gram.y:309 src/gram.y:341
+#, c-format
+msgid "no such variable: %s"
+msgstr "không có biến nào như vậy: %s"
+
+#: src/gram.y:292
+#, c-format
+msgid "%s is not a boolean variable"
+msgstr "%s không phải là một biến lô-gíc"
+
+#: src/gram.y:296 src/gram.y:321
+#, c-format
+msgid "unexpected error setting %s: %d"
+msgstr "gặp lỗi cài đặt không mong đợi %s: %d"
+
+#: src/gram.y:313
+#, c-format
+msgid "%s: bad variable type"
+msgstr "%s: kiểu biến sai"
+
+#: src/gram.y:317
+#, c-format
+msgid "%s: value %s is not allowed"
+msgstr "%s: biến %s là không được phép"
+
+#: src/gram.y:345
+#, c-format
+msgid "%s: variable cannot be unset"
+msgstr "%s: không thể bỏ đặt biến"
+
+#: src/lex.l:148
+#, c-format
+msgid "cannot open `%s': %s"
+msgstr "không thể mở “%s”: %s"
+
+#: src/lex.l:153
+#, c-format
+msgid "%s is not a regular file"
+msgstr "%s không phải tập tin thường"
+
+#: src/lex.l:160
+msgid "recursive sourcing"
+msgstr "nguồn đệ quy"
+
+#: src/lex.l:162
+#, c-format
+msgid "%s already sourced here"
+msgstr "“%s” đã sẵn được nguồn ở đây"
+
+#: src/lex.l:169
+#, c-format
+msgid "cannot open %s for reading: %s"
+msgstr "không thể mở tập tin “%s” để đọc: %s"
+
+#: src/lex.l:226 src/lex.l:236
+msgid "invalid #line statement"
+msgstr "chỉ thị #line không hợp lệ"
+
+#: src/datconv.c:254
+#, c-format
+msgid "(not enough data)"
+msgstr "(không đủ dữ liệu)"
+
+#: src/datconv.c:329
+msgid "mixing tagged and untagged values is not allowed"
+msgstr "trộn các giá trị đã và chưa đánh thẻ là không được phép"
+
+#: src/datconv.c:345
+msgid "cannot convert"
+msgstr "không thể chuyển đổi"
+
+#: src/datconv.c:356
+#, c-format
+msgid "cannot convert value #%d: %s"
+msgstr "không thể chuyển đổi giá trị #%d: %s"
+
+#~ msgid "Unknown update"
+#~ msgstr "Không hiểu cập nhật"
+
+#~ msgid "Unknown error"
+#~ msgstr "Lỗi không rõ"
+
+#~ msgid "gdbm fatal: %s\n"
+#~ msgstr "lỗi nghiêm trọng: %s\n"
+
+#~ msgid "Out of memory"
+#~ msgstr "Hết bộ nhớ"
+
+#~ msgid "Usage: %s OPTIONS\n"
+#~ msgstr "Sử dụng: %s CÁC_TÙY_CHỌN\n"
+
+#~ msgid "  -b SIZE            set block size\n"
+#~ msgstr "  -b SIZE             đặt kích cỡ khối\n"
+
+#~ msgid "  -c SIZE            set cache size\n"
+#~ msgstr "  -c SIZE            đặt kích cỡ của vùng nhớ đệm\n"
+
+#~ msgid "  -g FILE            operate on FILE instead of `junk.gdbm'\n"
+#~ msgstr "  -g FILE            thao tác trên Tệp_Tin thay vì “junk.gdbm”\n"
+
+#~ msgid "  -h                 print this help summary\n"
+#~ msgstr "  -h                 in ra trang trợ giúp dạng tóm lược\n"
+
+#~ msgid "  -m                 disable file mmap\n"
+#~ msgstr "  -m                tắt mmap cho tệp tin\n"
+
+#~ msgid "  -n                 create database\n"
+#~ msgstr "  -n                 tạo cơ sở dữ liệu\n"
+
+#~ msgid "%s:%d: line too long"
+#~ msgstr "%s:%d: dòng quá dài"
+
+#~ msgid "%s:%d: malformed line"
+#~ msgstr "%s:%d: dòng có định dạng không đúng"
+
+#~ msgid "%d: item not inserted: %s"
+#~ msgstr "%d: mục chưa được thêm vào: %s"
+
+#~ msgid "gdbm_export failed, %s"
+#~ msgstr "gdbm_export gặp lỗi, %s"
+
+#~ msgid "gdbm_import failed, %s"
+#~ msgstr "gdbm_import gặp lỗi, %s"
+
+#~ msgid "yes"
+#~ msgstr "có"
+
+#~ msgid "no"
+#~ msgstr "không"
+
+#~ msgid "Zero terminated keys: %s\n"
+#~ msgstr "Khóa ngăn cách: %s\n"
+
+#~ msgid "key"
+#~ msgstr "khóa"
+
+#~ msgid "delete"
+#~ msgstr "xóa"
+
+#~ msgid "file"
+#~ msgstr "tệp tin"
+
+#~ msgid "fetch"
+#~ msgstr "lấy ra"
+
+#~ msgid "[key]"
+#~ msgstr "[khóa]"
+
+#~ msgid "data"
+#~ msgstr "dữ liệu"
+
+#~ msgid "read entries from file and store"
+#~ msgstr "đọc các mục từ tệp tin và lưu nó lại"
+
+#~ msgid "toggle key nul-termination"
+#~ msgstr "chốt lại việc ngăn cách dữ liệu bằng null"
+
+#~ msgid "bucket-number"
+#~ msgstr "số-vùng-nhớ"
+
+#~ msgid "toggle data nul-termination"
+#~ msgstr "bật/tắt ngăn cách dữ liệu bằng null"
+
+#~ msgid "-s is incompatible with -r"
+#~ msgstr "-s không kết hợp với -r"
+
+#~ msgid "-r is incompatible with -n"
+#~ msgstr "-r không kết hợp với -n"
+
+#~ msgid "-n is incompatible with -r"
+#~ msgstr "-n không kết hợp với  -r"
