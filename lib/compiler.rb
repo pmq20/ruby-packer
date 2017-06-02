@@ -70,7 +70,7 @@ class Compiler
     end
 
     if Gem.win_platform?
-      @ldflags += " /LIBPATH:#{Utils.escape File.join(@options[:tmpdir], 'zlib')} #{Utils.escape File.join(@options[:tmpdir], 'zlib', 'zlib.lib')} "
+      @ldflags += " /LIBPATH:#{Utils.escape File.join(@options[:tmpdir], 'zlib').gsub('/', '\\')} #{Utils.escape File.join(@options[:tmpdir], 'zlib', 'zlib.lib')} "
       @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'zlib')} "
     else
       @ldflags += " -L#{Utils.escape File.join(@options[:tmpdir], 'zlib')} #{Utils.escape File.join(@options[:tmpdir], 'zlib', 'libz.a')} "
