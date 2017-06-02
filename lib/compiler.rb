@@ -72,11 +72,11 @@ class Compiler
     if Gem.win_platform?
       # TODO
     else
-      @ldflags += " #{Utils.escape File.join(@options[:tmpdir], 'zlib', 'libz.a')} "
+      @ldflags += " -L#{Utils.escape File.join(@options[:tmpdir], 'zlib')} #{Utils.escape File.join(@options[:tmpdir], 'zlib', 'libz.a')} "
       @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'zlib')} "
-      @ldflags += " #{Utils.escape File.join(@options[:tmpdir], 'openssl', 'libcrypto.a')} #{Utils.escape File.join(@options[:tmpdir], 'openssl', 'libssl.a')} "
+      @ldflags += " -L#{Utils.escape File.join(@options[:tmpdir], 'openssl')}  #{Utils.escape File.join(@options[:tmpdir], 'openssl', 'libcrypto.a')} #{Utils.escape File.join(@options[:tmpdir], 'openssl', 'libssl.a')} "
       @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'openssl', 'include')} "
-      @ldflags += " #{Utils.escape File.join(@options[:tmpdir], 'gdbm', 'src', 'libgdbmapp.a')} "
+      @ldflags += " -L#{Utils.escape File.join(@options[:tmpdir], 'gdbm', 'src')} #{Utils.escape File.join(@options[:tmpdir], 'gdbm', 'src', 'libgdbmapp.a')} "
       @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'gdbm', 'src')} "
     end
   end
