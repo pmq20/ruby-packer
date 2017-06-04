@@ -54,9 +54,9 @@
 #include "internal.h"
 #include "encindex.h"
 
-// ======= [Enclose.io Hack start] =========
+// --------- [Enclose.io Hack start] ---------
 #include "enclose_io.h"
-// ======= [Enclose.io Hack end] =========
+// --------- [Enclose.io Hack end] ---------
 
 #define isdirsep(x) ((x) == '/' || (x) == '\\')
 
@@ -857,7 +857,7 @@ rb_w32_sysinit(int *argc, char ***argv)
     //
     *argc = w32_cmdvector(GetCommandLineW(), argv, CP_UTF8, &OnigEncodingUTF_8);
 
-    // ======= [Enclose.io Hack start] =========
+    // --------- [Enclose.io Hack start] ---------
     #ifdef ENCLOSE_IO_ENTRANCE
     new_argc = *argc;
     new_argv = *argv;
@@ -876,7 +876,7 @@ rb_w32_sysinit(int *argc, char ***argv)
         *argv = new_argv;
     }
     #endif
-    // ======= [Enclose.io Hack end] =========
+    // --------- [Enclose.io Hack end] ---------
 
 
     //

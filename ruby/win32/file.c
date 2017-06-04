@@ -10,9 +10,9 @@
 #include <shlwapi.h>
 #include "win32/file.h"
 
-// ======= [Enclose.io Hack start] =========
+// --------- [Enclose.io Hack start] ---------
 #include "enclose_io.h"
-// ======= [Enclose.io Hack end] =========
+// --------- [Enclose.io Hack end] ---------
 
 #ifndef INVALID_FILE_ATTRIBUTES
 # define INVALID_FILE_ATTRIBUTES ((DWORD)-1)

@@ -96,9 +96,9 @@ int flock(int, int);
 #define lstat stat
 #endif
 
-// ======= [Enclose.io Hack start] =========
+// --------- [Enclose.io Hack start] ---------
 #include "enclose_io.h"
-// ======= [Enclose.io Hack end] =========
+// --------- [Enclose.io Hack end] ---------
 
 /* define system APIs */
 #ifdef _WIN32

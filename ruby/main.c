@@ -19,14 +19,14 @@
 #include <stdlib.h>
 #endif
 
-// ======= [Enclose.io Hack start] =========
+// --------- [Enclose.io Hack start] ---------
 #include "enclose_io.h"
-// ======= [Enclose.io Hack end] =========
+// --------- [Enclose.io Hack end] ---------
 
 int
 main(int argc, char **argv)
 {
-    // ======= [Enclose.io Hack start] =========
+    // --------- [Enclose.io Hack start] ---------
     int ret;
     sqfs_err enclose_io_ret;
     enclose_io_ret = squash_start();
@@ -84,7 +84,7 @@ main(int argc, char **argv)
         #endif
     #endif
 #endif
-    // ======= [Enclose.io Hack end] =========
+    // --------- [Enclose.io Hack end] ---------
 
 #ifdef RUBY_DEBUG_ENV
     ruby_set_debug_option(getenv("RUBY_DEBUG"));
