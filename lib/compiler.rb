@@ -70,7 +70,7 @@ class Compiler
     end
 
     if Gem.win_platform?
-      @ldflags += " /LIBPATH:#{Utils.escape File.join(@options[:tmpdir], 'zlib').gsub('/', '\\')} #{Utils.escape File.join(@options[:tmpdir], 'zlib', 'zlib.lib')} "
+      @ldflags += " -libpath:#{Utils.escape File.join(@options[:tmpdir], 'zlib').gsub('/', '\\')} #{Utils.escape File.join(@options[:tmpdir], 'zlib', 'zlib.lib')} "
       @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'zlib')} "
     else
       @ldflags += " -L#{Utils.escape File.join(@options[:tmpdir], 'zlib')} #{Utils.escape File.join(@options[:tmpdir], 'zlib', 'libz.a')} "
@@ -228,15 +228,15 @@ class Compiler
         found = false
         File.open(target, 'w') do |f|
           target_content.each_line do |line|
-            if !found && (line =~ /^LIBS = (.*)$/)
+            if !found && (line =~ /^LDFLAGS = (.*)$/)
               found = true
-              f.puts "LIBS = #{$1} #{@ldflags}"
+              f.puts "LDFLAGS = #{$1} #{@ldflags}"
             else
               f.print line
             end
           end
         end
-        raise 'Failed to patch LIBS of #{target}' unless found
+        raise 'Failed to patch LDFLAGS of #{target}' unless found
       end
     end
 
