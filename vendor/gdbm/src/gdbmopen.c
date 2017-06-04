@@ -22,8 +22,6 @@
 
 #include "gdbmdefs.h"
 
-#include <sys/types.h>
-
 /* Determine our native magic number and bail if we can't. */
 #if SIZEOF_OFF_T == 4
 # define GDBM_MAGIC	GDBM_MAGIC32
