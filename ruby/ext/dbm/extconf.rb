@@ -25,6 +25,9 @@ if dblib = with_config("dbm-type", nil)
 else
   dblib = %w(libc db db2 db1 db5 db4 db3 gdbm_compat gdbm qdbm)
 end
+# --------- [Enclose.io Hack start] ---------
+dblib = %w(gdbm_compat)
+# --------- [Enclose.io Hack end] ---------
 
 headers = {
   "libc" => ["ndbm.h"], # 4.3BSD original ndbm, Berkeley DB 1 in 4.4BSD libc.

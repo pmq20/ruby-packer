@@ -185,7 +185,7 @@ class Compiler
         if Gem.win_platform?
           # TODO
         else
-          Utils.run("./configure --disable-shared --enable-static --without-readline --prefix=#{Utils.escape File.join(@options[:tmpdir], 'gdbm', 'build')}")
+          Utils.run("./configure --enable-libgdbm-compat --disable-shared --enable-static --without-readline --prefix=#{Utils.escape File.join(@options[:tmpdir], 'gdbm', 'build')}")
           Utils.run("make #{@options[:make_args]}")
           Utils.run("make install")
         end
