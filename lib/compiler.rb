@@ -429,6 +429,7 @@ class Compiler
         raise 'Multiple Gemfiles detected' unless 1 == gemfiles.size
         @work_dir_local = File.join(@work_dir_inner, '_local_')
         @chdir_at_startup = '/__enclose_io_memfs__/_local_'
+        Utils.cp_r(@root, @work_dir_local)
         Utils.chdir(@work_dir_local) do
           Utils.run('bundle install --deployment')
           if File.exist?(@entrance)
