@@ -433,15 +433,19 @@ class Compiler
         Utils.cp_r(@root, @work_dir_local)
         Utils.chdir(@work_dir_local) do
           Utils.run('bundle install --deployment')
-          if File.exist?("bin/#{@entrance}")
-            @memfs_entrance = "#{MEMFS}/_local_/bin/#{@entrance}"
+          if File.exist?(@entrance)
+            @memfs_entrance = mempath(@entrance)
           else
-            Utils.run('bundle install --deployment --binstubs')
             if File.exist?("bin/#{@entrance}")
               @memfs_entrance = "#{MEMFS}/_local_/bin/#{@entrance}"
             else
-              Utils.chdir('bin') do
-                raise Error, "Cannot find entrance #{@entrance}, available entrances are #{ Dir['*'].join(', ') }."
+              Utils.run('bundle install --deployment --binstubs')
+              if File.exist?("bin/#{@entrance}")
+                @memfs_entrance = "#{MEMFS}/_local_/bin/#{@entrance}"
+              else
+                Utils.chdir('bin') do
+                  raise Error, "Cannot find entrance #{@entrance}, available entrances are #{ Dir['*'].join(', ') }."
+                end
               end
             end
           end
@@ -525,5 +529,10 @@ class Compiler
       end
     end
   end
-end
 
+  def mempath(path)
+    path = File.expand_path(path)
+    raise "path #{path} should start with #{@root}" unless @root == path[0...(@root.size)]
+    "#{MEMFS}/_local_#{path[(@root.size)..-1]}"
+  end
+end

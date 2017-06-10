@@ -18,6 +18,7 @@ Compiling your Ruby application into a single executable.
 Usage
   rubyc [OPTION]... [ENTRANCE]
   If ENTRANCE was not provided, then a single Ruby interpreter executable will be produced.
+  ENTRANCE can be either a file path, or a "x" string as in bundle exec "x".
 
 }.strip
 
