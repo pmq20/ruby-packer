@@ -353,8 +353,6 @@ class Compiler
                                --without-gmp \
                                --disable-dtrace \
                                --enable-debug-env \
-                               --with-sitearchdir=no \
-                               --with-vendordir=no \
                                --disable-install-rdoc")
         Utils.run(@compile_env, "make #{@options[:make_args]} -j1")
         Utils.run(@compile_env, "make install")
@@ -378,8 +376,6 @@ class Compiler
                                --without-gmp \
                                --disable-dtrace \
                                --enable-debug-env \
-                               --with-sitearchdir=no \
-                               --with-vendordir=no \
                                --disable-install-rdoc \
                                --with-static-linked-ext")
         prepare_local if @entrance
