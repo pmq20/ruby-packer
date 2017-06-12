@@ -25,24 +25,11 @@ class Gem::PathSupport
   def initialize(env)
     @home     = env["GEM_HOME"] || Gem.default_dir
 
-    # WE DO NOT ACCEPT AN OUTSIDE GEM HOME
-    if !@home.include?('/__enclose_io_memfs__')
-      @home = '/__enclose_io_memfs__/_gems_'
-    end
-
     if File::ALT_SEPARATOR then
       @home   = @home.gsub(File::ALT_SEPARATOR, File::SEPARATOR)
     end
 
     @path = split_gem_path env["GEM_PATH"], @home
-
-    # WE DO NOT ACCEPT OUTSIDE GEM PATHS
-    @path.reject! do |x|
-      !x.include?('/__enclose_io_memfs__')
-    end
-    unless @path.include?('/__enclose_io_memfs__/_gems_')
-      @path << '/__enclose_io_memfs__/_gems_'
-    end
 
     @spec_cache_dir = env["GEM_SPEC_CACHE"] || Gem.default_spec_cache_dir
 

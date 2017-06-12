@@ -280,6 +280,7 @@ class Compiler
     Utils.run(@compile_env, %Q{nmake #{@options[:nmake_args]} -f enc.mk V="0" UNICODE_HDR_DIR="./enc/unicode/9.0.0"  RUBY=".\\miniruby.exe -I./lib -I. " MINIRUBY=".\\miniruby.exe -I./lib -I. " -l libenc})
     Utils.run(@compile_env, %Q{nmake #{@options[:nmake_args]} -f enc.mk V="0" UNICODE_HDR_DIR="./enc/unicode/9.0.0"  RUBY=".\\miniruby.exe -I./lib -I. " MINIRUBY=".\\miniruby.exe -I./lib -I. " -l libtrans})
     Utils.run(@compile_env, "nmake #{@options[:nmake_args]}")
+    Utils.run(@compile_env, "nmake install")
   end
 
   def run!
@@ -293,6 +294,7 @@ class Compiler
       Utils.cp(File.join(PRJ_ROOT, 'ruby', 'enclose_io_memfs.c'), @vendor_ruby)
       if Gem.win_platform?
         Utils.run(@compile_env, "call win32\\configure.bat \
+                                --prefix=#{Utils.escape File.join(@options[:tmpdir], 'ruby', 'build')} \
                                 --enable-bundled-libyaml \
                                 --enable-debug-env \
                                 --disable-install-doc \
@@ -308,7 +310,7 @@ class Compiler
         Utils.rm('ruby.exe')
         Utils.rm('include/enclose_io.h')
         Utils.rm('enclose_io_memfs.c')
-        bundle_deploy
+        bundle_deploy if @entrance
         make_enclose_io_memfs
         make_enclose_io_vars
         Utils.run(@compile_env, "nmake #{@options[:nmake_args]}")
@@ -316,6 +318,7 @@ class Compiler
       else
         Utils.run(@compile_env.merge({'CFLAGS' => @cflags, 'LDFLAGS' => @ldflags}),
                               "./configure  \
+                               --prefix=#{Utils.escape File.join(@options[:tmpdir], 'ruby', 'build')} \
                                --enable-bundled-libyaml \
                                --without-gmp \
                                --disable-dtrace \
@@ -325,6 +328,7 @@ class Compiler
                                --disable-install-rdoc \
                                --with-static-linked-ext")
         Utils.run(@compile_env, "make #{@options[:make_args]}")
+        Utils.run(@compile_env, "make install")
         # enclose_io_memfs.o - 2nd pass
         Utils.rm('dir.o')
         Utils.rm('file.o')
@@ -333,7 +337,7 @@ class Compiler
         Utils.rm('ruby')
         Utils.rm('include/enclose_io.h')
         Utils.rm('enclose_io_memfs.c')
-        bundle_deploy
+        bundle_deploy if @entrance
         make_enclose_io_memfs
         make_enclose_io_vars
         Utils.run(@compile_env, "make #{@options[:make_args]}")
@@ -349,56 +353,6 @@ class Compiler
     
     @work_dir_inner = File.join(@work_dir, '__enclose_io_memfs__')
     Utils.mkdir_p(@work_dir_inner)
-
-    @work_dir_global = File.join(@work_dir_inner, '_global_')
-    src_ruby_lib = File.join(@vendor_ruby, 'lib')
-    Utils.mkdir_p(File.join(@work_dir_global, 'lib/ruby'))
-    dst_ruby_lib = File.join(@work_dir_global, "lib/ruby/#{self.class.ruby_api_version}")
-    raise 'logic error' unless Dir.exist?(src_ruby_lib)
-    Utils.cp_r(src_ruby_lib, dst_ruby_lib)
-    
-    src_ruby_extlib = File.join(@vendor_ruby, 'ext')
-    Utils.chdir(src_ruby_extlib) do
-      Dir['*/lib'].each do |libpath|
-        Utils.chdir(libpath) do
-          Dir["**/*.rb"].each do |path|
-            dst = File.expand_path(File.dirname(path), dst_ruby_lib)
-            FileUtils.mkdir_p(dst)
-            FileUtils.cp(path, dst)
-          end
-        end
-      end
-    end
-    
-    src_rbconfig = File.join(@vendor_ruby, 'rbconfig.rb')
-    Utils.cp(src_rbconfig, dst_ruby_lib)
-
-    @gems_dir = File.join(@work_dir_inner, '_gems_')
-    Utils.rm_rf(@gems_dir)
-    Utils.mkdir_p(@gems_dir)
-    Dir["#{@vendor_ruby}/gems/*.gem"].each do |the_gem|
-      Utils.run("gem install #{Utils.escape the_gem} --force --local --no-rdoc --no-ri --install-dir #{Utils.escape @gems_dir}")
-    end
-    dst = File.join(@gems_dir, 'specifications/default')
-    FileUtils.mkdir_p(dst)
-    Dir["#{@vendor_ruby}/ext/**/*.gemspec"].each do |the_gemspec|
-      Utils.cp(the_gemspec, dst)
-    end
-
-    Utils.chdir(@work_dir_inner) do
-      Dir["#{@vendor_ruby}/bin/*"].each do |the_bin|
-        unless File.exist?(File.basename(the_bin))
-          Utils.cp(the_bin, File.basename(the_bin))
-        end
-      end
-      Dir["#{@gems_dir}/bin/*"].each do |the_bin|
-        unless File.exist?(File.basename(the_bin))
-          Utils.cp(the_bin, File.basename(the_bin))
-        end
-      end
-    end
-
-    return unless @entrance
 
     Utils.chdir(@root) do
       gemspecs = Dir['./*.gemspec']

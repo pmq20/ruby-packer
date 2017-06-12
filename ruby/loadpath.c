@@ -60,33 +60,33 @@ const char ruby_exec_prefix[] = RUBY_EXEC_PREFIX;
 #endif
 
 const char ruby_initial_load_paths[] =
-// #ifndef NO_INITIAL_LOAD_PATH
-// #ifdef RUBY_SEARCH_PATH
-//     RUBY_SEARCH_PATH "\0"
-// #endif
-// #ifndef NO_RUBY_SITE_LIB
-//     RUBY_SITE_LIB2 "\0"
-// #ifdef RUBY_THINARCH
-//     RUBY_SITE_ARCH_LIB_FOR(RUBY_THINARCH) "\0"
-// #endif
-//     RUBY_SITE_ARCH_LIB_FOR(RUBY_SITEARCH) "\0"
-//     RUBY_SITE_LIB "\0"
-// #endif
-//
-// #ifndef NO_RUBY_VENDOR_LIB
-//     RUBY_VENDOR_LIB2 "\0"
-// #ifdef RUBY_THINARCH
-//     RUBY_VENDOR_ARCH_LIB_FOR(RUBY_THINARCH) "\0"
-// #endif
-//     RUBY_VENDOR_ARCH_LIB_FOR(RUBY_SITEARCH) "\0"
-//     RUBY_VENDOR_LIB "\0"
-// #endif
+#ifndef NO_INITIAL_LOAD_PATH
+#ifdef RUBY_SEARCH_PATH
+    RUBY_SEARCH_PATH "\0"
+#endif
+#ifndef NO_RUBY_SITE_LIB
+    RUBY_SITE_LIB2 "\0"
+#ifdef RUBY_THINARCH
+    RUBY_SITE_ARCH_LIB_FOR(RUBY_THINARCH) "\0"
+#endif
+    RUBY_SITE_ARCH_LIB_FOR(RUBY_SITEARCH) "\0"
+    RUBY_SITE_LIB "\0"
+#endif
+
+#ifndef NO_RUBY_VENDOR_LIB
+    RUBY_VENDOR_LIB2 "\0"
+#ifdef RUBY_THINARCH
+    RUBY_VENDOR_ARCH_LIB_FOR(RUBY_THINARCH) "\0"
+#endif
+    RUBY_VENDOR_ARCH_LIB_FOR(RUBY_SITEARCH) "\0"
+    RUBY_VENDOR_LIB "\0"
+#endif
 
     RUBY_LIB "\0"
-// #ifdef RUBY_THINARCH
-//     RUBY_ARCH_LIB_FOR(RUBY_THINARCH) "\0"
-// #endif
-//     RUBY_ARCH_LIB_FOR(RUBY_ARCH) "\0"
-// #endif
+#ifdef RUBY_THINARCH
+    RUBY_ARCH_LIB_FOR(RUBY_THINARCH) "\0"
+#endif
+    RUBY_ARCH_LIB_FOR(RUBY_ARCH) "\0"
+#endif
     "";
 
