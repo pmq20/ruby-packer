@@ -126,6 +126,18 @@ File.foreach "config.status" do |line|
       val = '"$(SDKROOT)"'+val if /darwin/ =~ arch
     end
     v = "  CONFIG[\"#{name}\"] #{eq} #{val}\n"
+
+    if ENV['ENCLOSE_IO_RUBYC_2ND_PASS']
+      v_head_comp = "  CONFIG[\"prefix\"] #{eq} "
+      if v_head_comp == v[0...(v_head_comp.length)]
+        v = "#{v[0...(v_head_comp.length)]}'/__enclose_io_memfs__'\n"
+      end
+      v_head_comp = "  CONFIG[\"RUBY_EXEC_PREFIX\"] #{eq} "
+      if v_head_comp == v[0...(v_head_comp.length)]
+        v = "#{v[0...(v_head_comp.length)]}'/__enclose_io_memfs__'\n"
+      end
+    end
+
     if fast[name]
       v_fast << v
     else

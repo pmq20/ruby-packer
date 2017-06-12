@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 $:.unshift File.expand_path("../lib", __FILE__)
-require 'psych/versions'
+require 'psych'
 
 Gem::Specification.new do |s|
   s.name = "psych"
