@@ -41,20 +41,22 @@ main(int argc, char **argv)
     assert(SQFS_OK == enclose_io_ret);
 
     #ifdef _WIN32
-      #ifdef ENCLOSE_IO_ENV_BUNDLE_GEMFILE
-        bool_ret = SetEnvironmentVariable("BUNDLE_GEMFILE", ENCLOSE_IO_ENV_BUNDLE_GEMFILE);
-        assert(0 != bool_ret);
-      #endif // ENCLOSE_IO_ENV_BUNDLE_GEMFILE
+      if (NULL == getenv("ENCLOSE_IO_USE_ORIGINAL_RUBY")) {
+        #ifdef ENCLOSE_IO_ENV_BUNDLE_GEMFILE
+          bool_ret = SetEnvironmentVariable("BUNDLE_GEMFILE", ENCLOSE_IO_ENV_BUNDLE_GEMFILE);
+          assert(0 != bool_ret);
+        #endif // ENCLOSE_IO_ENV_BUNDLE_GEMFILE
+      }
     #else // ifdef _WIN32
-      #ifdef ENCLOSE_IO_ENV_BUNDLE_GEMFILE
-        ret = setenv("BUNDLE_GEMFILE", ENCLOSE_IO_ENV_BUNDLE_GEMFILE, 1);
-        assert(0 == ret);
-      #endif // ENCLOSE_IO_ENV_BUNDLE_GEMFILE
       #ifdef ENCLOSE_IO_ENTRANCE
         int new_argc = argc;
         char **new_argv = argv;
         char *argv_memory = NULL;
         if (NULL == getenv("ENCLOSE_IO_USE_ORIGINAL_RUBY")) {
+            #ifdef ENCLOSE_IO_ENV_BUNDLE_GEMFILE
+              ret = setenv("BUNDLE_GEMFILE", ENCLOSE_IO_ENV_BUNDLE_GEMFILE, 1);
+              assert(0 == ret);
+            #endif // ENCLOSE_IO_ENV_BUNDLE_GEMFILE
             new_argv = (char **)malloc( (argc + 1) * sizeof(char *));
             assert(new_argv);
             new_argv[0] = argv[0];

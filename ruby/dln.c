@@ -115,6 +115,10 @@ dln_loaderror(const char *format, ...)
 #define isdirsep(x) ((x) == '/')
 #endif
 
+// ======= [Enclose.io Hack start] =========
+#include "enclose_io.h"
+// ======= [Enclose.io Hack end] =========
+
 static size_t
 init_funcname_len(const char **file)
 {
