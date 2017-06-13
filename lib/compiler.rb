@@ -436,7 +436,7 @@ class Compiler
         Utils.run("gem install #{Utils.escape the_bundler_gem} --force --local --no-rdoc --no-ri --install-dir #{Utils.escape @gems_dir}")
         # bundle install
         @work_dir_local = File.join(@work_dir_inner, 'local')
-        @chdir_at_startup = '/__enclose_io_memfs__/local'
+        @env_bundle_gemfile = '/__enclose_io_memfs__/local/Gemfile'
         Utils.cp_r(@root, @work_dir_local)
         Utils.chdir(@work_dir_local) do
           Utils.run('bundle install --deployment')
@@ -529,7 +529,7 @@ class Compiler
         f.puts '#include "enclose_io_win32.h"'
         f.puts '#include "enclose_io_unix.h"'
         f.puts ''
-        f.puts "#define ENCLOSE_IO_CHDIR_AT_STARTUP #{@chdir_at_startup.inspect}" if @chdir_at_startup
+        f.puts "#define ENCLOSE_IO_ENV_BUNDLE_GEMFILE #{@env_bundle_gemfile.inspect}" if @env_bundle_gemfile
         f.puts "#define ENCLOSE_IO_ENTRANCE #{@memfs_entrance.inspect}" if @entrance
         f.puts '#endif'
         f.puts ''
