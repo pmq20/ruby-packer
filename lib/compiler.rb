@@ -332,18 +332,18 @@ class Compiler
         # enclose_io_memfs.o - 2nd pass
         prepare_local if @entrance
         pre_2nd!
-        Utils.rm('verconf.h')
-        Utils.rm('rbconfig.rb')
-        Utils.rm('.rbconfig.time')
-        Utils.rm('dir.obj')
-        Utils.rm('file.obj')
-        Utils.rm('io.obj')
-        Utils.rm('main.obj')
-        Utils.rm('win32/file.obj')
-        Utils.rm('win32/win32.obj')
-        Utils.rm('ruby.exe')
-        Utils.rm('include/enclose_io.h')
-        Utils.rm('enclose_io_memfs.c')
+        Utils.rm_f('verconf.h')
+        Utils.rm_f('rbconfig.rb')
+        Utils.rm_f('.rbconfig.time')
+        Utils.rm_f('dir.obj')
+        Utils.rm_f('file.obj')
+        Utils.rm_f('io.obj')
+        Utils.rm_f('main.obj')
+        Utils.rm_f('win32/file.obj')
+        Utils.rm_f('win32/win32.obj')
+        Utils.rm_f('ruby.exe')
+        Utils.rm_f('include/enclose_io.h')
+        Utils.rm_f('enclose_io_memfs.c')
         make_enclose_io_memfs
         make_enclose_io_vars
         Utils.run(@compile_env.merge({'ENCLOSE_IO_RUBYC_2ND_PASS' => '1'}), "nmake #{@options[:nmake_args]}")
@@ -365,16 +365,16 @@ class Compiler
         # enclose_io_memfs.o - 2nd pass
         prepare_local if @entrance
         pre_2nd!
-        Utils.rm('verconf.h')
-        Utils.rm('rbconfig.rb')
-        Utils.rm('.rbconfig.time')
-        Utils.rm('dir.o')
-        Utils.rm('file.o')
-        Utils.rm('io.o')
-        Utils.rm('main.o')
-        Utils.rm('ruby')
-        Utils.rm('include/enclose_io.h')
-        Utils.rm('enclose_io_memfs.c')
+        Utils.rm_f('verconf.h')
+        Utils.rm_f('rbconfig.rb')
+        Utils.rm_f('.rbconfig.time')
+        Utils.rm_f('dir.o')
+        Utils.rm_f('file.o')
+        Utils.rm_f('io.o')
+        Utils.rm_f('main.o')
+        Utils.rm_f('ruby')
+        Utils.rm_f('include/enclose_io.h')
+        Utils.rm_f('enclose_io_memfs.c')
         Utils.run(@compile_env.merge({'CFLAGS' => @cflags, 'LDFLAGS' => @ldflags, 'ENCLOSE_IO_RUBYC_2ND_PASS' => '1'}),
                               "./configure \
                                --prefix=#{Utils.escape File.join(@options[:tmpdir], 'ruby', 'build')} \
@@ -430,17 +430,17 @@ class Compiler
           STDERR.puts "-> Detected a gemspec, trying to build the gem"
           Utils.rm_f('./*.gem')
           if gemfiles.size > 0
-            Utils.run({ 'PATH' => @path_env, 'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1' }, 'sh', '-c', "gem install #{Utils.escape the_bundler_gem} --force --local --no-rdoc --no-ri")
-            Utils.run({ 'PATH' => @path_env, 'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1' }, 'sh', '-c', "gem install #{Utils.escape the_bundler_gem} --force --local --no-rdoc --no-ri --install-dir #{Utils.escape @gems_dir}")
-            Utils.run({ 'PATH' => @path_env, 'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1' }, 'sh', '-c', "bundle install")
-            Utils.run({ 'PATH' => @path_env, 'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1' }, 'sh', '-c', "bundle exec gem build #{Utils.escape gemspecs.first}")
+            Utils.run({ 'PATH' => @path_env, 'GEM_HOME' => nil, 'GEM_PATH' => nil, 'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1' }, 'sh', '-c', "gem install #{Utils.escape the_bundler_gem} --force --local --no-rdoc --no-ri")
+            Utils.run({ 'PATH' => @path_env, 'GEM_HOME' => nil, 'GEM_PATH' => nil, 'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1' }, 'sh', '-c', "gem install #{Utils.escape the_bundler_gem} --force --local --no-rdoc --no-ri --install-dir #{Utils.escape @gems_dir}")
+            Utils.run({ 'PATH' => @path_env, 'GEM_HOME' => nil, 'GEM_PATH' => nil, 'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1' }, 'sh', '-c', "bundle install")
+            Utils.run({ 'PATH' => @path_env, 'GEM_HOME' => nil, 'GEM_PATH' => nil, 'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1' }, 'sh', '-c', "bundle exec gem build #{Utils.escape gemspecs.first}")
           else
-            Utils.run({ 'PATH' => @path_env, 'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1' }, 'sh', '-c', "gem build #{Utils.escape gemspecs.first}")
+            Utils.run({ 'PATH' => @path_env, 'GEM_HOME' => nil, 'GEM_PATH' => nil, 'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1' }, 'sh', '-c', "gem build #{Utils.escape gemspecs.first}")
           end
           gems = Dir['./*.gem']
           raise 'gem building failed' unless 1 == gems.size
           the_gem = gems.first
-          Utils.run({ 'PATH' => @path_env, 'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1' }, 'sh', '-c', "gem install #{Utils.escape the_gem} --force --local --no-rdoc --no-ri --install-dir #{Utils.escape @gems_dir}")
+          Utils.run({ 'PATH' => @path_env, 'GEM_HOME' => nil, 'GEM_PATH' => nil, 'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1' }, 'sh', '-c', "gem install #{Utils.escape the_gem} --force --local --no-rdoc --no-ri --install-dir #{Utils.escape @gems_dir}")
           if File.exist?(File.join(@gems_dir, "bin/#{@entrance}"))
             @memfs_entrance = "#{MEMFS}/_gems_/bin/#{@entrance}"
           else
@@ -452,8 +452,8 @@ class Compiler
       elsif gemfiles.size > 0
         raise 'Multiple Gemfiles detected' unless 1 == gemfiles.size
         # gem install bundler
-        Utils.run({ 'PATH' => @path_env, 'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1' }, 'sh', '-c', "gem install #{Utils.escape the_bundler_gem} --force --local --no-rdoc --no-ri")
-        Utils.run({ 'PATH' => @path_env, 'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1' }, 'sh', '-c', "gem install #{Utils.escape the_bundler_gem} --force --local --no-rdoc --no-ri --install-dir #{Utils.escape @gems_dir}")
+        Utils.run({ 'PATH' => @path_env, 'GEM_HOME' => nil, 'GEM_PATH' => nil, 'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1' }, 'sh', '-c', "gem install #{Utils.escape the_bundler_gem} --force --local --no-rdoc --no-ri")
+        Utils.run({ 'PATH' => @path_env, 'GEM_HOME' => nil, 'GEM_PATH' => nil, 'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1' }, 'sh', '-c', "gem install #{Utils.escape the_bundler_gem} --force --local --no-rdoc --no-ri --install-dir #{Utils.escape @gems_dir}")
         # bundle install
         @work_dir_local = File.join(@work_dir_inner, 'local')
         @env_bundle_gemfile = '/__enclose_io_memfs__/local/Gemfile'
@@ -461,16 +461,14 @@ class Compiler
           Utils.cp_r(@root, @work_dir_local)
         end
         Utils.chdir(@work_dir_local) do
-          unless @options[:keep_tmpdir]
-            Utils.run({ 'PATH' => @path_env, 'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1' }, 'sh', '-c', 'bundle install --deployment')
-          end
+          Utils.run({ 'PATH' => @path_env, 'GEM_HOME' => nil, 'GEM_PATH' => nil, 'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1' }, 'sh', '-c', 'bundle install --deployment')
           if File.exist?(@entrance)
             @memfs_entrance = mempath(@entrance)
           else
             if File.exist?("bin/#{@entrance}")
               @memfs_entrance = "#{MEMFS}/local/bin/#{@entrance}"
             else
-              Utils.run({ 'PATH' => @path_env, 'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1' }, 'sh', '-c', 'bundle install --deployment --binstubs')
+              Utils.run({ 'PATH' => @path_env, 'GEM_HOME' => nil, 'GEM_PATH' => nil, 'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1' }, 'sh', '-c', 'bundle install --deployment --binstubs')
               if File.exist?("bin/#{@entrance}")
                 @memfs_entrance = "#{MEMFS}/local/bin/#{@entrance}"
               else
