@@ -411,6 +411,8 @@ class Compiler
     end
 
     @gems_dir = File.join(@work_dir_inner, "lib/ruby/gems/#{self.class.ruby_api_version}")
+    
+    @path_env = "#{File.join(@options[:tmpdir], 'ruby', 'build', 'bin')}:#{ENV['PATH']}"
   end
 
   def prepare_local
@@ -418,6 +420,7 @@ class Compiler
     Utils.chdir(@root) do
       gemspecs = Dir['./*.gemspec']
       gemfiles = Dir['./Gemfile']
+      the_bundler_gem = File.join(PRJ_ROOT, 'vendor', 'bundler-1.15.1.gem')
       if gemspecs.size > 0
         raise 'Multiple gemspecs detected' unless 1 == gemspecs.size
         @pre_prepare_dir = File.join(@options[:tmpdir], '__pre_prepare__')
@@ -426,12 +429,18 @@ class Compiler
         Utils.chdir(@pre_prepare_dir) do
           STDERR.puts "-> Detected a gemspec, trying to build the gem"
           Utils.rm_f('./*.gem')
-          Utils.run("bundle")
-          Utils.run("bundle exec gem build #{Utils.escape gemspecs.first}")
+          if gemfiles.size > 0
+            Utils.run({ 'PATH' => @path_env, 'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1' }, 'sh', '-c', "gem install #{Utils.escape the_bundler_gem} --force --local --no-rdoc --no-ri")
+            Utils.run({ 'PATH' => @path_env, 'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1' }, 'sh', '-c', "gem install #{Utils.escape the_bundler_gem} --force --local --no-rdoc --no-ri --install-dir #{Utils.escape @gems_dir}")
+            Utils.run({ 'PATH' => @path_env, 'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1' }, 'sh', '-c', "bundle install")
+            Utils.run({ 'PATH' => @path_env, 'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1' }, 'sh', '-c', "bundle exec gem build #{Utils.escape gemspecs.first}")
+          else
+            Utils.run({ 'PATH' => @path_env, 'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1' }, 'sh', '-c', "gem build #{Utils.escape gemspecs.first}")
+          end
           gems = Dir['./*.gem']
           raise 'gem building failed' unless 1 == gems.size
           the_gem = gems.first
-          Utils.run("gem install #{Utils.escape the_gem} --force --local --no-rdoc --no-ri --install-dir #{Utils.escape @gems_dir}")
+          Utils.run({ 'PATH' => @path_env, 'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1' }, 'sh', '-c', "gem install #{Utils.escape the_gem} --force --local --no-rdoc --no-ri --install-dir #{Utils.escape @gems_dir}")
           if File.exist?(File.join(@gems_dir, "bin/#{@entrance}"))
             @memfs_entrance = "#{MEMFS}/_gems_/bin/#{@entrance}"
           else
@@ -443,8 +452,8 @@ class Compiler
       elsif gemfiles.size > 0
         raise 'Multiple Gemfiles detected' unless 1 == gemfiles.size
         # gem install bundler
-        the_bundler_gem = File.join(PRJ_ROOT, 'vendor', 'bundler-1.15.1.gem')
-        Utils.run("gem install #{Utils.escape the_bundler_gem} --force --local --no-rdoc --no-ri --install-dir #{Utils.escape @gems_dir}")
+        Utils.run({ 'PATH' => @path_env, 'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1' }, 'sh', '-c', "gem install #{Utils.escape the_bundler_gem} --force --local --no-rdoc --no-ri")
+        Utils.run({ 'PATH' => @path_env, 'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1' }, 'sh', '-c', "gem install #{Utils.escape the_bundler_gem} --force --local --no-rdoc --no-ri --install-dir #{Utils.escape @gems_dir}")
         # bundle install
         @work_dir_local = File.join(@work_dir_inner, 'local')
         @env_bundle_gemfile = '/__enclose_io_memfs__/local/Gemfile'
@@ -453,7 +462,7 @@ class Compiler
         end
         Utils.chdir(@work_dir_local) do
           unless @options[:keep_tmpdir]
-            Utils.run('bundle install --deployment')
+            Utils.run({ 'PATH' => @path_env, 'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1' }, 'sh', '-c', 'bundle install --deployment')
           end
           if File.exist?(@entrance)
             @memfs_entrance = mempath(@entrance)
@@ -461,7 +470,7 @@ class Compiler
             if File.exist?("bin/#{@entrance}")
               @memfs_entrance = "#{MEMFS}/local/bin/#{@entrance}"
             else
-              Utils.run('bundle install --deployment --binstubs')
+              Utils.run({ 'PATH' => @path_env, 'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1' }, 'sh', '-c', 'bundle install --deployment --binstubs')
               if File.exist?("bin/#{@entrance}")
                 @memfs_entrance = "#{MEMFS}/local/bin/#{@entrance}"
               else
