@@ -212,7 +212,7 @@ class Compiler
   end
   
   def stuff_tmpdir
-    Utils.rm_rf(@options[:tmpdir]) if @options[:clean]
+    Utils.rm_rf(@options[:tmpdir]) if @options[:clean_tmpdir]
     Utils.mkdir_p(@options[:tmpdir])
 
     stuff_zlib
@@ -349,16 +349,18 @@ class Compiler
         Utils.run(@compile_env.merge({'ENCLOSE_IO_RUBYC_2ND_PASS' => '1'}), "nmake #{@options[:nmake_args]}")
         Utils.cp('ruby.exe', @options[:output])
       else
-        Utils.run(@compile_env.merge({'CFLAGS' => @cflags, 'LDFLAGS' => @ldflags}),
-                              "./configure \
-                               --prefix=#{Utils.escape File.join(@options[:tmpdir], 'ruby', 'build')} \
-                               --enable-bundled-libyaml \
-                               --without-gmp \
-                               --disable-dtrace \
-                               --enable-debug-env \
-                               --disable-install-rdoc")
-        Utils.run(@compile_env, "make #{@options[:make_args]} -j1")
-        Utils.run(@compile_env, "make install")
+        unless @options[:keep_tmpdir]
+          Utils.run(@compile_env.merge({'CFLAGS' => @cflags, 'LDFLAGS' => @ldflags}),
+                                "./configure \
+                                 --prefix=#{Utils.escape File.join(@options[:tmpdir], 'ruby', 'build')} \
+                                 --enable-bundled-libyaml \
+                                 --without-gmp \
+                                 --disable-dtrace \
+                                 --enable-debug-env \
+                                 --disable-install-rdoc")
+          Utils.run(@compile_env, "make #{@options[:make_args]} -j1")
+          Utils.run(@compile_env, "make install")
+        end
         prepare_1st
         # enclose_io_memfs.o - 2nd pass
         prepare_local if @entrance
@@ -393,15 +395,21 @@ class Compiler
   def prepare_1st
     # Prepare /__enclose_io_memfs__
     @work_dir = File.join(@options[:tmpdir], '__work_dir__')
-    Utils.rm_rf(@work_dir)
-    Utils.mkdir_p(@work_dir)
+    unless @options[:keep_tmpdir]
+      Utils.rm_rf(@work_dir)
+      Utils.mkdir_p(@work_dir)
+    end
     
     @work_dir_inner = File.join(@work_dir, '__enclose_io_memfs__')
-    Utils.cp_r(File.join(@options[:tmpdir], 'ruby', 'build'), @work_dir_inner, preserve: true)
     
-    Dir["#{@work_dir_inner}/**/*.{a,dylib,so,dll,lib,bundle}"].each do |thisdl|
-      Utils.rm_f(thisdl)
+    unless @options[:keep_tmpdir]
+      Utils.cp_r(File.join(@options[:tmpdir], 'ruby', 'build'), @work_dir_inner, preserve: true)
+
+      Dir["#{@work_dir_inner}/**/*.{a,dylib,so,dll,lib,bundle}"].each do |thisdl|
+        Utils.rm_f(thisdl)
+      end
     end
+
     @gems_dir = File.join(@work_dir_inner, "lib/ruby/gems/#{self.class.ruby_api_version}")
   end
 
@@ -440,9 +448,13 @@ class Compiler
         # bundle install
         @work_dir_local = File.join(@work_dir_inner, 'local')
         @env_bundle_gemfile = '/__enclose_io_memfs__/local/Gemfile'
-        Utils.cp_r(@root, @work_dir_local)
+        unless @options[:keep_tmpdir]
+          Utils.cp_r(@root, @work_dir_local)
+        end
         Utils.chdir(@work_dir_local) do
-          Utils.run('bundle install --deployment')
+          unless @options[:keep_tmpdir]
+            Utils.run('bundle install --deployment')
+          end
           if File.exist?(@entrance)
             @memfs_entrance = mempath(@entrance)
           else
