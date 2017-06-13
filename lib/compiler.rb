@@ -316,8 +316,9 @@ class Compiler
       # enclose_io_memfs.o - 1st pass
       Utils.rm_f('include/enclose_io.h')
       Utils.rm_f('enclose_io_memfs.c')
-      Utils.cp(File.join(PRJ_ROOT, 'ruby', 'include', 'enclose_io.h'), File.join(@vendor_ruby, 'include'))
+      Utils.cp(File.join(PRJ_ROOT, 'ruby', 'include', 'enclose_io.h'), File.join(@vendor_ruby, 'include', 'enclose_io.h'))
       Utils.cp(File.join(PRJ_ROOT, 'ruby', 'enclose_io_memfs.c'), @vendor_ruby)
+      Utils.cp(File.join(PRJ_ROOT, 'ruby', 'ext', 'Setup'), File.join(@vendor_ruby, 'ext', 'Setup'))
       if Gem.win_platform?
         Utils.run(@compile_env, "call win32\\configure.bat \
                                 --prefix=#{Utils.escape File.join(@options[:tmpdir], 'ruby', 'build')} \
@@ -327,6 +328,7 @@ class Compiler
                                 --with-static-linked-ext")
         nmake!
         # enclose_io_memfs.o - 2nd pass
+        prepare_local if @entrance
         pre_2nd!
         Utils.rm('verconf.h')
         Utils.rm('rbconfig.rb')
@@ -340,7 +342,6 @@ class Compiler
         Utils.rm('ruby.exe')
         Utils.rm('include/enclose_io.h')
         Utils.rm('enclose_io_memfs.c')
-        prepare_local if @entrance
         make_enclose_io_memfs
         make_enclose_io_vars
         Utils.run(@compile_env.merge({'ENCLOSE_IO_RUBYC_2ND_PASS' => '1'}), "nmake #{@options[:nmake_args]}")
@@ -358,6 +359,7 @@ class Compiler
         Utils.run(@compile_env, "make install")
         prepare_1st
         # enclose_io_memfs.o - 2nd pass
+        prepare_local if @entrance
         pre_2nd!
         Utils.rm('verconf.h')
         Utils.rm('rbconfig.rb')
@@ -378,7 +380,6 @@ class Compiler
                                --enable-debug-env \
                                --disable-install-rdoc \
                                --with-static-linked-ext")
-        prepare_local if @entrance
         make_enclose_io_memfs
         make_enclose_io_vars
         Utils.run(@compile_env.merge({'ENCLOSE_IO_RUBYC_2ND_PASS' => '1'}), "make #{@options[:make_args]}")

@@ -27,7 +27,9 @@ class Gem::PathSupport
 
     # --------- [Enclose.io Hack start] ---------
     # WE DO NOT ACCEPT OUTSIDE GEM PATHS
-    @home = Gem.default_dir unless 0 == @home.index('/__enclose_io_memfs__')
+    unless env['ENCLOSE_IO_USE_ORIGINAL_RUBY']
+      @home = Gem.default_dir unless 0 == @home.index('/__enclose_io_memfs__')
+    end
     # --------- [Enclose.io Hack end] ---------
 
     if File::ALT_SEPARATOR then
@@ -38,8 +40,10 @@ class Gem::PathSupport
 
     # --------- [Enclose.io Hack start] ---------
     # WE DO NOT ACCEPT OUTSIDE GEM PATHS
-    @path.keep_if do |x|
-      0 == x.index('/__enclose_io_memfs__')
+    unless env['ENCLOSE_IO_USE_ORIGINAL_RUBY']
+      @path.keep_if do |x|
+        0 == x.index('/__enclose_io_memfs__')
+      end
     end
     # --------- [Enclose.io Hack end] ---------
 
