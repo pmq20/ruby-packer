@@ -51,7 +51,7 @@ class Compiler
     versions.join('.')
   end
   
-  def prepare_flags
+  def prepare_flags1
     @ldflags = ''
     @cflags = ''
 
@@ -69,6 +69,14 @@ class Compiler
       end
     end
 
+    @compile_env = {
+      'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1',
+      'CFLAGS' => @cflags,
+      'LDFLAGS' => @ldflags
+    }
+  end
+
+  def prepare_flags2
     if Gem.win_platform?
       @ldflags += " -libpath:#{Utils.escape File.join(@options[:tmpdir], 'zlib').gsub('/', '\\')} #{Utils.escape File.join(@options[:tmpdir], 'zlib', 'zlib.lib')} "
       @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'zlib')} "
@@ -82,6 +90,12 @@ class Compiler
       @ldflags += " -L#{Utils.escape File.join(@options[:tmpdir], 'yaml', 'build', 'lib')} #{Utils.escape File.join(@options[:tmpdir], 'yaml', 'build', 'lib', 'libyaml.a')} "
       @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'yaml', 'build', 'include')} "
     end
+
+    @compile_env = {
+      'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1',
+      'CFLAGS' => @cflags,
+      'LDFLAGS' => @ldflags
+    }
   end
   
   def initialize(entrance, options = {})
@@ -101,8 +115,9 @@ class Compiler
     STDERR.puts "- options: #{@options}"
     STDERR.puts
 
-    prepare_flags
+    prepare_flags1
     stuff_tmpdir
+    prepare_flags2
   end
 
   def init_options
@@ -148,10 +163,10 @@ class Compiler
       Utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'zlib'), target, preserve: true)
       Utils.chdir(target) do
         if Gem.win_platform?
-          Utils.run('nmake /f win32\\Makefile.msc')
+          Utils.run(@compile_env, 'nmake /f win32\\Makefile.msc')
         else
-          Utils.run('./configure --static')
-          Utils.run("make #{@options[:make_args]}")
+          Utils.run(@compile_env, './configure --static')
+          Utils.run(@compile_env, "make #{@options[:make_args]}")
         end
         Dir['*.{dylib,so,dll}'].each do |thisdl|
           Utils.rm_f(thisdl)
@@ -168,8 +183,8 @@ class Compiler
         if Gem.win_platform?
           # TODO
         else
-          Utils.run('./config')
-          Utils.run("make #{@options[:make_args]}")
+          Utils.run(@compile_env, './config')
+          Utils.run(@compile_env, "make #{@options[:make_args]}")
         end
         Dir['*.{dylib,so,dll}'].each do |thisdl|
           Utils.rm_f(thisdl)
@@ -186,9 +201,9 @@ class Compiler
         if Gem.win_platform?
           # TODO
         else
-          Utils.run("./configure --enable-libgdbm-compat --disable-shared --enable-static --without-readline --prefix=#{Utils.escape File.join(@options[:tmpdir], 'gdbm', 'build')}")
-          Utils.run("make #{@options[:make_args]}")
-          Utils.run("make install")
+          Utils.run(@compile_env, "./configure --enable-libgdbm-compat --disable-shared --enable-static --without-readline --prefix=#{Utils.escape File.join(@options[:tmpdir], 'gdbm', 'build')}")
+          Utils.run(@compile_env, "make #{@options[:make_args]}")
+          Utils.run(@compile_env, "make install")
         end
       end
     end
@@ -202,9 +217,9 @@ class Compiler
         if Gem.win_platform?
           # TODO
         else
-          Utils.run("./configure --disable-shared --enable-static --prefix=#{Utils.escape File.join(@options[:tmpdir], 'yaml', 'build')}")
-          Utils.run("make #{@options[:make_args]}")
-          Utils.run("make install")
+          Utils.run(@compile_env, "./configure --disable-shared --enable-static --prefix=#{Utils.escape File.join(@options[:tmpdir], 'yaml', 'build')}")
+          Utils.run(@compile_env, "make #{@options[:make_args]}")
+          Utils.run(@compile_env, "make install")
         end
       end
     end
@@ -285,7 +300,6 @@ class Compiler
   def run!
     Utils.chdir(@vendor_ruby) do
       sep = Gem.win_platform? ? ';' : ':'
-      @compile_env = { 'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1' }
       if Gem.win_platform?
         unless File.exist?(@ruby_build)
           # enclose_io_memfs.o - 1st pass
@@ -328,16 +342,15 @@ class Compiler
       else
         unless File.exist?(@ruby_build)
           # enclose_io_memfs.o - 1st pass
-          Utils.run(@compile_env.merge({'CFLAGS' => @cflags, 'LDFLAGS' => @ldflags}),
-                                "./configure \
+          Utils.run(@compile_env, "./configure \
                                  --prefix=#{Utils.escape @ruby_build} \
                                  --enable-bundled-libyaml \
                                  --without-gmp \
                                  --disable-dtrace \
                                  --enable-debug-env \
                                  --disable-install-rdoc")
-          Utils.run(@compile_env.merge({'CFLAGS' => @cflags, 'LDFLAGS' => @ldflags}), "make #{@options[:make_args]} -j1")
-          Utils.run(@compile_env.merge({'CFLAGS' => @cflags, 'LDFLAGS' => @ldflags}), "make install")
+          Utils.run(@compile_env, "make #{@options[:make_args]} -j1")
+          Utils.run(@compile_env, "make install")
           File.open(File.join(@options[:tmpdir], 'ruby', 'ext', 'Setup'), 'w') do |f|
             f.puts 'option nodynamic'
           end
@@ -355,7 +368,7 @@ class Compiler
         Utils.rm_f('ruby')
         Utils.rm_f('include/enclose_io.h')
         Utils.rm_f('enclose_io_memfs.c')
-        Utils.run(@compile_env.merge({'CFLAGS' => @cflags, 'LDFLAGS' => @ldflags, 'ENCLOSE_IO_RUBYC_2ND_PASS' => '1'}),
+        Utils.run(@compile_env.merge({'ENCLOSE_IO_RUBYC_2ND_PASS' => '1'}),
                               "./configure \
                                --prefix=#{Utils.escape @ruby_build} \
                                --enable-bundled-libyaml \
@@ -366,7 +379,7 @@ class Compiler
                                --with-static-linked-ext")
         make_enclose_io_memfs
         make_enclose_io_vars
-        Utils.run(@compile_env.merge({'CFLAGS' => @cflags, 'LDFLAGS' => @ldflags, 'ENCLOSE_IO_RUBYC_2ND_PASS' => '1'}), "make #{@options[:make_args]}")
+        Utils.run(@compile_env.merge({'ENCLOSE_IO_RUBYC_2ND_PASS' => '1'}), "make #{@options[:make_args]}")
         Utils.cp('ruby', @options[:output])
       end
     end

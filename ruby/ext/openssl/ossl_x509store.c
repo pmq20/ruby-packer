@@ -325,6 +325,10 @@ ossl_x509store_set_time(VALUE self, VALUE time)
  * Adds the certificates in +file+ to the certificate store.  The +file+ can
  * contain multiple PEM-encoded certificates.
  */
+// --------- [Enclose.io Hack start] ---------
+#include "enclose_io_prelude.h"
+#include "enclose_io_common.h"
+// --------- [Enclose.io Hack end] ---------
 static VALUE
 ossl_x509store_add_file(VALUE self, VALUE file)
 {
@@ -339,6 +343,9 @@ ossl_x509store_add_file(VALUE self, VALUE file)
     GetX509Store(self, store);
     lookup = X509_STORE_add_lookup(store, X509_LOOKUP_file());
     if(lookup == NULL) ossl_raise(eX509StoreError, NULL);
+    // --------- [Enclose.io Hack start] ---------
+    path = enclose_io_ifextract(path, NULL);
+    // --------- [Enclose.io Hack end] ---------
     if(X509_LOOKUP_load_file(lookup, path, X509_FILETYPE_PEM) != 1){
         ossl_raise(eX509StoreError, NULL);
     }
