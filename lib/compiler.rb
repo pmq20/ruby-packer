@@ -63,9 +63,9 @@ class Compiler
       end
     else
       if @options[:debug]
-        @cflags += ' -g -O0 -pipe '
+        @cflags += ' -fPIC -g -O0 -pipe '
       else
-        @cflags += ' -O3 -fno-fast-math -ggdb3 -Os -fdata-sections -ffunction-sections -pipe '
+        @cflags += ' -fPIC -O3 -fno-fast-math -ggdb3 -Os -fdata-sections -ffunction-sections -pipe '
       end
     end
 
@@ -201,7 +201,7 @@ class Compiler
         if Gem.win_platform?
           # TODO
         else
-          Utils.run(@compile_env, "./configure --enable-libgdbm-compat --disable-shared --enable-static --without-readline --prefix=#{Utils.escape File.join(@options[:tmpdir], 'gdbm', 'build')}")
+          Utils.run(@compile_env, "./configure --with-pic --enable-libgdbm-compat --disable-shared --enable-static --without-readline --prefix=#{Utils.escape File.join(@options[:tmpdir], 'gdbm', 'build')}")
           Utils.run(@compile_env, "make #{@options[:make_args]}")
           Utils.run(@compile_env, "make install")
         end
@@ -213,11 +213,13 @@ class Compiler
     target = File.join(@options[:tmpdir], 'yaml')
     unless Dir.exist?(target)
       Utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'yaml'), target, preserve: true)
+      File.utime(Time.at(0), Time.at(0), File.join(target, 'configure.ac'))
+      File.utime(Time.at(0), Time.at(0), File.join(target, 'aclocal.m4'))
       Utils.chdir(target) do
         if Gem.win_platform?
           # TODO
         else
-          Utils.run(@compile_env, "./configure --disable-shared --enable-static --prefix=#{Utils.escape File.join(@options[:tmpdir], 'yaml', 'build')}")
+          Utils.run(@compile_env, "./configure --with-pic --disable-shared --enable-static --prefix=#{Utils.escape File.join(@options[:tmpdir], 'yaml', 'build')}")
           Utils.run(@compile_env, "make #{@options[:make_args]}")
           Utils.run(@compile_env, "make install")
         end
