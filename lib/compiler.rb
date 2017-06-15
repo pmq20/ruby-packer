@@ -88,18 +88,17 @@ class Compiler
     @entrance = File.expand_path(entrance) if entrance
     @options = options
 
-    check_base_ruby_version!
-
     init_options
     init_entrance if entrance
     init_tmpdir
 
+    STDERR.puts "Ruby Compiler (nodec) v#{::Compiler::VERSION}"
     if entrance
-      STDERR.puts "Entrance: #{@entrance}"
+      STDERR.puts "- entrance: #{@entrance}"
     else
-      STDERR.puts "ENTRANCE was not provided, a single Ruby interpreter executable will be produced."
+      STDERR.puts "- entrance: not provided, a single Ruby interpreter executable will be produced."
     end
-    STDERR.puts "Options: #{@options}"
+    STDERR.puts "- options: #{@options}"
     STDERR.puts
 
     prepare_flags
@@ -282,18 +281,6 @@ class Compiler
       end
     end
   end
-  
-  def check_base_ruby_version!
-    expectation = "ruby #{self.class.ruby_version}"
-    got = `ruby -v`
-    unless got.include?(expectation)
-      msg =  "=== WARNING ==="
-      msg += "Please make sure to have installed the correct version of ruby in your environment\n"
-      msg += "It should match the enclosed Ruby runtime version of the compiler.\n"
-      msg += "Expecting #{expectation}; yet got #{got}"
-      STDERR.puts msg
-    end
-  end
 
   def run!
     Utils.chdir(@vendor_ruby) do
@@ -349,8 +336,8 @@ class Compiler
                                  --disable-dtrace \
                                  --enable-debug-env \
                                  --disable-install-rdoc")
-          Utils.run(@compile_env, "make #{@options[:make_args]} -j1")
-          Utils.run(@compile_env, "make install")
+          Utils.run(@compile_env.merge({'CFLAGS' => @cflags, 'LDFLAGS' => @ldflags}), "make #{@options[:make_args]} -j1")
+          Utils.run(@compile_env.merge({'CFLAGS' => @cflags, 'LDFLAGS' => @ldflags}), "make install")
           File.open(File.join(@options[:tmpdir], 'ruby', 'ext', 'Setup'), 'w') do |f|
             f.puts 'option nodynamic'
           end
@@ -379,7 +366,7 @@ class Compiler
                                --with-static-linked-ext")
         make_enclose_io_memfs
         make_enclose_io_vars
-        Utils.run(@compile_env.merge({'ENCLOSE_IO_RUBYC_2ND_PASS' => '1'}), "make #{@options[:make_args]}")
+        Utils.run(@compile_env.merge({'CFLAGS' => @cflags, 'LDFLAGS' => @ldflags, 'ENCLOSE_IO_RUBYC_2ND_PASS' => '1'}), "make #{@options[:make_args]}")
         Utils.cp('ruby', @options[:output])
       end
     end
