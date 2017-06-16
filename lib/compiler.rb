@@ -305,6 +305,8 @@ class Compiler
       if Gem.win_platform?
         unless File.exist?(@ruby_build)
           # enclose_io_memfs.o - 1st pass
+          @compile_env['ENCLOSE_IO_RUBYC_1ST_PASS'] = 'true'
+          @compile_env['ENCLOSE_IO_RUBYC_2ND_PASS'] = nil
           Utils.run(@compile_env, "call win32\\configure.bat \
                                   --prefix=#{Utils.escape @ruby_build} \
                                   --enable-bundled-libyaml \
@@ -339,7 +341,10 @@ class Compiler
         Utils.rm_f('enclose_io_memfs.c')
         make_enclose_io_memfs
         make_enclose_io_vars
-        Utils.run(@compile_env.merge({'ENCLOSE_IO_RUBYC_2ND_PASS' => '1'}), "nmake #{@options[:nmake_args]}")
+        @compile_env['CFLAGS'] += ' -DENCLOSE_IO_RUBYC_2ND_PASS '
+        @compile_env['ENCLOSE_IO_RUBYC_1ST_PASS'] = nil
+        @compile_env['ENCLOSE_IO_RUBYC_2ND_PASS'] = 'true'
+        Utils.run(@compile_env, "nmake #{@options[:nmake_args]}")
         Utils.cp('ruby.exe', @options[:output])
       else
         unless File.exist?(@ruby_build)
@@ -370,6 +375,7 @@ class Compiler
         Utils.rm_f('ruby')
         Utils.rm_f('include/enclose_io.h')
         Utils.rm_f('enclose_io_memfs.c')
+        @compile_env['CFLAGS'] += ' -DENCLOSE_IO_RUBYC_2ND_PASS '
         Utils.run(@compile_env.merge({'ENCLOSE_IO_RUBYC_2ND_PASS' => '1'}),
                               "./configure \
                                --prefix=#{Utils.escape @ruby_build} \

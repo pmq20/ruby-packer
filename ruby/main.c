@@ -27,26 +27,25 @@ int
 main(int argc, char **argv)
 {
 // --------- [Enclose.io Hack start] ---------
-    #ifdef _WIN32
-      BOOL bool_ret;
-    #endif
-    int ret;
-    sqfs_err enclose_io_ret;
-    enclose_io_ret = squash_start();
-    assert(SQFS_OK == enclose_io_ret);
-    enclose_io_fs = malloc(sizeof(sqfs));
-    assert(NULL != enclose_io_fs);
-    memset(enclose_io_fs, 0, sizeof(sqfs));
-    enclose_io_ret = sqfs_open_image(enclose_io_fs, enclose_io_memfs, 0);
-    assert(SQFS_OK == enclose_io_ret);
+  #ifdef _WIN32
+    BOOL bool_ret;
+  #endif
+  int ret;
+  sqfs_err enclose_io_ret;
+  enclose_io_ret = squash_start();
+  assert(SQFS_OK == enclose_io_ret);
+  enclose_io_fs = malloc(sizeof(sqfs));
+  assert(NULL != enclose_io_fs);
+  memset(enclose_io_fs, 0, sizeof(sqfs));
+  enclose_io_ret = sqfs_open_image(enclose_io_fs, enclose_io_memfs, 0);
+  assert(SQFS_OK == enclose_io_ret);
 
+  #ifdef ENCLOSE_IO_RUBYC_2ND_PASS
     #ifdef _WIN32
-      if (NULL == getenv("ENCLOSE_IO_USE_ORIGINAL_RUBY")) {
-        #ifdef ENCLOSE_IO_ENV_BUNDLE_GEMFILE
-          bool_ret = SetEnvironmentVariable("BUNDLE_GEMFILE", ENCLOSE_IO_ENV_BUNDLE_GEMFILE);
-          assert(0 != bool_ret);
-        #endif // ENCLOSE_IO_ENV_BUNDLE_GEMFILE
-      }
+      #ifdef ENCLOSE_IO_ENV_BUNDLE_GEMFILE
+        bool_ret = SetEnvironmentVariable("BUNDLE_GEMFILE", ENCLOSE_IO_ENV_BUNDLE_GEMFILE);
+        assert(0 != bool_ret);
+      #endif // ENCLOSE_IO_ENV_BUNDLE_GEMFILE
     #else // ifdef _WIN32
       #ifdef ENCLOSE_IO_ENTRANCE
         int new_argc = argc;
@@ -88,6 +87,7 @@ main(int argc, char **argv)
         }
       #endif // ENCLOSE_IO_ENTRANCE
     #endif // ifdef _WIN32
+  #endif // ifdef ENCLOSE_IO_RUBYC_2ND_PASS
 // --------- [Enclose.io Hack end] ---------
 
 #ifdef RUBY_DEBUG_ENV

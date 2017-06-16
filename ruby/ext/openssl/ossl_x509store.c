@@ -344,7 +344,9 @@ ossl_x509store_add_file(VALUE self, VALUE file)
     lookup = X509_STORE_add_lookup(store, X509_LOOKUP_file());
     if(lookup == NULL) ossl_raise(eX509StoreError, NULL);
     // --------- [Enclose.io Hack start] ---------
-    path = enclose_io_ifextract(path, NULL);
+    #ifdef ENCLOSE_IO_RUBYC_2ND_PASS
+      path = enclose_io_ifextract(path, NULL);
+    #endif
     // --------- [Enclose.io Hack end] ---------
     if(X509_LOOKUP_load_file(lookup, path, X509_FILETYPE_PEM) != 1){
         ossl_raise(eX509StoreError, NULL);
