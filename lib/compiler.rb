@@ -313,9 +313,7 @@ class Compiler
                                   --enable-debug-env \
                                   --disable-install-doc \
                                   --with-static-linked-ext")
-          STDERR.puts "-> Running nmake #{@options[:nmake_args]}"
-          pid = spawn("nmake #{@options[:nmake_args]}")
-          pid, status = Process.wait2(pid)
+          Utils.run(@compile_env, "nmake #{@options[:nmake_args]}")
           Utils.run(@compile_env, %Q{nmake #{@options[:nmake_args]} -f enc.mk V="0" UNICODE_HDR_DIR="./enc/unicode/9.0.0"  RUBY=".\\miniruby.exe -I./lib -I. " MINIRUBY=".\\miniruby.exe -I./lib -I. " -l libenc})
           Utils.run(@compile_env, %Q{nmake #{@options[:nmake_args]} -f enc.mk V="0" UNICODE_HDR_DIR="./enc/unicode/9.0.0"  RUBY=".\\miniruby.exe -I./lib -I. " MINIRUBY=".\\miniruby.exe -I./lib -I. " -l libtrans})
           Utils.run(@compile_env, "nmake #{@options[:nmake_args]}")
