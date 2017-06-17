@@ -301,7 +301,8 @@ char *enclose_io_getcwd(char *buf, size_t size)
 			}
 		}
 		memcpy(buf, enclose_io_cwd, memcpy_len);
-		buf[memcpy_len] = '\0';
+		assert(memcpy_len - 1 >= 0);
+		buf[memcpy_len - 1] = '\0';
 		return buf;
 	} else {
 		return getcwd(buf, size);
