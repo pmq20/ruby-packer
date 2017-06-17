@@ -29,6 +29,13 @@ class Compiler
       raise Error, "Failed running #{args}" unless status.success?
     end
 
+    def self.run_allow_failures(*args)
+      STDERR.puts "-> Running (allowing failures) #{args}"
+      pid = spawn(*args)
+      pid, status = Process.wait2(pid)
+      return status
+    end
+
     def self.chdir(path)
       STDERR.puts "-> cd #{path}"
       Dir.chdir(path) { yield }

@@ -339,7 +339,7 @@ class Compiler
         Utils.rm_f('enclose_io_memfs.c')
         make_enclose_io_memfs
         make_enclose_io_vars
-        @compile_env['CFLAGS'] += ' -DENCLOSE_IO_RUBYC_2ND_PASS '
+        @compile_env['CFLAGS'] += ' -DENCLOSE_IO_FINAL_PRODUCT '
         @compile_env['ENCLOSE_IO_RUBYC_1ST_PASS'] = nil
         @compile_env['ENCLOSE_IO_RUBYC_2ND_PASS'] = '1'
         Utils.run(@compile_env, "nmake #{@options[:nmake_args]}")
@@ -375,7 +375,7 @@ class Compiler
         Utils.rm_f('ruby')
         Utils.rm_f('include/enclose_io.h')
         Utils.rm_f('enclose_io_memfs.c')
-        @compile_env['CFLAGS'] += ' -DENCLOSE_IO_RUBYC_2ND_PASS '
+        @compile_env['CFLAGS'] += ' -DENCLOSE_IO_FINAL_PRODUCT '
         @compile_env['ENCLOSE_IO_RUBYC_1ST_PASS'] = nil
         @compile_env['ENCLOSE_IO_RUBYC_2ND_PASS'] = '1'
         Utils.run(@compile_env, "./configure \
@@ -472,6 +472,10 @@ class Compiler
         end
         Utils.chdir(@work_dir_local) do
           Utils.run(@local_toolchain, 'sh', '-c', 'bundle install --deployment')
+          if 0 == Utils.run_allow_failures(@local_toolchain, 'sh', '-c', 'bundle show rails')
+            STDERR.puts "-> Detected a Rails project"
+            @enclose_io_rails = true
+          end
           if File.exist?(@entrance)
             @memfs_entrance = mempath(@entrance)
           else
@@ -563,6 +567,7 @@ class Compiler
         f.puts ''
         f.puts "#define ENCLOSE_IO_ENV_BUNDLE_GEMFILE #{@env_bundle_gemfile.inspect}" if @env_bundle_gemfile
         f.puts "#define ENCLOSE_IO_ENTRANCE #{@memfs_entrance.inspect}" if @entrance
+        f.puts "#define ENCLOSE_IO_RAILS 1" if @enclose_io_rails
         f.puts '#endif'
         f.puts ''
       end

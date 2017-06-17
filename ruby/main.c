@@ -21,6 +21,11 @@
 
 // --------- [Enclose.io Hack start] ---------
 #include "enclose_io.h"
+#ifdef _WIN32
+  #include <direct.h>
+#else
+  #include <unistd.h>
+#endif
 // --------- [Enclose.io Hack end] ---------
 
 int
@@ -29,6 +34,12 @@ main(int argc, char **argv)
 // --------- [Enclose.io Hack start] ---------
   #ifdef _WIN32
     BOOL bool_ret;
+  #else
+    int new_argc;
+    char **new_argv;
+    char *argv_memory;
+    size_t i;
+    size_t total_argv_size;
   #endif
   int ret;
   sqfs_err enclose_io_ret;
@@ -40,27 +51,36 @@ main(int argc, char **argv)
   enclose_io_ret = sqfs_open_image(enclose_io_fs, enclose_io_memfs, 0);
   assert(SQFS_OK == enclose_io_ret);
 
-  #ifdef ENCLOSE_IO_RUBYC_2ND_PASS
+  #ifdef ENCLOSE_IO_FINAL_PRODUCT
     #ifdef _WIN32
-      #ifdef ENCLOSE_IO_ENV_BUNDLE_GEMFILE
-        bool_ret = SetEnvironmentVariable("BUNDLE_GEMFILE", ENCLOSE_IO_ENV_BUNDLE_GEMFILE);
-        assert(0 != bool_ret);
-      #endif // ENCLOSE_IO_ENV_BUNDLE_GEMFILE
-    #else // ifdef _WIN32
+      if (NULL == getenv("ENCLOSE_IO_USE_ORIGINAL_RUBY")) {
+        #ifdef ENCLOSE_IO_ENV_BUNDLE_GEMFILE
+          bool_ret = SetEnvironmentVariable("BUNDLE_GEMFILE", ENCLOSE_IO_ENV_BUNDLE_GEMFILE);
+          assert(0 != bool_ret);
+        #endif // ENCLOSE_IO_ENV_BUNDLE_GEMFILE
+        #ifdef ENCLOSE_IO_RAILS
+          ret = _chdir("/__enclose_io_memfs__/local");
+          assert(0 == ret);
+        #endif // ENCLOSE_IO_RAILS
+      }
+    #else // ifdef _WIN32 -----------------------------------------------
       #ifdef ENCLOSE_IO_ENTRANCE
-        int new_argc = argc;
-        char **new_argv = argv;
-        char *argv_memory = NULL;
+        new_argc = argc;
+        new_argv = argv;
+        argv_memory = NULL;
         if (NULL == getenv("ENCLOSE_IO_USE_ORIGINAL_RUBY")) {
             #ifdef ENCLOSE_IO_ENV_BUNDLE_GEMFILE
               ret = setenv("BUNDLE_GEMFILE", ENCLOSE_IO_ENV_BUNDLE_GEMFILE, 1);
               assert(0 == ret);
             #endif // ENCLOSE_IO_ENV_BUNDLE_GEMFILE
+            #ifdef ENCLOSE_IO_RAILS
+              ret = chdir("/__enclose_io_memfs__/local");
+              assert(0 == ret);
+            #endif // ENCLOSE_IO_RAILS
             new_argv = (char **)malloc( (argc + 1) * sizeof(char *));
             assert(new_argv);
             new_argv[0] = argv[0];
             new_argv[1] = ENCLOSE_IO_ENTRANCE;
-            size_t i;
             for (i = 1; i < argc; ++i) {
                    new_argv[2 + i - 1] = argv[i];
             }
@@ -68,7 +88,7 @@ main(int argc, char **argv)
         
             #ifndef _WIN32
             /* argv memory should be adjacent. */
-            size_t total_argv_size = 0;
+            total_argv_size = 0;
             for (i = 0; i < new_argc; ++i) {
                    total_argv_size += strlen(new_argv[i]) + 1;
             }
@@ -87,7 +107,7 @@ main(int argc, char **argv)
         }
       #endif // ENCLOSE_IO_ENTRANCE
     #endif // ifdef _WIN32
-  #endif // ifdef ENCLOSE_IO_RUBYC_2ND_PASS
+  #endif // ifdef ENCLOSE_IO_FINAL_PRODUCT
 // --------- [Enclose.io Hack end] ---------
 
 #ifdef RUBY_DEBUG_ENV
