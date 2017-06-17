@@ -304,9 +304,9 @@ class Compiler
       sep = Gem.win_platform? ? ';' : ':'
       if Gem.win_platform?
         unless File.exist?(@ruby_build)
-          # enclose_io_memfs.o - 1st pass
-          @compile_env['ENCLOSE_IO_RUBYC_1ST_PASS'] = 'true'
+          @compile_env['ENCLOSE_IO_RUBYC_1ST_PASS'] = '1'
           @compile_env['ENCLOSE_IO_RUBYC_2ND_PASS'] = nil
+          # enclose_io_memfs.o - 1st pass
           Utils.run(@compile_env, "call win32\\configure.bat \
                                   --prefix=#{Utils.escape @ruby_build} \
                                   --enable-bundled-libyaml \
@@ -341,19 +341,21 @@ class Compiler
         make_enclose_io_vars
         @compile_env['CFLAGS'] += ' -DENCLOSE_IO_RUBYC_2ND_PASS '
         @compile_env['ENCLOSE_IO_RUBYC_1ST_PASS'] = nil
-        @compile_env['ENCLOSE_IO_RUBYC_2ND_PASS'] = 'true'
+        @compile_env['ENCLOSE_IO_RUBYC_2ND_PASS'] = '1'
         Utils.run(@compile_env, "nmake #{@options[:nmake_args]}")
         Utils.cp('ruby.exe', @options[:output])
       else
         unless File.exist?(@ruby_build)
+          @compile_env['ENCLOSE_IO_RUBYC_1ST_PASS'] = '1'
+          @compile_env['ENCLOSE_IO_RUBYC_2ND_PASS'] = nil
           # enclose_io_memfs.o - 1st pass
           Utils.run(@compile_env, "./configure \
-                                 --prefix=#{Utils.escape @ruby_build} \
-                                 --enable-bundled-libyaml \
-                                 --without-gmp \
-                                 --disable-dtrace \
-                                 --enable-debug-env \
-                                 --disable-install-rdoc")
+                                  --prefix=#{Utils.escape @ruby_build} \
+                                  --enable-bundled-libyaml \
+                                  --without-gmp \
+                                  --disable-dtrace \
+                                  --enable-debug-env \
+                                  --disable-install-rdoc")
           Utils.run(@compile_env, "make #{@options[:make_args]} -j1")
           Utils.run(@compile_env, "make install")
           File.open(File.join(@options[:tmpdir], 'ruby', 'ext', 'Setup'), 'w') do |f|
@@ -374,18 +376,19 @@ class Compiler
         Utils.rm_f('include/enclose_io.h')
         Utils.rm_f('enclose_io_memfs.c')
         @compile_env['CFLAGS'] += ' -DENCLOSE_IO_RUBYC_2ND_PASS '
-        Utils.run(@compile_env.merge({'ENCLOSE_IO_RUBYC_2ND_PASS' => '1'}),
-                              "./configure \
-                               --prefix=#{Utils.escape @ruby_build} \
-                               --enable-bundled-libyaml \
-                               --without-gmp \
-                               --disable-dtrace \
-                               --enable-debug-env \
-                               --disable-install-rdoc \
-                               --with-static-linked-ext")
+        @compile_env['ENCLOSE_IO_RUBYC_1ST_PASS'] = nil
+        @compile_env['ENCLOSE_IO_RUBYC_2ND_PASS'] = '1'
+        Utils.run(@compile_env, "./configure \
+                                --prefix=#{Utils.escape @ruby_build} \
+                                --enable-bundled-libyaml \
+                                --without-gmp \
+                                --disable-dtrace \
+                                --enable-debug-env \
+                                --disable-install-rdoc \
+                                --with-static-linked-ext")
         make_enclose_io_memfs
         make_enclose_io_vars
-        Utils.run(@compile_env.merge({'ENCLOSE_IO_RUBYC_2ND_PASS' => '1'}), "make #{@options[:make_args]}")
+        Utils.run(@compile_env, "make #{@options[:make_args]}")
         Utils.cp('ruby', @options[:output])
       end
     end
@@ -417,6 +420,8 @@ class Compiler
       'GEM_HOME' => nil,
       'GEM_PATH' => nil,
       'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1',
+      'ENCLOSE_IO_RUBYC_1ST_PASS' => '1',
+      'ENCLOSE_IO_RUBYC_2ND_PASS' => nil,
     }
   end
 
