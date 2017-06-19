@@ -129,7 +129,6 @@ class Compiler
 
     prepare_flags1
     stuff_tmpdir
-    prepare_flags2
   end
 
   def init_options
@@ -250,6 +249,7 @@ class Compiler
     stuff_openssl
     stuff_gdbm
     stuff_yaml
+    prepare_flags2
 
     target = File.join(@options[:tmpdir], 'ruby')
     @ruby_build = File.join(@options[:tmpdir], 'ruby', 'build')
@@ -276,18 +276,21 @@ class Compiler
       if Gem.win_platform?
         target = File.join(@options[:tmpdir], 'ruby', 'win32', 'Makefile.sub')
         target_content = File.read(target)
-        found = false
+        found = 0
         File.open(target, 'w') do |f|
           target_content.each_line do |line|
-            if !found && (line =~ /^LDFLAGS = (.*)$/)
-              found = true
+            if 0 == found && (line =~ /^CFLAGS = (.*)$/)
+              found = 1
+              f.puts "CFLAGS = #{$1} #{@cflags}"
+            elsif 1 == found && (line =~ /^LDFLAGS = (.*)$/)
+              found = 2
               f.puts "LDFLAGS = #{$1} #{@ldflags}"
             else
               f.print line
             end
           end
         end
-        raise "Failed to patch LDFLAGS of #{target}" unless found
+        raise "Failed to patch CFLAGS and LDFLAGS of #{target}" unless 2 == found
       end
     end
 
