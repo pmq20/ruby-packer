@@ -345,12 +345,10 @@ class Compiler
         Utils.rm_f('main.obj')
         Utils.rm_f('win32/file.obj')
         Utils.rm_f('win32/win32.obj')
-        Utils.rm_f('ruby.exe')
         Utils.rm_f('include/enclose_io.h')
         Utils.rm_f('enclose_io_memfs.c')
         make_enclose_io_memfs
         make_enclose_io_vars
-        @compile_env['CFLAGS'] += ' -DENCLOSE_IO_FINAL_PRODUCT '
         @compile_env['ENCLOSE_IO_RUBYC_1ST_PASS'] = nil
         @compile_env['ENCLOSE_IO_RUBYC_2ND_PASS'] = '1'
         Utils.run(@compile_env, "call win32\\configure.bat \
@@ -359,8 +357,8 @@ class Compiler
                                 --enable-debug-env \
                                 --disable-install-doc \
                                 --with-static-linked-ext")
-        Utils.run(@compile_env, "nmake #{@options[:nmake_args]}")
-        Utils.cp('ruby.exe', @options[:output])
+        Utils.run(@compile_env, "nmake #{@options[:nmake_args]} ruby_static.exe")
+        Utils.cp('ruby_static.exe', @options[:output])
       else
         unless File.exist?(@ruby_build)
           @compile_env['ENCLOSE_IO_RUBYC_1ST_PASS'] = '1'
@@ -392,7 +390,6 @@ class Compiler
         Utils.rm_f('ruby')
         Utils.rm_f('include/enclose_io.h')
         Utils.rm_f('enclose_io_memfs.c')
-        @compile_env['CFLAGS'] += ' -DENCLOSE_IO_FINAL_PRODUCT '
         @compile_env['ENCLOSE_IO_RUBYC_1ST_PASS'] = nil
         @compile_env['ENCLOSE_IO_RUBYC_2ND_PASS'] = '1'
         Utils.run(@compile_env, "./configure \
