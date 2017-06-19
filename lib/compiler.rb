@@ -57,9 +57,9 @@ class Compiler
 
     if Gem.win_platform?
       if @options[:debug]
-        @cflags += ' /DEBUG:FULL /Od -Zi '
+        @cflags += ' -MD /DEBUG:FULL /Od -Zi '
       else
-        @cflags += ' /Ox '
+        @cflags += ' -MD /Ox '
       end
     else
       if @options[:debug]
