@@ -176,6 +176,7 @@ class Compiler
   end
 
   def stuff_openssl
+    return if Gem.win_platform? # TODO
     target = File.join(@options[:tmpdir], 'openssl')
     unless Dir.exist?(target)
       Utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'openssl'), target, preserve: true)
@@ -194,6 +195,7 @@ class Compiler
   end
   
   def stuff_gdbm
+    return if Gem.win_platform? # TODO
     target = File.join(@options[:tmpdir], 'gdbm')
     unless Dir.exist?(target)
       Utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'gdbm'), target, preserve: true)
@@ -210,6 +212,7 @@ class Compiler
   end
   
   def stuff_yaml
+    return if Gem.win_platform? # TODO
     target = File.join(@options[:tmpdir], 'yaml')
     unless Dir.exist?(target)
       Utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'yaml'), target, preserve: true)
