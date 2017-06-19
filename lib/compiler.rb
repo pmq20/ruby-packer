@@ -68,12 +68,18 @@ class Compiler
         @cflags += ' -fPIC -O3 -fno-fast-math -ggdb3 -Os -fdata-sections -ffunction-sections -pipe '
       end
     end
-
-    @compile_env = {
-      'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1',
-      'CFLAGS' => @cflags,
-      'LDFLAGS' => @ldflags
-    }
+    
+    if Gem.win_platform?
+      @compile_env = {
+        'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1'
+      }
+    else
+      @compile_env = {
+        'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1',
+        'CFLAGS' => @cflags,
+        'LDFLAGS' => @ldflags
+      }
+    end
   end
 
   def prepare_flags2
@@ -91,11 +97,17 @@ class Compiler
       @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'yaml', 'build', 'include')} "
     end
 
-    @compile_env = {
-      'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1',
-      'CFLAGS' => @cflags,
-      'LDFLAGS' => @ldflags
-    }
+    if Gem.win_platform?
+      @compile_env = {
+        'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1'
+      }
+    else
+      @compile_env = {
+        'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1',
+        'CFLAGS' => @cflags,
+        'LDFLAGS' => @ldflags
+      }
+    end
   end
   
   def initialize(entrance, options = {})
@@ -311,14 +323,7 @@ class Compiler
           @compile_env['ENCLOSE_IO_RUBYC_2ND_PASS'] = nil
           # enclose_io_memfs.o - 1st pass
           Utils.run(@compile_env, "call win32\\configure.bat \
-                                  --prefix=#{Utils.escape @ruby_build} \
-                                  --enable-bundled-libyaml \
-                                  --enable-debug-env \
-                                  --disable-install-doc \
-                                  --with-static-linked-ext")
-          Utils.run_allow_failures(@compile_env, "nmake #{@options[:nmake_args]}")
-          Utils.run(@compile_env, %Q{nmake #{@options[:nmake_args]} -f enc.mk V="0" UNICODE_HDR_DIR="./enc/unicode/9.0.0"  RUBY=".\\miniruby.exe -I./lib -I. " MINIRUBY=".\\miniruby.exe -I./lib -I. " -l libenc})
-          Utils.run(@compile_env, %Q{nmake #{@options[:nmake_args]} -f enc.mk V="0" UNICODE_HDR_DIR="./enc/unicode/9.0.0"  RUBY=".\\miniruby.exe -I./lib -I. " MINIRUBY=".\\miniruby.exe -I./lib -I. " -l libtrans})
+                                  --prefix=#{Utils.escape @ruby_build}")
           Utils.run(@compile_env, "nmake #{@options[:nmake_args]}")
           Utils.run(@compile_env, "nmake install")
           File.open(File.join(@options[:tmpdir], 'ruby', 'ext', 'Setup'), 'w') do |f|
@@ -345,6 +350,12 @@ class Compiler
         @compile_env['CFLAGS'] += ' -DENCLOSE_IO_FINAL_PRODUCT '
         @compile_env['ENCLOSE_IO_RUBYC_1ST_PASS'] = nil
         @compile_env['ENCLOSE_IO_RUBYC_2ND_PASS'] = '1'
+        Utils.run(@compile_env, "call win32\\configure.bat \
+                                --prefix=#{Utils.escape @ruby_build} \
+                                --enable-bundled-libyaml \
+                                --enable-debug-env \
+                                --disable-install-doc \
+                                --with-static-linked-ext")
         Utils.run(@compile_env, "nmake #{@options[:nmake_args]}")
         Utils.cp('ruby.exe', @options[:output])
       else
