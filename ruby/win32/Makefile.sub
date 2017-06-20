@@ -1013,6 +1013,7 @@ ruby_static.exe:	$(MAINOBJ) $(LIBRUBY_SO) $(RUBY_INSTALL_NAME).res
 			ext\sdbm\sdbm.lib \
 			ext\stringio\stringio.lib \
 			ext\strscan\strscan.lib \
+			ext\zlib\zlib.lib \
 			..\zlib\zlib.lib \
 			-link $(LDFLAGS) $(XLDFLAGS)
 		$(Q) $(LDSHARED_0)
