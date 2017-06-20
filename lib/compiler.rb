@@ -326,6 +326,7 @@ class Compiler
           @compile_env['ENCLOSE_IO_RUBYC_2ND_PASS'] = nil
           # enclose_io_memfs.o - 1st pass
           Utils.run(@compile_env, "call win32\\configure.bat \
+                                  --disable-install-doc \
                                   --prefix=#{Utils.escape @ruby_build}")
           Utils.run(@compile_env, "nmake #{@options[:nmake_args]}")
           Utils.run(@compile_env, "nmake install")
