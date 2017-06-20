@@ -295,26 +295,6 @@ class Compiler
     end
 
     @vendor_ruby = File.join(@options[:tmpdir], 'ruby')
-    if Gem.win_platform?
-      # TODO make those win32 ext work
-      Utils.chdir(@vendor_ruby) do
-        Utils.chdir('ext') do
-          Utils.rm_rf('dbm')
-          Utils.rm_rf('digest')
-          Utils.rm_rf('etc')
-          Utils.rm_rf('fiddle')
-          Utils.rm_rf('gdbm')
-          Utils.rm_rf('mathn')
-          Utils.rm_rf('openssl')
-          Utils.rm_rf('pty')
-          Utils.rm_rf('readline')
-          Utils.rm_rf('ripper')
-          Utils.rm_rf('socket')
-          Utils.rm_rf('win32')
-          Utils.rm_rf('win32ole')
-        end
-      end
-    end
   end
 
   def run!
@@ -332,6 +312,22 @@ class Compiler
           Utils.run(@compile_env, "nmake install")
           File.open(File.join(@options[:tmpdir], 'ruby', 'ext', 'Setup'), 'w') do |f|
             f.puts 'option nodynamic'
+          end
+          # TODO make those win32 ext work
+          Utils.chdir('ext') do
+            Utils.rm_rf('dbm')
+            Utils.rm_rf('digest')
+            Utils.rm_rf('etc')
+            Utils.rm_rf('fiddle')
+            Utils.rm_rf('gdbm')
+            Utils.rm_rf('mathn')
+            Utils.rm_rf('openssl')
+            Utils.rm_rf('pty')
+            Utils.rm_rf('readline')
+            Utils.rm_rf('ripper')
+            Utils.rm_rf('socket')
+            Utils.rm_rf('win32')
+            Utils.rm_rf('win32ole')
           end
         end
         # enclose_io_memfs.o - 2nd pass
