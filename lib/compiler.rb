@@ -329,6 +329,23 @@ class Compiler
             Utils.rm_rf('win32')
             Utils.rm_rf('win32ole')
           end
+          # PATCH win32\Makefile.sub for 2nd pass
+          if Gem.win_platform?
+            target = File.join(@options[:tmpdir], 'ruby', 'win32', 'Makefile.sub')
+            target_content = File.read(target)
+            found = 0
+            File.open(target, 'w') do |f|
+              target_content.each_line do |line|
+                if 0 == found && (line =~ /^#define LOAD_RELATIVE 1$/)
+                  found = 1
+                  f.puts ""
+                else
+                  f.print line
+                end
+              end
+            end
+            raise "Failed to patch CFLAGS and LDFLAGS of #{target}" unless 1 == found
+          end
         end
         # enclose_io_memfs.o - 2nd pass
         prepare_work_dir
