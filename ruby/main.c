@@ -63,6 +63,10 @@ main(int argc, char **argv)
       #endif // ENCLOSE_IO_RAILS
     }
   #else // ifdef _WIN32 -----------------------------------------------
+    if (argv[0]) {
+      ret = setenv("ENCLOSE_IO_ORIGINAL_ARGV0", argv[0], 1);
+      assert(0 == ret);
+    }
     #ifdef ENCLOSE_IO_ENTRANCE
       new_argc = argc;
       new_argv = argv;

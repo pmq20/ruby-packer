@@ -169,6 +169,21 @@ static const char prelude_code2[] =
 "end\n"
 ;
 
+static const char prelude_name_enclose_io[] = "<internal:enclose_io_prelude>";
+static const char prelude_code_enclose_io[] =
+"\n class << Process"
+"\n   alias :spawn_before_enclose_io :spawn"
+"\n   def spawn(arg0, *args)"
+"\n     if arg0.kind_of?(Hash) && args[0].kind_of?(String) && '/__enclose_io_memfs__' == args[0][0...21]"
+"\n       arg0 = arg0.dup"
+"\n       args[0] = args[0].dup"
+"\n       arg0['ENCLOSE_IO_USE_ORIGINAL_RUBY'] = '1'"
+"\n       args[0] = ENV['ENCLOSE_IO_ORIGINAL_ARGV0'] + ' ' + args[0]"
+"\n     end"
+"\n     spawn_before_enclose_io(arg0, *args)"
+"\n   end"
+"\n end"
+;
 
 static void
 prelude_eval(VALUE code, VALUE name, int line)
@@ -207,6 +222,13 @@ Init_prelude(void)
       rb_usascii_str_new(prelude_code2, sizeof(prelude_code2) - 1),
       rb_usascii_str_new(prelude_name2, sizeof(prelude_name2) - 1),
       INT2FIX(1));
+
+// --------- [Enclose.io Hack start] ---------
+    prelude_eval(
+      rb_usascii_str_new(prelude_code_enclose_io, sizeof(prelude_code_enclose_io) - 1),
+      rb_usascii_str_new(prelude_name_enclose_io, sizeof(prelude_name_enclose_io) - 1),
+      INT2FIX(1));
+// --------- [Enclose.io Hack end] ---------
 
 #if 0
     puts(prelude_code0);
