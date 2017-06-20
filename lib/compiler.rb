@@ -344,8 +344,6 @@ class Compiler
         Utils.rm_f('win32/win32.obj')
         Utils.rm_f('include/enclose_io.h')
         Utils.rm_f('enclose_io_memfs.c')
-        make_enclose_io_memfs
-        make_enclose_io_vars
         @compile_env['ENCLOSE_IO_RUBYC_1ST_PASS'] = nil
         @compile_env['ENCLOSE_IO_RUBYC_2ND_PASS'] = '1'
         Utils.run(@compile_env, "call win32\\configure.bat \
@@ -354,6 +352,8 @@ class Compiler
                                 --enable-debug-env \
                                 --disable-install-doc \
                                 --with-static-linked-ext")
+        make_enclose_io_memfs
+        make_enclose_io_vars
         Utils.run_allow_failures(@compile_env, "nmake #{@options[:nmake_args]}")
         Utils.run(@compile_env, %Q{nmake #{@options[:nmake_args]} -f enc.mk V="0" UNICODE_HDR_DIR="./enc/unicode/9.0.0"  RUBY=".\\miniruby.exe -I./lib -I. " MINIRUBY=".\\miniruby.exe -I./lib -I. " -l libenc})
         Utils.run(@compile_env, %Q{nmake #{@options[:nmake_args]} -f enc.mk V="0" UNICODE_HDR_DIR="./enc/unicode/9.0.0"  RUBY=".\\miniruby.exe -I./lib -I. " MINIRUBY=".\\miniruby.exe -I./lib -I. " -l libtrans})
