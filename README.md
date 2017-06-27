@@ -112,4 +112,5 @@ If `ENTRANCE` was not provided, then a single Ruby interpreter executable will b
 ## See Also
 
 - [Libsquash](https://github.com/pmq20/libsquash): portable, user-land SquashFS that can be easily linked and embedded within your application.
+- [Libautoupdate](https://github.com/pmq20/libautoupdate): cross-platform C library to enable your application to auto-update itself in place.
 - [SquashFS](http://squashfs.sourceforge.net/): a compressed read-only filesystem for Linux.
