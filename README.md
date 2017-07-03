@@ -6,9 +6,6 @@ Ahead-of-time (AOT) Compiler designed for Ruby.
 - Rails and Native C extensions Fully Supported
 - Open Source, MIT Licensed
 
-[![Travis CI status](https://travis-ci.org/pmq20/ruby-compiler.svg?branch=master)](https://travis-ci.org/pmq20/ruby-compiler)
-[![AppVeyor status](https://ci.appveyor.com/api/projects/status/93i36eliiy6v3686/branch/master?svg=true)](https://ci.appveyor.com/project/pmq20/ruby-compiler/branch/master)
-
 ## Development Status
 
 |                       |                                                       Master CI                                                                                                       |                                                                    RAM Test                                                                                               |                                                             Black-box Test                                                                                                 |
