@@ -9,13 +9,13 @@ Ahead-of-time (AOT) Compiler designed for Ruby.
 [![Travis CI status](https://travis-ci.org/pmq20/ruby-compiler.svg?branch=master)](https://travis-ci.org/pmq20/ruby-compiler)
 [![AppVeyor status](https://ci.appveyor.com/api/projects/status/93i36eliiy6v3686/branch/master?svg=true)](https://ci.appveyor.com/project/pmq20/ruby-compiler/branch/master)
 
-## Download
+## Development Status
 
-|                       |                                                       Master CI                                                                                                       |                                                                    RAM Test                                                                                               |                                                             Black-box Test                                                                                                 | Latest Stable                                                                          |
-|:---------------------:|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|----------------------------------------------------------------------------------------|
-|      **Windows**      |  [![Status](https://ci.appveyor.com/api/projects/status/93i36eliiy6v3686/branch/master?svg=true)](https://ci.appveyor.com/project/pmq20/ruby-compiler/branch/master)  |  [![Status](https://ci.appveyor.com/api/projects/status/0tjl0mvnief8nyti/branch/master?svg=true)](https://ci.appveyor.com/project/pmq20/ruby-compiler-ram/branch/master)  |  [![Status](https://ci.appveyor.com/api/projects/status/pa5g32i9b0jilnk2/branch/master?svg=true)](https://ci.appveyor.com/project/pmq20/ruby-compiler-blbt/branch/master)  | https://sourceforge.net/projects/ruby-compiler/files/v0.1.0/rubyc.exe/download         |
-|       **macOS**       |  [![Status](https://travis-ci.org/pmq20/ruby-compiler.svg?branch=master)](https://travis-ci.org/pmq20/ruby-compiler)                                                  |  [![Status](https://travis-ci.org/pmq20/ruby-compiler-ram.svg?branch=master)](https://travis-ci.org/pmq20/ruby-compiler-ram)                                              |  [![Status](https://travis-ci.org/pmq20/ruby-compiler-blbt.svg?branch=master)](https://travis-ci.org/pmq20/ruby-compiler-blbt)                                             | https://sourceforge.net/projects/ruby-compiler/files/v0.1.0/rubyc-darwin-x64/download  |
-|       **Linux**       |  [![Status](https://travis-ci.org/pmq20/ruby-compiler.svg?branch=master)](https://travis-ci.org/pmq20/ruby-compiler)                                                  |  [![Status](https://travis-ci.org/pmq20/ruby-compiler-ram.svg?branch=master)](https://travis-ci.org/pmq20/ruby-compiler-ram)                                              |  [![Status](https://travis-ci.org/pmq20/ruby-compiler-blbt.svg?branch=master)](https://travis-ci.org/pmq20/ruby-compiler-blbt)                                             | https://sourceforge.net/projects/ruby-compiler/files/v0.1.0/rubyc-linux-x64/download   |
+|                       |                                                       Master CI                                                                                                       |                                                                    RAM Test                                                                                               |                                                             Black-box Test                                                                                                 |
+|:---------------------:|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|
+|      **Windows**      |  [![Status](https://ci.appveyor.com/api/projects/status/93i36eliiy6v3686/branch/master?svg=true)](https://ci.appveyor.com/project/pmq20/ruby-compiler/branch/master)  |  [![Status](https://ci.appveyor.com/api/projects/status/0tjl0mvnief8nyti/branch/master?svg=true)](https://ci.appveyor.com/project/pmq20/ruby-compiler-ram/branch/master)  |  [![Status](https://ci.appveyor.com/api/projects/status/pa5g32i9b0jilnk2/branch/master?svg=true)](https://ci.appveyor.com/project/pmq20/ruby-compiler-blbt/branch/master)  |
+|       **macOS**       |  [![Status](https://travis-ci.org/pmq20/ruby-compiler.svg?branch=master)](https://travis-ci.org/pmq20/ruby-compiler)                                                  |  [![Status](https://travis-ci.org/pmq20/ruby-compiler-ram.svg?branch=master)](https://travis-ci.org/pmq20/ruby-compiler-ram)                                              |  [![Status](https://travis-ci.org/pmq20/ruby-compiler-blbt.svg?branch=master)](https://travis-ci.org/pmq20/ruby-compiler-blbt)                                             |
+|       **Linux**       |  [![Status](https://travis-ci.org/pmq20/ruby-compiler.svg?branch=master)](https://travis-ci.org/pmq20/ruby-compiler)                                                  |  [![Status](https://travis-ci.org/pmq20/ruby-compiler-ram.svg?branch=master)](https://travis-ci.org/pmq20/ruby-compiler-ram)                                              |  [![Status](https://travis-ci.org/pmq20/ruby-compiler-blbt.svg?branch=master)](https://travis-ci.org/pmq20/ruby-compiler-blbt)                                             |
 
 ## Install
 
@@ -26,8 +26,7 @@ First install the prerequisites:
 * [SquashFS Tools 4.3](https://github.com/pmq20/squashfuse/files/691217/sqfs43-win32.zip)
 * [Bison](http://gnuwin32.sourceforge.net/packages/bison.htm)
 * [Visual Studio 2010](https://www.visualstudio.com/) or newer
-* [Ruby 2.4.0](https://github.com/pmq20/rubyinstaller/files/689117/rb240-win32.zip)
-  * make sure that `require 'zlib'` works, if not install [zlib.dll](https://github.com/pmq20/rubyinstaller/files/759632/sqfs43-win32-zlib-dll.zip) and [zlib extension](https://github.com/pmq20/rubyinstaller/files/759631/sqfs43-win32-zlib-so.zip) first.
+* [Ruby 2.4.1](https://rubyinstaller.org/)
 
 Then download the executable `rubyc.exe` and run it from the Visual Studio Command Prompt.
 
@@ -40,7 +39,7 @@ First install the prerequisites:
   * You also need to install the `Command Line Tools` via Xcode. You can find
     this under the menu `Xcode -> Preferences -> Downloads`
   * This step will install `gcc` and the related toolchain containing `make`
-* [Ruby 2.4.0](https://www.ruby-lang.org/)
+* [Ruby 2.4.1](https://www.ruby-lang.org/)
 
 Then,
 
@@ -55,7 +54,7 @@ First install the prerequisites:
 * [SquashFS Tools 4.3](http://squashfs.sourceforge.net/)
 * `gcc` or `clang`
 * GNU Make
-* [Ruby 2.4.0](https://www.ruby-lang.org/)
+* [Ruby 2.4.1](https://www.ruby-lang.org/)
 
 Then,
 
@@ -113,4 +112,3 @@ If `ENTRANCE` was not provided, then a single Ruby interpreter executable will b
 
 - [Libsquash](https://github.com/pmq20/libsquash): portable, user-land SquashFS that can be easily linked and embedded within your application.
 - [Libautoupdate](https://github.com/pmq20/libautoupdate): cross-platform C library to enable your application to auto-update itself in place.
-- [SquashFS](http://squashfs.sourceforge.net/): a compressed read-only filesystem for Linux.
