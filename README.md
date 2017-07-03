@@ -3,7 +3,7 @@
 Ahead-of-time (AOT) Compiler designed for Ruby.
 
 - Compiling your Ruby application into a single executable
-- Rails and Native C extensions fully supported
+- Rails and native C extensions fully supported
 - Open source, MIT licensed
 
 ## Status
