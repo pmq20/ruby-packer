@@ -183,6 +183,19 @@ static const char prelude_code_enclose_io[] =
 "\n     spawn_before_enclose_io(arg0, *args)"
 "\n   end"
 "\n end"
+"\n class << IO"
+"\n   alias :popen_before_enclose_io :popen"
+"\n   def popen(*args)"
+"\n     if args[0].kind_of?(Array)"
+"\n       if args[0][0].kind_of?(String) && '/__enclose_io_memfs__' == args[0][0][0...21]"
+"\n         args[0] = args[0].dup"
+"\n         args[0][0] = __enclose_io_memfs__extract(args[0][0], 'exe')"
+"\n         File.chmod(0755, args[0][0])"
+"\n       end"
+"\n     end"
+"\n     popen_before_enclose_io(*args)"
+"\n   end"
+"\n end"
 ;
 
 static void

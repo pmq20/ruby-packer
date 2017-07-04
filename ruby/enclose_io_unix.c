@@ -287,10 +287,11 @@ int enclose_io_access(const char *path, int mode)
 	}
 }
 
-static int enclose_io_mkdir_recursive(char *path, mode_t mode) {
+static int enclose_io_mkdir_consult(char *path, mode_t mode) {
 	int ret;
 	char *head = NULL;
 	char *p = NULL;
+	char *p_left = NULL;
 	struct stat buf;
 
 	while (strlen(path) - 1 >= 0 && '/' == path[strlen(path) - 1]) {
@@ -304,16 +305,16 @@ static int enclose_io_mkdir_recursive(char *path, mode_t mode) {
 	mkdir(path, mode);
 	head[21] = '/';
 
-	for(p = head + 22; *p; p++) {
-		if(*p == '/') {
+	for (p = head + 22; *p; p++) {
+		if (*p == '/') {
 			*p = 0;
 			if (0 == squash_stat(enclose_io_fs, head, &buf) && S_ISDIR(buf.st_mode)) {
 				mkdir(path, mode);
+				*p = '/';
 			} else {
-				errno = ENOENT;
-				return -1;
+				*p = '/';
+				break;
 			}
-			*p = '/';
 		}
 	}
 	return mkdir(path, mode);
@@ -348,7 +349,7 @@ int enclose_io_mkdir(const char *path, mode_t mode)
 			}
 			strcpy(workdir_path, workdir);
 			strcat(workdir_path, enclose_io_expanded);
-			ret_inner = enclose_io_mkdir_recursive(workdir_path, mode);
+			ret_inner = enclose_io_mkdir_consult(workdir_path, mode);
 			free(workdir_path);
 			return ret_inner;
 		}
@@ -375,7 +376,7 @@ int enclose_io_mkdir(const char *path, mode_t mode)
 			}
 			strcpy(workdir_path, workdir);
 			strcat(workdir_path, path);
-			ret_inner = enclose_io_mkdir_recursive(workdir_path, mode);
+			ret_inner = enclose_io_mkdir_consult(workdir_path, mode);
 			free(workdir_path);
 			return ret_inner;
 		}
@@ -571,7 +572,7 @@ int enclose_io_open(int nargs, const char *pathname, int flags, ...)
 		size_t enclose_io_cwd_len;
 		size_t memcpy_len;
 		ENCLOSE_IO_GEN_EXPANDED_NAME(pathname);
-		if (2 == nargs) {
+		if (!(O_CREAT & flags)) {
 			ENCLOSE_IO_CONSIDER_MKDIR_WORKDIR_RETURN(
 				enclose_io_expanded,
 				enclose_io_dos_return(squash_open(enclose_io_fs, enclose_io_expanded)),
@@ -580,17 +581,31 @@ int enclose_io_open(int nargs, const char *pathname, int flags, ...)
 		} else {
 			va_list args;
 			mode_t mode;
+			assert(3 == nargs);
 			va_start(args, flags);
 			mode = va_arg(args, mode_t);
 			va_end(args);
-			ENCLOSE_IO_CONSIDER_MKDIR_WORKDIR_RETURN(
-				enclose_io_expanded,
-				enclose_io_dos_return(squash_open(enclose_io_fs, enclose_io_expanded)),
-				open(mkdir_workdir_expanded, flags, mode)
-			);
+			if (mkdir_workdir) {
+				sqfs_path mkdir_workdir_expanded;
+				size_t mkdir_workdir_len;
+				size_t memcpy_len;
+				struct stat mkdir_workdir_buf;
+				mkdir_workdir_len = strlen(mkdir_workdir);
+				memcpy(mkdir_workdir_expanded, mkdir_workdir, mkdir_workdir_len);
+				memcpy_len = strlen(enclose_io_expanded);
+				if (SQUASHFS_PATH_LEN - mkdir_workdir_len < memcpy_len) {
+					memcpy_len = SQUASHFS_PATH_LEN - mkdir_workdir_len;
+				}
+				memcpy(&mkdir_workdir_expanded[mkdir_workdir_len], enclose_io_expanded, memcpy_len);
+				mkdir_workdir_expanded[mkdir_workdir_len + memcpy_len] = '\0';
+				return enclose_io_dos_return(open(mkdir_workdir_expanded, flags, mode));
+			} else {
+				errno = ENOENT;
+				return enclose_io_dos_return(-1);
+			}
 		}
 	} else if (enclose_io_is_path(pathname)) {
-		if (2 == nargs) {
+		if (!(O_CREAT & flags)) {
 			ENCLOSE_IO_CONSIDER_MKDIR_WORKDIR_RETURN(
 				pathname,
 				enclose_io_dos_return(squash_open(enclose_io_fs, pathname)),
@@ -599,14 +614,28 @@ int enclose_io_open(int nargs, const char *pathname, int flags, ...)
 		} else {
 			va_list args;
 			mode_t mode;
+			assert(3 == nargs);
 			va_start(args, flags);
 			mode = va_arg(args, mode_t);
 			va_end(args);
-			ENCLOSE_IO_CONSIDER_MKDIR_WORKDIR_RETURN(
-				pathname,
-				enclose_io_dos_return(squash_open(enclose_io_fs, pathname)),
-				open(mkdir_workdir_expanded, flags, mode)
-			);
+			if (mkdir_workdir) {
+				sqfs_path mkdir_workdir_expanded;
+				size_t mkdir_workdir_len;
+				size_t memcpy_len;
+				struct stat mkdir_workdir_buf;
+				mkdir_workdir_len = strlen(mkdir_workdir);
+				memcpy(mkdir_workdir_expanded, mkdir_workdir, mkdir_workdir_len);
+				memcpy_len = strlen(pathname);
+				if (SQUASHFS_PATH_LEN - mkdir_workdir_len < memcpy_len) {
+					memcpy_len = SQUASHFS_PATH_LEN - mkdir_workdir_len;
+				}
+				memcpy(&mkdir_workdir_expanded[mkdir_workdir_len], pathname, memcpy_len);
+				mkdir_workdir_expanded[mkdir_workdir_len + memcpy_len] = '\0';
+				return enclose_io_dos_return(open(mkdir_workdir_expanded, flags, mode));
+			} else {
+				errno = ENOENT;
+				return enclose_io_dos_return(-1);
+			}
 		}
 	} else {
 		if (2 == nargs) {

@@ -507,6 +507,8 @@ class Compiler
           if 0 == Utils.run_allow_failures(@local_toolchain, 'sh', '-c', 'bundle show rails')
             STDERR.puts "-> Detected a Rails project"
             @enclose_io_rails = true
+            Utils.rm_rf('tmp')
+            Utils.rm_rf('log')
           end
           if File.exist?(@entrance)
             @memfs_entrance = mempath(@entrance)

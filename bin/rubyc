@@ -30,7 +30,7 @@ Producing a single Ruby interpreter executable:
   rubyc
   ./a.out (or a.exe on Windows)
 
-Bootstrapping:
+Bootstrapping Ruby Compiler itself:
   git clone --depth 1 https://github.com/pmq20/ruby-compiler.git
   cd ruby-compiler
   rubyc bin/rubyc
@@ -43,10 +43,10 @@ Compiling a CLI tool:
   ./a.out (or a.exe on Windows)
 
 Compiling a Rails application
-  git clone --depth 1 https://github.com/ruby-china/homeland
-  cd homeland
+  rails new yours
+  cd yours
   rubyc bin/rails
-  DATABASE_URL=... ./a.out server (or a.exe on Windows)
+  ./a.out (or a.exe on Windows)
 
 }.strip
 

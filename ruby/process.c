@@ -4366,6 +4366,53 @@ rb_f_spawn(int argc, VALUE *argv)
 #endif
 }
 
+// --------- [Enclose.IO Hack start] ---------
+#include <wchar.h>
+#include "enclose_io_prelude.h"
+#include "enclose_io_common.h"
+static VALUE __enclose_io_memfs__extract(int argc, VALUE *argv)
+{
+#ifdef _WIN32
+	char mbs_buf[(32767+1)*2+1];
+	int length;
+#endif
+	SQUASH_OS_PATH ret;
+	char *path = NULL;
+	char *ext_name = NULL;
+	short has_ext_name = 0;
+	VALUE str;
+
+	if (2 == argc) {
+		has_ext_name = 1;
+		path = StringValueCStr(argv[0]);
+		ext_name = StringValueCStr(argv[1]);
+	} else if (1 == argc) {
+		has_ext_name = 0;
+		path = StringValueCStr(argv[0]);
+	} else {
+		rb_raise(rb_eRuntimeError, "bad number of arguments passed to __enclose_io_memfs__extract");
+	}
+	if (has_ext_name) {
+		ret = squash_extract(enclose_io_fs, path, ext_name);
+	} else {
+		ret = squash_extract(enclose_io_fs, path, NULL);
+	}
+	if (!ret) {
+		return Qnil;
+	}
+#ifdef _WIN32
+	length = wcstombs(mbs_buf, ret, sizeof(mbs_buf));
+	if ((size_t)-1 == length) {
+		rb_raise(rb_eRuntimeError, "wcstombs failed in __enclose_io_memfs__extract");
+	}
+	str = rb_sprintf("%s", mbs_buf);
+#else
+	str = rb_sprintf("%s", ret);
+#endif
+	return str;
+}
+// --------- [Enclose.IO Hack end] ---------
+
 /*
  *  call-seq:
  *     sleep([duration])    -> integer
@@ -7561,6 +7608,7 @@ InitVM_process(void)
     rb_define_global_function("exit!", rb_f_exit_bang, -1);
     rb_define_global_function("system", rb_f_system, -1);
     rb_define_global_function("spawn", rb_f_spawn, -1);
+    rb_define_global_function("__enclose_io_memfs__extract", __enclose_io_memfs__extract, -1);
     rb_define_global_function("sleep", rb_f_sleep, -1);
     rb_define_global_function("exit", rb_f_exit, -1);
     rb_define_global_function("abort", rb_f_abort, -1);
