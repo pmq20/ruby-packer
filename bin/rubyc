@@ -12,7 +12,7 @@ require 'optparse'
 
 USAGE = %Q{
 
-Ruby Compiler (rubyc) v#{::Compiler::VERSION} (runtime #{::Compiler.ruby_version})
+Ruby Compiler (rubyc) v#{::Compiler::VERSION}
 Compiling your Ruby application into a single executable.
 
 Usage
@@ -42,7 +42,7 @@ Compiling a CLI tool:
   rubyc bin/nodec
   ./a.out (or a.exe on Windows)
 
-Compiling a Rails application
+Compiling a Rails application:
   rails new yours
   cd yours
   rubyc bin/rails
@@ -88,6 +88,15 @@ OptionParser.new do |opts|
   opts.on("--nmake-args=ARGS", "Extra arguments to be passed to nmake") do |args|
     options[:nmake_args] = args
   end
+
+  opts.on("--auto-update-url=URL", "Enables auto-update and specifies the URL to get the latest version") do |url|
+    options[:auto_update_url] = url
+  end
+
+  opts.on("--auto-update-base=STRING", "Enables auto-update and specifies the base version string") do |string|
+    options[:auto_update_base] = string
+  end
+
 
   opts.on("--debug", "Enable debug mode") do
     options[:debug] = true

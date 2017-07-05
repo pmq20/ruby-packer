@@ -158,6 +158,11 @@ class Compiler
       end
       STDERR.puts "-> Project root not supplied, #{@root} assumed."
     end
+    if @options[:auto_update_url] || @options[:auto_update_base]
+      unless @options[:auto_update_url].length > 0 && @options[:auto_update_base].length > 0
+        raise Error, "Please provide both --auto-update-url and --auto-update-base"
+      end
+    end
   end
 
   def init_tmpdir
@@ -602,6 +607,33 @@ class Compiler
         f.puts "#define ENCLOSE_IO_ENV_BUNDLE_GEMFILE #{@env_bundle_gemfile.inspect}" if @env_bundle_gemfile
         f.puts "#define ENCLOSE_IO_ENTRANCE #{@memfs_entrance.inspect}" if @entrance
         f.puts "#define ENCLOSE_IO_RAILS 1" if @enclose_io_rails
+        if @options[:auto_update_url] && @options[:auto_update_base]
+          f.puts "#define ENCLOSE_IO_AUTO_UPDATE 1"
+          f.puts "#define ENCLOSE_IO_AUTO_UPDATE_BASE #{@options[:auto_update_base].inspect}"
+          urls = URI.split(@options[:auto_update_url])
+          raise 'logic error' unless 9 == urls.length
+          port = urls[3]
+          if port.nil?
+            if 'https' == urls[0]
+              port = 443
+            else
+              port = 80
+            end
+          end
+          f.puts "#define ENCLOSE_IO_AUTO_UPDATE_URL_Scheme #{urls[0].inspect}" if urls[0]
+          f.puts "#define ENCLOSE_IO_AUTO_UPDATE_URL_Userinfo #{urls[1].inspect}" if urls[1]
+          f.puts "#define ENCLOSE_IO_AUTO_UPDATE_URL_Host #{urls[2].inspect}" if urls[2]
+          if Gem.win_platform?
+            f.puts "#define ENCLOSE_IO_AUTO_UPDATE_URL_Port #{port.to_s.inspect}"
+          else
+            f.puts "#define ENCLOSE_IO_AUTO_UPDATE_URL_Port #{port}"
+          end
+          f.puts "#define ENCLOSE_IO_AUTO_UPDATE_URL_Registry #{urls[4].inspect}" if urls[4]
+          f.puts "#define ENCLOSE_IO_AUTO_UPDATE_URL_Path #{urls[5].inspect}" if urls[5]
+          f.puts "#define ENCLOSE_IO_AUTO_UPDATE_URL_Opaque #{urls[6].inspect}" if urls[6]
+          f.puts "#define ENCLOSE_IO_AUTO_UPDATE_URL_Query #{urls[7].inspect}" if urls[7]
+          f.puts "#define ENCLOSE_IO_AUTO_UPDATE_URL_Fragment #{urls[8].inspect}" if urls[8]
+        end
         f.puts '#endif'
         f.puts ''
       end

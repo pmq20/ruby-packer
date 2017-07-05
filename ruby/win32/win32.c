@@ -862,10 +862,6 @@ rb_w32_sysinit(int *argc, char ***argv)
     new_argc = *argc;
     new_argv = *argv;
     cp = CP_UTF8;
-    if (new_argv[0]) {
-      BOOL bool_ret = SetEnvironmentVariable("ENCLOSE_IO_ORIGINAL_ARGV0", new_argv[0]);
-      assert(0 != bool_ret);
-    }
     if (NULL == getenv("ENCLOSE_IO_USE_ORIGINAL_RUBY")) {
         new_argv = (char **)malloc( (*argc + 1) * sizeof(char *));
         assert(new_argv);

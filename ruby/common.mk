@@ -68,7 +68,12 @@ ENC_MK        = enc.mk
 MAKE_ENC      = -f $(ENC_MK) V="$(V)" UNICODE_HDR_DIR="$(UNICODE_HDR_DIR)" \
 		RUBY="$(MINIRUBY)" MINIRUBY="$(MINIRUBY)" $(MFLAGS)
 
-COMMONOBJS    = squash_cache.$(OBJEXT) \
+COMMONOBJS    = autoupdate_autoupdate.$(OBJEXT) \
+		autoupdate_exepath.$(OBJEXT) \
+		autoupdate_inflate.$(OBJEXT) \
+		autoupdate_tmpf.$(OBJEXT) \
+		autoupdate_utils.$(OBJEXT) \
+		squash_cache.$(OBJEXT) \
 		squash_decompress.$(OBJEXT) \
 		squash_dir.$(OBJEXT) \
 		squash_dirent.$(OBJEXT) \
