@@ -72,10 +72,12 @@ class Compiler
     
     if Gem.win_platform?
       @compile_env = {
+        'CI' => 'true',
         'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1'
       }
     else
       @compile_env = {
+        'CI' => 'true',
         'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1',
         'CFLAGS' => @cflags,
         'LDFLAGS' => @ldflags
@@ -106,10 +108,12 @@ class Compiler
 
     if Gem.win_platform?
       @compile_env = {
+        'CI' => 'true',
         'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1'
       }
     else
       @compile_env = {
+        'CI' => 'true',
         'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1',
         'CFLAGS' => @cflags,
         'LDFLAGS' => @ldflags
@@ -514,12 +518,13 @@ class Compiler
     
     @path_env = "#{File.join(@options[:tmpdir], 'ruby', 'build', 'bin')}:#{ENV['PATH']}"
     @local_toolchain = {
+      'CI' => 'true',
       'PATH' => @path_env,
       'GEM_HOME' => nil,
       'GEM_PATH' => nil,
       'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1',
       'ENCLOSE_IO_RUBYC_1ST_PASS' => '1',
-      'ENCLOSE_IO_RUBYC_2ND_PASS' => nil,
+      'ENCLOSE_IO_RUBYC_2ND_PASS' => nil
     }
   end
 
