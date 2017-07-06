@@ -7,8 +7,8 @@
 ## Features
 
 - Works on Linux, Mac and Windows
-- Create a binary distribution of your application
-- Supports natively any form of `require` and `load`, including dynamic ones (e.g. `require(my_path + 'x.rb'`)
+- Creates a binary distribution of your application
+- Supports natively any form of `require` and `load`, including dynamic ones (e.g. `load(my_path + 'x.rb'`)
 - Features zero-config auto-update capabilities to make your compiled project to stay updated
 - Native C extensions are fully supported
 - Rails applications are fully supported
