@@ -11,6 +11,7 @@ require 'tmpdir'
 require 'fileutils'
 require 'open3'
 require 'pathname'
+require 'uri'
 
 class Compiler
   def self.ruby_api_version
