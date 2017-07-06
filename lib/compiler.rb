@@ -98,7 +98,7 @@ class Compiler
       @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'gdbm', 'build', 'include')} "
       @ldflags += " -L#{Utils.escape File.join(@options[:tmpdir], 'yaml', 'build', 'lib')} "
       @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'yaml', 'build', 'include')} "
-      @ldflags += " -L#{Utils.escape File.join(@options[:tmpdir], 'libffi', 'build', 'lib')} "
+      @ldflags += " -L#{Utils.escape File.join(@options[:tmpdir], 'libffi', 'build', 'lib')} -L#{Utils.escape File.join(@options[:tmpdir], 'libffi', 'build', 'lib64')} "
       @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'libffi', 'build', 'lib', 'libffi-3.2.1', 'include')} "
       @ldflags += " -L#{Utils.escape File.join(@options[:tmpdir], 'ncurses', 'build', 'lib')} "
       @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'ncurses', 'build', 'include')} "
