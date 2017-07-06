@@ -89,12 +89,18 @@ class Compiler
     else
       @ldflags += " -L#{Utils.escape File.join(@options[:tmpdir], 'zlib')} #{Utils.escape File.join(@options[:tmpdir], 'zlib', 'libz.a')} "
       @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'zlib')} "
-      @ldflags += " -L#{Utils.escape File.join(@options[:tmpdir], 'openssl')}  #{Utils.escape File.join(@options[:tmpdir], 'openssl', 'libcrypto.a')} #{Utils.escape File.join(@options[:tmpdir], 'openssl', 'libssl.a')} "
+      @ldflags += " -L#{Utils.escape File.join(@options[:tmpdir], 'openssl')} "
       @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'openssl', 'include')} "
-      @ldflags += " -L#{Utils.escape File.join(@options[:tmpdir], 'gdbm', 'build', 'lib')} #{Utils.escape File.join(@options[:tmpdir], 'gdbm', 'build', 'lib', 'libgdbm.a')} "
+      @ldflags += " -L#{Utils.escape File.join(@options[:tmpdir], 'gdbm', 'build', 'lib')} "
       @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'gdbm', 'build', 'include')} "
-      @ldflags += " -L#{Utils.escape File.join(@options[:tmpdir], 'yaml', 'build', 'lib')} #{Utils.escape File.join(@options[:tmpdir], 'yaml', 'build', 'lib', 'libyaml.a')} "
+      @ldflags += " -L#{Utils.escape File.join(@options[:tmpdir], 'yaml', 'build', 'lib')} "
       @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'yaml', 'build', 'include')} "
+      @ldflags += " -L#{Utils.escape File.join(@options[:tmpdir], 'libffi', 'build', 'lib')} "
+      @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'libffi', 'build', 'lib', 'libffi-3.2.1', 'include')} "
+      @ldflags += " -L#{Utils.escape File.join(@options[:tmpdir], 'ncurses', 'build', 'lib')} "
+      @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'ncurses', 'build', 'include')} "
+      @ldflags += " -L#{Utils.escape File.join(@options[:tmpdir], 'readline', 'build', 'lib')} "
+      @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'readline', 'build', 'include')} "
     end
 
     if Gem.win_platform?
@@ -245,6 +251,57 @@ class Compiler
       end
     end
   end
+
+  def stuff_libffi
+    return if Gem.win_platform? # TODO
+    target = File.join(@options[:tmpdir], 'libffi')
+    unless Dir.exist?(target)
+      Utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'libffi'), target, preserve: true)
+      Utils.chdir(target) do
+        if Gem.win_platform?
+          # TODO
+        else
+          Utils.run(@compile_env, "./configure --with-pic --disable-shared --enable-static --prefix=#{Utils.escape File.join(@options[:tmpdir], 'libffi', 'build')}")
+          Utils.run(@compile_env, "make #{@options[:make_args]}")
+          Utils.run(@compile_env, "make install")
+        end
+      end
+    end
+  end
+  
+  def stuff_ncurses
+    return if Gem.win_platform? # TODO
+    target = File.join(@options[:tmpdir], 'ncurses')
+    unless Dir.exist?(target)
+      Utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'ncurses'), target, preserve: true)
+      Utils.chdir(target) do
+        if Gem.win_platform?
+          # TODO
+        else
+          Utils.run(@compile_env, "./configure --without-shared --without-cxx-shared --prefix=#{Utils.escape File.join(@options[:tmpdir], 'ncurses', 'build')}")
+          Utils.run(@compile_env, "make #{@options[:make_args]}")
+          Utils.run(@compile_env, "make install")
+        end
+      end
+    end
+  end
+  
+  def stuff_readline
+    return if Gem.win_platform? # TODO
+    target = File.join(@options[:tmpdir], 'readline')
+    unless Dir.exist?(target)
+      Utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'readline'), target, preserve: true)
+      Utils.chdir(target) do
+        if Gem.win_platform?
+          # TODO
+        else
+          Utils.run(@compile_env, "./configure --with-pic --disable-shared --enable-static --prefix=#{Utils.escape File.join(@options[:tmpdir], 'readline', 'build')}")
+          Utils.run(@compile_env, "make #{@options[:make_args]}")
+          Utils.run(@compile_env, "make install")
+        end
+      end
+    end
+  end
   
   def stuff_tmpdir
     Utils.rm_rf(@options[:tmpdir]) if @options[:clean_tmpdir]
@@ -254,6 +311,9 @@ class Compiler
     stuff_openssl
     stuff_gdbm
     stuff_yaml
+    stuff_libffi
+    stuff_ncurses
+    stuff_readline
     prepare_flags2
 
     target = File.join(@options[:tmpdir], 'ruby')
