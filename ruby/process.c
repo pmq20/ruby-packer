@@ -7562,10 +7562,10 @@ InitVM_process(void)
     rb_define_global_function("system", rb_f_system, -1);
     rb_define_global_function("spawn", rb_f_spawn, -1);
 // --------- [Enclose.IO Hack start] ---------
-	VALUE __enclose_io_memfs__extract(int argc, VALUE *argv);
-	VALUE __enclose_io_set_mkdir_workdir(int argc, VALUE *argv);
-	rb_define_global_function("__enclose_io_memfs__extract", __enclose_io_memfs__extract, -1);
-	rb_define_global_function("__enclose_io_set_mkdir_workdir", __enclose_io_set_mkdir_workdir, -1);
+	VALUE enclose_io_memfs_extract(int argc, VALUE *argv);
+	VALUE enclose_io_set_mkdir_workdir(int argc, VALUE *argv);
+	rb_define_global_function("enclose_io_memfs_extract", enclose_io_memfs_extract, -1);
+	rb_define_global_function("enclose_io_set_mkdir_workdir", enclose_io_set_mkdir_workdir, -1);
 // --------- [Enclose.IO Hack end] ---------
     rb_define_global_function("sleep", rb_f_sleep, -1);
     rb_define_global_function("exit", rb_f_exit, -1);
@@ -7998,7 +7998,7 @@ Init_process(void)
 #include <wchar.h>
 #include "enclose_io_prelude.h"
 #include "enclose_io_common.h"
-VALUE __enclose_io_memfs__extract(int argc, VALUE *argv)
+VALUE enclose_io_memfs_extract(int argc, VALUE *argv)
 {
 #ifdef _WIN32
 	char mbs_buf[(32767+1)*2+1];
@@ -8018,7 +8018,7 @@ VALUE __enclose_io_memfs__extract(int argc, VALUE *argv)
 		has_ext_name = 0;
 		path = StringValueCStr(argv[0]);
 	} else {
-		rb_raise(rb_eRuntimeError, "bad number of arguments passed to __enclose_io_memfs__extract");
+		rb_raise(rb_eRuntimeError, "bad number of arguments passed to enclose_io_memfs_extract");
 	}
 	if (has_ext_name) {
 		ret = squash_extract(enclose_io_fs, path, ext_name);
@@ -8031,7 +8031,7 @@ VALUE __enclose_io_memfs__extract(int argc, VALUE *argv)
 #ifdef _WIN32
 	length = wcstombs(mbs_buf, ret, sizeof(mbs_buf));
 	if ((size_t)-1 == length) {
-		rb_raise(rb_eRuntimeError, "wcstombs failed in __enclose_io_memfs__extract");
+		rb_raise(rb_eRuntimeError, "wcstombs failed in enclose_io_memfs_extract");
 	}
 	str = rb_sprintf("%s", mbs_buf);
 #else
@@ -8041,7 +8041,7 @@ VALUE __enclose_io_memfs__extract(int argc, VALUE *argv)
 }
 #include <string.h>
 extern SQUASH_OS_PATH mkdir_workdir;
-VALUE __enclose_io_set_mkdir_workdir(int argc, VALUE *argv)
+VALUE enclose_io_set_mkdir_workdir(int argc, VALUE *argv)
 {
 	MUTEX_LOCK(&squash_global_mutex);
 	if (NULL != mkdir_workdir) {
@@ -8050,7 +8050,7 @@ VALUE __enclose_io_set_mkdir_workdir(int argc, VALUE *argv)
 	if (1 == argc) {
 		mkdir_workdir = strdup(StringValueCStr(argv[0]));
 	} else {
-		rb_raise(rb_eRuntimeError, "bad number of arguments passed to __enclose_io_set_mkdir_workdir");
+		rb_raise(rb_eRuntimeError, "bad number of arguments passed to enclose_io_set_mkdir_workdir");
 	}
 	MUTEX_UNLOCK(&squash_global_mutex);
 }

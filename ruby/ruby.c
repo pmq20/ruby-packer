@@ -2166,8 +2166,8 @@ ruby_prog_init(void)
 
     rb_define_module_function(rb_mProcess, "argv0", proc_argv0, 0);
 // --------- [Enclose.IO Hack start] ---------
-	VALUE __enclose_io_execpath(VALUE process);
-	rb_define_module_function(rb_mProcess, "__enclose_io_execpath", __enclose_io_execpath, 0);
+	VALUE enclose_io_execpath(VALUE process);
+	rb_define_module_function(rb_mProcess, "enclose_io_execpath", enclose_io_execpath, 0);
 // --------- [Enclose.IO Hack end] ---------
     rb_define_module_function(rb_mProcess, "setproctitle", proc_setproctitle, 1);
 
@@ -2281,7 +2281,7 @@ ruby_sysinit(int *argc, char ***argv)
 #include <linux/limits.h>
 #endif
 
-VALUE __enclose_io_execpath(VALUE process)
+VALUE enclose_io_execpath(VALUE process)
 {
 #ifdef _WIN32
 	char exec_path[2 * MAX_PATH];
