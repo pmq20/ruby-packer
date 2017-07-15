@@ -134,6 +134,7 @@ class Compiler
       STDERR.puts "- entrance: #{@entrance}"
     else
       STDERR.puts "- entrance: not provided, a single Ruby interpreter executable will be produced."
+      STDERR.puts "- HINT: call rubyc with --help to see more options and use case examples"
     end
     STDERR.puts "- options: #{@options}"
     STDERR.puts
