@@ -48,7 +48,7 @@ First install the prerequisites:
 
 Then,
 
-    curl -L http://enclose.io/rubyc/rubyc-darwin-x64.gz > rubyc
+    curl -L http://enclose.io/rubyc/rubyc-darwin-x64.gz | gunzip > rubyc
     chmod +x rubyc
     ./rubyc
 
@@ -63,7 +63,7 @@ First install the prerequisites:
 
 Then,
 
-    curl -L http://enclose.io/rubyc/rubyc-linux-x64.gz > rubyc
+    curl -L http://enclose.io/rubyc/rubyc-linux-x64.gz | gunzip > rubyc
     chmod +x rubyc
     ./rubyc
 
