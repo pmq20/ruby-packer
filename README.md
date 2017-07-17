@@ -29,27 +29,11 @@ You won't need to modify a single line of code in your application, no matter ho
 
 |                       | Architecture |           Latest&#160;Stable                 |
 |:---------------------:|:------------:|----------------------------------------------|
-|      **Windows**      |    x86-64    | http://enclose.io/rubyc/rubyc-x64.zip        |
 |       **macOS**       |    x86-64    | http://enclose.io/rubyc/rubyc-darwin-x64.gz  |
 |       **Linux**       |    x86-64    | http://enclose.io/rubyc/rubyc-linux-x64.gz   |
+|      **Windows**      |    x86-64    | http://enclose.io/rubyc/rubyc-x64.zip        |
 
 For previous releases, cf. http://enclose.io/rubyc
-
-### Install on Windows
-
-First install the prerequisites:
-
-* [SquashFS Tools 4.3](https://github.com/pmq20/squashfuse/files/691217/sqfs43-win32.zip)
-* [Visual Studio 2015 Update 3](https://www.visualstudio.com/), all editions
-  including the Community edition (remember to select
-  "Common Tools for Visual C++ 2015" feature during installation).
-* [Ruby](https://www.ruby-lang.org/)
-
-Then download [rubyc-x64.zip](http://enclose.io/rubyc/rubyc-x64.zip),
-and this zip file contains only one executable.
-Unzip it. Optionally,
-rename it to `rubyc.exe` and put it under `C:\Windows` (or any other directory that is part of `PATH`).
-Execute `rubyc` from the command line.
 
 ### Install on macOS
 
@@ -82,6 +66,22 @@ Then,
     curl -L http://enclose.io/rubyc/rubyc-linux-x64.gz > rubyc
     chmod +x rubyc
     ./rubyc
+
+### Install on Windows
+
+First install the prerequisites:
+
+* [SquashFS Tools 4.3](https://github.com/pmq20/squashfuse/files/691217/sqfs43-win32.zip)
+* [Visual Studio 2015 Update 3](https://www.visualstudio.com/), all editions
+  including the Community edition (remember to select
+  "Common Tools for Visual C++ 2015" feature during installation).
+* [Ruby](https://www.ruby-lang.org/)
+
+Then download [rubyc-x64.zip](http://enclose.io/rubyc/rubyc-x64.zip),
+and this zip file contains only one executable.
+Unzip it. Optionally,
+rename it to `rubyc.exe` and put it under `C:\Windows` (or any other directory that is part of `PATH`).
+Execute `rubyc` from the command line.
 
 ## Usage
 
