@@ -50,7 +50,7 @@ Then,
 
     curl -L http://enclose.io/rubyc/rubyc-darwin-x64.gz | gunzip > rubyc
     chmod +x rubyc
-    ./rubyc
+    ./rubyc --help
 
 ### Install on Linux
 
@@ -65,7 +65,7 @@ Then,
 
     curl -L http://enclose.io/rubyc/rubyc-linux-x64.gz | gunzip > rubyc
     chmod +x rubyc
-    ./rubyc
+    ./rubyc --help
 
 ### Install on Windows
 
@@ -81,7 +81,7 @@ Then download [rubyc-x64.zip](http://enclose.io/rubyc/rubyc-x64.zip),
 and this zip file contains only one executable.
 Unzip it. Optionally,
 rename it to `rubyc.exe` and put it under `C:\Windows` (or any other directory that is part of `PATH`).
-Execute `rubyc` from the command line.
+Execute `rubyc --help` from the command line.
 
 ## Usage
 
