@@ -27,11 +27,13 @@ It takes less than 5 minutes to compile any project with Ruby Compiler.
 
 You won't need to modify a single line of code in your application, no matter how you developed it as long as it works in plain Ruby!
 
-|                       |   Arch.  |                              Latest&#160;Stable                                        |
-|:---------------------:|:--------:|----------------------------------------------------------------------------------------|
-|      **Windows**      |  x86-64  | https://sourceforge.net/projects/ruby-compiler/files/v0.1.0/rubyc.exe/download         |
-|       **macOS**       |  x86-64  | https://sourceforge.net/projects/ruby-compiler/files/v0.1.0/rubyc-darwin-x64/download  |
-|       **Linux**       |  x86-64  | https://sourceforge.net/projects/ruby-compiler/files/v0.1.0/rubyc-linux-x64/download   |
+|                       | Architecture |           Latest&#160;Stable                 |
+|:---------------------:|:------------:|----------------------------------------------|
+|      **Windows**      |    x86-64    | http://enclose.io/rubyc/rubyc-x64.zip        |
+|       **macOS**       |    x86-64    | http://enclose.io/rubyc/rubyc-darwin-x64.gz  |
+|       **Linux**       |    x86-64    | http://enclose.io/rubyc/rubyc-linux-x64.gz   |
+
+For previous releases, cf. http://enclose.io/rubyc
 
 ### Install on Windows
 
@@ -43,10 +45,10 @@ First install the prerequisites:
   "Common Tools for Visual C++ 2015" feature during installation).
 * [Ruby](https://www.ruby-lang.org/)
 
-Then download the executable [rubyc.exe](https://sourceforge.net/projects/ruby-compiler/files/v0.1.0/rubyc.exe/download),
-optionally
-put it under `C:\Windows`
-(or any other directory that is part of `PATH`).
+Then download [rubyc-x64.zip](http://enclose.io/rubyc/rubyc-x64.zip),
+and this zip file contains only one executable.
+Unzip it. Optionally,
+rename it to `rubyc.exe` and put it under `C:\Windows` (or any other directory that is part of `PATH`).
 Execute `rubyc` from the command line.
 
 ### Install on macOS
@@ -62,7 +64,7 @@ First install the prerequisites:
 
 Then,
 
-    curl -L https://sourceforge.net/projects/ruby-compiler/files/v0.1.0/rubyc-darwin-x64/download > rubyc
+    curl -L http://enclose.io/rubyc/rubyc-darwin-x64.gz > rubyc
     chmod +x rubyc
     ./rubyc
 
@@ -77,7 +79,7 @@ First install the prerequisites:
 
 Then,
 
-    curl -L https://sourceforge.net/projects/ruby-compiler/files/v0.1.0/rubyc-linux-x64/download > rubyc
+    curl -L http://enclose.io/rubyc/rubyc-linux-x64.gz > rubyc
     chmod +x rubyc
     ./rubyc
 

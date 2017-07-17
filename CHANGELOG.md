@@ -9,7 +9,6 @@
   - bootstrapping Ruby Compiler itself
   - compiling a CLI tool
   - compiling a Rails application
-- make CI all green
 
 ## v0.1.0
 
