@@ -193,6 +193,12 @@ class Compiler
     unless Dir.exist?(target)
       Utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'zlib'), target, preserve: true)
       Utils.chdir(target) do
+        Dir['**/configure.ac'].each do |x|
+          File.utime(Time.at(0), Time.at(0), x)
+        end
+        Dir['**/*.m4'].each do |x|
+          File.utime(Time.at(0), Time.at(0), x)
+        end
         if Gem.win_platform?
           Utils.run(@compile_env, 'nmake /f win32\\Makefile.msc')
         else
@@ -212,6 +218,12 @@ class Compiler
     unless Dir.exist?(target)
       Utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'openssl'), target, preserve: true)
       Utils.chdir(target) do
+        Dir['**/configure.ac'].each do |x|
+          File.utime(Time.at(0), Time.at(0), x)
+        end
+        Dir['**/*.m4'].each do |x|
+          File.utime(Time.at(0), Time.at(0), x)
+        end
         if Gem.win_platform?
           # TODO
         else
@@ -231,6 +243,12 @@ class Compiler
     unless Dir.exist?(target)
       Utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'gdbm'), target, preserve: true)
       Utils.chdir(target) do
+        Dir['**/configure.ac'].each do |x|
+          File.utime(Time.at(0), Time.at(0), x)
+        end
+        Dir['**/*.m4'].each do |x|
+          File.utime(Time.at(0), Time.at(0), x)
+        end
         if Gem.win_platform?
           # TODO
         else
@@ -247,9 +265,13 @@ class Compiler
     target = File.join(@options[:tmpdir], 'yaml')
     unless Dir.exist?(target)
       Utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'yaml'), target, preserve: true)
-      File.utime(Time.at(0), Time.at(0), File.join(target, 'configure.ac'))
-      File.utime(Time.at(0), Time.at(0), File.join(target, 'aclocal.m4'))
       Utils.chdir(target) do
+        Dir['**/configure.ac'].each do |x|
+          File.utime(Time.at(0), Time.at(0), x)
+        end
+        Dir['**/*.m4'].each do |x|
+          File.utime(Time.at(0), Time.at(0), x)
+        end
         if Gem.win_platform?
           # TODO
         else
@@ -267,6 +289,12 @@ class Compiler
     unless Dir.exist?(target)
       Utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'libffi'), target, preserve: true)
       Utils.chdir(target) do
+        Dir['**/configure.ac'].each do |x|
+          File.utime(Time.at(0), Time.at(0), x)
+        end
+        Dir['**/*.m4'].each do |x|
+          File.utime(Time.at(0), Time.at(0), x)
+        end
         if Gem.win_platform?
           # TODO
         else
@@ -284,6 +312,12 @@ class Compiler
     unless Dir.exist?(target)
       Utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'ncurses'), target, preserve: true)
       Utils.chdir(target) do
+        Dir['**/configure.ac'].each do |x|
+          File.utime(Time.at(0), Time.at(0), x)
+        end
+        Dir['**/*.m4'].each do |x|
+          File.utime(Time.at(0), Time.at(0), x)
+        end
         if Gem.win_platform?
           # TODO
         else
@@ -301,6 +335,12 @@ class Compiler
     unless Dir.exist?(target)
       Utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'readline'), target, preserve: true)
       Utils.chdir(target) do
+        Dir['**/configure.ac'].each do |x|
+          File.utime(Time.at(0), Time.at(0), x)
+        end
+        Dir['**/*.m4'].each do |x|
+          File.utime(Time.at(0), Time.at(0), x)
+        end
         if Gem.win_platform?
           # TODO
         else
@@ -329,7 +369,14 @@ class Compiler
     @ruby_build = File.join(@options[:tmpdir], 'ruby', 'build')
     unless Dir.exist?(target)
       Utils.cp_r(File.join(PRJ_ROOT, 'ruby'), target, preserve: true)
-
+      Utils.chdir(target) do
+        Dir['**/configure.ac'].each do |x|
+          File.utime(Time.at(0), Time.at(0), x)
+        end
+        Dir['**/*.m4'].each do |x|
+          File.utime(Time.at(0), Time.at(0), x)
+        end
+      end
       # PATCH common.mk
       target = File.join(@options[:tmpdir], 'ruby', 'common.mk')
       target_content = File.read(target)
