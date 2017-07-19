@@ -66,6 +66,11 @@ class Compiler
       STDERR.puts "-> rm -rf #{x}"
       FileUtils.rm_rf(x)
     end
+
+    def self.mkdir(x)
+      STDERR.puts "-> mkdir #{x}"
+      FileUtils.mkdir(x)
+    end
     
     def self.mkdir_p(x)
       STDERR.puts "-> mkdir -p #{x}"

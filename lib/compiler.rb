@@ -631,6 +631,8 @@ class Compiler
             @enclose_io_rails = true
             Utils.rm_rf('tmp')
             Utils.rm_rf('log')
+            Utils.mkdir('tmp')
+            Utils.mkdir('log')
           end
           if File.exist?(@entrance)
             @memfs_entrance = mempath(@entrance)
