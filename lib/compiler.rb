@@ -132,7 +132,7 @@ class Compiler
     init_entrance if entrance
     init_tmpdir
 
-    STDERR.puts "Ruby Compiler (nodec) v#{::Compiler::VERSION}"
+    STDERR.puts "Ruby Compiler (rubyc) v#{::Compiler::VERSION}"
     if entrance
       STDERR.puts "- entrance: #{@entrance}"
     else
