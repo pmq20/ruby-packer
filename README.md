@@ -85,21 +85,25 @@ Execute `rubyc --help` from the command line.
 
 ## Usage
 
-If `ENTRANCE` was not provided, then a single Ruby interpreter executable will be produced.
+If ENTRANCE was not provided, then a single Ruby interpreter executable will be produced.
+ENTRANCE can be either a file path, or a "x" string as in bundle exec "x".
 
     rubyc [OPTION]... [ENTRANCE]
       -r, --root=DIR                   The path to the root of the application
       -o, --output=FILE                The path of the output file
       -d, --tmpdir=DIR                 The directory for temporary files
-      -c, --clean                      Cleans temporary files before compiling
+      -c, --clean-tmpdir               Cleans temporary files before compiling
+          --keep-tmpdir                Keeps all temporary files that were generated last time
           --make-args=ARGS             Extra arguments to be passed to make
           --nmake-args=ARGS            Extra arguments to be passed to nmake
+          --auto-update-url=URL        Enables auto-update and specifies the URL to get the latest version
+          --auto-update-base=STRING    Enables auto-update and specifies the base version string
           --debug                      Enable debug mode
       -v, --version                    Prints the version of rubyc and exit
           --ruby-version               Prints the version of the Ruby runtime and exit
           --ruby-api-version           Prints the version of the Ruby API and exit
       -h, --help                       Prints this help and exit
-          --examples                   Prints usage examples
+
 
 ## Examples
 
