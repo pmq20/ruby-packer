@@ -125,7 +125,13 @@ class Compiler
   end
   
   def initialize(entrance, options = {})
-    @entrance = File.expand_path(entrance) if entrance
+    if entrance
+      if File.exists?(File.expand_path(entrance))
+        @entrance = File.expand_path(entrance)
+      else
+        @entrance = entrance
+      end
+    end
     @options = options
 
     init_options
@@ -606,10 +612,15 @@ class Compiler
           the_gem = gems.first
           Utils.run(@local_toolchain, 'sh', '-c', "gem install #{Utils.escape the_gem} --force --local --no-rdoc --no-ri --install-dir #{Utils.escape @gems_dir}")
           if File.exist?(File.join(@gems_dir, "bin/#{@entrance}"))
-            @memfs_entrance = "#{MEMFS}/_gems_/bin/#{@entrance}"
+            @memfs_entrance = "#{MEMFS}/lib/ruby/gems/#{self.class.ruby_api_version}/bin/#{@entrance}"
           else
-            Utils.chdir(File.join(@gems_dir, "bin")) do
-              raise Error, "Cannot find entrance #{@entrance}, available entrances are #{ Dir['*'].join(', ') }."
+            if File.exist?(File.join(@gems_dir, "bin/#{File.basename(@entrance)}"))
+              @entrance = File.basename(@entrance)
+              @memfs_entrance = "#{MEMFS}/lib/ruby/gems/#{self.class.ruby_api_version}/bin/#{@entrance}"
+            else
+              Utils.chdir(File.join(@gems_dir, "bin")) do
+                raise Error, "Cannot find entrance #{@entrance}, available entrances are #{ Dir['*'].join(', ') }."
+              end
             end
           end
         end
@@ -644,9 +655,14 @@ class Compiler
               if File.exist?("bin/#{@entrance}")
                 @memfs_entrance = "#{MEMFS}/local/bin/#{@entrance}"
               else
-                Utils.chdir('bin') do
-                  raise Error, "Cannot find entrance #{@entrance}, available entrances are #{ Dir['*'].join(', ') }."
-                end
+                if File.exist?("bin/#{File.basename(@entrance)}")
+                  @entrance = File.basename(@entrance)
+                  @memfs_entrance = "#{MEMFS}/local/bin/#{@entrance}"
+                else
+                  Utils.chdir('bin') do
+                    raise Error, "Cannot find entrance #{@entrance}, available entrances are #{ Dir['*'].join(', ') }."
+                  end
+                else
               end
             end
           end

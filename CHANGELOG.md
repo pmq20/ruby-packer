@@ -12,6 +12,7 @@
   - fix failures to replace itself when TMPDIR and current file is not on the same volume
     - https://github.com/pmq20/libautoupdate/issues/1
 - use only the master CI
+- make it work for projects with gemspecs
 
 ## v0.2.0
 
