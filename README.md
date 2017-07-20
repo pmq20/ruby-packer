@@ -52,6 +52,8 @@ Then,
 First install the prerequisites:
 
 * [SquashFS Tools 4.3](http://squashfs.sourceforge.net/)
+  - sudo yum install squashfs-tools
+  - sudo apt-get install squashfs-tools
 * `gcc` or `clang`
 * GNU Make
 * [Ruby](https://www.ruby-lang.org/)
