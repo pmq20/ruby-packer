@@ -2,6 +2,7 @@
 
 ## v0.3.0
 
+- upgrade to bundler 1.15.2
 - upgrade to libsquash v0.7.0
   - test ifndef `__USE_XOPEN_EXTENDED`
 - upgrade to libautoupdate v0.2.0
