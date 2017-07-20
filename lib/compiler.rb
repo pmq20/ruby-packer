@@ -662,7 +662,7 @@ class Compiler
                   Utils.chdir('bin') do
                     raise Error, "Cannot find entrance #{@entrance}, available entrances are #{ Dir['*'].join(', ') }."
                   end
-                else
+                end
               end
             end
           end
