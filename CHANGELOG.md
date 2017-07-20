@@ -10,6 +10,7 @@
   - add CI to test `autoupdate()`
   - fix failures to replace itself when TMPDIR and current file is not on the same volume
     - https://github.com/pmq20/libautoupdate/issues/1
+- use only the master CI
 
 ## v0.2.0
 

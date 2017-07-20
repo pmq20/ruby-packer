@@ -2,6 +2,8 @@
 
 *Ahead-of-time (AOT) Compiler designed for Ruby, that just works.*
 
+[![Status](https://ci.appveyor.com/api/projects/status/93i36eliiy6v3686/branch/master?svg=true)](https://ci.appveyor.com/project/pmq20/ruby-compiler/branch/master)
+[![Status](https://travis-ci.org/pmq20/ruby-compiler.svg?branch=master)](https://travis-ci.org/pmq20/ruby-compiler)
 [![GitHub version](https://badge.fury.io/gh/pmq20%2Fruby-compiler.svg)](https://badge.fury.io/gh/pmq20%2Fruby-compiler)
 
 ## Features
@@ -13,13 +15,6 @@
 - Native C extensions are fully supported
 - Rails applications are fully supported
 - Open Source, MIT Licensed
-
-## Development Status
-
-|                       |                                                       Master CI                                                                                                       |                                                                    RAM Test                                                                                               |                                                             Black-box Test                                                                                                 |
-|:---------------------:|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|
-|      **Windows**      |  [![Status](https://ci.appveyor.com/api/projects/status/93i36eliiy6v3686/branch/master?svg=true)](https://ci.appveyor.com/project/pmq20/ruby-compiler/branch/master)  |  [![Status](https://ci.appveyor.com/api/projects/status/0tjl0mvnief8nyti/branch/master?svg=true)](https://ci.appveyor.com/project/pmq20/ruby-compiler-ram/branch/master)  |  [![Status](https://ci.appveyor.com/api/projects/status/pa5g32i9b0jilnk2/branch/master?svg=true)](https://ci.appveyor.com/project/pmq20/ruby-compiler-blbt/branch/master)  |
-|   **macOS / Linux**   |  [![Status](https://travis-ci.org/pmq20/ruby-compiler.svg?branch=master)](https://travis-ci.org/pmq20/ruby-compiler)                                                  |  [![Status](https://travis-ci.org/pmq20/ruby-compiler-ram.svg?branch=master)](https://travis-ci.org/pmq20/ruby-compiler-ram)                                              |  [![Status](https://travis-ci.org/pmq20/ruby-compiler-blbt.svg?branch=master)](https://travis-ci.org/pmq20/ruby-compiler-blbt)                                             |
 
 ## Get Started
 
