@@ -556,7 +556,7 @@ class Compiler
 
   def prepare_work_dir
     # Prepare /__enclose_io_memfs__
-    @work_dir = File.join(@options[:tmpdir], '__work_dir__')
+    @work_dir = File.join(@options[:tmpdir], 'rubyc_work_dir')
     unless @options[:keep_tmpdir]
       Utils.rm_rf(@work_dir)
       Utils.mkdir_p(@work_dir)
