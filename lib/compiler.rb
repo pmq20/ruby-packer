@@ -153,6 +153,7 @@ class Compiler
   end
 
   def init_options
+    @ruby_dir = "ruby-#{::Compiler.ruby_version}-#{::Compiler::VERSION}"
     @options[:make_args] ||= '-j4'
     if Gem.win_platform?
       @options[:output] ||= 'a.exe'
@@ -371,8 +372,8 @@ class Compiler
     stuff_readline
     prepare_flags2
 
-    target = File.join(@options[:tmpdir], 'ruby')
-    @ruby_build = File.join(@options[:tmpdir], 'ruby', 'build')
+    target = File.join(@options[:tmpdir], @ruby_dir)
+    @ruby_build = File.join(@options[:tmpdir], @ruby_dir, 'build')
     unless Dir.exist?(target)
       Utils.cp_r(File.join(PRJ_ROOT, 'ruby'), target, preserve: true)
       Utils.chdir(target) do
@@ -384,7 +385,7 @@ class Compiler
         end
       end
       # PATCH common.mk
-      target = File.join(@options[:tmpdir], 'ruby', 'common.mk')
+      target = File.join(@options[:tmpdir], @ruby_dir, 'common.mk')
       target_content = File.read(target)
       found = false
       File.open(target, 'w') do |f|
@@ -401,7 +402,7 @@ class Compiler
       
       # PATCH win32\Makefile.sub
       if Gem.win_platform?
-        target = File.join(@options[:tmpdir], 'ruby', 'win32', 'Makefile.sub')
+        target = File.join(@options[:tmpdir], @ruby_dir, 'win32', 'Makefile.sub')
         target_content = File.read(target)
         found = 0
         File.open(target, 'w') do |f|
@@ -421,7 +422,7 @@ class Compiler
       end
     end
 
-    @vendor_ruby = File.join(@options[:tmpdir], 'ruby')
+    @vendor_ruby = File.join(@options[:tmpdir], @ruby_dir)
   end
 
   def run!
@@ -437,7 +438,7 @@ class Compiler
                                   --prefix=#{Utils.escape @ruby_build}")
           Utils.run(@compile_env, "nmake #{@options[:nmake_args]}")
           Utils.run(@compile_env, "nmake install")
-          File.open(File.join(@options[:tmpdir], 'ruby', 'ext', 'Setup'), 'w') do |f|
+          File.open(File.join(@options[:tmpdir], @ruby_dir, 'ext', 'Setup'), 'w') do |f|
             f.puts 'option nodynamic'
           end
           # TODO make those win32 ext work
@@ -458,7 +459,7 @@ class Compiler
           end
           # PATCH win32\Makefile.sub for 2nd pass
           if Gem.win_platform?
-            target = File.join(@options[:tmpdir], 'ruby', 'win32', 'Makefile.sub')
+            target = File.join(@options[:tmpdir], @ruby_dir, 'win32', 'Makefile.sub')
             target_content = File.read(target)
             found = 0
             File.open(target, 'w') do |f|
@@ -518,7 +519,7 @@ class Compiler
                                   --disable-install-rdoc")
           Utils.run(@compile_env, "make #{@options[:make_args]} -j1")
           Utils.run(@compile_env, "make install")
-          File.open(File.join(@options[:tmpdir], 'ruby', 'ext', 'Setup'), 'w') do |f|
+          File.open(File.join(@options[:tmpdir], @ruby_dir, 'ext', 'Setup'), 'w') do |f|
             f.puts 'option nodynamic'
           end
         end
@@ -573,7 +574,7 @@ class Compiler
 
     @gems_dir = File.join(@work_dir_inner, "lib/ruby/gems/#{self.class.ruby_api_version}")
     
-    @path_env = "#{File.join(@options[:tmpdir], 'ruby', 'build', 'bin')}:#{ENV['PATH']}"
+    @path_env = "#{File.join(@options[:tmpdir], @ruby_dir, 'build', 'bin')}:#{ENV['PATH']}"
     @local_toolchain = {
       'CI' => 'true',
       'PATH' => @path_env,

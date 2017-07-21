@@ -13,6 +13,7 @@
     - https://github.com/pmq20/libautoupdate/issues/1
 - use only the master CI
 - make it work for projects with gemspecs
+- use a temporary directory name with ruby and rubyc version when compiling
 
 ## v0.2.0
 
