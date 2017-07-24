@@ -1,5 +1,9 @@
 # Ruby Compiler Changelog
 
+## v0.4.0
+
+
+
 ## v0.3.0
 
 - upgrade to bundler 1.15.2
