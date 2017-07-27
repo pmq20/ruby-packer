@@ -6,6 +6,7 @@
 require "compiler/constants"
 require "compiler/error"
 require "compiler/utils"
+require "compiler/gem_package"
 require 'shellwords'
 require 'tmpdir'
 require 'fileutils'
@@ -161,9 +162,19 @@ class Compiler
       @options[:output] ||= 'a.out'
     end
     @options[:output] = File.expand_path(@options[:output])
+    @gem_package = GemPackage.new(@options) if @options[:gem]
+    if @options[:auto_update_url] || @options[:auto_update_base]
+      unless @options[:auto_update_url].length > 0 && @options[:auto_update_base].length > 0
+        raise Error, "Please provide both --auto-update-url and --auto-update-base"
+      end
+    end
   end
 
   def init_entrance
+    if @gem_package
+      @root = @gem_package.work_dir
+      return
+    end
     if @options[:root]
       @root = File.expand_path(@options[:root])
     else
@@ -179,11 +190,6 @@ class Compiler
         end
       end
       STDERR.puts "-> Project root not supplied, #{@root} assumed."
-    end
-    if @options[:auto_update_url] || @options[:auto_update_base]
-      unless @options[:auto_update_url].length > 0 && @options[:auto_update_base].length > 0
-        raise Error, "Please provide both --auto-update-url and --auto-update-base"
-      end
     end
   end
 
@@ -423,6 +429,7 @@ class Compiler
     end
 
     @vendor_ruby = File.join(@options[:tmpdir], @ruby_dir)
+    @gem_package.stuff_tmpdir if @gem_package
   end
 
   def run!
@@ -591,6 +598,7 @@ class Compiler
     Utils.chdir(@root) do
       gemspecs = Dir['./*.gemspec']
       gemfiles = Dir['./Gemfile']
+      gems = Dir['./*.gem']
       the_bundler_gem = Dir["#{PRJ_ROOT}/vendor/bundler-*.gem"].first
       if gemspecs.size > 0
         raise 'Multiple gemspecs detected' unless 1 == gemspecs.size
@@ -625,6 +633,7 @@ class Compiler
             end
           end
         end
+        Utils.rm_rf(@pre_prepare_dir)
       elsif gemfiles.size > 0
         raise 'Multiple Gemfiles detected' unless 1 == gemfiles.size
         # gem install bundler
@@ -668,6 +677,29 @@ class Compiler
             end
           end
         end
+      elsif gems.size > 0
+        raise 'Multiple gem files detected' unless 1 == gems.size
+        @pre_prepare_dir = File.join(@options[:tmpdir], '__pre_prepare__')
+        Utils.rm_rf(@pre_prepare_dir)
+        Utils.cp_r(@root, @pre_prepare_dir)
+        Utils.chdir(@pre_prepare_dir) do
+          STDERR.puts "-> Detected a gem file, trying to locally install the gem"
+          the_gem = gems.first
+          Utils.run(@local_toolchain, 'sh', '-c', "gem install #{Utils.escape the_gem} --force --local --no-rdoc --no-ri --install-dir #{Utils.escape @gems_dir}")
+          if File.exist?(File.join(@gems_dir, "bin/#{@entrance}"))
+            @memfs_entrance = "#{MEMFS}/lib/ruby/gems/#{self.class.ruby_api_version}/bin/#{@entrance}"
+          else
+            if File.exist?(File.join(@gems_dir, "bin/#{File.basename(@entrance)}"))
+              @entrance = File.basename(@entrance)
+              @memfs_entrance = "#{MEMFS}/lib/ruby/gems/#{self.class.ruby_api_version}/bin/#{@entrance}"
+            else
+              Utils.chdir(File.join(@gems_dir, "bin")) do
+                raise Error, "Cannot find entrance #{@entrance}, available entrances are #{ Dir['*'].join(', ') }."
+              end
+            end
+          end
+        end
+        Utils.rm_rf(@pre_prepare_dir)
       else
         @work_dir_local = File.join(@work_dir_inner, 'local')
         Utils.cp_r(@root, @work_dir_local)
@@ -694,9 +726,16 @@ class Compiler
             STDERR.puts `git status`
             Utils.rm_rf('.git')
           end
+          if File.exist?('a.exe')
+            STDERR.puts `dir a.exe`
+            @utils.rm_rf('a.exe')
+          end
+          if File.exist?('a.out')
+            STDERR.puts `ls -l a.out`
+            @utils.rm_rf('a.out')
+          end
         end
       end
-      
       Utils.rm_rf(File.join(@gems_dir, 'cache'))
     end
   end

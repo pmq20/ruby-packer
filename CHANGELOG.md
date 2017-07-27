@@ -2,7 +2,7 @@
 
 ## v0.4.0
 
-
+- add `--gem` and `--gem-version` to download and compile a gem
 
 ## v0.3.0
 

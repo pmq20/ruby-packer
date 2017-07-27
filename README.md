@@ -130,6 +130,11 @@ ENTRANCE can be either a file path, or a "x" string as in bundle exec "x".
 	rubyc bin/rails
 	./a.out server (or a.exe server on Windows)
 
+### Compiling a Gem
+
+	rubyc --gem=bundler bundle
+	./a.out (or a.exe on Windows)
+
 ## See Also
 
 - [Libsquash](https://github.com/pmq20/libsquash): portable, user-land SquashFS that can be easily linked and embedded within your application.

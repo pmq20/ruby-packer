@@ -48,6 +48,10 @@ Examples
     rubyc bin/rails
     ./a.out (or a.exe on Windows)
 
+  Compiling a Gem:
+    rubyc --gem=bundler bundle
+    ./a.out (or a.exe on Windows)
+
 }.strip
 
 options = {}
@@ -89,6 +93,14 @@ OptionParser.new do |opts|
     options[:nmake_args] = args
   end
 
+  opts.on("--gem=NAME", "Downloads and compiles the specified gem") do |name|
+    options[:gem] = name
+  end
+
+  opts.on("--gem-version=VER", "Downloads and compiles the specified version of the gem") do |ver|
+    options[:gem_version] = ver
+  end
+
   opts.on("--auto-update-url=URL", "Enables auto-update and specifies the URL to get the latest version") do |url|
     options[:auto_update_url] = url
   end
@@ -96,7 +108,6 @@ OptionParser.new do |opts|
   opts.on("--auto-update-base=STRING", "Enables auto-update and specifies the base version string") do |string|
     options[:auto_update_base] = string
   end
-
 
   opts.on("--debug", "Enable debug mode") do
     options[:debug] = true
