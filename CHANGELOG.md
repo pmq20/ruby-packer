@@ -2,7 +2,10 @@
 
 ## v0.4.0
 
-
+- upgrade to bundler 1.15.3
+- fixing the problem of failing to locate bundler
+  - https://github.com/pmq20/ruby-compiler/issues/11
+  - https://github.com/pmq20/ruby-compiler/issues/12
 
 ## v0.3.0
 
