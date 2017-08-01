@@ -103,8 +103,8 @@ short enclose_io_is_relative_w(wchar_t *pathname);
 #define W_ENCLOSE_IO_PATH_CONVERT(path) \
 			enclose_io_converted = (char *)enclose_io_converted_storage; \
 			enclose_io_converted_length = wcstombs(enclose_io_converted_storage, (path), SQUASHFS_PATH_LEN); \
-                        if ((size_t)-1 == enclose_io_converted_length) { enclose_io_converted_length = 0; } \
-                        enclose_io_converted[enclose_io_converted_length] = '\0'; \
+			if ((size_t)-1 == enclose_io_converted_length) { enclose_io_converted_length = 0; } \
+			enclose_io_converted[enclose_io_converted_length] = '\0'; \
 			if (strnlen(enclose_io_converted_storage, 4) >= 4 && (0 == strncmp(enclose_io_converted_storage, "\\\\?\\", 4) || 0 == strncmp(enclose_io_converted_storage, "//?/", 4))) { \
 				if (strnlen(enclose_io_converted_storage, 6) >= 6 && ':' == enclose_io_converted_storage[5]) { \
 					enclose_io_converted += 6; \
@@ -157,6 +157,7 @@ off_t enclose_io_lseek(int fildes, off_t offset, int whence);
 
 int enclose_io__open(const char *pathname, int flags);
 int enclose_io__wopen(const wchar_t *pathname, int flags, int mode);
+int enclose_io__wmkdir(wchar_t* pathname);
 int enclose_io_open_osfhandle(intptr_t osfhandle, int flags);
 intptr_t enclose_io_get_osfhandle(int fd);
 int enclose_io_wchdir(const wchar_t *path);
@@ -297,6 +298,32 @@ EncloseIOLoadLibraryExW(
 	LPCWSTR lpLibFileName,
 	HANDLE hFile,
 	DWORD dwFlags
+);
+
+BOOL
+EncloseIOCreateProcessW(
+	LPCWSTR lpApplicationName,
+	LPWSTR lpCommandLine,
+	LPSECURITY_ATTRIBUTES lpProcessAttributes,
+	LPSECURITY_ATTRIBUTES lpThreadAttributes,
+	BOOL bInheritHandles,
+	DWORD dwCreationFlags,
+	LPVOID lpEnvironment,
+	LPCWSTR lpCurrentDirectory,
+	LPSTARTUPINFOW lpStartupInfo,
+	LPPROCESS_INFORMATION lpProcessInformation
+);
+	
+BOOL
+EncloseIOSetCurrentDirectoryW(
+	LPCWSTR lpPathName
+);
+
+
+DWORD
+EncloseIOGetCurrentDirectoryW(
+	DWORD nBufferLength,
+	LPWSTR lpBuffer
 );
 
 #else

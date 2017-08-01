@@ -2,6 +2,19 @@
 
 ## v0.4.0
 
+- upgrade libsquash to v0.8.0
+  - allow creating files inside an existing folder of memfs
+    - removes the temporary directory and files at exit
+  - produce an executable `squash_sample` when `BUILD_SAMPLE` in cmake
+    - let CI discover linking errors earlier about the sample
+  - intercept `CreateProcessW`
+    - unsets `lpCurrentDirectory` when it was set to `__enclose_io_memfs__` paths
+  - intercept `SetCurrentDirectoryW`, `GetCurrentDirectoryW`
+  - implement `enclose_io_mkdir` for Windows
+    - intercept `_wmkdir`
+  - intercept `CreateFileW()` with writing
+    - redirect `CreateFileW()` with writing inside the memfs to a temporary directory
+    - removes the temporary directory and files at exit
 - upgrade to bundler 1.15.3
 - fixing the problem of failing to locate bundler
   - https://github.com/pmq20/ruby-compiler/issues/11
