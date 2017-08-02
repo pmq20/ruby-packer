@@ -599,7 +599,7 @@ class Compiler
       gemspecs = Dir['./*.gemspec']
       gemfiles = Dir['./Gemfile']
       gems = Dir['./*.gem']
-      the_bundler_gem = Dir["#{PRJ_ROOT}/vendor/bundler-*.gem"].first
+      the_bundler_gem = Dir["#{@vendor_ruby}/vendor/bundler-*.gem"].first
       if gemspecs.size > 0
         raise 'Multiple gemspecs detected' unless 1 == gemspecs.size
         @pre_prepare_dir = File.join(@options[:tmpdir], '__pre_prepare__')
