@@ -20,6 +20,7 @@
   - https://github.com/pmq20/ruby-compiler/issues/11
   - https://github.com/pmq20/ruby-compiler/issues/12
 - add `--gem` and `--gem-version` to download and compile a gem
+- add option --quiet to enable quiet mode
 
 ## v0.3.0
 

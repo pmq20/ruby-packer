@@ -88,26 +88,26 @@ class Compiler
 
   def prepare_flags2
     if Gem.win_platform?
-      @ldflags += " -libpath:#{Utils.escape File.join(@options[:tmpdir], 'zlib').gsub('/', '\\')} #{Utils.escape File.join(@options[:tmpdir], 'zlib', 'zlib.lib')} "
-      @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'zlib')} "
+      @ldflags += " -libpath:#{@utils.escape File.join(@options[:tmpdir], 'zlib').gsub('/', '\\')} #{@utils.escape File.join(@options[:tmpdir], 'zlib', 'zlib.lib')} "
+      @cflags += " -I#{@utils.escape File.join(@options[:tmpdir], 'zlib')} "
     else
-      @ldflags += " -L#{Utils.escape File.join(@options[:tmpdir], 'zlib')} #{Utils.escape File.join(@options[:tmpdir], 'zlib', 'libz.a')} "
-      @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'zlib')} "
-      @ldflags += " -L#{Utils.escape File.join(@options[:tmpdir], 'openssl')} "
-      @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'openssl', 'include')} "
-      @ldflags += " -L#{Utils.escape File.join(@options[:tmpdir], 'gdbm', 'build', 'lib')} "
-      @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'gdbm', 'build', 'include')} "
-      @ldflags += " -L#{Utils.escape File.join(@options[:tmpdir], 'yaml', 'build', 'lib')} "
-      @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'yaml', 'build', 'include')} "
+      @ldflags += " -L#{@utils.escape File.join(@options[:tmpdir], 'zlib')} #{@utils.escape File.join(@options[:tmpdir], 'zlib', 'libz.a')} "
+      @cflags += " -I#{@utils.escape File.join(@options[:tmpdir], 'zlib')} "
+      @ldflags += " -L#{@utils.escape File.join(@options[:tmpdir], 'openssl')} "
+      @cflags += " -I#{@utils.escape File.join(@options[:tmpdir], 'openssl', 'include')} "
+      @ldflags += " -L#{@utils.escape File.join(@options[:tmpdir], 'gdbm', 'build', 'lib')} "
+      @cflags += " -I#{@utils.escape File.join(@options[:tmpdir], 'gdbm', 'build', 'include')} "
+      @ldflags += " -L#{@utils.escape File.join(@options[:tmpdir], 'yaml', 'build', 'lib')} "
+      @cflags += " -I#{@utils.escape File.join(@options[:tmpdir], 'yaml', 'build', 'include')} "
       lib64 = File.join(@options[:tmpdir], 'libffi', 'build', 'lib64')
       lib = File.join(@options[:tmpdir], 'libffi', 'build', 'lib')
-      @ldflags += " -L#{Utils.escape lib} " if Dir.exist?(lib)
-      @ldflags += " -L#{Utils.escape lib64} " if Dir.exist?(lib64)
-      @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'libffi', 'build', 'lib', 'libffi-3.2.1', 'include')} "
-      @ldflags += " -L#{Utils.escape File.join(@options[:tmpdir], 'ncurses', 'build', 'lib')} "
-      @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'ncurses', 'build', 'include')} "
-      @ldflags += " -L#{Utils.escape File.join(@options[:tmpdir], 'readline', 'build', 'lib')} "
-      @cflags += " -I#{Utils.escape File.join(@options[:tmpdir], 'readline', 'build', 'include')} "
+      @ldflags += " -L#{@utils.escape lib} " if Dir.exist?(lib)
+      @ldflags += " -L#{@utils.escape lib64} " if Dir.exist?(lib64)
+      @cflags += " -I#{@utils.escape File.join(@options[:tmpdir], 'libffi', 'build', 'lib', 'libffi-3.2.1', 'include')} "
+      @ldflags += " -L#{@utils.escape File.join(@options[:tmpdir], 'ncurses', 'build', 'lib')} "
+      @cflags += " -I#{@utils.escape File.join(@options[:tmpdir], 'ncurses', 'build', 'include')} "
+      @ldflags += " -L#{@utils.escape File.join(@options[:tmpdir], 'readline', 'build', 'lib')} "
+      @cflags += " -I#{@utils.escape File.join(@options[:tmpdir], 'readline', 'build', 'include')} "
     end
 
     if Gem.win_platform?
@@ -134,20 +134,21 @@ class Compiler
       end
     end
     @options = options
+    @utils = @utils.new(options)
 
     init_options
     init_entrance if entrance
     init_tmpdir
 
-    STDERR.puts "Ruby Compiler (rubyc) v#{::Compiler::VERSION}"
+    STDERR.puts "Ruby Compiler (rubyc) v#{::Compiler::VERSION}" unless @options[:quiet]
     if entrance
-      STDERR.puts "- entrance: #{@entrance}"
+      STDERR.puts "- entrance: #{@entrance}" unless @options[:quiet]
     else
-      STDERR.puts "- entrance: not provided, a single Ruby interpreter executable will be produced."
-      STDERR.puts "- HINT: call rubyc with --help to see more options and use case examples"
+      STDERR.puts "- entrance: not provided, a single Ruby interpreter executable will be produced." unless @options[:quiet]
+      STDERR.puts "- HINT: call rubyc with --help to see more options and use case examples" unless @options[:quiet]
     end
-    STDERR.puts "- options: #{@options}"
-    STDERR.puts
+    STDERR.puts "- options: #{@options}" unless @options[:quiet]
+    STDERR.puts unless @options[:quiet]
 
     prepare_flags1
     stuff_tmpdir
@@ -162,7 +163,7 @@ class Compiler
       @options[:output] ||= 'a.out'
     end
     @options[:output] = File.expand_path(@options[:output])
-    @gem_package = GemPackage.new(@options) if @options[:gem]
+    @gem_package = GemPackage.new(@options, @utils) if @options[:gem]
     if @options[:auto_update_url] || @options[:auto_update_base]
       unless @options[:auto_update_url].length > 0 && @options[:auto_update_base].length > 0
         raise Error, "Please provide both --auto-update-url and --auto-update-base"
@@ -189,7 +190,7 @@ class Compiler
           break 
         end
       end
-      STDERR.puts "-> Project root not supplied, #{@root} assumed."
+      STDERR.puts "-> Project root not supplied, #{@root} assumed." unless @options[:quiet]
     end
   end
 
@@ -204,8 +205,8 @@ class Compiler
   def stuff_zlib
     target = File.join(@options[:tmpdir], 'zlib')
     unless Dir.exist?(target)
-      Utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'zlib'), target, preserve: true)
-      Utils.chdir(target) do
+      @utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'zlib'), target, preserve: true)
+      @utils.chdir(target) do
         Dir['**/configure.ac'].each do |x|
           File.utime(Time.at(0), Time.at(0), x)
         end
@@ -213,13 +214,13 @@ class Compiler
           File.utime(Time.at(0), Time.at(0), x)
         end
         if Gem.win_platform?
-          Utils.run(@compile_env, 'nmake /f win32\\Makefile.msc')
+          @utils.run(@compile_env, 'nmake /f win32\\Makefile.msc')
         else
-          Utils.run(@compile_env, './configure --static')
-          Utils.run(@compile_env, "make #{@options[:make_args]}")
+          @utils.run(@compile_env, './configure --static')
+          @utils.run(@compile_env, "make #{@options[:make_args]}")
         end
         Dir['*.{dylib,so,dll}'].each do |thisdl|
-          Utils.rm_f(thisdl)
+          @utils.rm_f(thisdl)
         end
       end
     end
@@ -229,8 +230,8 @@ class Compiler
     return if Gem.win_platform? # TODO
     target = File.join(@options[:tmpdir], 'openssl')
     unless Dir.exist?(target)
-      Utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'openssl'), target, preserve: true)
-      Utils.chdir(target) do
+      @utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'openssl'), target, preserve: true)
+      @utils.chdir(target) do
         Dir['**/configure.ac'].each do |x|
           File.utime(Time.at(0), Time.at(0), x)
         end
@@ -240,11 +241,11 @@ class Compiler
         if Gem.win_platform?
           # TODO
         else
-          Utils.run(@compile_env, './config')
-          Utils.run(@compile_env, "make #{@options[:make_args]}")
+          @utils.run(@compile_env, './config')
+          @utils.run(@compile_env, "make #{@options[:make_args]}")
         end
         Dir['*.{dylib,so,dll}'].each do |thisdl|
-          Utils.rm_f(thisdl)
+          @utils.rm_f(thisdl)
         end
       end
     end
@@ -254,8 +255,8 @@ class Compiler
     return if Gem.win_platform? # TODO
     target = File.join(@options[:tmpdir], 'gdbm')
     unless Dir.exist?(target)
-      Utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'gdbm'), target, preserve: true)
-      Utils.chdir(target) do
+      @utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'gdbm'), target, preserve: true)
+      @utils.chdir(target) do
         Dir['**/configure.ac'].each do |x|
           File.utime(Time.at(0), Time.at(0), x)
         end
@@ -265,9 +266,9 @@ class Compiler
         if Gem.win_platform?
           # TODO
         else
-          Utils.run(@compile_env, "./configure --with-pic --enable-libgdbm-compat --disable-shared --enable-static --without-readline --prefix=#{Utils.escape File.join(@options[:tmpdir], 'gdbm', 'build')}")
-          Utils.run(@compile_env, "make #{@options[:make_args]}")
-          Utils.run(@compile_env, "make install")
+          @utils.run(@compile_env, "./configure --with-pic --enable-libgdbm-compat --disable-shared --enable-static --without-readline --prefix=#{@utils.escape File.join(@options[:tmpdir], 'gdbm', 'build')}")
+          @utils.run(@compile_env, "make #{@options[:make_args]}")
+          @utils.run(@compile_env, "make install")
         end
       end
     end
@@ -277,8 +278,8 @@ class Compiler
     return if Gem.win_platform? # TODO
     target = File.join(@options[:tmpdir], 'yaml')
     unless Dir.exist?(target)
-      Utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'yaml'), target, preserve: true)
-      Utils.chdir(target) do
+      @utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'yaml'), target, preserve: true)
+      @utils.chdir(target) do
         Dir['**/configure.ac'].each do |x|
           File.utime(Time.at(0), Time.at(0), x)
         end
@@ -288,9 +289,9 @@ class Compiler
         if Gem.win_platform?
           # TODO
         else
-          Utils.run(@compile_env, "./configure --with-pic --disable-shared --enable-static --prefix=#{Utils.escape File.join(@options[:tmpdir], 'yaml', 'build')}")
-          Utils.run(@compile_env, "make #{@options[:make_args]}")
-          Utils.run(@compile_env, "make install")
+          @utils.run(@compile_env, "./configure --with-pic --disable-shared --enable-static --prefix=#{@utils.escape File.join(@options[:tmpdir], 'yaml', 'build')}")
+          @utils.run(@compile_env, "make #{@options[:make_args]}")
+          @utils.run(@compile_env, "make install")
         end
       end
     end
@@ -300,8 +301,8 @@ class Compiler
     return if Gem.win_platform? # TODO
     target = File.join(@options[:tmpdir], 'libffi')
     unless Dir.exist?(target)
-      Utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'libffi'), target, preserve: true)
-      Utils.chdir(target) do
+      @utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'libffi'), target, preserve: true)
+      @utils.chdir(target) do
         Dir['**/configure.ac'].each do |x|
           File.utime(Time.at(0), Time.at(0), x)
         end
@@ -311,9 +312,9 @@ class Compiler
         if Gem.win_platform?
           # TODO
         else
-          Utils.run(@compile_env, "./configure --with-pic --disable-shared --enable-static --prefix=#{Utils.escape File.join(@options[:tmpdir], 'libffi', 'build')}")
-          Utils.run(@compile_env, "make #{@options[:make_args]}")
-          Utils.run(@compile_env, "make install")
+          @utils.run(@compile_env, "./configure --with-pic --disable-shared --enable-static --prefix=#{@utils.escape File.join(@options[:tmpdir], 'libffi', 'build')}")
+          @utils.run(@compile_env, "make #{@options[:make_args]}")
+          @utils.run(@compile_env, "make install")
         end
       end
     end
@@ -323,8 +324,8 @@ class Compiler
     return if Gem.win_platform? # TODO
     target = File.join(@options[:tmpdir], 'ncurses')
     unless Dir.exist?(target)
-      Utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'ncurses'), target, preserve: true)
-      Utils.chdir(target) do
+      @utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'ncurses'), target, preserve: true)
+      @utils.chdir(target) do
         Dir['**/configure.ac'].each do |x|
           File.utime(Time.at(0), Time.at(0), x)
         end
@@ -334,9 +335,9 @@ class Compiler
         if Gem.win_platform?
           # TODO
         else
-          Utils.run(@compile_env, "./configure --without-shared --without-cxx-shared --prefix=#{Utils.escape File.join(@options[:tmpdir], 'ncurses', 'build')}")
-          Utils.run(@compile_env, "make #{@options[:make_args]}")
-          Utils.run(@compile_env, "make install")
+          @utils.run(@compile_env, "./configure --without-shared --without-cxx-shared --prefix=#{@utils.escape File.join(@options[:tmpdir], 'ncurses', 'build')}")
+          @utils.run(@compile_env, "make #{@options[:make_args]}")
+          @utils.run(@compile_env, "make install")
         end
       end
     end
@@ -346,8 +347,8 @@ class Compiler
     return if Gem.win_platform? # TODO
     target = File.join(@options[:tmpdir], 'readline')
     unless Dir.exist?(target)
-      Utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'readline'), target, preserve: true)
-      Utils.chdir(target) do
+      @utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'readline'), target, preserve: true)
+      @utils.chdir(target) do
         Dir['**/configure.ac'].each do |x|
           File.utime(Time.at(0), Time.at(0), x)
         end
@@ -357,17 +358,17 @@ class Compiler
         if Gem.win_platform?
           # TODO
         else
-          Utils.run(@compile_env, "./configure --with-pic --disable-shared --enable-static --prefix=#{Utils.escape File.join(@options[:tmpdir], 'readline', 'build')}")
-          Utils.run(@compile_env, "make #{@options[:make_args]}")
-          Utils.run(@compile_env, "make install")
+          @utils.run(@compile_env, "./configure --with-pic --disable-shared --enable-static --prefix=#{@utils.escape File.join(@options[:tmpdir], 'readline', 'build')}")
+          @utils.run(@compile_env, "make #{@options[:make_args]}")
+          @utils.run(@compile_env, "make install")
         end
       end
     end
   end
   
   def stuff_tmpdir
-    Utils.rm_rf(@options[:tmpdir]) if @options[:clean_tmpdir]
-    Utils.mkdir_p(@options[:tmpdir])
+    @utils.rm_rf(@options[:tmpdir]) if @options[:clean_tmpdir]
+    @utils.mkdir_p(@options[:tmpdir])
 
     stuff_zlib
     stuff_openssl
@@ -381,8 +382,8 @@ class Compiler
     target = File.join(@options[:tmpdir], @ruby_dir)
     @ruby_build = File.join(@options[:tmpdir], @ruby_dir, 'build')
     unless Dir.exist?(target)
-      Utils.cp_r(File.join(PRJ_ROOT, 'ruby'), target, preserve: true)
-      Utils.chdir(target) do
+      @utils.cp_r(File.join(PRJ_ROOT, 'ruby'), target, preserve: true)
+      @utils.chdir(target) do
         Dir['**/configure.ac'].each do |x|
           File.utime(Time.at(0), Time.at(0), x)
         end
@@ -433,36 +434,36 @@ class Compiler
   end
 
   def run!
-    Utils.chdir(@vendor_ruby) do
+    @utils.chdir(@vendor_ruby) do
       sep = Gem.win_platform? ? ';' : ':'
       if Gem.win_platform?
         unless File.exist?(@ruby_build)
           @compile_env['ENCLOSE_IO_RUBYC_1ST_PASS'] = '1'
           @compile_env['ENCLOSE_IO_RUBYC_2ND_PASS'] = nil
           # enclose_io_memfs.o - 1st pass
-          Utils.run(@compile_env, "call win32\\configure.bat \
+          @utils.run(@compile_env, "call win32\\configure.bat \
                                   --disable-install-doc \
-                                  --prefix=#{Utils.escape @ruby_build}")
-          Utils.run(@compile_env, "nmake #{@options[:nmake_args]}")
-          Utils.run(@compile_env, "nmake install")
+                                  --prefix=#{@utils.escape @ruby_build}")
+          @utils.run(@compile_env, "nmake #{@options[:nmake_args]}")
+          @utils.run(@compile_env, "nmake install")
           File.open(File.join(@options[:tmpdir], @ruby_dir, 'ext', 'Setup'), 'w') do |f|
             f.puts 'option nodynamic'
           end
           # TODO make those win32 ext work
-          Utils.chdir('ext') do
-            Utils.rm_rf('dbm')
-            Utils.rm_rf('digest')
-            Utils.rm_rf('etc')
-            Utils.rm_rf('fiddle')
-            Utils.rm_rf('gdbm')
-            Utils.rm_rf('mathn')
-            Utils.rm_rf('openssl')
-            Utils.rm_rf('pty')
-            Utils.rm_rf('readline')
-            Utils.rm_rf('ripper')
-            Utils.rm_rf('socket')
-            Utils.rm_rf('win32')
-            Utils.rm_rf('win32ole')
+          @utils.chdir('ext') do
+            @utils.rm_rf('dbm')
+            @utils.rm_rf('digest')
+            @utils.rm_rf('etc')
+            @utils.rm_rf('fiddle')
+            @utils.rm_rf('gdbm')
+            @utils.rm_rf('mathn')
+            @utils.rm_rf('openssl')
+            @utils.rm_rf('pty')
+            @utils.rm_rf('readline')
+            @utils.rm_rf('ripper')
+            @utils.rm_rf('socket')
+            @utils.rm_rf('win32')
+            @utils.rm_rf('win32ole')
           end
           # PATCH win32\Makefile.sub for 2nd pass
           if Gem.win_platform?
@@ -485,47 +486,47 @@ class Compiler
         # enclose_io_memfs.o - 2nd pass
         prepare_work_dir
         prepare_local if @entrance
-        Utils.rm_f('verconf.h')
-        Utils.rm_f('rbconfig.rb')
-        Utils.rm_f('.rbconfig.time')
-        Utils.rm_f('dir.obj')
-        Utils.rm_f('file.obj')
-        Utils.rm_f('io.obj')
-        Utils.rm_f('main.obj')
-        Utils.rm_f('win32/file.obj')
-        Utils.rm_f('win32/win32.obj')
-        Utils.rm_f('include/enclose_io.h')
-        Utils.rm_f('enclose_io_memfs.c')
+        @utils.rm_f('verconf.h')
+        @utils.rm_f('rbconfig.rb')
+        @utils.rm_f('.rbconfig.time')
+        @utils.rm_f('dir.obj')
+        @utils.rm_f('file.obj')
+        @utils.rm_f('io.obj')
+        @utils.rm_f('main.obj')
+        @utils.rm_f('win32/file.obj')
+        @utils.rm_f('win32/win32.obj')
+        @utils.rm_f('include/enclose_io.h')
+        @utils.rm_f('enclose_io_memfs.c')
         @compile_env['ENCLOSE_IO_RUBYC_1ST_PASS'] = nil
         @compile_env['ENCLOSE_IO_RUBYC_2ND_PASS'] = '1'
-        Utils.run(@compile_env, "call win32\\configure.bat \
-                                --prefix=#{Utils.escape @ruby_build} \
+        @utils.run(@compile_env, "call win32\\configure.bat \
+                                --prefix=#{@utils.escape @ruby_build} \
                                 --enable-bundled-libyaml \
                                 --enable-debug-env \
                                 --disable-install-doc \
                                 --with-static-linked-ext")
         make_enclose_io_memfs
         make_enclose_io_vars
-        Utils.run_allow_failures(@compile_env, "nmake #{@options[:nmake_args]}")
-        Utils.run(@compile_env, %Q{nmake #{@options[:nmake_args]} -f enc.mk V="0" UNICODE_HDR_DIR="./enc/unicode/9.0.0"  RUBY=".\\miniruby.exe -I./lib -I. " MINIRUBY=".\\miniruby.exe -I./lib -I. " -l libenc})
-        Utils.run(@compile_env, %Q{nmake #{@options[:nmake_args]} -f enc.mk V="0" UNICODE_HDR_DIR="./enc/unicode/9.0.0"  RUBY=".\\miniruby.exe -I./lib -I. " MINIRUBY=".\\miniruby.exe -I./lib -I. " -l libtrans})
-        Utils.run(@compile_env, "nmake #{@options[:nmake_args]}")
-        Utils.run(@compile_env, "nmake #{@options[:nmake_args]} ruby_static.exe")
-        Utils.cp('ruby_static.exe', @options[:output])
+        @utils.run_allow_failures(@compile_env, "nmake #{@options[:nmake_args]}")
+        @utils.run(@compile_env, %Q{nmake #{@options[:nmake_args]} -f enc.mk V="0" UNICODE_HDR_DIR="./enc/unicode/9.0.0"  RUBY=".\\miniruby.exe -I./lib -I. " MINIRUBY=".\\miniruby.exe -I./lib -I. " -l libenc})
+        @utils.run(@compile_env, %Q{nmake #{@options[:nmake_args]} -f enc.mk V="0" UNICODE_HDR_DIR="./enc/unicode/9.0.0"  RUBY=".\\miniruby.exe -I./lib -I. " MINIRUBY=".\\miniruby.exe -I./lib -I. " -l libtrans})
+        @utils.run(@compile_env, "nmake #{@options[:nmake_args]}")
+        @utils.run(@compile_env, "nmake #{@options[:nmake_args]} ruby_static.exe")
+        @utils.cp('ruby_static.exe', @options[:output])
       else
         unless File.exist?(@ruby_build)
           @compile_env['ENCLOSE_IO_RUBYC_1ST_PASS'] = '1'
           @compile_env['ENCLOSE_IO_RUBYC_2ND_PASS'] = nil
           # enclose_io_memfs.o - 1st pass
-          Utils.run(@compile_env, "./configure \
-                                  --prefix=#{Utils.escape @ruby_build} \
+          @utils.run(@compile_env, "./configure \
+                                  --prefix=#{@utils.escape @ruby_build} \
                                   --enable-bundled-libyaml \
                                   --without-gmp \
                                   --disable-dtrace \
                                   --enable-debug-env \
                                   --disable-install-rdoc")
-          Utils.run(@compile_env, "make #{@options[:make_args]} -j1")
-          Utils.run(@compile_env, "make install")
+          @utils.run(@compile_env, "make #{@options[:make_args]} -j1")
+          @utils.run(@compile_env, "make install")
           File.open(File.join(@options[:tmpdir], @ruby_dir, 'ext', 'Setup'), 'w') do |f|
             f.puts 'option nodynamic'
           end
@@ -533,20 +534,20 @@ class Compiler
         # enclose_io_memfs.o - 2nd pass
         prepare_work_dir
         prepare_local if @entrance
-        Utils.rm_f('verconf.h')
-        Utils.rm_f('rbconfig.rb')
-        Utils.rm_f('.rbconfig.time')
-        Utils.rm_f('dir.o')
-        Utils.rm_f('file.o')
-        Utils.rm_f('io.o')
-        Utils.rm_f('main.o')
-        Utils.rm_f('ruby')
-        Utils.rm_f('include/enclose_io.h')
-        Utils.rm_f('enclose_io_memfs.c')
+        @utils.rm_f('verconf.h')
+        @utils.rm_f('rbconfig.rb')
+        @utils.rm_f('.rbconfig.time')
+        @utils.rm_f('dir.o')
+        @utils.rm_f('file.o')
+        @utils.rm_f('io.o')
+        @utils.rm_f('main.o')
+        @utils.rm_f('ruby')
+        @utils.rm_f('include/enclose_io.h')
+        @utils.rm_f('enclose_io_memfs.c')
         @compile_env['ENCLOSE_IO_RUBYC_1ST_PASS'] = nil
         @compile_env['ENCLOSE_IO_RUBYC_2ND_PASS'] = '1'
-        Utils.run(@compile_env, "./configure \
-                                --prefix=#{Utils.escape @ruby_build} \
+        @utils.run(@compile_env, "./configure \
+                                --prefix=#{@utils.escape @ruby_build} \
                                 --enable-bundled-libyaml \
                                 --without-gmp \
                                 --disable-dtrace \
@@ -555,8 +556,8 @@ class Compiler
                                 --with-static-linked-ext")
         make_enclose_io_memfs
         make_enclose_io_vars
-        Utils.run(@compile_env, "make #{@options[:make_args]}")
-        Utils.cp('ruby', @options[:output])
+        @utils.run(@compile_env, "make #{@options[:make_args]}")
+        @utils.cp('ruby', @options[:output])
       end
     end
   end
@@ -565,17 +566,17 @@ class Compiler
     # Prepare /__enclose_io_memfs__
     @work_dir = File.join(@options[:tmpdir], 'rubyc_work_dir')
     unless @options[:keep_tmpdir]
-      Utils.rm_rf(@work_dir)
-      Utils.mkdir_p(@work_dir)
+      @utils.rm_rf(@work_dir)
+      @utils.mkdir_p(@work_dir)
     end
     
     @work_dir_inner = File.join(@work_dir, '__enclose_io_memfs__')
     
     unless @options[:keep_tmpdir]
-      Utils.cp_r(@ruby_build, @work_dir_inner, preserve: true)
+      @utils.cp_r(@ruby_build, @work_dir_inner, preserve: true)
 
       Dir["#{@work_dir_inner}/**/*.{a,dylib,so,dll,lib,bundle}"].each do |thisdl|
-        Utils.rm_f(thisdl)
+        @utils.rm_f(thisdl)
       end
     end
 
@@ -595,7 +596,7 @@ class Compiler
 
   def prepare_local
     # Prepare /__enclose_io_memfs__/local
-    Utils.chdir(@root) do
+    @utils.chdir(@root) do
       gemspecs = Dir['./*.gemspec']
       gemfiles = Dir['./Gemfile']
       gems = Dir['./*.gem']
@@ -603,23 +604,23 @@ class Compiler
       if gemspecs.size > 0
         raise 'Multiple gemspecs detected' unless 1 == gemspecs.size
         @pre_prepare_dir = File.join(@options[:tmpdir], '__pre_prepare__')
-        Utils.rm_rf(@pre_prepare_dir)
-        Utils.cp_r(@root, @pre_prepare_dir)
-        Utils.chdir(@pre_prepare_dir) do
-          STDERR.puts "-> Detected a gemspec, trying to build the gem"
-          Utils.rm_f('./*.gem')
+        @utils.rm_rf(@pre_prepare_dir)
+        @utils.cp_r(@root, @pre_prepare_dir)
+        @utils.chdir(@pre_prepare_dir) do
+          STDERR.puts "-> Detected a gemspec, trying to build the gem" unless @options[:quiet]
+          @utils.rm_f('./*.gem')
           if gemfiles.size > 0
-            Utils.run(@local_toolchain, 'sh', '-c', "gem install #{Utils.escape the_bundler_gem} --force --local --no-rdoc --no-ri")
-            Utils.run(@local_toolchain, 'sh', '-c', "gem install #{Utils.escape the_bundler_gem} --force --local --no-rdoc --no-ri --install-dir #{Utils.escape @gems_dir}")
-            Utils.run(@local_toolchain, 'sh', '-c', "bundle install")
-            Utils.run(@local_toolchain, 'sh', '-c', "bundle exec gem build #{Utils.escape gemspecs.first}")
+            @utils.run(@local_toolchain, 'sh', '-c', "gem install #{@utils.escape the_bundler_gem} --force --local --no-rdoc --no-ri")
+            @utils.run(@local_toolchain, 'sh', '-c', "gem install #{@utils.escape the_bundler_gem} --force --local --no-rdoc --no-ri --install-dir #{@utils.escape @gems_dir}")
+            @utils.run(@local_toolchain, 'sh', '-c', "bundle install")
+            @utils.run(@local_toolchain, 'sh', '-c', "bundle exec gem build #{@utils.escape gemspecs.first}")
           else
-            Utils.run(@local_toolchain, 'sh', '-c', "gem build #{Utils.escape gemspecs.first}")
+            @utils.run(@local_toolchain, 'sh', '-c', "gem build #{@utils.escape gemspecs.first}")
           end
           gems = Dir['./*.gem']
           raise 'gem building failed' unless 1 == gems.size
           the_gem = gems.first
-          Utils.run(@local_toolchain, 'sh', '-c', "gem install #{Utils.escape the_gem} --force --local --no-rdoc --no-ri --install-dir #{Utils.escape @gems_dir}")
+          @utils.run(@local_toolchain, 'sh', '-c', "gem install #{@utils.escape the_gem} --force --local --no-rdoc --no-ri --install-dir #{@utils.escape @gems_dir}")
           if File.exist?(File.join(@gems_dir, "bin/#{@entrance}"))
             @memfs_entrance = "#{MEMFS}/lib/ruby/gems/#{self.class.ruby_api_version}/bin/#{@entrance}"
           else
@@ -627,33 +628,33 @@ class Compiler
               @entrance = File.basename(@entrance)
               @memfs_entrance = "#{MEMFS}/lib/ruby/gems/#{self.class.ruby_api_version}/bin/#{@entrance}"
             else
-              Utils.chdir(File.join(@gems_dir, "bin")) do
+              @utils.chdir(File.join(@gems_dir, "bin")) do
                 raise Error, "Cannot find entrance #{@entrance}, available entrances are #{ Dir['*'].join(', ') }."
               end
             end
           end
         end
-        Utils.rm_rf(@pre_prepare_dir)
+        @utils.rm_rf(@pre_prepare_dir)
       elsif gemfiles.size > 0
         raise 'Multiple Gemfiles detected' unless 1 == gemfiles.size
         # gem install bundler
-        Utils.run(@local_toolchain, 'sh', '-c', "gem install #{Utils.escape the_bundler_gem} --force --local --no-rdoc --no-ri")
-        Utils.run(@local_toolchain, 'sh', '-c', "gem install #{Utils.escape the_bundler_gem} --force --local --no-rdoc --no-ri --install-dir #{Utils.escape @gems_dir}")
+        @utils.run(@local_toolchain, 'sh', '-c', "gem install #{@utils.escape the_bundler_gem} --force --local --no-rdoc --no-ri")
+        @utils.run(@local_toolchain, 'sh', '-c', "gem install #{@utils.escape the_bundler_gem} --force --local --no-rdoc --no-ri --install-dir #{@utils.escape @gems_dir}")
         # bundle install
         @work_dir_local = File.join(@work_dir_inner, 'local')
         @env_bundle_gemfile = '/__enclose_io_memfs__/local/Gemfile'
         unless @options[:keep_tmpdir]
-          Utils.cp_r(@root, @work_dir_local)
+          @utils.cp_r(@root, @work_dir_local)
         end
-        Utils.chdir(@work_dir_local) do
-          Utils.run(@local_toolchain, 'sh', '-c', 'bundle install --deployment')
-          if 0 == Utils.run_allow_failures(@local_toolchain, 'sh', '-c', 'bundle show rails')
-            STDERR.puts "-> Detected a Rails project"
+        @utils.chdir(@work_dir_local) do
+          @utils.run(@local_toolchain, 'sh', '-c', 'bundle install --deployment')
+          if 0 == @utils.run_allow_failures(@local_toolchain, 'sh', '-c', 'bundle show rails')
+            STDERR.puts "-> Detected a Rails project" unless @options[:quiet]
             @enclose_io_rails = true
-            Utils.rm_rf('tmp')
-            Utils.rm_rf('log')
-            Utils.mkdir('tmp')
-            Utils.mkdir('log')
+            @utils.rm_rf('tmp')
+            @utils.rm_rf('log')
+            @utils.mkdir('tmp')
+            @utils.mkdir('log')
           end
           if File.exist?(@entrance)
             @memfs_entrance = mempath(@entrance)
@@ -661,7 +662,7 @@ class Compiler
             if File.exist?("bin/#{@entrance}")
               @memfs_entrance = "#{MEMFS}/local/bin/#{@entrance}"
             else
-              Utils.run(@local_toolchain, 'sh', '-c', 'bundle install --deployment --binstubs')
+              @utils.run(@local_toolchain, 'sh', '-c', 'bundle install --deployment --binstubs')
               if File.exist?("bin/#{@entrance}")
                 @memfs_entrance = "#{MEMFS}/local/bin/#{@entrance}"
               else
@@ -669,7 +670,7 @@ class Compiler
                   @entrance = File.basename(@entrance)
                   @memfs_entrance = "#{MEMFS}/local/bin/#{@entrance}"
                 else
-                  Utils.chdir('bin') do
+                  @utils.chdir('bin') do
                     raise Error, "Cannot find entrance #{@entrance}, available entrances are #{ Dir['*'].join(', ') }."
                   end
                 end
@@ -680,12 +681,12 @@ class Compiler
       elsif gems.size > 0
         raise 'Multiple gem files detected' unless 1 == gems.size
         @pre_prepare_dir = File.join(@options[:tmpdir], '__pre_prepare__')
-        Utils.rm_rf(@pre_prepare_dir)
-        Utils.cp_r(@root, @pre_prepare_dir)
-        Utils.chdir(@pre_prepare_dir) do
-          STDERR.puts "-> Detected a gem file, trying to locally install the gem"
+        @utils.rm_rf(@pre_prepare_dir)
+        @utils.cp_r(@root, @pre_prepare_dir)
+        @utils.chdir(@pre_prepare_dir) do
+          STDERR.puts "-> Detected a gem file, trying to locally install the gem" unless @options[:quiet]
           the_gem = gems.first
-          Utils.run(@local_toolchain, 'sh', '-c', "gem install #{Utils.escape the_gem} --force --local --no-rdoc --no-ri --install-dir #{Utils.escape @gems_dir}")
+          @utils.run(@local_toolchain, 'sh', '-c', "gem install #{@utils.escape the_gem} --force --local --no-rdoc --no-ri --install-dir #{@utils.escape @gems_dir}")
           if File.exist?(File.join(@gems_dir, "bin/#{@entrance}"))
             @memfs_entrance = "#{MEMFS}/lib/ruby/gems/#{self.class.ruby_api_version}/bin/#{@entrance}"
           else
@@ -693,17 +694,17 @@ class Compiler
               @entrance = File.basename(@entrance)
               @memfs_entrance = "#{MEMFS}/lib/ruby/gems/#{self.class.ruby_api_version}/bin/#{@entrance}"
             else
-              Utils.chdir(File.join(@gems_dir, "bin")) do
+              @utils.chdir(File.join(@gems_dir, "bin")) do
                 raise Error, "Cannot find entrance #{@entrance}, available entrances are #{ Dir['*'].join(', ') }."
               end
             end
           end
         end
-        Utils.rm_rf(@pre_prepare_dir)
+        @utils.rm_rf(@pre_prepare_dir)
       else
         @work_dir_local = File.join(@work_dir_inner, 'local')
-        Utils.cp_r(@root, @work_dir_local)
-        Utils.chdir(@work_dir_local) do
+        @utils.cp_r(@root, @work_dir_local)
+        @utils.chdir(@work_dir_local) do
           x = Pathname.new @entrance
           y = Pathname.new @root
           if x.absolute?
@@ -713,7 +714,7 @@ class Compiler
           if File.exist?("#{@entrance}")
             @memfs_entrance = "#{MEMFS}/local/#{@entrance}"
           else
-            Utils.chdir('bin') do
+            @utils.chdir('bin') do
               raise Error, "Cannot find entrance #{@entrance}"
             end
           end
@@ -721,31 +722,31 @@ class Compiler
       end
       
       if @work_dir_local
-        Utils.chdir(@work_dir_local) do
+        @utils.chdir(@work_dir_local) do
           if Dir.exist?('.git')
-            STDERR.puts `git status`
-            Utils.rm_rf('.git')
+            STDERR.puts `git status` unless @options[:quiet]
+            @utils.rm_rf('.git')
           end
           if File.exist?('a.exe')
-            STDERR.puts `dir a.exe`
+            STDERR.puts `dir a.exe` unless @options[:quiet]
             @utils.rm_rf('a.exe')
           end
           if File.exist?('a.out')
-            STDERR.puts `ls -l a.out`
+            STDERR.puts `ls -l a.out` unless @options[:quiet]
             @utils.rm_rf('a.out')
           end
         end
       end
-      Utils.rm_rf(File.join(@gems_dir, 'cache'))
+      @utils.rm_rf(File.join(@gems_dir, 'cache'))
     end
   end
 
   def make_enclose_io_memfs
-    Utils.chdir(@vendor_ruby) do
-      Utils.rm_f('enclose_io_memfs.squashfs')
-      Utils.rm_f('enclose_io_memfs.c')
-      Utils.run("mksquashfs -version")
-      Utils.run("mksquashfs #{Utils.escape @work_dir} enclose_io_memfs.squashfs")
+    @utils.chdir(@vendor_ruby) do
+      @utils.rm_f('enclose_io_memfs.squashfs')
+      @utils.rm_f('enclose_io_memfs.c')
+      @utils.run("mksquashfs -version")
+      @utils.run("mksquashfs #{@utils.escape @work_dir} enclose_io_memfs.squashfs")
       bytes = IO.binread('enclose_io_memfs.squashfs').bytes
       # TODO slow operation
       # remember to change libsquash's sample/enclose_io_memfs.c as well
@@ -767,7 +768,7 @@ class Compiler
   end
 
   def make_enclose_io_vars
-    Utils.chdir(@vendor_ruby) do
+    @utils.chdir(@vendor_ruby) do
       File.open("include/enclose_io.h", "w") do |f|
         # remember to change libsquash's sample/enclose_io.h as well
         # might need to remove some object files at the 2nd pass  
