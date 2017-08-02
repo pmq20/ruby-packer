@@ -538,17 +538,17 @@ class Compiler
           STDERR.puts "-> Detected a gemspec, trying to build the gem" unless @options[:quiet]
           @utils.rm_f('./*.gem')
           if gemfiles.size > 0
-            @utils.run(@local_toolchain, 'sh', '-c', "gem install #{@utils.escape the_bundler_gem} --verbose --no-rdoc --no-ri")
-            @utils.run(@local_toolchain, 'sh', '-c', "gem install #{@utils.escape the_bundler_gem} --verbose --no-rdoc --no-ri --install-dir #{@utils.escape @gems_dir}")
-            @utils.run(@local_toolchain, 'sh', '-c', "bundle install")
-            @utils.run(@local_toolchain, 'sh', '-c', "bundle exec gem build #{@utils.escape gemspecs.first}")
+            @utils.run(@local_toolchain, (Gem.win_platform? ? 'cmd.exe' : 'sh'), (Gem.win_platform? ? '/c' : '-c'), "gem install #{@utils.escape the_bundler_gem} --verbose --no-rdoc --no-ri")
+            @utils.run(@local_toolchain, (Gem.win_platform? ? 'cmd.exe' : 'sh'), (Gem.win_platform? ? '/c' : '-c'), "gem install #{@utils.escape the_bundler_gem} --verbose --no-rdoc --no-ri --install-dir #{@utils.escape @gems_dir}")
+            @utils.run(@local_toolchain, (Gem.win_platform? ? 'cmd.exe' : 'sh'), (Gem.win_platform? ? '/c' : '-c'), "bundle install")
+            @utils.run(@local_toolchain, (Gem.win_platform? ? 'cmd.exe' : 'sh'), (Gem.win_platform? ? '/c' : '-c'), "bundle exec gem build #{@utils.escape gemspecs.first}")
           else
-            @utils.run(@local_toolchain, 'sh', '-c', "gem build #{@utils.escape gemspecs.first}")
+            @utils.run(@local_toolchain, (Gem.win_platform? ? 'cmd.exe' : 'sh'), (Gem.win_platform? ? '/c' : '-c'), "gem build #{@utils.escape gemspecs.first}")
           end
           gems = Dir['./*.gem']
           raise 'gem building failed' unless 1 == gems.size
           the_gem = gems.first
-          @utils.run(@local_toolchain, 'sh', '-c', "gem install #{@utils.escape the_gem} --verbose --no-rdoc --no-ri --install-dir #{@utils.escape @gems_dir}")
+          @utils.run(@local_toolchain, (Gem.win_platform? ? 'cmd.exe' : 'sh'), (Gem.win_platform? ? '/c' : '-c'), "gem install #{@utils.escape the_gem} --verbose --no-rdoc --no-ri --install-dir #{@utils.escape @gems_dir}")
           if File.exist?(File.join(@gems_dir, "bin/#{@entrance}"))
             @memfs_entrance = "#{MEMFS}/lib/ruby/gems/#{self.class.ruby_api_version}/bin/#{@entrance}"
           else
@@ -566,8 +566,8 @@ class Compiler
       elsif gemfiles.size > 0
         raise 'Multiple Gemfiles detected' unless 1 == gemfiles.size
         # gem install bundler
-        @utils.run(@local_toolchain, 'sh', '-c', "gem install #{@utils.escape the_bundler_gem} --verbose --no-rdoc --no-ri")
-        @utils.run(@local_toolchain, 'sh', '-c', "gem install #{@utils.escape the_bundler_gem} --verbose --no-rdoc --no-ri --install-dir #{@utils.escape @gems_dir}")
+        @utils.run(@local_toolchain, (Gem.win_platform? ? 'cmd.exe' : 'sh'), (Gem.win_platform? ? '/c' : '-c'), "gem install #{@utils.escape the_bundler_gem} --verbose --no-rdoc --no-ri")
+        @utils.run(@local_toolchain, (Gem.win_platform? ? 'cmd.exe' : 'sh'), (Gem.win_platform? ? '/c' : '-c'), "gem install #{@utils.escape the_bundler_gem} --verbose --no-rdoc --no-ri --install-dir #{@utils.escape @gems_dir}")
         # bundle install
         @work_dir_local = File.join(@work_dir_inner, 'local')
         @env_bundle_gemfile = '/__enclose_io_memfs__/local/Gemfile'
@@ -575,8 +575,8 @@ class Compiler
           @utils.cp_r(@root, @work_dir_local)
         end
         @utils.chdir(@work_dir_local) do
-          @utils.run(@local_toolchain, 'sh', '-c', 'bundle install --deployment')
-          if 0 == @utils.run_allow_failures(@local_toolchain, 'sh', '-c', 'bundle show rails')
+          @utils.run(@local_toolchain, (Gem.win_platform? ? 'cmd.exe' : 'sh'), (Gem.win_platform? ? '/c' : '-c'), 'bundle install --deployment')
+          if 0 == @utils.run_allow_failures(@local_toolchain, (Gem.win_platform? ? 'cmd.exe' : 'sh'), (Gem.win_platform? ? '/c' : '-c'), 'bundle show rails')
             STDERR.puts "-> Detected a Rails project" unless @options[:quiet]
             @enclose_io_rails = true
             @utils.rm_rf('tmp')
@@ -590,7 +590,7 @@ class Compiler
             if File.exist?("bin/#{@entrance}")
               @memfs_entrance = "#{MEMFS}/local/bin/#{@entrance}"
             else
-              @utils.run(@local_toolchain, 'sh', '-c', 'bundle install --deployment --binstubs')
+              @utils.run(@local_toolchain, (Gem.win_platform? ? 'cmd.exe' : 'sh'), (Gem.win_platform? ? '/c' : '-c'), 'bundle install --deployment --binstubs')
               if File.exist?("bin/#{@entrance}")
                 @memfs_entrance = "#{MEMFS}/local/bin/#{@entrance}"
               else
@@ -614,7 +614,7 @@ class Compiler
         @utils.chdir(@pre_prepare_dir) do
           STDERR.puts "-> Detected a gem file, trying to locally install the gem" unless @options[:quiet]
           the_gem = gems.first
-          @utils.run(@local_toolchain, 'sh', '-c', "gem install #{@utils.escape the_gem} --verbose --no-rdoc --no-ri --install-dir #{@utils.escape @gems_dir}")
+          @utils.run(@local_toolchain, (Gem.win_platform? ? 'cmd.exe' : 'sh'), (Gem.win_platform? ? '/c' : '-c'), "gem install #{@utils.escape the_gem} --verbose --no-rdoc --no-ri --install-dir #{@utils.escape @gems_dir}")
           if File.exist?(File.join(@gems_dir, "bin/#{@entrance}"))
             @memfs_entrance = "#{MEMFS}/lib/ruby/gems/#{self.class.ruby_api_version}/bin/#{@entrance}"
           else

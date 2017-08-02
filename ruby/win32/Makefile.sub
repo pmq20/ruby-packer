@@ -247,7 +247,7 @@ EXTLIBS =
 EXTSOLIBS =
 !endif
 !if !defined(LIBS)
-LIBS = user32.lib advapi32.lib shell32.lib ws2_32.lib Ole32.lib
+LIBS = user32.lib advapi32.lib shell32.lib ws2_32.lib Ole32.lib Shell32.lib
 !if $(MSC_VER) >= 1400
 LIBS = $(LIBS) iphlpapi.lib
 !endif
@@ -1023,7 +1023,7 @@ ruby_static.exe:	$(MAINOBJ) $(LIBRUBY_SO) $(RUBY_INSTALL_NAME).res
 !if "$(PROGRAM)" != ""
 $(PROGRAM):	$(MAINOBJ) $(LIBRUBY_SO) $(RUBY_INSTALL_NAME).res
 		$(ECHO) linking $(@:\=/)
-		$(Q) $(PURIFY) $(CC) $(CFLAGS) $(MAINOBJ) enclose_io_unix.obj enclose_io_memfs.obj squash_fd.obj $(RUBY_INSTALL_NAME).res \
+		$(Q) $(PURIFY) $(CC) $(CFLAGS) $(MAINOBJ) enclose_io_unix.obj enclose_io_memfs.obj squash_fd.obj Shell32.lib $(RUBY_INSTALL_NAME).res \
 			$(OUTFLAG)$@ $(LIBRUBYARG) -link $(LDFLAGS) $(XLDFLAGS)
 		$(Q) $(LDSHARED_0)
 		$(Q) $(LDSHARED_1)
@@ -1033,7 +1033,7 @@ $(PROGRAM):	$(MAINOBJ) $(LIBRUBY_SO) $(RUBY_INSTALL_NAME).res
 !if "$(WPROGRAM)" != ""
 $(WPROGRAM):	$(MAINOBJ) $(WINMAINOBJ) $(LIBRUBY_SO) $(RUBYW_INSTALL_NAME).res
 		$(ECHO) linking $(@:\=/)
-		$(Q) $(PURIFY) $(CC) $(CFLAGS) $(MAINOBJ) enclose_io_unix.obj enclose_io_memfs.obj squash_fd.obj $(WINMAINOBJ) \
+		$(Q) $(PURIFY) $(CC) $(CFLAGS) $(MAINOBJ) enclose_io_unix.obj enclose_io_memfs.obj squash_fd.obj Shell32.lib $(WINMAINOBJ) \
 			$(RUBYW_INSTALL_NAME).res $(OUTFLAG)$@ $(LIBRUBYARG) \
 			-link $(LDFLAGS) $(XLDFLAGS) -subsystem:Windows
 		$(Q) $(LDSHARED_0)
