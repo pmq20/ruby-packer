@@ -32,7 +32,7 @@ class Compiler
       @utils.rm_rf(@work_dir)
       @utils.mkdir_p(@work_dir)
       @utils.chdir(@work_dir) do
-        url = "https://rubygems.org/downloads/#{@module_name}-#{@module_version}.gem"
+        url = "http://rubygems.org/downloads/#{@module_name}-#{@module_version}.gem"
         STDERR.puts "Downloading #{url}" unless @options[:quiet]
         download = open(url)
         IO.copy_stream(download, "#{@module_name}-#{@module_version}.gem")
