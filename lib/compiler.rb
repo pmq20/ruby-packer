@@ -53,78 +53,6 @@ class Compiler
     versions.join('.')
   end
   
-  def prepare_flags1
-    @ldflags = ''
-    @cflags = ''
-
-    if Gem.win_platform?
-      if @options[:debug]
-        @cflags += ' -MD /DEBUG:FULL /Od -Zi '
-      else
-        @cflags += ' -MD /Ox '
-      end
-    else
-      if @options[:debug]
-        @cflags += ' -fPIC -g -O0 -pipe '
-      else
-        @cflags += ' -fPIC -O3 -fno-fast-math -ggdb3 -Os -fdata-sections -ffunction-sections -pipe '
-      end
-    end
-    
-    if Gem.win_platform?
-      @compile_env = {
-        'CI' => 'true',
-        'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1'
-      }
-    else
-      @compile_env = {
-        'CI' => 'true',
-        'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1',
-        'CFLAGS' => @cflags,
-        'LDFLAGS' => @ldflags
-      }
-    end
-  end
-
-  def prepare_flags2
-    if Gem.win_platform?
-      @ldflags += " -libpath:#{@utils.escape File.join(@options[:tmpdir], 'zlib').gsub('/', '\\')} #{@utils.escape File.join(@options[:tmpdir], 'zlib', 'zlib.lib')} "
-      @cflags += " -I#{@utils.escape File.join(@options[:tmpdir], 'zlib')} "
-    else
-      @ldflags += " -L#{@utils.escape File.join(@options[:tmpdir], 'zlib')} #{@utils.escape File.join(@options[:tmpdir], 'zlib', 'libz.a')} "
-      @cflags += " -I#{@utils.escape File.join(@options[:tmpdir], 'zlib')} "
-      @ldflags += " -L#{@utils.escape File.join(@options[:tmpdir], 'openssl')} "
-      @cflags += " -I#{@utils.escape File.join(@options[:tmpdir], 'openssl', 'include')} "
-      @ldflags += " -L#{@utils.escape File.join(@options[:tmpdir], 'gdbm', 'build', 'lib')} "
-      @cflags += " -I#{@utils.escape File.join(@options[:tmpdir], 'gdbm', 'build', 'include')} "
-      @ldflags += " -L#{@utils.escape File.join(@options[:tmpdir], 'yaml', 'build', 'lib')} "
-      @cflags += " -I#{@utils.escape File.join(@options[:tmpdir], 'yaml', 'build', 'include')} "
-      lib64 = File.join(@options[:tmpdir], 'libffi', 'build', 'lib64')
-      lib = File.join(@options[:tmpdir], 'libffi', 'build', 'lib')
-      @ldflags += " -L#{@utils.escape lib} " if Dir.exist?(lib)
-      @ldflags += " -L#{@utils.escape lib64} " if Dir.exist?(lib64)
-      @cflags += " -I#{@utils.escape File.join(@options[:tmpdir], 'libffi', 'build', 'lib', 'libffi-3.2.1', 'include')} "
-      @ldflags += " -L#{@utils.escape File.join(@options[:tmpdir], 'ncurses', 'build', 'lib')} "
-      @cflags += " -I#{@utils.escape File.join(@options[:tmpdir], 'ncurses', 'build', 'include')} "
-      @ldflags += " -L#{@utils.escape File.join(@options[:tmpdir], 'readline', 'build', 'lib')} "
-      @cflags += " -I#{@utils.escape File.join(@options[:tmpdir], 'readline', 'build', 'include')} "
-    end
-
-    if Gem.win_platform?
-      @compile_env = {
-        'CI' => 'true',
-        'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1'
-      }
-    else
-      @compile_env = {
-        'CI' => 'true',
-        'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1',
-        'CFLAGS' => @cflags,
-        'LDFLAGS' => @ldflags
-      }
-    end
-  end
-  
   def initialize(entrance, options = {})
     if entrance
       if File.exists?(File.expand_path(entrance))
@@ -134,7 +62,7 @@ class Compiler
       end
     end
     @options = options
-    @utils = @utils.new(options)
+    @utils = Utils.new(options)
 
     init_options
     init_entrance if entrance
@@ -163,7 +91,9 @@ class Compiler
       @options[:output] ||= 'a.out'
     end
     @options[:output] = File.expand_path(@options[:output])
-    @gem_package = GemPackage.new(@options, @utils) if @options[:gem]
+    @options[:tmpdir] ||= File.expand_path("rubyc", Dir.tmpdir)
+    @options[:tmpdir] = File.expand_path(@options[:tmpdir])
+    @gem_package = GemPackage.new(@entrance, @options, @utils) if @options[:gem]
     if @options[:auto_update_url] || @options[:auto_update_base]
       unless @options[:auto_update_url].length > 0 && @options[:auto_update_base].length > 0
         raise Error, "Please provide both --auto-update-url and --auto-update-base"
@@ -195,8 +125,6 @@ class Compiler
   end
 
   def init_tmpdir
-    @options[:tmpdir] ||= File.expand_path("rubyc", Dir.tmpdir)
-    @options[:tmpdir] = File.expand_path(@options[:tmpdir])
     if @root && @options[:tmpdir].include?(@root)
       raise Error, "Tempdir #{@options[:tmpdir]} cannot reside inside #{@root}."
     end
@@ -610,8 +538,8 @@ class Compiler
           STDERR.puts "-> Detected a gemspec, trying to build the gem" unless @options[:quiet]
           @utils.rm_f('./*.gem')
           if gemfiles.size > 0
-            @utils.run(@local_toolchain, 'sh', '-c', "gem install #{@utils.escape the_bundler_gem} --force --local --no-rdoc --no-ri")
-            @utils.run(@local_toolchain, 'sh', '-c', "gem install #{@utils.escape the_bundler_gem} --force --local --no-rdoc --no-ri --install-dir #{@utils.escape @gems_dir}")
+            @utils.run(@local_toolchain, 'sh', '-c', "gem install #{@utils.escape the_bundler_gem} --verbose --no-rdoc --no-ri")
+            @utils.run(@local_toolchain, 'sh', '-c', "gem install #{@utils.escape the_bundler_gem} --verbose --no-rdoc --no-ri --install-dir #{@utils.escape @gems_dir}")
             @utils.run(@local_toolchain, 'sh', '-c', "bundle install")
             @utils.run(@local_toolchain, 'sh', '-c', "bundle exec gem build #{@utils.escape gemspecs.first}")
           else
@@ -620,7 +548,7 @@ class Compiler
           gems = Dir['./*.gem']
           raise 'gem building failed' unless 1 == gems.size
           the_gem = gems.first
-          @utils.run(@local_toolchain, 'sh', '-c', "gem install #{@utils.escape the_gem} --force --local --no-rdoc --no-ri --install-dir #{@utils.escape @gems_dir}")
+          @utils.run(@local_toolchain, 'sh', '-c', "gem install #{@utils.escape the_gem} --verbose --no-rdoc --no-ri --install-dir #{@utils.escape @gems_dir}")
           if File.exist?(File.join(@gems_dir, "bin/#{@entrance}"))
             @memfs_entrance = "#{MEMFS}/lib/ruby/gems/#{self.class.ruby_api_version}/bin/#{@entrance}"
           else
@@ -638,8 +566,8 @@ class Compiler
       elsif gemfiles.size > 0
         raise 'Multiple Gemfiles detected' unless 1 == gemfiles.size
         # gem install bundler
-        @utils.run(@local_toolchain, 'sh', '-c', "gem install #{@utils.escape the_bundler_gem} --force --local --no-rdoc --no-ri")
-        @utils.run(@local_toolchain, 'sh', '-c', "gem install #{@utils.escape the_bundler_gem} --force --local --no-rdoc --no-ri --install-dir #{@utils.escape @gems_dir}")
+        @utils.run(@local_toolchain, 'sh', '-c', "gem install #{@utils.escape the_bundler_gem} --verbose --no-rdoc --no-ri")
+        @utils.run(@local_toolchain, 'sh', '-c', "gem install #{@utils.escape the_bundler_gem} --verbose --no-rdoc --no-ri --install-dir #{@utils.escape @gems_dir}")
         # bundle install
         @work_dir_local = File.join(@work_dir_inner, 'local')
         @env_bundle_gemfile = '/__enclose_io_memfs__/local/Gemfile'
@@ -686,7 +614,7 @@ class Compiler
         @utils.chdir(@pre_prepare_dir) do
           STDERR.puts "-> Detected a gem file, trying to locally install the gem" unless @options[:quiet]
           the_gem = gems.first
-          @utils.run(@local_toolchain, 'sh', '-c', "gem install #{@utils.escape the_gem} --force --local --no-rdoc --no-ri --install-dir #{@utils.escape @gems_dir}")
+          @utils.run(@local_toolchain, 'sh', '-c', "gem install #{@utils.escape the_gem} --verbose --no-rdoc --no-ri --install-dir #{@utils.escape @gems_dir}")
           if File.exist?(File.join(@gems_dir, "bin/#{@entrance}"))
             @memfs_entrance = "#{MEMFS}/lib/ruby/gems/#{self.class.ruby_api_version}/bin/#{@entrance}"
           else
@@ -820,5 +748,77 @@ class Compiler
     path = File.expand_path(path)
     raise "path #{path} should start with #{@root}" unless @root == path[0...(@root.size)]
     "#{MEMFS}/local#{path[(@root.size)..-1]}"
+  end
+  
+  def prepare_flags1
+    @ldflags = ''
+    @cflags = ''
+
+    if Gem.win_platform?
+      if @options[:debug]
+        @cflags += ' -MD /DEBUG:FULL /Od -Zi '
+      else
+        @cflags += ' -MD /Ox '
+      end
+    else
+      if @options[:debug]
+        @cflags += ' -fPIC -g -O0 -pipe '
+      else
+        @cflags += ' -fPIC -O3 -fno-fast-math -ggdb3 -Os -fdata-sections -ffunction-sections -pipe '
+      end
+    end
+    
+    if Gem.win_platform?
+      @compile_env = {
+        'CI' => 'true',
+        'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1'
+      }
+    else
+      @compile_env = {
+        'CI' => 'true',
+        'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1',
+        'CFLAGS' => @cflags,
+        'LDFLAGS' => @ldflags
+      }
+    end
+  end
+
+  def prepare_flags2
+    if Gem.win_platform?
+      @ldflags += " -libpath:#{@utils.escape File.join(@options[:tmpdir], 'zlib').gsub('/', '\\')} #{@utils.escape File.join(@options[:tmpdir], 'zlib', 'zlib.lib')} "
+      @cflags += " -I#{@utils.escape File.join(@options[:tmpdir], 'zlib')} "
+    else
+      @ldflags += " -L#{@utils.escape File.join(@options[:tmpdir], 'zlib')} #{@utils.escape File.join(@options[:tmpdir], 'zlib', 'libz.a')} "
+      @cflags += " -I#{@utils.escape File.join(@options[:tmpdir], 'zlib')} "
+      @ldflags += " -L#{@utils.escape File.join(@options[:tmpdir], 'openssl')} "
+      @cflags += " -I#{@utils.escape File.join(@options[:tmpdir], 'openssl', 'include')} "
+      @ldflags += " -L#{@utils.escape File.join(@options[:tmpdir], 'gdbm', 'build', 'lib')} "
+      @cflags += " -I#{@utils.escape File.join(@options[:tmpdir], 'gdbm', 'build', 'include')} "
+      @ldflags += " -L#{@utils.escape File.join(@options[:tmpdir], 'yaml', 'build', 'lib')} "
+      @cflags += " -I#{@utils.escape File.join(@options[:tmpdir], 'yaml', 'build', 'include')} "
+      lib64 = File.join(@options[:tmpdir], 'libffi', 'build', 'lib64')
+      lib = File.join(@options[:tmpdir], 'libffi', 'build', 'lib')
+      @ldflags += " -L#{@utils.escape lib} " if Dir.exist?(lib)
+      @ldflags += " -L#{@utils.escape lib64} " if Dir.exist?(lib64)
+      @cflags += " -I#{@utils.escape File.join(@options[:tmpdir], 'libffi', 'build', 'lib', 'libffi-3.2.1', 'include')} "
+      @ldflags += " -L#{@utils.escape File.join(@options[:tmpdir], 'ncurses', 'build', 'lib')} "
+      @cflags += " -I#{@utils.escape File.join(@options[:tmpdir], 'ncurses', 'build', 'include')} "
+      @ldflags += " -L#{@utils.escape File.join(@options[:tmpdir], 'readline', 'build', 'lib')} "
+      @cflags += " -I#{@utils.escape File.join(@options[:tmpdir], 'readline', 'build', 'include')} "
+    end
+
+    if Gem.win_platform?
+      @compile_env = {
+        'CI' => 'true',
+        'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1'
+      }
+    else
+      @compile_env = {
+        'CI' => 'true',
+        'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1',
+        'CFLAGS' => @cflags,
+        'LDFLAGS' => @ldflags
+      }
+    end
   end
 end
