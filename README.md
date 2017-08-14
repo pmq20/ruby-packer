@@ -109,18 +109,11 @@ ENTRANCE can be either a file path, or a "x" string as in bundle exec "x".
 	rubyc
 	./a.out (or a.exe on Windows)
 
-### Bootstrapping Ruby Compiler itself
+### Compiling a CLI tool
 
 	git clone --depth 1 https://github.com/pmq20/ruby-compiler
 	cd ruby-compiler
 	rubyc bin/rubyc
-	./a.out (or a.exe on Windows)
-
-### Compiling a CLI tool
-
-	git clone --depth 1 https://github.com/pmq20/node-compiler
-	cd node-compiler
-	rubyc bin/nodec
 	./a.out (or a.exe on Windows)
 
 ### Compiling a Rails application
