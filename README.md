@@ -1,6 +1,6 @@
-# Ruby Compiler
+# Ruby Packer
 
-*Ahead-of-time (AOT) Compiler designed for Ruby, that just works.*
+*Packing your Ruby application into a single executable.*
 
 [![Status](https://ci.appveyor.com/api/projects/status/93i36eliiy6v3686/branch/master?svg=true)](https://ci.appveyor.com/project/pmq20/ruby-compiler/branch/master)
 [![Status](https://travis-ci.org/pmq20/ruby-compiler.svg?branch=master)](https://travis-ci.org/pmq20/ruby-compiler)
