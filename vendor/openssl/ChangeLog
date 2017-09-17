@@ -1,0 +1,907 @@
+Because this project is maintained both in the OpenBSD tree using CVS and in
+Git, it can be confusing following all of the changes.
+
+Most of the libssl and libcrypto source code is is here in OpenBSD CVS:
+
+	http://cvsweb.openbsd.org/cgi-bin/cvsweb/src/lib/libssl/
+
+Some of the libcrypto and OS-compatibility files for entropy and random number
+generation are here:
+
+	http://cvsweb.openbsd.org/cgi-bin/cvsweb/src/lib/libcrypto/
+
+A simplified TLS wrapper library is here:
+
+	http://cvsweb.openbsd.org/cgi-bin/cvsweb/src/lib/libtls/
+
+The LibreSSL Portable project copies these portions of the OpenBSD tree, along
+with relevant portions of the C library, to a Git repository. This makes it
+easier to follow all of the relevant changes to the upstream project in a
+single place:
+
+	https://github.com/libressl-portable/openbsd
+
+The portable bits of the project are largely maintained out-of-tree, and their
+history is also available from Git.
+
+	https://github.com/libressl-portable/portable
+
+LibreSSL Portable Release Notes:
+
+2.6.1 - Code removal, rewrites
+
+	* Added a "-T tlscompat" option to nc(1), which enables the use of all
+	  TLS protocols and "compat" ciphers. This allows for TLS connections
+	  to TLS servers that are using less than ideal cipher suites, without
+	  having to resort to "-T tlsall" which enables all known cipher
+	  suites.  Diff from Kyle J. McKay.
+
+	* Added a new TLS extension handling framework, somewhat analogous to
+	  BoringSSL, and converted all TLS extensions to use it. Added new TLS
+	  extension regression tests.
+
+	* Improved and added many new manpages. Updated *check_private_key
+	  manpages with additional cautions regarding their use.
+
+	* Cleaned up the EC key/curve configuration handling.
+
+	* Added tls_config_set_ecdhecurves() to libtls, which allows the names
+	  of the eliptical curves that may be used during client and server
+	  key exchange to be specified.
+
+	* Converted more code paths to use CBB/CBS.
+
+	* Removed support for DSS/DSA, since we removed the cipher suites a
+	  while back.
+
+	* Removed NPN support. NPN was never standardised and the last draft
+	  expired in October 2012. ALPN was standardised in July 2014 and has
+	  been supported in LibreSSL since December 2014. NPN has also been
+	  removed from Chromium in May 2016.
+
+	* Removed SSL_OP_CRYPTOPRO_TLSEXT_BUG workaround for old/broken
+	  CryptoPro clients.
+
+	* Removed support for the TLS padding extension, which was added as a
+	  workaround for an old bug in F5's TLS termination.
+
+	* Worked around another bug in F5's TLS termination handling of the
+	  elliptical curves extension. RFC 4492 only defines elliptic_curves
+	  for ClientHello. However, F5 is sending it in ServerHello.  We need
+	  to skip over it since our TLS extension parsing code is now more
+	  strict. Thanks to Armin Wolfermann and WJ Liu for reporting.
+
+	* Added ability to clamp notafter valies in certificates for systems
+	  with 32-bit time_t. This is necessary to conform to RFC 5280
+	  4.1.2.5.
+
+	* Implemented the SSL_CTX_set_min_proto_version(3) API.
+
+	* Removed the original (pre-IETF) chacha20-poly1305 cipher suites.
+
+	* Reclassified ECDHE-RSA-DES-CBC3-SHA from HIGH to MEDIUM.
+
+2.6.0 - New APIs, bug fixes and improvements
+
+	* Added support for providing CRLs to libtls. Once a CRL is provided we
+	  enable CRL checking for the full certificate chain. Based on a diff
+	  from Jack Burton
+
+	* Allow non-compliant clients using IP literal addresses with SNI
+	  to connect to a server using libtls.
+
+	* Avoid a potential NULL pointer dereference in d2i_ECPrivateKey().
+	  Reported by Robert Swiecki, who found the issue using honggfuzz.
+
+	* Added definitions for three OIDs used in EV certificates.
+	  From Kyle J. McKay
+
+	* Added tls_peer_cert_chain_pem to libtls, useful in private
+	  certificate validation callbacks such as those in relayd.
+
+	* Converted explicit clear/free sequences to use freezero(3).
+
+	* Reworked TLS certificate name verification code to more strictly
+	  follow RFC 6125.
+
+	* Cleaned up and simplified server key exchange EC point handling.
+
+	* Added tls_keypair_clear_key for clearing key material.
+
+	* Removed inconsistent IPv6 handling from BIO_get_accept_socket,
+	  simplified BIO_get_host_ip and BIO_accept.
+
+	* Fixed the openssl(1) ca command so that is generates certificates
+	  with RFC 5280-conformant time. Problem noticed by Harald Dunkel.
+
+	* Added ASN1_TIME_set_tm to set an asn1 from a struct tm *
+
+	* Added SSL{,_CTX}_set_{min,max}_proto_version() functions.
+
+	* Added HKDF (HMAC Key Derivation Function) from BoringSSL
+
+	* Provided a tls_unload_file() function that frees the memory returned
+	  from a tls_load_file() call, ensuring that it the contents become
+	  inaccessible. This is specifically needed on platforms where the
+	  library allocators may be different from the application allocator.
+
+	* Perform reference counting for tls_config. This allows
+	  tls_config_free() to be called as soon as it has been passed to the
+	  final tls_configure() call, simplifying lifetime tracking for the
+	  application.
+
+	* Moved internal state of SSL and other structures to be opaque.
+
+	* Dropped cipher suites with DSS authentication.
+
+	* nc(1) improvements, including:
+	   nc -W to terminate nc after receiving a number of packets
+	   nc -Z for saving the peer certificate and chain in a pem file
+
+2.5.5 - Bug fixes
+
+	* Distinguish between self-issued certificates and self-signed
+	  certificates. The certificate verification code has special cases
+	  for self-signed certificates and without this change, self-issued
+	  certificates (which it seems are common place with
+	  openvpn/easyrsa) were also being included in this category.
+
+	* Added getpagesize fallback, needed for Android bionic libc.
+
+2.5.4 - Security Updates
+
+	* Revert a previous change that forced consistency between return
+	  value and error code when specifing a certificate verification
+	  callback, since this breaks the documented API. When a user supplied
+	  callback always returns 1, and later code checks the error code to
+	  potentially abort post verification, this will result in incorrect
+	  successul certificate verification.
+
+	* Switched Linux getrandom() usage to non-blocking mode, continuing to
+	  use fallback mechanims if unsuccessful. This works around a design
+	  flaw in Linux getrandom(2) where early boot usage in a library makes
+	  it impossible to recover if getrandom(2) is not yet initialized.
+
+	* Fixed a bug caused by the return value being set early to signal
+	  successful DTLS cookie validation. This can mask a later failure and
+	  result in a positive return value being returned from
+	  ssl3_get_client_hello(), when it should return a negative value to
+	  propagate the error.
+
+	* Fixed a build error on non-x86/x86_64 systems running Solaris.
+
+2.5.3 - OpenBSD 6.1 Release
+
+	* Documentation updates
+
+	* Improved ocspcheck(1) error handling
+
+2.5.2 - Security features and bugfixes
+
+	* Added the recallocarray(3) memory allocation function, and converted
+	  various places in the library to use it, such as CBB and BUF_MEM_grow.
+	  recallocarray(3) is similar to reallocarray. Newly allocated memory
+	  is cleared similar to calloc(3). Memory that becomes unallocated
+	  while shrinking or moving existing allocations is explicitly
+	  discarded by unmapping or clearing to 0
+
+	* Added new root CAs from SECOM Trust Systems / Security Communication
+	  of Japan.
+
+	* Added EVP interface for MD5+SHA1 hashes.
+
+	* Fixed DTLS client failures when the server sends a certificate
+	  request.
+
+	* Correct handling of padding when upgrading an SSLv2 challenge into
+	  an SSLv3/TLS connection.
+
+	* Allow protocols and ciphers to be set on a TLS config object in
+	  libtls.
+
+	* Improved nc(1) TLS handshake CPU usage and server-side error
+	  reporting.
+
+2.5.1 - Bug and security fixes, new features, documentation updates
+
+	* X509_cmp_time() now passes a malformed GeneralizedTime field as an
+	  error. Reported by Theofilos Petsios.
+
+	* Detect zero-length encrypted session data early, instead of when
+	  malloc(0) fails or the HMAC check fails. Noted independently by
+	  jsing@ and Kurt Cancemi.
+
+	* Check for and handle failure of HMAC_{Update,Final} or
+	  EVP_DecryptUpdate().
+
+	* Massive update and normalization of manpages, conversion to
+	  mandoc format. Many pages were rewritten for clarity and accuracy.
+	  Portable doc links are up-to-date with a new conversion tool.
+
+	* Curve25519 Key Exchange support.
+
+	* Support for alternate chains for certificate verification.
+
+	* Code cleanups, CBS conversions, further unification of DTLS/SSL
+	  handshake code, further ASN1 macro expansion and removal.
+
+	* Private symbol are now hidden in libssl and libcryto.
+
+	* Friendly certificate verification error messages in libtls, peer
+	  verification is now always enabled.
+
+	* Added OCSP stapling support to libtls and netcat.
+
+	* Added ocspcheck utility to validate a certificate against its OCSP
+	  responder and save the reply for stapling
+
+	* Enhanced regression tests and error handling for libtls.
+
+	* Added explicit constant and non-constant time BN functions,
+	  defaulting to constant time wherever possible.
+
+	* Moved many leaked implementation details in public structs behind
+	  opaque pointers.
+
+	* Added ticket support to libtls.
+
+	* Added support for setting the supported EC curves via
+	  SSL{_CTX}_set1_groups{_list}() - also provide defines for the previous
+	  SSL{_CTX}_set1_curves{_list} names. This also changes the default
+	  list of curves to be X25519, P-256 and P-384. All other curves must
+	  be manually enabled.
+
+	* Added -groups option to openssl(1) s_client for specifying the curves
+	  to be used in a colon-separated list.
+
+	* Merged client/server version negotiation code paths into one,
+	  reducing much duplicate code.
+
+	* Removed error function codes from libssl and libcrypto.
+
+	* Fixed an issue where a truncated packet could crash via an OOB read.
+
+	* Added SSL_OP_NO_CLIENT_RENEGOTIATION option that disallows
+	  client-initiated renegotiation. This is the default for libtls
+	  servers.
+
+	* Avoid a side-channel cache-timing attack that can leak the ECDSA
+	  private keys when signing. This is due to BN_mod_inverse() being
+	  used without the constant time flag being set. Reported by Cesar
+	  Pereida Garcia and Billy Brumley (Tampere University of Technology).
+	  The fix was developed by Cesar Pereida Garcia.
+
+	* iOS and MacOS compatibility updates from Simone Basso and Jacob
+	  Berkman.
+
+
+2.5.0 - New APIs, bug fixes and improvements
+
+	* libtls now supports ALPN and SNI
+
+	* libtls adds a new callback interface for integrating custom IO
+	  functions. Thanks to Tobias Pape.
+
+	* libtls now handles 4 cipher suite groups:
+	    "secure" (TLSv1.2+AEAD+PFS)
+	    "compat" (HIGH:!aNULL)
+	    "legacy" (HIGH:MEDIUM:!aNULL)
+	    "insecure" (ALL:!aNULL:!eNULL)
+
+	    This allows for flexibility and finer grained control, rather than
+	    having two extremes (an issue raised by Marko Kreen some time ago).
+
+	* Tightened error handling for tls_config_set_ciphers().
+
+	* libtls now always loads CA, key and certificate files at the time the
+	  configuration function is called. This simplifies code and results in
+	  a single memory based code path being used to provide data to libssl.
+
+	* Add support for OCSP intermediate certificates.
+
+	* Added functions used by stunnel and exim from BoringSSL - this
+	  brings in X509_check_host, X509_check_email, X509_check_ip, and
+	  X509_check_ip_asc.
+
+	* Added initial support for iOS, thanks to Jacob Berkman.
+
+	* Improved behavior of arc4random on Windows when using memory leak
+	  analysis software.
+
+	* Correctly handle an EOF that occurs prior to the TLS handshake
+	  completing. Reported by Vasily Kolobkov, based on a diff from Marko
+	  Kreen.
+
+	* Limit the support of the "backward compatible" ssl2 handshake to
+	  only be used if TLS 1.0 is enabled.
+
+	* Fix incorrect results in certain cases on 64-bit systems when
+	  BN_mod_word() can return incorrect results. BN_mod_word() now can
+	  return an error condition. Thanks to Brian Smith.
+
+	* Added constant-time updates to address CVE-2016-0702
+
+	* Fixed undefined behavior in BN_GF2m_mod_arr()
+
+	* Removed unused Cryptographic Message Support (CMS)
+
+	* More conversions of long long idioms to time_t
+
+	* Improved compatibility by avoiding printing NULL strings with
+	  printf.
+
+	* Reverted change that cleans up the EVP cipher context in
+	  EVP_EncryptFinal() and EVP_DecryptFinal(). Some software relies on the
+	  previous behaviour.
+
+	* Avoid unbounded memory growth in libssl, which can be triggered by a
+	  TLS client repeatedly renegotiating and sending OCSP Status Request
+	  TLS extensions.
+
+	* Avoid falling back to a weak digest for (EC)DH when using SNI with
+	  libssl.
+
+2.4.2 - Bug fixes and improvements
+
+	* Fixed loading default certificate locations with openssl s_client.
+
+	* Ensured OCSP only uses and compares GENERALIZEDTIME values as per
+	  RFC6960. Also added fixes for OCSP to work with intermediate
+	  certificates provided in responses.
+
+	* Improved behavior of arc4random on Windows to not appear to leak
+	  memory in debug tools, reduced privileges of allocated memory.
+
+	* Fixed incorrect results from BN_mod_word() when the modulus is too
+	  large, thanks to Brian Smith from BoringSSL.
+
+	* Correctly handle an EOF prior to completing the TLS handshake in
+	  libtls.
+
+	* Improved libtls ceritificate loading and cipher string validation.
+
+	* Updated libtls cipher group suites into four categories:
+	    "secure"   (TLSv1.2+AEAD+PFS)
+	    "compat"   (HIGH:!aNULL)
+	    "legacy"   (HIGH:MEDIUM:!aNULL)
+	    "insecure" (ALL:!aNULL:!eNULL)
+	  This allows for flexibility and finer grained control, rather than
+	  having two extremes.
+
+	* Limited support for 'backward compatible' SSLv2 handshake packets to
+	  when TLS 1.0 is enabled, providing more restricted compatibility
+	  with TLS 1.0 clients.
+
+	* openssl(1) and other documentation improvements.
+
+	* Removed flags for disabling constant-time operations.
+	  This removes support for DSA_FLAG_NO_EXP_CONSTTIME,
+	  DH_FLAG_NO_EXP_CONSTTIME, and RSA_FLAG_NO_CONSTTIME flags, making
+	  all of these operations unconditionally constant-time.
+
+
+2.4.1 - Security fix
+
+	* Correct a problem that prevents the DSA signing algorithm from
+	  running in constant time even if the flag BN_FLG_CONSTTIME is set.
+	  This issue was reported by Cesar Pereida (Aalto University), Billy
+	  Brumley (Tampere University of Technology), and Yuval Yarom (The
+	  University of Adelaide and NICTA). The fix was developed by Cesar
+	  Pereida.
+
+2.4.0 - Build improvements, new features
+
+	* Many improvements to the CMake build infrastructure, including
+	  Solaris, mingw-w64, Cygwin, and HP-UX support. Thanks to Kinichiro
+	  Inoguchi for this work.
+
+	* Added missing error handling around bn_wexpand() calls.
+
+	* Added explicit_bzero calls for freed ASN.1 objects.
+
+	* Fixed X509_*set_object functions to return 0 on allocation failure.
+
+	* Implemented the IETF ChaCha20-Poly1305 cipher suites.
+
+	* Changed default EVP_aead_chacha20_poly1305() implementation to the
+	  IETF version, which is now the default.
+
+	* Fixed password prompts from openssl(1) to properly handle ^C.
+
+	* Reworked error handling in libtls so that configuration errors are
+	  visible.
+
+	* Deprecated internal use of EVP_[Cipher|Encrypt|Decrypt]_Final.
+
+	* Manpage fixes and updates
+
+2.3.5 - Reliability fix
+
+	* Fixed an error in libcrypto when parsing some ASN.1 elements > 16k.
+
+2.3.4 - Security Update
+
+	* Fix multiple vulnerabilities in libcrypto relating to ASN.1 and encoding.
+	From OpenSSL.
+
+	* Minor build fixes
+
+2.3.3 - OpenBSD 5.9 release branch tagged
+
+	* Reworked build scripts to better sync with OpenNTPD-portable
+
+	* Fixed broken manpage links
+
+	* Fixed an nginx compatibility issue by adding an 'install_sw' make alias
+
+	* Fixed HP-UX builds
+
+	* Changed the default configuration directory to c:\LibreSSL\ssl on Windows
+	  binary builds
+
+	* cert.pem has been reorganized and synced with Mozilla's certificate store
+
+2.3.2 - Compatibility and Reliability fixes
+
+	* Changed format of LIBRESSL_VERSION_NUMBER to match that of
+	  OPENSSL_VERSION_NUMBER, see:
+	  https://wiki.openssl.org/index.php/Manual:OPENSSL_VERSION_NUMBER(3)
+
+	* Added EVP_aead_chacha20_poly1305_ietf() which matches the AEAD
+	  construction introduced in RFC 7539, which is different than that
+	  already used in TLS with EVP_aead_chacha20_poly1305()
+
+	* Avoid a potential undefined C99+ behavior due to shift overflow in
+	  AES_decrypt, reported by Pascal Cuoq <cuoq at trust-in-soft.com>
+
+	* More man pages converted from pod to mdoc format
+
+	* Added COMODO RSA Certification Authority and QuoVadis
+	  root certificates to cert.pem
+
+	* Removed Remove "C=US, O=VeriSign, Inc., OU=Class 3 Public Primary Certification
+	  Authority" (serial 3c:91:31:cb:1f:f6:d0:1b:0e:9a:b8:d0:44:bf:12:be) root
+	  certificate from cert.pem
+
+	* Added support for building nc(1) on Solaris
+
+	* Fixed GCC 5.x+ preprocessor checks, reported by Ruslan Babayev
+
+	* Improved console handling with openssl(1) on Windows
+
+	* Ensure the network stack is enabled on Windows when running
+	  tls_init()
+
+	* Fixed incorrect TLS certificate loading by nc(1)
+
+	* Added support for Solaris 11.3's getentropy(2) system call
+
+	* Enabled support for using NetBSD 7.0's arc4random(3) implementation
+
+	* Deprecated the SSL_OP_SINGLE_DH_USE flag by disabling its effect
+
+	* Fixes from OpenSSL 1.0.1q
+	 - CVE-2015-3194 - NULL pointer dereference in client side certificate
+	                   validation.
+	 - CVE-2015-3195 - Memory leak in PKCS7 - not reachable from TLS/SSL
+
+	* The following OpenSSL CVEs did not apply to LibreSSL
+	 - CVE-2015-3193 - Carry propagating bug in the x86_64 Montgomery
+	                   squaring procedure.
+	 - CVE-2015-3196 - Double free race condition of the identify hint
+	                   data.
+
+	 See https://marc.info/?l=openbsd-announce&m=144925068504102
+
+2.3.1 - ASN.1 and time handling cleanups
+
+	* ASN.1 cleanups and RFC5280 compliance fixes.
+
+	* Time representations switched from 'unsigned long' to 'time_t'. LibreSSL
+	  now checks if the host OS supports 64-bit time_t.
+
+	* Fixed a leak in SSL_new in the error path.
+
+	* Support always extracting the peer cipher and version with libtls.
+
+	* Added ability to check certificate validity times with libtls,
+	  tls_peer_cert_notbefore and tls_peer_cert_notafter.
+
+	* Changed tls_connect_servername to use the first address that resolves with
+	  getaddrinfo().
+
+	* Remove broken conditional EVP_CHECK_DES_KEY code (non-functional since
+	  initial commit in 2004).
+
+	* Fixed a memory leak and out-of-bounds access in OBJ_obj2txt, reported
+	  by Qualys Security.
+
+	* Fixed an up-to 7 byte overflow in RC4 when len is not a multiple of
+	  sizeof(RC4_CHUNK), reported by Pascal Cuoq <cuoq at trust-in-soft.com>.
+
+	* Reject too small bits value in BN_generate_prime_ex(), so that it does
+	  not risk becoming negative in probable_prime_dh_safe(), reported by
+		Franck Denis.
+
+	* Enable nc(1) builds on more platforms.
+
+2.3.0 - SSLv3 removed, libtls API changes, portability improvements
+
+	* SSLv3 is now permanently removed from the tree.
+
+	* The libtls API is changed from the 2.2.x series.
+
+	  The read/write functions work correctly with external event
+	  libraries.  See the tls_init man page for examples of using libtls
+	  correctly in asynchronous mode.
+
+	  Client-side verification is now supported, with the client supplying
+	  the certificate to the server.
+
+	  Also, when using tls_connect_fds, tls_connect_socket or
+	  tls_accept_fds, libtls no longer implicitly closes the passed in
+	  sockets. The caller is responsible for closing them in this case.
+
+	* When loading a DSA key from an raw (without DH parameters) ASN.1
+	  serialization, perform some consistency checks on its `p' and `q'
+	  values, and return an error if the checks failed.
+
+	  Thanks for Georgi Guninski (guninski at guninski dot com) for
+	  mentioning the possibility of a weak (non prime) q value and
+	  providing a test case.
+
+	  See
+	  https://cpunks.org/pipermail/cypherpunks/2015-September/009007.html
+	  for a longer discussion.
+
+	* Fixed a bug in ECDH_compute_key that can lead to silent truncation
+	  of the result key without error. A coding error could cause software
+	  to use much shorter keys than intended.
+
+	* Removed support for DTLS_BAD_VER. Pre-DTLSv1 implementations are no
+	  longer supported.
+
+	* The engine command and parameters are removed from the openssl(1).
+	  Previous releases removed dynamic and builtin engine support
+	  already.
+
+	* SHA-0 is removed, which was withdrawn shortly after publication 20
+	  years ago.
+
+	* Added Certplus CA root certificate to the default cert.pem file.
+
+	* New interface OPENSSL_cpu_caps is provided that does not allow
+	  software to inadvertently modify cpu capability flags.
+	  OPENSSL_ia32cap and OPENSSL_ia32cap_loc are removed.
+
+	* The out_len argument of AEAD changed from ssize_t to size_t.
+
+	* Deduplicated DTLS code, sharing bugfixes and improvements with
+	  TLS.
+
+	* Converted 'nc' to use libtls for client and server operations; it is
+	  included in the libressl-portable distribution as an example of how
+	  to use the library.
+
+2.2.3 - Bug fixes, build enhancements
+
+	* LibreSSL 2.2.2 incorrectly handles ClientHello messages that do not
+	  include TLS extensions, resulting in such handshakes being aborted.
+	  This release corrects the handling of such messages. Thanks to
+	  Ligushka from github for reporting the issue.
+
+	* Added install target for cmake builds. Thanks to TheNietsnie from
+	  github.
+
+	* Updated pkgconfig files to correctly report the release version
+	  number, not the individual library ABI version numbers. Thanks to
+	  Jan Engelhardt for reporting the issue.
+
+2.2.2 - More TLS parser rework, bug fixes, expanded portable build support
+
+	* Switched 'openssl dhparam' default from 512 to 2048 bits
+
+	* Reworked openssl(1) option handling
+
+	* More CRYPTO ByteString (CBC) packet parsing conversions
+
+	* Fixed 'openssl pkeyutl -verify' to exit with a 0 on success
+
+	* Fixed dozens of Coverity issues including dead code, memory leaks,
+	  logic errors and more.
+
+	* Ensure that openssl(1) restores terminal echo state after reading a
+	  password.
+
+	* Incorporated fix for OpenSSL Issue #3683
+
+	* LibreSSL version define LIBRESSL_VERSION_NUMBER will now be bumped
+	  for each portable release.
+
+	* Removed workarounds for TLS client padding bugs.
+
+	* No longer disable ECDHE-ECDSA on OS X
+
+	* Removed SSLv3 support from openssl(1)
+
+	* Removed IE 6 SSLv3 workarounds.
+
+	* Modified tls_write in libtls to allow partial writes, clarified with
+	  examples in the documentation.
+
+	* Removed RSAX engine
+
+	* Tested SSLv3 removal with the OpenBSD ports tree and found several
+	  applications that were not ready to build without SSLv3 yet. For
+	  now, building a program that intentionally uses SSLv3 will result in
+	  a linker warning.
+
+	* Added TLS_method, TLS_client_method and TLS_server_method as a
+	  replacement for the SSLv23_*method calls.
+
+	* Added initial cmake build support, including support for building with
+	  Visual Studio, currently tested with Visual Studio 2013 Community
+	  Edition.
+
+	* --with-enginesdir is removed as a configuration parameter
+
+	* Default cert.pem, openssl.cnf, and x509v3.cnf files are now
+	  installed under $sysconfdir/ssl or the directory specified by
+	  --with-openssldir. Previous versions of LibreSSL left these empty.
+
+2.2.1 - Build fixes, feature added, features removed
+
+	* Assorted build fixes for musl, HP-UX, Mingw, Solaris.
+
+	* Initial support for Windows Embedded 2009, Server 2003, XP
+
+	* Protocol parsing conversions to BoringSSL's CRYPTO ByteString (CBS) API
+
+	* Added EC_curve_nid2nist and EC_curve_nist2nid from OpenSSL
+
+	* Removed Dynamic Engine support
+
+	* Removed unused and obsolete MDC-2DES cipher
+
+	* Removed workarounds for obsolete SSL implementations
+
+2.2.0 - Build cleanups and new OS support, Security Updates
+
+	* AIX Support - thanks to Michael Felt
+
+	* Cygwin Support - thanks to Corinna Vinschen
+
+	* Refactored build macros, support packaging libtls independently.
+	  There are more pieces required to support building and using OpenSSL
+	  with libtls, but this is an initial start at providing an
+	  independent package for people to start hacking on.
+
+	* Removal of OPENSSL_issetugid and all library getenv calls.
+	  Applications can and should no longer rely on environment variables
+	  for changing library behavior. OPENSSL_CONF/SSLEAY_CONF is still
+	  supported with the openssl(1) command.
+
+	* libtls API and documentation additions
+
+	* Various bug fixes and simplifications to libssl and libcrypto
+
+	* Fixes for the following issues are integrated into LibreSSL 2.2.0:
+	 - CVE-2015-1788 - Malformed ECParameters causes infinite loop
+	 - CVE-2015-1789 - Exploitable out-of-bounds read in X509_cmp_time
+	 - CVE-2015-1792 - CMS verify infinite loop with unknown hash function
+
+	* The following CVEs did not apply to LibreSSL or were fixed in
+	  earlier releases:
+	 - CVE-2015-4000 - DHE man-in-the-middle protection (Logjam)
+	 - CVE-2015-1790 - PKCS7 crash with missing EnvelopedContent
+	 - CVE-2014-8176 - Invalid free in DTLS
+
+	* Fixes for the following CVEs are still in review for LibreSSL
+	 - CVE-2015-1791 - Race condition handling NewSessionTicket
+
+2.1.6 - Security update
+
+	* Fixes for the following issues are integrated into LibreSSL 2.1.6:
+	  - CVE-2015-0209 - Use After Free following d2i_ECPrivatekey error
+	  - CVE-2015-0286 - Segmentation fault in ASN1_TYPE_cmp
+	  - CVE-2015-0287 - ASN.1 structure reuse memory corruption
+	  - CVE-2015-0288 - X509_to_X509_REQ NULL pointer deref
+	  - CVE-2015-0289 - PKCS7 NULL pointer dereferences
+
+	* The fix for CVE-2015-0207 - Segmentation fault in DTLSv1_listen
+	  is integrated for safety, but LibreSSL is not vulnerable.
+
+	* Libtls is now built by default. The --enable-libtls
+	  configuration option is no longer required.
+	  The libtls API is now stable for the 2.1.x series.
+
+2.1.5 - Bug fixes and a security update
+	* Fix incorrect comparison function in openssl(1) certhash command.
+	  Thanks to Christian Neukirchen / Void Linux.
+
+	* Windows port improvements and bug fixes.
+	  - Removed a dependency on libgcc in 32-bit dynamic libraries.
+	  - Correct a hang in openssl(1) reading from stdin on an connection.
+	  - Initialize winsock in openssl(1) earlier, allow 'openssl ocsp' and
+	    any other network-related commands to function properly.
+
+	* Reject all server DH keys smaller than 1024 bits.
+
+2.1.4 - Security and feature updates
+	* Improvements to libtls:
+	  - a new API for loading CA chains directly from memory instead of a
+	    file, allowing verification with privilege separation in a chroot
+	    without direct access to CA certificate files.
+
+	  - Ciphers default to TLSv1.2 with AEAD and PFS.
+
+	  - Improved error handling and message generation
+
+	  - New APIs and improved documentation
+
+	* Added X509_STORE_load_mem API for loading certificates from memory.
+	  This facilitates accessing certificates from a chrooted environment.
+
+	* New AEAD "MAC alias" allows configuring TLSv1.2 AEAD ciphers by
+	  using 'TLSv1.2+AEAD' as the cipher selection string.
+
+	* Dead and disabled code removal including MD5, Netscape workarounds,
+	  non-POSIX IO, SCTP, RFC 3779 support, many #if 0 sections, and more.
+
+	* ASN1 macro maze expanded to aid reading and searching the code.
+
+	* NULL pointer asserts removed in favor of letting the OS/signal
+	  handler catch them.
+
+	* Refactored argument handling in openssl(1) for consistency and
+	  maintainability.
+
+	* New openssl(1) command 'certhash' replaces the c_rehash script.
+
+	* Support for building with OPENSSL_NO_DEPRECATED
+
+	* Server-side support for TLS_FALLBACK_SCSV for compatibility with
+	  various auditor and vulnerability scanners.
+
+	* Dozens of issues found with the Coverity scanner fixed.
+
+	* Security Updates:
+
+	  - Fix a minor information leak that was introduced in t1_lib.c
+	    r1.71, whereby an additional 28 bytes of .rodata (or .data) is
+	    provided to the network. In most cases this is a non-issue since
+	    the memory content is already public. Issue found and reported by
+	    Felix Groebert of the Google Security Team.
+
+	  - Fixes for the following low-severity issues were integrated into
+	    LibreSSL from OpenSSL 1.0.1k:
+
+	     CVE-2015-0205 - DH client certificates accepted without
+	                     verification
+	     CVE-2014-3570 - Bignum squaring may produce incorrect results
+	     CVE-2014-8275 - Certificate fingerprints can be modified
+	     CVE-2014-3572 - ECDHE silently downgrades to ECDH [Client]
+	     Reported by Karthikeyan Bhargavan of the PROSECCO team at INRIA.
+
+	    The following CVEs were fixed in earlier LibreSSL releases:
+	     CVE-2015-0206 - Memory leak handling repeated DLTS records
+	     CVE-2014-3510 - Flaw handling DTLS anonymous EC(DH) ciphersuites.
+
+	    The following CVEs did not apply to LibreSSL:
+	     CVE-2014-3571 - DTLS segmentation fault in dtls1_get_record
+	     CVE-2014-3569 - no-ssl3 configuration sets method to NULL
+	     CVE-2015-0204 - RSA silently downgrades to EXPORT_RSA
+
+2.1.3 - Security update and OS support improvements
+	* Fixed various memory leaks in DTLS, including fixes for
+	  CVE-2015-0206.
+
+	* Added Application-Layer Protocol Negotiation (ALPN) support.
+
+	* Removed GOST R 34.10-94 signature authentication.
+
+	* Removed nonfunctional Netscape browser-hang workaround code.
+
+	* Simplfied and refactored SSL/DTLS handshake code.
+
+	* Added SHA256 Camellia cipher suites for TLS 1.2 from RFC 5932.
+
+	* Hide timing info about padding errors during handshakes.
+
+	* Improved libtls support for non-blocking sockets, added randomized
+	  session ID contexts. Work is ongoing with this library - feedback
+	  and potential use-cases are welcome.
+
+	* Support building Windows DLLs.
+	  Thanks to Jan Engelhard.
+
+	* Packaged config wrapper for better compatibility with OpenSSL-based
+	  build systems.
+	  Thanks to @technion from github
+
+	* Ensure the stack is marked non-executable for assembly sections.
+	  Thanks to Anthony G. Bastile.
+
+	* Enable extra compiler hardening flags by default, where applicable.
+	  The default set of hardening features can vary by OS to OS, so
+	  feedback is welcome on this. To disable the default hardening flags,
+	  specify '--disable-hardening' during configure.
+	  Thanks to Jim Barlow
+
+	* Initial HP-UX support, tested with HP-UX 11.31 ia64
+	  Thanks to Kinichiro Inoguchi
+
+	* Initial NetBSD support, tested with NetBSD 6.1.5 x86_64
+	  Imported from OpenNTPD, thanks to @gitisihara from github
+
+2.1.2 - Many new features and improvements
+	* Added reworked GOST cipher suite support
+	   thanks to Dmitry Eremin-Solenikov
+
+	* Enabled Camellia ciphers due to improved patent situation
+
+	* Use builtin arc4random implementation on OS X and FreeBSD
+	   this addresses some deficiencies in the native implementations of
+	   these operating systems, see commit logs for more information
+
+	* Added initial Windows mingw-w64 support (32 and 64-bit)
+	   thanks to Song Dongsheng and others for code and feedback
+
+	* Enabled assembly optimizations on x86_64 CPUs
+	   supports Linux, *BSD, Solaris and OS X operating systems
+	   thanks to Wouter Clarie for the initial implementation
+
+	* Added no_ssl3/no_tls1_1/no_tls1_2 options to openssl(1)
+
+	* Improved build infrastructure, 'make distcheck' now passes
+	   this simplifies and speeds developer efficiency
+	   thanks to Dmitry Eremin-Solenikov and Wouter Clarie
+
+	* Allow conditional building of the libtls library
+	   expect the API and ABI of the library to change
+	   feedback is welcome
+
+	* Fixes for more memory leaks, cleanups, etc.
+
+2.1.1 - Security update
+	* Address POODLE attack by disabling SSLv3 by default
+
+	* Fix Eliptical Curve cipher selection bug
+	  (https://github.com/libressl-portable/portable/issues/35)
+
+2.1.0 - First release from the OpenBSD 5.7 tree
+	* Added support for automatic ephemeral EC keys
+
+	* Fixes for many memory leaks and overflows in error handlers
+
+	* The TLS padding extension (that works around bugs in F5 terminators) is
+	  off by default
+
+	* support for getrandom(2) on Linux 3.17
+
+	* the NO_ASM macro is no longer being set, providing the first bits toward
+	  enabling other assembly offloads.
+
+2.0.5 - Fixes for CVEs from OpenSSL 1.0.1i
+	* CVE-2014-3506
+	* CVE-2014-3507
+	* CVE-2014-3508 (partially vulnerable)he
+	* CVE-2014-3509
+	* CVE-2014-3510
+	* CVE-2014-3511
+	* Synced LibreSSL Portable with the release version of OpenBSD 5.6
+
+2.0.4 - Portability fixes, deleted unused SRP code
+
+2.0.3 - Portability fixes, improvements to fork detection
+
+2.0.2 - Address arc4random fork PID wraparound issues with pthread_atfork
+
+2.0.1 - Portability fixes:
+	* Removed -Werror and and other non-portable compiler flags
+
+	* Allow setting OPENSSLDIR and ENGINSDIR
+
+2.0.0 - First release from the OpenBSD 5.6 tree
+	* Removal of many obsolete features and coding conventions from the OpenSSL
+	  1.0.1h source

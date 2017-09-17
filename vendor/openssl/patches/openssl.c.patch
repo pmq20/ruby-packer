@@ -1,0 +1,12 @@
+--- apps/openssl/openssl.c.orig	Fri Nov  4 09:33:19 2016
++++ apps/openssl/openssl.c	Sat Nov  5 15:28:35 2016
+@@ -396,7 +396,9 @@
+ static void
+ openssl_startup(void)
+ {
++#ifndef _WIN32
+ 	signal(SIGPIPE, SIG_IGN);
++#endif
+ 
+ 	OpenSSL_add_all_algorithms();
+ 	SSL_library_init();

@@ -1,12 +1,9 @@
-/*
- * Copyright 2005-2016 The OpenSSL Project Authors. All Rights Reserved.
- *
- * Licensed under the OpenSSL license (the "License").  You may not use
- * this file except in compliance with the License.  You can obtain a copy
- * in the file LICENSE in the source distribution or at
- * https://www.openssl.org/source/license.html
- */
+/* $OpenBSD: wp_locl.h,v 1.3 2016/12/21 15:49:29 jsing Exp $ */
 
 #include <openssl/whrlpool.h>
 
-void whirlpool_block(WHIRLPOOL_CTX *, const void *, size_t);
+__BEGIN_HIDDEN_DECLS
+
+void whirlpool_block(WHIRLPOOL_CTX *,const void *,size_t);
+
+__END_HIDDEN_DECLS

@@ -1,0 +1,14 @@
+--- tests/ocsp_test.c.orig	2016-10-18 18:12:39.854607509 +0900
++++ tests/ocsp_test.c	2016-10-18 18:14:29.261600559 +0900
+@@ -16,6 +16,11 @@
+ 	hints.ai_family = AF_INET;
+ 	hints.ai_socktype = SOCK_STREAM;
+ 
++#ifdef _MSC_VER
++	if (BIO_sock_init() != 1)
++		exit(-1);
++#endif
++
+ 	error = getaddrinfo(host, port, &hints, &res);
+ 	if (error != 0) {
+ 		perror("getaddrinfo()");

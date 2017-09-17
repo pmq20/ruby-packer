@@ -1,0 +1,12 @@
+--- tls/tls_internal.h.orig	Sun Jul  9 06:16:17 2017
++++ tls/tls_internal.h	Mon Jul 17 06:10:01 2017
+@@ -26,7 +26,9 @@
+ 
+ __BEGIN_HIDDEN_DECLS
+ 
++#ifndef _PATH_SSL_CA_FILE
+ #define _PATH_SSL_CA_FILE "/etc/ssl/cert.pem"
++#endif
+ 
+ #define TLS_CIPHERS_DEFAULT	"TLSv1.2+AEAD+ECDHE:TLSv1.2+AEAD+DHE"
+ #define TLS_CIPHERS_COMPAT	"HIGH:!aNULL"
