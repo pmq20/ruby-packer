@@ -1,0 +1,153 @@
+.\"	$OpenBSD: d2i_X509_NAME.3,v 1.10 2017/01/07 08:46:13 jmc Exp $
+.\"	OpenSSL d900a015 Oct 8 14:40:42 2015 +0200
+.\"
+.\" Copyright (c) 2016, 2017 Ingo Schwarze <schwarze@openbsd.org>
+.\"
+.\" Permission to use, copy, modify, and distribute this software for any
+.\" purpose with or without fee is hereby granted, provided that the above
+.\" copyright notice and this permission notice appear in all copies.
+.\"
+.\" THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+.\" WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+.\" MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+.\" ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+.\" WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+.\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+.\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+.\"
+.Dd $Mdocdate: January 7 2017 $
+.Dt D2I_X509_NAME 3
+.Os
+.Sh NAME
+.Nm d2i_X509_NAME ,
+.Nm i2d_X509_NAME ,
+.Nm X509_NAME_dup ,
+.Nm X509_NAME_hash ,
+.Nm d2i_X509_NAME_ENTRY ,
+.Nm i2d_X509_NAME_ENTRY ,
+.Nm X509_NAME_ENTRY_dup
+.\" In the following line, "X.501" and "Name" are not typos.
+.\" The "Name" type is defined in X.501, not in X.509.
+.\" The type in called "Name" with capital "N", not "name".
+.Nd decode and encode X.501 Name objects
+.Sh SYNOPSIS
+.In openssl/x509.h
+.Ft X509_NAME *
+.Fo d2i_X509_NAME
+.Fa "X509_NAME **val_out"
+.Fa "unsigned char **der_in"
+.Fa "long length"
+.Fc
+.Ft int
+.Fo i2d_X509_NAME
+.Fa "X509_NAME *val_in"
+.Fa "unsigned char **der_out"
+.Fc
+.Ft X509_NAME *
+.Fo X509_NAME_dup
+.Fa "X509_NAME *val_in"
+.Fc
+.Ft unsigned long
+.Fo X509_NAME_hash
+.Fa "X509_NAME *val_in"
+.Fc
+.Ft X509_NAME_ENTRY *
+.Fo d2i_X509_NAME_ENTRY
+.Fa "X509_NAME_ENTRY **val_out"
+.Fa "unsigned char **der_in"
+.Fa "long length"
+.Fc
+.Ft int
+.Fo i2d_X509_NAME_ENTRY
+.Fa "X509_NAME_ENTRY *val_in"
+.Fa "unsigned char **der_out"
+.Fc
+.Ft X509_NAME_ENTRY *
+.Fo X509_NAME_ENTRY_dup
+.Fa "X509_NAME_ENTRY *val_in"
+.Fc
+.Sh DESCRIPTION
+These functions decode and encode X.501
+.Vt Name
+objects using DER format.
+For details about the semantics, examples, caveats, and bugs, see
+.Xr ASN1_item_d2i 3 .
+.Pp
+.Fn d2i_X509_NAME
+and
+.Fn i2d_X509_NAME
+decode and encode an ASN.1
+.Vt Name
+structure defined in RFC 5280 section 4.1.2.4.
+.Pp
+.Fn X509_NAME_dup
+copies
+.Fa val_in
+by calling
+.Fn i2d_X509_NAME
+and
+.Fn d2i_X509_NAME .
+.Pp
+.Fn X509_NAME_hash
+calculates a
+.Xr SHA1 3
+hash of the DER-encoded form of the name
+.Pf * Fa val_in .
+It is for example used by
+.Xr X509_LOOKUP_hash_dir 3
+to locate certificate files in the file system.
+.Pp
+.Fn d2i_X509_NAME_ENTRY
+and
+.Fn i2d_X509_NAME_ENTRY
+decode and encode an ASN.1
+.Vt RelativeDistinguishedName
+structure defined in RFC 5280 section 4.1.2.4.
+.Pp
+.Fn X509_NAME_ENTRY_dup
+copies
+.Fa val_in
+by calling
+.Fn i2d_X509_NAME_ENTRY
+and
+.Fn d2i_X509_NAME_ENTRY .
+.Sh RETURN VALUES
+.Fn d2i_X509_NAME
+and
+.Fn X509_NAME_dup
+return the new
+.Vt X509_NAME
+object or
+.Dv NULL
+if an error occurs.
+.Pp
+.Fn X509_NAME_hash
+returns the hash value or 0 if an error occurs.
+.Pp
+.Fn d2i_X509_NAME_ENTRY
+and
+.Fn X509_NAME_ENTRY_dup
+return the new
+.Vt X509_NAME_ENTRY
+object or
+.Dv NULL
+if an error occurs.
+.Pp
+.Fn i2d_X509_NAME
+and
+.Fn i2d_X509_NAME_ENTRY
+return the number of bytes successfully encoded or a negative value
+if an error occurs.
+.Sh SEE ALSO
+.Xr ASN1_item_d2i 3 ,
+.Xr X509_NAME_ENTRY_new 3 ,
+.Xr X509_NAME_new 3 ,
+.Xr X509_NAME_print_ex 3
+.Sh STANDARDS
+RFC 5280: Internet X.509 Public Key Infrastructure Certificate and
+Certificate Revocation List (CRL) Profile
+.Pp
+ITU-T Recommendation X.690, also known as ISO/IEC 8825-1:
+Information technology - ASN.1 encoding rules:
+Specification of Basic Encoding Rules (BER), Canonical Encoding
+Rules (CER) and Distinguished Encoding Rules (DER).

@@ -1,0 +1,204 @@
+.\"	$OpenBSD: evp.3,v 1.4 2016/12/06 15:15:26 schwarze Exp $
+.\"	OpenSSL a9c85cea Nov 11 09:33:55 2016 +0100
+.\"
+.\" This file was written by Ulf Moeller <ulf@openssl.org>,
+.\" Matt Caswell <matt@openssl.org>, Geoff Thorpe <geoff@openssl.org>,
+.\" and Dr. Stephen Henson <steve@openssl.org>.
+.\" Copyright (c) 2000, 2002, 2006, 2013, 2016 The OpenSSL Project.
+.\" All rights reserved.
+.\"
+.\" Redistribution and use in source and binary forms, with or without
+.\" modification, are permitted provided that the following conditions
+.\" are met:
+.\"
+.\" 1. Redistributions of source code must retain the above copyright
+.\"    notice, this list of conditions and the following disclaimer.
+.\"
+.\" 2. Redistributions in binary form must reproduce the above copyright
+.\"    notice, this list of conditions and the following disclaimer in
+.\"    the documentation and/or other materials provided with the
+.\"    distribution.
+.\"
+.\" 3. All advertising materials mentioning features or use of this
+.\"    software must display the following acknowledgment:
+.\"    "This product includes software developed by the OpenSSL Project
+.\"    for use in the OpenSSL Toolkit. (http://www.openssl.org/)"
+.\"
+.\" 4. The names "OpenSSL Toolkit" and "OpenSSL Project" must not be used to
+.\"    endorse or promote products derived from this software without
+.\"    prior written permission. For written permission, please contact
+.\"    openssl-core@openssl.org.
+.\"
+.\" 5. Products derived from this software may not be called "OpenSSL"
+.\"    nor may "OpenSSL" appear in their names without prior written
+.\"    permission of the OpenSSL Project.
+.\"
+.\" 6. Redistributions of any form whatsoever must retain the following
+.\"    acknowledgment:
+.\"    "This product includes software developed by the OpenSSL Project
+.\"    for use in the OpenSSL Toolkit (http://www.openssl.org/)"
+.\"
+.\" THIS SOFTWARE IS PROVIDED BY THE OpenSSL PROJECT ``AS IS'' AND ANY
+.\" EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+.\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+.\" PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE OpenSSL PROJECT OR
+.\" ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+.\" SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+.\" NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+.\" LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+.\" HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+.\" STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+.\" ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+.\" OF THE POSSIBILITY OF SUCH DAMAGE.
+.\"
+.Dd $Mdocdate: December 6 2016 $
+.Dt EVP 3
+.Os
+.Sh NAME
+.Nm evp
+.Nd high level cryptographic functions
+.Sh SYNOPSIS
+.In openssl/evp.h
+.Sh DESCRIPTION
+The EVP library provides a high level interface to cryptographic
+functions.
+.Pp
+.Xr EVP_SealInit 3
+and
+.Xr EVP_OpenInit 3
+provide public key encryption and decryption to implement digital
+"envelopes".
+.Pp
+The
+.Xr EVP_DigestSignInit 3
+and
+.Xr EVP_DigestVerifyInit 3
+functions implement digital signatures and Message Authentication Codes
+(MACs).
+Also see the older
+.Xr EVP_SignInit 3
+and
+.Xr EVP_VerifyInit 3
+functions.
+.Pp
+Symmetric encryption is available with the
+.Xr EVP_EncryptInit 3
+functions.
+The
+.Xr EVP_DigestInit 3
+functions provide message digests.
+.Pp
+Authenticated encryption with additional data (AEAD) is available with
+the
+.Xr EVP_AEAD_CTX_init 3
+functions.
+.Pp
+The
+.Fn EVP_PKEY_*
+functions provide a high level interface to asymmetric algorithms.
+To create a new
+.Vt EVP_PKEY ,
+see
+.Xr EVP_PKEY_new 3 .
+.Vt EVP_PKEY Ns s
+can be associated with a private key of a particular algorithm
+by using the functions described in the
+.Xr EVP_PKEY_set1_RSA 3
+page, or new keys can be generated using
+.Xr EVP_PKEY_keygen 3 .
+.Vt EVP_PKEY Ns s
+can be compared using
+.Xr EVP_PKEY_cmp 3
+or printed using
+.Xr EVP_PKEY_print_private 3 .
+.Pp
+The
+.Fn EVP_PKEY_*
+functions support the full range of asymmetric algorithm operations:
+.Bl -bullet
+.It
+For key agreement, see
+.Xr EVP_PKEY_derive 3 .
+.It
+For signing and verifying, see
+.Xr EVP_PKEY_sign 3 ,
+.Xr EVP_PKEY_verify 3 ,
+and
+.Xr EVP_PKEY_verify_recover 3 .
+However, note that these functions do not perform a digest of the
+data to be signed.
+Therefore normally you would use the
+.Xr EVP_DigestSignInit 3
+functions for this purpose.
+.It
+For encryption and decryption see
+.Xr EVP_PKEY_encrypt 3
+and
+.Xr EVP_PKEY_decrypt 3 ,
+respectively.
+However, note that these functions perform encryption and decryption only.
+As public key encryption is an expensive operation, normally you
+would wrap an encrypted message in a digital envelope using the
+.Xr EVP_SealInit 3
+and
+.Xr EVP_OpenInit 3
+functions.
+.El
+.Pp
+The
+.Xr EVP_BytesToKey 3
+function provides some limited support for password based encryption.
+Careful selection of the parameters will provide a PKCS#5 PBKDF1
+compatible implementation.
+However, new applications should typically not use this (preferring, for
+example, PBKDF2 from PCKS#5).
+.Pp
+Algorithms are loaded with
+.Xr OpenSSL_add_all_algorithms 3 .
+.Pp
+All the symmetric algorithms (ciphers), digests and asymmetric
+algorithms (public key algorithms) can be replaced by
+.Xr engine 3
+modules providing alternative implementations.
+If
+.Vt ENGINE
+implementations of ciphers or digests are registered as defaults,
+then the various EVP functions will automatically use those
+implementations in preference to built in software implementations.
+For more information, consult the
+.Xr engine 3
+manual page.
+.Pp
+Although low level algorithm specific functions exist for many
+algorithms, their use is discouraged.
+They cannot be used with an
+.Vt ENGINE ,
+and
+.Vt ENGINE
+versions of new algorithms cannot be accessed using the low level
+functions.
+Using them also makes code harder to adapt to new algorithms, some
+options are not cleanly supported at the low level, and some
+operations are more efficient using the high level interfaces.
+.Sh SEE ALSO
+.Xr engine 3 ,
+.Xr EVP_AEAD_CTX_init 3 ,
+.Xr EVP_BytesToKey 3 ,
+.Xr EVP_DigestInit 3 ,
+.Xr EVP_DigestSignInit 3 ,
+.Xr EVP_EncryptInit 3 ,
+.Xr EVP_OpenInit 3 ,
+.Xr EVP_PKEY_decrypt 3 ,
+.Xr EVP_PKEY_derive 3 ,
+.Xr EVP_PKEY_encrypt 3 ,
+.Xr EVP_PKEY_keygen 3 ,
+.Xr EVP_PKEY_new 3 ,
+.Xr EVP_PKEY_print_private 3 ,
+.Xr EVP_PKEY_set1_RSA 3 ,
+.Xr EVP_PKEY_sign 3 ,
+.Xr EVP_PKEY_verify 3 ,
+.Xr EVP_PKEY_verify_recover 3 ,
+.Xr EVP_SealInit 3 ,
+.Xr EVP_SignInit 3 ,
+.Xr EVP_VerifyInit 3 ,
+.Xr OpenSSL_add_all_algorithms 3

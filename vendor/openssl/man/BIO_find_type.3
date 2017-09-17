@@ -1,0 +1,164 @@
+.\"	$OpenBSD: BIO_find_type.3,v 1.6 2016/12/06 14:45:08 schwarze Exp $
+.\"	OpenSSL 99d63d46 Oct 26 13:56:48 2016 -0400
+.\"
+.\" This file was written by Dr. Stephen Henson <steve@openssl.org>.
+.\" Copyright (c) 2000, 2013, 2016 The OpenSSL Project.  All rights reserved.
+.\"
+.\" Redistribution and use in source and binary forms, with or without
+.\" modification, are permitted provided that the following conditions
+.\" are met:
+.\"
+.\" 1. Redistributions of source code must retain the above copyright
+.\"    notice, this list of conditions and the following disclaimer.
+.\"
+.\" 2. Redistributions in binary form must reproduce the above copyright
+.\"    notice, this list of conditions and the following disclaimer in
+.\"    the documentation and/or other materials provided with the
+.\"    distribution.
+.\"
+.\" 3. All advertising materials mentioning features or use of this
+.\"    software must display the following acknowledgment:
+.\"    "This product includes software developed by the OpenSSL Project
+.\"    for use in the OpenSSL Toolkit. (http://www.openssl.org/)"
+.\"
+.\" 4. The names "OpenSSL Toolkit" and "OpenSSL Project" must not be used to
+.\"    endorse or promote products derived from this software without
+.\"    prior written permission. For written permission, please contact
+.\"    openssl-core@openssl.org.
+.\"
+.\" 5. Products derived from this software may not be called "OpenSSL"
+.\"    nor may "OpenSSL" appear in their names without prior written
+.\"    permission of the OpenSSL Project.
+.\"
+.\" 6. Redistributions of any form whatsoever must retain the following
+.\"    acknowledgment:
+.\"    "This product includes software developed by the OpenSSL Project
+.\"    for use in the OpenSSL Toolkit (http://www.openssl.org/)"
+.\"
+.\" THIS SOFTWARE IS PROVIDED BY THE OpenSSL PROJECT ``AS IS'' AND ANY
+.\" EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+.\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+.\" PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE OpenSSL PROJECT OR
+.\" ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+.\" SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+.\" NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+.\" LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+.\" HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+.\" STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+.\" ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+.\" OF THE POSSIBILITY OF SUCH DAMAGE.
+.\"
+.Dd $Mdocdate: December 6 2016 $
+.Dt BIO_FIND_TYPE 3
+.Os
+.Sh NAME
+.Nm BIO_find_type ,
+.Nm BIO_next ,
+.Nm BIO_method_type
+.Nd BIO chain traversal
+.Sh SYNOPSIS
+.In openssl/bio.h
+.Ft BIO *
+.Fo BIO_find_type
+.Fa "BIO *b"
+.Fa "int bio_type"
+.Fc
+.Ft BIO *
+.Fo BIO_next
+.Fa "BIO *b"
+.Fc
+.Ft int
+.Fo BIO_method_type
+.Fa "const BIO *b"
+.Fc
+.Fd #define BIO_TYPE_NONE		0
+.Fd #define BIO_TYPE_MEM		(1|0x0400)
+.Fd #define BIO_TYPE_FILE		(2|0x0400)
+.Fd #define BIO_TYPE_FD			(4|0x0400|0x0100)
+.Fd #define BIO_TYPE_SOCKET		(5|0x0400|0x0100)
+.Fd #define BIO_TYPE_NULL		(6|0x0400)
+.Fd #define BIO_TYPE_SSL		(7|0x0200)
+.Fd #define BIO_TYPE_MD			(8|0x0200)
+.Fd #define BIO_TYPE_BUFFER		(9|0x0200)
+.Fd #define BIO_TYPE_CIPHER		(10|0x0200)
+.Fd #define BIO_TYPE_BASE64		(11|0x0200)
+.Fd #define BIO_TYPE_CONNECT		(12|0x0400|0x0100)
+.Fd #define BIO_TYPE_ACCEPT		(13|0x0400|0x0100)
+.Fd #define BIO_TYPE_PROXY_CLIENT	(14|0x0200)
+.Fd #define BIO_TYPE_PROXY_SERVER	(15|0x0200)
+.Fd #define BIO_TYPE_NBIO_TEST	(16|0x0200)
+.Fd #define BIO_TYPE_NULL_FILTER	(17|0x0200)
+.Fd #define BIO_TYPE_BER		(18|0x0200)
+.Fd #define BIO_TYPE_BIO		(19|0x0400)
+.Fd #define BIO_TYPE_DESCRIPTOR	0x0100
+.Fd #define BIO_TYPE_FILTER		0x0200
+.Fd #define BIO_TYPE_SOURCE_SINK	0x0400
+.Sh DESCRIPTION
+The function
+.Fn BIO_find_type
+searches for a BIO of a given type in a chain, starting at BIO
+.Fa b .
+If
+.Fa bio_type
+is a specific type (such as
+.Dv BIO_TYPE_MEM ) ,
+then a search is made for a BIO of that type.
+If
+.Fa bio_type
+is a general type (such as
+.Dv BIO_TYPE_SOURCE_SINK ) ,
+then the next matching BIO of the given general type is searched for.
+.Fn BIO_find_type
+returns the next matching BIO or
+.Dv NULL
+if none is found.
+.Pp
+Note: not all the
+.Dv BIO_TYPE_*
+types above have corresponding BIO implementations.
+.Pp
+.Fn BIO_next
+returns the next BIO in a chain.
+It can be used to traverse all BIOs in a chain or used in conjunction with
+.Fn BIO_find_type
+to find all BIOs of a certain type.
+.Pp
+.Fn BIO_method_type
+returns the type of a BIO.
+.Sh RETURN VALUES
+.Fn BIO_find_type
+returns a matching BIO or
+.Dv NULL
+for no match.
+.Pp
+.Fn BIO_next
+returns the next BIO in a chain.
+.Pp
+.Fn BIO_method_type
+returns the type of the BIO
+.Fa b .
+.Sh EXAMPLES
+Traverse a chain looking for digest BIOs:
+.Bd -literal -offset 2n
+BIO *btmp;
+btmp = in_bio;	/* in_bio is chain to search through */
+
+do {
+	btmp = BIO_find_type(btmp, BIO_TYPE_MD);
+	if (btmp == NULL)
+		break;	/* Not found */
+	/* btmp is a digest BIO, do something with it ...*/
+	...
+
+	btmp = BIO_next(btmp);
+} while(btmp);
+.Ed
+.Sh SEE ALSO
+.Xr BIO_new 3
+.Sh BUGS
+.Fn BIO_find_type
+in OpenSSL 0.9.5a and earlier could not be safely passed a
+.Dv NULL
+pointer for the
+.Fa b
+argument.
