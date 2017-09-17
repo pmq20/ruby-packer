@@ -1,0 +1,184 @@
+.\"	$OpenBSD: EVP_DigestVerifyInit.3,v 1.3 2016/11/26 17:40:58 schwarze Exp $
+.\"	OpenSSL fb552ac6 Sep 30 23:43:01 2009 +0000
+.\"
+.\" This file was written by Dr. Stephen Henson <steve@openssl.org>.
+.\" Copyright (c) 2006, 2009, 2014, 2015, 2016 The OpenSSL Project.
+.\" All rights reserved.
+.\"
+.\" Redistribution and use in source and binary forms, with or without
+.\" modification, are permitted provided that the following conditions
+.\" are met:
+.\"
+.\" 1. Redistributions of source code must retain the above copyright
+.\"    notice, this list of conditions and the following disclaimer.
+.\"
+.\" 2. Redistributions in binary form must reproduce the above copyright
+.\"    notice, this list of conditions and the following disclaimer in
+.\"    the documentation and/or other materials provided with the
+.\"    distribution.
+.\"
+.\" 3. All advertising materials mentioning features or use of this
+.\"    software must display the following acknowledgment:
+.\"    "This product includes software developed by the OpenSSL Project
+.\"    for use in the OpenSSL Toolkit. (http://www.openssl.org/)"
+.\"
+.\" 4. The names "OpenSSL Toolkit" and "OpenSSL Project" must not be used to
+.\"    endorse or promote products derived from this software without
+.\"    prior written permission. For written permission, please contact
+.\"    openssl-core@openssl.org.
+.\"
+.\" 5. Products derived from this software may not be called "OpenSSL"
+.\"    nor may "OpenSSL" appear in their names without prior written
+.\"    permission of the OpenSSL Project.
+.\"
+.\" 6. Redistributions of any form whatsoever must retain the following
+.\"    acknowledgment:
+.\"    "This product includes software developed by the OpenSSL Project
+.\"    for use in the OpenSSL Toolkit (http://www.openssl.org/)"
+.\"
+.\" THIS SOFTWARE IS PROVIDED BY THE OpenSSL PROJECT ``AS IS'' AND ANY
+.\" EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+.\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+.\" PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE OpenSSL PROJECT OR
+.\" ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+.\" SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+.\" NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+.\" LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+.\" HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+.\" STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+.\" ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+.\" OF THE POSSIBILITY OF SUCH DAMAGE.
+.\"
+.Dd $Mdocdate: November 26 2016 $
+.Dt EVP_DIGESTVERIFYINIT 3
+.Os
+.Sh NAME
+.Nm EVP_DigestVerifyInit ,
+.Nm EVP_DigestVerifyUpdate ,
+.Nm EVP_DigestVerifyFinal
+.Nd EVP signature verification functions
+.Sh SYNOPSIS
+.In openssl/evp.h
+.Ft int
+.Fo EVP_DigestVerifyInit
+.Fa "EVP_MD_CTX *ctx"
+.Fa "EVP_PKEY_CTX **pctx"
+.Fa "const EVP_MD *type"
+.Fa "ENGINE *e"
+.Fa "EVP_PKEY *pkey"
+.Fc
+.Ft int
+.Fo EVP_DigestVerifyUpdate
+.Fa "EVP_MD_CTX *ctx"
+.Fa "const void *d"
+.Fa "size_t cnt"
+.Fc
+.Ft int
+.Fo EVP_DigestVerifyFinal
+.Fa "EVP_MD_CTX *ctx"
+.Fa "unsigned char *sig"
+.Fa "size_t siglen"
+.Fc
+.Sh DESCRIPTION
+The EVP signature routines are a high level interface to digital
+signatures.
+.Pp
+.Fn EVP_DigestVerifyInit
+sets up verification context
+.Fa ctx
+to use digest
+.Fa type
+from
+.Vt ENGINE
+.Fa e
+and public key
+.Fa pkey .
+.Fa ctx
+must be initialized with
+.Xr EVP_MD_CTX_init 3
+before calling this function.
+If
+.Fa pctx
+is not
+.Dv NULL ,
+the
+.Vt EVP_PKEY_CTX
+of the verification operation will be written to
+.Pf * Fa pctx :
+this can be used to set alternative verification options.
+.Pp
+.Fn EVP_DigestVerifyUpdate
+hashes
+.Fa cnt
+bytes of data at
+.Fa d
+into the verification context
+.Fa ctx .
+This function can be called several times on the same
+.Fa ctx
+to include additional data.
+This function is currently implemented using a macro.
+.Pp
+.Fn EVP_DigestVerifyFinal
+verifies the data in
+.Fa ctx
+against the signature in
+.Fa sig
+of length
+.Fa siglen .
+.Pp
+The EVP interface to digital signatures should almost always be
+used in preference to the low level interfaces.
+This is because the code then becomes transparent to the algorithm used
+and much more flexible.
+.Pp
+In previous versions of OpenSSL, there was a link between message digest
+types and public key algorithms.
+This meant that "clone" digests such as
+.Xr EVP_dss1 3
+needed to be used to sign using SHA1 and DSA.
+This is no longer necessary and the use of clone digest is now
+discouraged.
+.Pp
+The call to
+.Fn EVP_DigestVerifyFinal
+internally finalizes a copy of the digest context.
+This means that
+.Xr EVP_VerifyUpdate 3
+and
+.Xr EVP_VerifyFinal 3
+can be called later to digest and verify additional data.
+.Pp
+Since only a copy of the digest context is ever finalized, the context
+must be cleaned up after use by calling
+.Xr EVP_MD_CTX_cleanup 3
+or a memory leak will occur.
+.Sh RETURN VALUES
+.Fn EVP_DigestVerifyInit
+and
+.Fn EVP_DigestVerifyUpdate
+return 1 for success and 0 or a negative value for failure.
+In particular a return value of -2 indicates the operation is not
+supported by the public key algorithm.
+.Pp
+.Fn EVP_DigestVerifyFinal
+returns 1 for success; any other value indicates failure.
+A return value of 0 indicates that the signature did not verify
+successfully (that is, the signature did not match the original
+data or the signature had an invalid form), while other values
+indicate a more serious error (and sometimes also indicate an invalid
+signature form).
+.Pp
+The error codes can be obtained from
+.Xr ERR_get_error 3 .
+.Sh SEE ALSO
+.Xr ERR 3 ,
+.Xr evp 3 ,
+.Xr EVP_DigestInit 3 ,
+.Xr EVP_DigestSignInit 3
+.Sh HISTORY
+.Fn EVP_DigestVerifyInit ,
+.Fn EVP_DigestVerifyUpdate ,
+and
+.Fn EVP_DigestVerifyFinal
+were first added to OpenSSL 1.0.0.

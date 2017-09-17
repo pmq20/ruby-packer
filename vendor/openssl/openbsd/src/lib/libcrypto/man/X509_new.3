@@ -1,0 +1,145 @@
+.\"	$OpenBSD: X509_new.3,v 1.10 2016/12/25 22:15:10 schwarze Exp $
+.\"	OpenSSL 3a59ad98 Dec 11 00:36:06 2015 +0000
+.\"
+.\" This file was written by Dr. Stephen Henson <steve@openssl.org>.
+.\" Copyright (c) 2002, 2006, 2015 The OpenSSL Project.  All rights reserved.
+.\"
+.\" Redistribution and use in source and binary forms, with or without
+.\" modification, are permitted provided that the following conditions
+.\" are met:
+.\"
+.\" 1. Redistributions of source code must retain the above copyright
+.\"    notice, this list of conditions and the following disclaimer.
+.\"
+.\" 2. Redistributions in binary form must reproduce the above copyright
+.\"    notice, this list of conditions and the following disclaimer in
+.\"    the documentation and/or other materials provided with the
+.\"    distribution.
+.\"
+.\" 3. All advertising materials mentioning features or use of this
+.\"    software must display the following acknowledgment:
+.\"    "This product includes software developed by the OpenSSL Project
+.\"    for use in the OpenSSL Toolkit. (http://www.openssl.org/)"
+.\"
+.\" 4. The names "OpenSSL Toolkit" and "OpenSSL Project" must not be used to
+.\"    endorse or promote products derived from this software without
+.\"    prior written permission. For written permission, please contact
+.\"    openssl-core@openssl.org.
+.\"
+.\" 5. Products derived from this software may not be called "OpenSSL"
+.\"    nor may "OpenSSL" appear in their names without prior written
+.\"    permission of the OpenSSL Project.
+.\"
+.\" 6. Redistributions of any form whatsoever must retain the following
+.\"    acknowledgment:
+.\"    "This product includes software developed by the OpenSSL Project
+.\"    for use in the OpenSSL Toolkit (http://www.openssl.org/)"
+.\"
+.\" THIS SOFTWARE IS PROVIDED BY THE OpenSSL PROJECT ``AS IS'' AND ANY
+.\" EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+.\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+.\" PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE OpenSSL PROJECT OR
+.\" ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+.\" SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+.\" NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+.\" LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+.\" HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+.\" STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+.\" ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+.\" OF THE POSSIBILITY OF SUCH DAMAGE.
+.\"
+.Dd $Mdocdate: December 25 2016 $
+.Dt X509_NEW 3
+.Os
+.Sh NAME
+.Nm X509_new ,
+.Nm X509_free ,
+.Nm X509_up_ref
+.Nd X.509 certificate object
+.Sh SYNOPSIS
+.In openssl/x509.h
+.Ft X509 *
+.Fn X509_new void
+.Ft void
+.Fo X509_free
+.Fa "X509 *a"
+.Fc
+.Ft int
+.Fo X509_up_ref
+.Fa "X509 *a"
+.Fc
+.Sh DESCRIPTION
+.Fn X509_new
+allocates and initializes an empty
+.Vt X509
+object with reference count 1.
+It represents an ASN.1
+.Vt Certificate
+structure defined in RFC 5280 section 4.1.
+It can hold a public key together with information about the person,
+organization, device, or function the associated private key belongs to.
+.Pp
+.Fn X509_free
+decrements the reference count of the
+.Vt X509
+structure
+.Fa a
+and frees it up if the reference count reaches 0.
+If
+.Fa a
+is a
+.Dv NULL
+pointer, no action occurs.
+.Pp
+.Fn X509_up_ref
+increments the reference count of
+.Fa a .
+This function is useful if a certificate structure is being used
+by several different operations each of which will free it up after
+use: this avoids the need to duplicate the entire certificate
+structure.
+.Pp
+The object
+.Vt X509_INFO ,
+which can hold a certificate, the corresponding private key,
+and a certificate revocation list, is not yet documented.
+.Sh RETURN VALUES
+If the allocation fails,
+.Fn X509_new
+returns
+.Dv NULL
+and sets an error code that can be obtained by
+.Xr ERR_get_error 3 .
+Otherwise it returns a pointer to the newly allocated structure.
+.Pp
+.Fn X509_up_ref
+returns 1 for success or 0 for failure.
+.Sh SEE ALSO
+.Xr AUTHORITY_KEYID_new 3 ,
+.Xr BASIC_CONSTRAINTS_new 3 ,
+.Xr crypto 3 ,
+.Xr d2i_X509 3 ,
+.Xr ERR_get_error 3 ,
+.Xr X509_ALGOR_new 3 ,
+.Xr X509_CRL_new 3 ,
+.Xr X509_EXTENSION_new 3 ,
+.Xr X509_NAME_new 3 ,
+.Xr X509_REQ_new 3 ,
+.Xr X509_SIG_new 3
+.Sh STANDARDS
+RFC 5280: Internet X.509 Public Key Infrastructure Certificate and
+Certificate Revocation List (CRL) Profile
+.Sh HISTORY
+.Fn X509_new
+and
+.Fn X509_free
+are available in all versions of SSLeay and OpenSSL.
+.Sh BUGS
+The X.509 public key infrastructure and its data types contain too
+many design bugs to list them.
+For lots of examples, see the classic
+.Lk https://www.cs.auckland.ac.nz/~pgut001/pubs/x509guide.txt\
+ "X.509 Style Guide"
+that
+.An Peter Gutmann
+published in 2000.

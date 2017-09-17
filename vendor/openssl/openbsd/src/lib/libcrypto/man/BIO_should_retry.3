@@ -1,0 +1,221 @@
+.\"	$OpenBSD: BIO_should_retry.3,v 1.5 2016/12/06 14:45:08 schwarze Exp $
+.\"	OpenSSL 60e24554 Apr 6 14:45:18 2010 +0000
+.\"
+.\" This file was written by Dr. Stephen Henson <steve@openssl.org>.
+.\" Copyright (c) 2000, 2010, 2016 The OpenSSL Project.  All rights reserved.
+.\"
+.\" Redistribution and use in source and binary forms, with or without
+.\" modification, are permitted provided that the following conditions
+.\" are met:
+.\"
+.\" 1. Redistributions of source code must retain the above copyright
+.\"    notice, this list of conditions and the following disclaimer.
+.\"
+.\" 2. Redistributions in binary form must reproduce the above copyright
+.\"    notice, this list of conditions and the following disclaimer in
+.\"    the documentation and/or other materials provided with the
+.\"    distribution.
+.\"
+.\" 3. All advertising materials mentioning features or use of this
+.\"    software must display the following acknowledgment:
+.\"    "This product includes software developed by the OpenSSL Project
+.\"    for use in the OpenSSL Toolkit. (http://www.openssl.org/)"
+.\"
+.\" 4. The names "OpenSSL Toolkit" and "OpenSSL Project" must not be used to
+.\"    endorse or promote products derived from this software without
+.\"    prior written permission. For written permission, please contact
+.\"    openssl-core@openssl.org.
+.\"
+.\" 5. Products derived from this software may not be called "OpenSSL"
+.\"    nor may "OpenSSL" appear in their names without prior written
+.\"    permission of the OpenSSL Project.
+.\"
+.\" 6. Redistributions of any form whatsoever must retain the following
+.\"    acknowledgment:
+.\"    "This product includes software developed by the OpenSSL Project
+.\"    for use in the OpenSSL Toolkit (http://www.openssl.org/)"
+.\"
+.\" THIS SOFTWARE IS PROVIDED BY THE OpenSSL PROJECT ``AS IS'' AND ANY
+.\" EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+.\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+.\" PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE OpenSSL PROJECT OR
+.\" ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+.\" SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+.\" NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+.\" LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+.\" HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+.\" STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+.\" ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+.\" OF THE POSSIBILITY OF SUCH DAMAGE.
+.\"
+.Dd $Mdocdate: December 6 2016 $
+.Dt BIO_SHOULD_RETRY 3
+.Os
+.Sh NAME
+.Nm BIO_should_retry ,
+.Nm BIO_should_read ,
+.Nm BIO_should_write ,
+.Nm BIO_should_io_special ,
+.Nm BIO_retry_type ,
+.Nm BIO_should_retry ,
+.Nm BIO_get_retry_BIO ,
+.Nm BIO_get_retry_reason
+.Nd BIO retry functions
+.Sh SYNOPSIS
+.In openssl/bio.h
+.Ft int
+.Fo BIO_should_read
+.Fa "BIO *b"
+.Fc
+.Ft int
+.Fo BIO_should_write
+.Fa "BIO *b"
+.Fc
+.Ft int
+.Fo BIO_should_io_special
+.Fa "BIO *b"
+.Fc
+.Ft int
+.Fo BIO_retry_type
+.Fa "BIO *b"
+.Fc
+.Ft int
+.Fo BIO_should_retry
+.Fa "BIO *b"
+.Fc
+.Fd #define BIO_FLAGS_READ			0x01
+.Fd #define BIO_FLAGS_WRITE			0x02
+.Fd #define BIO_FLAGS_IO_SPECIAL		0x04
+.Fd #define BIO_FLAGS_RWS \e
+.Fd \&	(BIO_FLAGS_READ|BIO_FLAGS_WRITE|BIO_FLAGS_IO_SPECIAL)
+.Fd #define BIO_FLAGS_SHOULD_RETRY	0x08
+.Ft BIO *
+.Fo BIO_get_retry_BIO
+.Fa "BIO *bio"
+.Fa "int *reason"
+.Fc
+.Ft int
+.Fo BIO_get_retry_reason
+.Fa "BIO *bio"
+.Fc
+.Sh DESCRIPTION
+These functions determine why a BIO is not able to read or write data.
+They will typically be called after a failed
+.Xr BIO_read 3
+or
+.Xr BIO_write 3
+call.
+.Pp
+.Fn BIO_should_retry
+is true if the call that produced this condition
+should be retried at a later time.
+.Pp
+If
+.Fn BIO_should_retry
+is false, the cause is an error condition.
+.Pp
+.Fn BIO_should_read
+is true if the cause of the condition is that a BIO needs to read data.
+.Pp
+.Fn BIO_should_write
+is true if the cause of the condition is that a BIO needs to write data.
+.Pp
+.Fn BIO_should_io_special
+is true if some "special" condition
+(i.e. a reason other than reading or writing) is the cause of the condition.
+.Pp
+.Fn BIO_retry_type
+returns a mask of the cause of a retry condition consisting of the values
+.Dv BIO_FLAGS_READ ,
+.Dv BIO_FLAGS_WRITE ,
+.Dv BIO_FLAGS_IO_SPECIAL
+though current BIO types will only set one of these.
+.Pp
+.Fn BIO_get_retry_BIO
+determines the precise reason for the special condition.
+It returns the BIO that caused this condition and if
+.Fa reason
+is not
+.Dv NULL
+it contains the reason code.
+The meaning of the reason code and the action that should be taken
+depends on the type of BIO that resulted in this condition.
+.Pp
+.Fn BIO_get_retry_reason
+returns the reason for a special condition
+if passed the relevant BIO, for example as returned by
+.Fn BIO_get_retry_BIO .
+.Pp
+.Fn BIO_should_retry ,
+.Fn BIO_should_read ,
+.Fn BIO_should_write ,
+.Fn BIO_should_io_special ,
+and
+.Fn BIO_retry_type
+are implemented as macros.
+.Pp
+If
+.Fn BIO_should_retry
+returns false, then the precise "error condition" depends on
+the BIO type that caused it and the return code of the BIO operation.
+For example if a call to
+.Xr BIO_read 3
+on a socket BIO returns 0 and
+.Fn BIO_should_retry
+is false, then the cause will be that the connection closed.
+A similar condition on a file BIO will mean that it has reached EOF.
+Some BIO types may place additional information on the error queue.
+For more details see the individual BIO type manual pages.
+.Pp
+If the underlying I/O structure is in a blocking mode,
+almost all current BIO types will not request a retry,
+because the underlying I/O calls will not.
+If the application knows that the BIO type will never
+signal a retry then it need not call
+.Fn BIO_should_retry
+after a failed BIO I/O call.
+This is typically done with file BIOs.
+.Pp
+SSL BIOs are the only current exception to this rule:
+they can request a retry even if the underlying I/O structure
+is blocking, if a handshake occurs during a call to
+.Xr BIO_read 3 .
+An application can retry the failed call immediately
+or avoid this situation by setting
+.Dv SSL_MODE_AUTO_RETRY
+on the underlying SSL structure.
+.Pp
+While an application may retry a failed non-blocking call immediately,
+this is likely to be very inefficient because the call will fail
+repeatedly until data can be processed or is available.
+An application will normally wait until the necessary condition
+is satisfied.
+How this is done depends on the underlying I/O structure.
+.Pp
+For example if the cause is ultimately a socket and
+.Fn BIO_should_read
+is true then a call to
+.Xr select 2
+may be made to wait until data is available
+and then retry the BIO operation.
+By combining the retry conditions of several non-blocking BIOs in a single
+.Xr select 2
+call it is possible to service several BIOs in a single thread,
+though the performance may be poor if SSL BIOs are present because
+long delays can occur during the initial handshake process.
+.Pp
+It is possible for a BIO to block indefinitely if the underlying I/O
+structure cannot process or return any data.
+This depends on the behaviour of the platforms I/O functions.
+This is often not desirable: one solution is to use non-blocking I/O
+and use a timeout on the
+.Xr select 2
+(or equivalent) call.
+.Sh SEE ALSO
+.Xr BIO_new 3 ,
+.Xr BIO_read 3
+.Sh BUGS
+The OpenSSL ASN.1 functions cannot gracefully deal with non-blocking I/O:
+they cannot retry after a partial read or write.
+This is usually worked around by only passing the relevant data to ASN.1
+functions when the entire structure can be read or written.

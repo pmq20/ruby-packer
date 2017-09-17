@@ -1,0 +1,169 @@
+.\"	$OpenBSD: BIO_read.3,v 1.5 2016/12/06 14:45:08 schwarze Exp $
+.\"	OpenSSL 99d63d46 Oct 26 13:56:48 2016 -0400
+.\"
+.\" This file was written by Dr. Stephen Henson <steve@openssl.org>.
+.\" Copyright (c) 2000, 2016 The OpenSSL Project.  All rights reserved.
+.\"
+.\" Redistribution and use in source and binary forms, with or without
+.\" modification, are permitted provided that the following conditions
+.\" are met:
+.\"
+.\" 1. Redistributions of source code must retain the above copyright
+.\"    notice, this list of conditions and the following disclaimer.
+.\"
+.\" 2. Redistributions in binary form must reproduce the above copyright
+.\"    notice, this list of conditions and the following disclaimer in
+.\"    the documentation and/or other materials provided with the
+.\"    distribution.
+.\"
+.\" 3. All advertising materials mentioning features or use of this
+.\"    software must display the following acknowledgment:
+.\"    "This product includes software developed by the OpenSSL Project
+.\"    for use in the OpenSSL Toolkit. (http://www.openssl.org/)"
+.\"
+.\" 4. The names "OpenSSL Toolkit" and "OpenSSL Project" must not be used to
+.\"    endorse or promote products derived from this software without
+.\"    prior written permission. For written permission, please contact
+.\"    openssl-core@openssl.org.
+.\"
+.\" 5. Products derived from this software may not be called "OpenSSL"
+.\"    nor may "OpenSSL" appear in their names without prior written
+.\"    permission of the OpenSSL Project.
+.\"
+.\" 6. Redistributions of any form whatsoever must retain the following
+.\"    acknowledgment:
+.\"    "This product includes software developed by the OpenSSL Project
+.\"    for use in the OpenSSL Toolkit (http://www.openssl.org/)"
+.\"
+.\" THIS SOFTWARE IS PROVIDED BY THE OpenSSL PROJECT ``AS IS'' AND ANY
+.\" EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+.\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+.\" PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE OpenSSL PROJECT OR
+.\" ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+.\" SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+.\" NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+.\" LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+.\" HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+.\" STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+.\" ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+.\" OF THE POSSIBILITY OF SUCH DAMAGE.
+.\"
+.Dd $Mdocdate: December 6 2016 $
+.Dt BIO_READ 3
+.Os
+.Sh NAME
+.Nm BIO_read ,
+.Nm BIO_gets ,
+.Nm BIO_write ,
+.Nm BIO_puts
+.Nd BIO I/O functions
+.Sh SYNOPSIS
+.In openssl/bio.h
+.Ft int
+.Fo BIO_read
+.Fa "BIO *b"
+.Fa "void *buf"
+.Fa "int len"
+.Fc
+.Ft int
+.Fo BIO_gets
+.Fa "BIO *b"
+.Fa "char *buf"
+.Fa "int size"
+.Fc
+.Ft int
+.Fo BIO_write
+.Fa "BIO *b"
+.Fa "const void *buf"
+.Fa "int len"
+.Fc
+.Ft int
+.Fo BIO_puts
+.Fa "BIO *b"
+.Fa "const char *buf"
+.Fc
+.Sh DESCRIPTION
+.Fn BIO_read
+attempts to read
+.Fa len
+bytes from BIO
+.Fa b
+and places the data in
+.Fa buf .
+.Pp
+.Fn BIO_gets
+performs the BIOs "gets" operation and places the data in
+.Fa buf .
+Usually this operation will attempt to read a line of data
+from the BIO of maximum length
+.Fa len No - 1 .
+There are exceptions to this however, for example
+.Fn BIO_gets
+on a digest BIO will calculate and return the digest
+and other BIOs may not support
+.Fn BIO_gets
+at all.
+The returned string is always NUL-terminated.
+.Pp
+.Fn BIO_write
+attempts to write
+.Fa len
+bytes from
+.Fa buf
+to BIO
+.Fa b .
+.Pp
+.Fn BIO_puts
+attempts to write a null terminated string
+.Fa buf
+to BIO
+.Fa b .
+.Pp
+One technique sometimes used with blocking sockets
+is to use a system call (such as
+.Xr select 2 ,
+.Xr poll 2
+or equivalent) to determine when data is available and then call
+.Xr read 2
+to read the data.
+The equivalent with BIOs (that is call
+.Xr select 2
+on the underlying I/O structure and then call
+.Fn BIO_read
+to read the data) should
+.Em not
+be used because a single call to
+.Fn BIO_read
+can cause several reads (and writes in the case of SSL BIOs)
+on the underlying I/O structure and may block as a result.
+Instead
+.Xr select 2
+(or equivalent) should be combined with non-blocking I/O
+so successive reads will request a retry instead of blocking.
+.Pp
+See
+.Xr BIO_should_retry 3
+for details of how to determine the cause of a retry and other I/O issues.
+.Pp
+If the
+.Fn BIO_gets
+function is not supported by a BIO then it is possible to
+work around this by adding a buffering BIO
+.Xr BIO_f_buffer 3
+to the chain.
+.Sh RETURN VALUES
+All these functions return either the amount of data successfully
+read or written (if the return value is positive) or that no data
+was successfully read or written if the result is 0 or -1.
+If the return value is -2, then the operation is not implemented
+in the specific BIO type.
+The trailing NUL is not included in the length returned by
+.Fn BIO_gets .
+.Pp
+A 0 or -1 return is not necessarily an indication of an error.
+In particular when the source/sink is non-blocking or of a certain type
+it may merely be an indication that no data is currently available and that
+the application should retry the operation later.
+.Sh SEE ALSO
+.Xr BIO_new 3 ,
+.Xr BIO_should_retry 3
