@@ -1,0 +1,12 @@
+--- apps/ocspcheck/http.c.orig	Sun Jun  4 00:45:29 2017
++++ apps/ocspcheck/http.c	Sun Jun  4 00:45:57 2017
+@@ -35,7 +35,9 @@
+ #include "http.h"
+ #include <tls.h>
+ 
++#ifndef DEFAULT_CA_FILE
+ #define DEFAULT_CA_FILE "/etc/ssl/cert.pem"
++#endif
+ 
+ /*
+  * A buffer for transferring HTTP/S data.

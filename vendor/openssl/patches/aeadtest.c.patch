@@ -1,0 +1,15 @@
+--- tests/aeadtest.c.orig	2016-10-18 17:03:33.845870889 +0900
++++ tests/aeadtest.c	2016-10-18 17:11:19.880841283 +0900
+@@ -75,6 +75,12 @@
+ 
+ #define BUF_MAX 1024
+ 
++#ifdef _MSC_VER
++#ifdef IN
++#undef IN
++#endif
++#endif
++
+ /* These are the different types of line that are found in the input file. */
+ enum {
+ 	AEAD = 0,	/* name of the AEAD algorithm. */
