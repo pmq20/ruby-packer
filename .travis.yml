@@ -1,24 +1,12 @@
 language: ruby
 
+sudo: enabled
+
 rvm: 2.4.1
 
-os:
-  - linux
-  - osx
-
-addons:
-  apt:
-    sources:
-      - ubuntu-toolchain-r-test
-    packages:
-      - squashfs-tools
-      - gcc-4.8
-      - g++-4.8
-      - texinfo
-
-install:
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew install squashfs; fi
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
+before_install:
+  - sudo apt-get update -qq
+  - sudo apt-get install -qq squashfs-tools
 
 before_script:
   - mksquashfs -version
