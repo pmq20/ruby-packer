@@ -21,7 +21,6 @@ def escape(arg)
 end
 
 tmpdir = File.expand_path("rubyc", Dir.tmpdir)
-tmpdir_ruby = File.join(tmpdir, 'ruby')
 
 Dir.chdir(File.expand_path('../..', __FILE__))
 
@@ -50,7 +49,8 @@ raise unless $?.success?
 puts "Congratulations! PART 1 passed."
 
 # PART 2
-Dir.chdir(tmpdir_ruby)
+ruby_folder = Dir.entries(tmpdir).select { |dir| dir =~ /ruby[^c]/ } [0]
+Dir.chdir(File.join(tmpdir, ruby_folder))
 ENV['ENCLOSE_IO_USE_ORIGINAL_RUBY'] = '1'
 ENV['ENCLOSE_IO_ALWAYS_USE_ORIGINAL_RUBY'] = '1'
 if Gem.win_platform?
