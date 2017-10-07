@@ -13,4 +13,4 @@ before_script:
   - ruby --version
 
 script:
-  - ruby tests/ruby-compiler
+  - CPPFLAGS="-p" ruby tests/ruby-compiler
