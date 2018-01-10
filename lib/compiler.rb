@@ -116,7 +116,7 @@ class Compiler
           @root = Dir.pwd
           break
         end
-        if File.exist?(File.join(@root, 'Gemfile')) || Dir.exist?(File.join(@root, '.git'))
+        if File.exist?(File.join(@root, 'Gemfile')) || File.exist?(File.join(@root, 'gems.rb')) || Dir.exist?(File.join(@root, '.git'))
           break 
         end
       end
@@ -526,7 +526,7 @@ class Compiler
     # Prepare /__enclose_io_memfs__/local
     @utils.chdir(@root) do
       gemspecs = Dir['./*.gemspec']
-      gemfiles = Dir['./Gemfile']
+      gemfiles = Dir['./gems.rb', './Gemfile']
       gems = Dir['./*.gem']
       the_bundler_gem = Dir["#{@vendor_ruby}/vendor/bundler-*.gem"].first
       if gemspecs.size > 0
@@ -570,7 +570,8 @@ class Compiler
         @utils.run(@local_toolchain, "gem", "install", the_bundler_gem, '--verbose', '--no-rdoc', '--no-ri', '--install-dir', @gems_dir)
         # bundle install
         @work_dir_local = File.join(@work_dir_inner, 'local')
-        @env_bundle_gemfile = '/__enclose_io_memfs__/local/Gemfile'
+        the_gemfile = File.basename(gemfiles.first)
+        @env_bundle_gemfile = "/__enclose_io_memfs__/local/#{the_gemfile}"
         unless @options[:keep_tmpdir]
           @utils.cp_r(@root, @work_dir_local)
         end
