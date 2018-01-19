@@ -83,7 +83,6 @@ class Compiler
   end
 
   def init_options
-    @ruby_dir = "ruby-#{::Compiler.ruby_version}-#{::Compiler::VERSION}"
     @options[:make_args] ||= '-j4'
     if Gem.win_platform?
       @options[:output] ||= 'a.exe'
@@ -99,6 +98,8 @@ class Compiler
         raise Error, "Please provide both --auto-update-url and --auto-update-base"
       end
     end
+
+    @ruby_dir = File.join(@options[:tmpdir], "ruby-#{::Compiler.ruby_version}-#{::Compiler::VERSION}")
   end
 
   def init_entrance
@@ -307,8 +308,8 @@ class Compiler
     stuff_readline
     prepare_flags2
 
-    target = File.join(@options[:tmpdir], @ruby_dir)
-    @ruby_build = File.join(@options[:tmpdir], @ruby_dir, 'build')
+    target = @ruby_dir
+    @ruby_build = File.join(@ruby_dir, 'build')
     unless Dir.exist?(target)
       @utils.cp_r(File.join(PRJ_ROOT, 'ruby'), target, preserve: true)
       @utils.chdir(target) do
@@ -320,7 +321,7 @@ class Compiler
         end
       end
       # PATCH common.mk
-      target = File.join(@options[:tmpdir], @ruby_dir, 'common.mk')
+      target = File.join(@ruby_dir, 'common.mk')
       target_content = File.read(target)
       found = false
       File.open(target, 'w') do |f|
@@ -337,7 +338,7 @@ class Compiler
       
       # PATCH win32\Makefile.sub
       if Gem.win_platform?
-        target = File.join(@options[:tmpdir], @ruby_dir, 'win32', 'Makefile.sub')
+        target = File.join(@ruby_dir, 'win32', 'Makefile.sub')
         target_content = File.read(target)
         found = 0
         File.open(target, 'w') do |f|
@@ -357,11 +358,16 @@ class Compiler
       end
     end
 
-    @vendor_ruby = File.join(@options[:tmpdir], @ruby_dir)
+    @vendor_ruby = @ruby_dir
     @gem_package.stuff_tmpdir if @gem_package
   end
 
   def run!
+    pass_1 = File.join(@options[:tmpdir], 'build_pass_1')
+    @utils.mkdir_p(pass_1)
+    pass_2 = File.join(@options[:tmpdir], 'build_pass_2')
+    @utils.mkdir_p(pass_2)
+
     @utils.chdir(@vendor_ruby) do
       sep = Gem.win_platform? ? ';' : ':'
       if Gem.win_platform?
@@ -369,46 +375,48 @@ class Compiler
           @compile_env['ENCLOSE_IO_RUBYC_1ST_PASS'] = '1'
           @compile_env['ENCLOSE_IO_RUBYC_2ND_PASS'] = nil
           # enclose_io_memfs.o - 1st pass
-          @utils.run(@compile_env, "call win32\\configure.bat \
-                                  --disable-install-doc \
-                                  --prefix=#{@utils.escape @ruby_build}")
-          @utils.run(@compile_env, "nmake #{@options[:nmake_args]}")
-          @utils.run(@compile_env, "nmake install")
-          File.open(File.join(@options[:tmpdir], @ruby_dir, 'ext', 'Setup'), 'w') do |f|
-            f.puts 'option nodynamic'
-          end
-          # TODO make those win32 ext work
-          @utils.chdir('ext') do
-            @utils.rm_rf('dbm')
-            @utils.rm_rf('digest')
-            @utils.rm_rf('etc')
-            @utils.rm_rf('fiddle')
-            @utils.rm_rf('gdbm')
-            @utils.rm_rf('mathn')
-            @utils.rm_rf('openssl')
-            @utils.rm_rf('pty')
-            @utils.rm_rf('readline')
-            @utils.rm_rf('ripper')
-            @utils.rm_rf('socket')
-            @utils.rm_rf('win32')
-            @utils.rm_rf('win32ole')
-          end
-          # PATCH win32\Makefile.sub for 2nd pass
-          if Gem.win_platform?
-            target = File.join(@options[:tmpdir], @ruby_dir, 'win32', 'Makefile.sub')
-            target_content = File.read(target)
-            found = 0
-            File.open(target, 'w') do |f|
-              target_content.each_line do |line|
-                if 0 == found && (line =~ /^#define LOAD_RELATIVE 1$/)
-                  found = 1
-                  f.puts ""
-                else
-                  f.print line
+          Dir.chdir(pass_1) do
+            @utils.run(@compile_env, "call #{@utils.escape @ruby_dir}\\win32\\configure.bat \
+                                    --disable-install-doc \
+                                    --prefix=#{@utils.escape @ruby_build}")
+            @utils.run(@compile_env, "nmake #{@options[:nmake_args]}")
+            @utils.run(@compile_env, "nmake install")
+            File.open(File.join(@ruby_dir, 'ext', 'Setup'), 'w') do |f|
+              f.puts 'option nodynamic'
+            end
+            # TODO make those win32 ext work
+            @utils.chdir('ext') do
+              @utils.rm_rf('dbm')
+              @utils.rm_rf('digest')
+              @utils.rm_rf('etc')
+              @utils.rm_rf('fiddle')
+              @utils.rm_rf('gdbm')
+              @utils.rm_rf('mathn')
+              @utils.rm_rf('openssl')
+              @utils.rm_rf('pty')
+              @utils.rm_rf('readline')
+              @utils.rm_rf('ripper')
+              @utils.rm_rf('socket')
+              @utils.rm_rf('win32')
+              @utils.rm_rf('win32ole')
+            end
+            # PATCH win32\Makefile.sub for 2nd pass
+            if Gem.win_platform?
+              target = File.join(@ruby_dir, 'win32', 'Makefile.sub')
+              target_content = File.read(target)
+              found = 0
+              File.open(target, 'w') do |f|
+                target_content.each_line do |line|
+                  if 0 == found && (line =~ /^#define LOAD_RELATIVE 1$/)
+                    found = 1
+                    f.puts ""
+                  else
+                    f.print line
+                  end
                 end
               end
+              raise "Failed to patch CFLAGS and LDFLAGS of #{target}" unless 1 == found
             end
-            raise "Failed to patch CFLAGS and LDFLAGS of #{target}" unless 1 == found
           end
         end
         # enclose_io_memfs.o - 2nd pass
@@ -427,35 +435,39 @@ class Compiler
         @utils.rm_f('enclose_io_memfs.c')
         @compile_env['ENCLOSE_IO_RUBYC_1ST_PASS'] = nil
         @compile_env['ENCLOSE_IO_RUBYC_2ND_PASS'] = '1'
-        @utils.run(@compile_env, "call win32\\configure.bat \
-                                --prefix=#{@utils.escape @ruby_build} \
-                                --enable-bundled-libyaml \
-                                --enable-debug-env \
-                                --disable-install-doc \
-                                --with-static-linked-ext")
-        make_enclose_io_memfs
-        make_enclose_io_vars
-        @utils.run_allow_failures(@compile_env, "nmake #{@options[:nmake_args]}")
-        @utils.run(@compile_env, %Q{nmake #{@options[:nmake_args]} -f enc.mk V="0" UNICODE_HDR_DIR="./enc/unicode/9.0.0"  RUBY=".\\miniruby.exe -I./lib -I. " MINIRUBY=".\\miniruby.exe -I./lib -I. " -l libenc})
-        @utils.run(@compile_env, %Q{nmake #{@options[:nmake_args]} -f enc.mk V="0" UNICODE_HDR_DIR="./enc/unicode/9.0.0"  RUBY=".\\miniruby.exe -I./lib -I. " MINIRUBY=".\\miniruby.exe -I./lib -I. " -l libtrans})
-        @utils.run(@compile_env, "nmake #{@options[:nmake_args]}")
-        @utils.run(@compile_env, "nmake #{@options[:nmake_args]} ruby_static.exe")
-        @utils.cp('ruby_static.exe', @options[:output])
+        Dir.chdir(pass_2) do
+          @utils.run(@compile_env, "call #{@utils.escape @ruby_dir}\\win32\\configure.bat \
+                                  --prefix=#{@utils.escape @ruby_build} \
+                                  --enable-bundled-libyaml \
+                                  --enable-debug-env \
+                                  --disable-install-doc \
+                                  --with-static-linked-ext")
+          make_enclose_io_memfs
+          make_enclose_io_vars
+          @utils.run_allow_failures(@compile_env, "nmake #{@options[:nmake_args]}")
+          @utils.run(@compile_env, %Q{nmake #{@options[:nmake_args]} -f enc.mk V="0" UNICODE_HDR_DIR="./enc/unicode/9.0.0"  RUBY=".\\miniruby.exe -I./lib -I. " MINIRUBY=".\\miniruby.exe -I./lib -I. " -l libenc})
+          @utils.run(@compile_env, %Q{nmake #{@options[:nmake_args]} -f enc.mk V="0" UNICODE_HDR_DIR="./enc/unicode/9.0.0"  RUBY=".\\miniruby.exe -I./lib -I. " MINIRUBY=".\\miniruby.exe -I./lib -I. " -l libtrans})
+          @utils.run(@compile_env, "nmake #{@options[:nmake_args]}")
+          @utils.run(@compile_env, "nmake #{@options[:nmake_args]} ruby_static.exe")
+          @utils.cp('ruby_static.exe', @options[:output])
+        end
       else
         unless File.exist?(@ruby_build)
           @compile_env['ENCLOSE_IO_RUBYC_1ST_PASS'] = '1'
           @compile_env['ENCLOSE_IO_RUBYC_2ND_PASS'] = nil
           # enclose_io_memfs.o - 1st pass
-          @utils.run(@compile_env, "./configure \
-                                  --prefix=#{@utils.escape @ruby_build} \
-                                  --enable-bundled-libyaml \
-                                  --without-gmp \
-                                  --disable-dtrace \
-                                  --enable-debug-env \
-                                  --disable-install-rdoc")
-          @utils.run(@compile_env, "make #{@options[:make_args]} -j1")
-          @utils.run(@compile_env, "make install")
-          File.open(File.join(@options[:tmpdir], @ruby_dir, 'ext', 'Setup'), 'w') do |f|
+          Dir.chdir(pass_1) do
+            @utils.run(@compile_env, "#{@utils.escape @ruby_dir}/configure \
+                                    --prefix=#{@utils.escape @ruby_build} \
+                                    --enable-bundled-libyaml \
+                                    --without-gmp \
+                                    --disable-dtrace \
+                                    --enable-debug-env \
+                                    --disable-install-rdoc")
+            @utils.run(@compile_env, "make #{@options[:make_args]} -j1")
+            @utils.run(@compile_env, "make install")
+          end
+          File.open(File.join(@ruby_dir, 'ext', 'Setup'), 'w') do |f|
             f.puts 'option nodynamic'
           end
         end
@@ -474,18 +486,20 @@ class Compiler
         @utils.rm_f('enclose_io_memfs.c')
         @compile_env['ENCLOSE_IO_RUBYC_1ST_PASS'] = nil
         @compile_env['ENCLOSE_IO_RUBYC_2ND_PASS'] = '1'
-        @utils.run(@compile_env, "./configure \
-                                --prefix=#{@utils.escape @ruby_build} \
-                                --enable-bundled-libyaml \
-                                --without-gmp \
-                                --disable-dtrace \
-                                --enable-debug-env \
-                                --disable-install-rdoc \
-                                --with-static-linked-ext")
-        make_enclose_io_memfs
-        make_enclose_io_vars
-        @utils.run(@compile_env, "make #{@options[:make_args]}")
-        @utils.cp('ruby', @options[:output])
+        Dir.chdir(pass_2) do
+          @utils.run(@compile_env, "#{@utils.escape @ruby_dir}/configure \
+                                  --prefix=#{@utils.escape @ruby_build} \
+                                  --enable-bundled-libyaml \
+                                  --without-gmp \
+                                  --disable-dtrace \
+                                  --enable-debug-env \
+                                  --disable-install-rdoc \
+                                  --with-static-linked-ext")
+          make_enclose_io_memfs
+          make_enclose_io_vars
+          @utils.run(@compile_env, "make #{@options[:make_args]}")
+          @utils.cp('ruby', @options[:output])
+        end
       end
     end
   end
@@ -510,7 +524,7 @@ class Compiler
 
     @gems_dir = File.join(@work_dir_inner, "lib/ruby/gems/#{self.class.ruby_api_version}")
     
-    @path_env = "#{File.join(@options[:tmpdir], @ruby_dir, 'build', 'bin')}:#{ENV['PATH']}"
+    @path_env = "#{File.join(@ruby_dir, 'build', 'bin')}:#{ENV['PATH']}"
     @local_toolchain = {
       'CI' => 'true',
       'PATH' => @path_env,
