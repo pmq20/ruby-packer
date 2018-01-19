@@ -309,7 +309,9 @@ class Compiler
     prepare_flags2
 
     target = @ruby_dir
-    @ruby_build = File.join(@ruby_dir, 'build')
+    @ruby_build_1 = File.join(@options[:tmpdir], 'ruby_build_1')
+    @ruby_build_2 = File.join(@options[:tmpdir], 'ruby_build_2')
+
     unless Dir.exist?(target)
       @utils.cp_r(File.join(PRJ_ROOT, 'ruby'), target, preserve: true)
       @utils.chdir(target) do
@@ -371,14 +373,14 @@ class Compiler
     @utils.chdir(@vendor_ruby) do
       sep = Gem.win_platform? ? ';' : ':'
       if Gem.win_platform?
-        unless File.exist?(@ruby_build)
+        unless File.exist?(@ruby_build_1)
           @compile_env['ENCLOSE_IO_RUBYC_1ST_PASS'] = '1'
           @compile_env['ENCLOSE_IO_RUBYC_2ND_PASS'] = nil
           # enclose_io_memfs.o - 1st pass
           Dir.chdir(pass_1) do
             @utils.run(@compile_env, "call #{@utils.escape @ruby_dir}\\win32\\configure.bat \
                                     --disable-install-doc \
-                                    --prefix=#{@utils.escape @ruby_build}")
+                                    --prefix=#{@utils.escape @ruby_build_1}")
             @utils.run(@compile_env, "nmake #{@options[:nmake_args]}")
             @utils.run(@compile_env, "nmake install")
             File.open(File.join(@ruby_dir, 'ext', 'Setup'), 'w') do |f|
@@ -437,7 +439,7 @@ class Compiler
         @compile_env['ENCLOSE_IO_RUBYC_2ND_PASS'] = '1'
         Dir.chdir(pass_2) do
           @utils.run(@compile_env, "call #{@utils.escape @ruby_dir}\\win32\\configure.bat \
-                                  --prefix=#{@utils.escape @ruby_build} \
+                                  --prefix=#{@utils.escape @ruby_build_2} \
                                   --enable-bundled-libyaml \
                                   --enable-debug-env \
                                   --disable-install-doc \
@@ -452,13 +454,13 @@ class Compiler
           @utils.cp('ruby_static.exe', @options[:output])
         end
       else
-        unless File.exist?(@ruby_build)
+        unless File.exist?(@ruby_build_1)
           @compile_env['ENCLOSE_IO_RUBYC_1ST_PASS'] = '1'
           @compile_env['ENCLOSE_IO_RUBYC_2ND_PASS'] = nil
           # enclose_io_memfs.o - 1st pass
           Dir.chdir(pass_1) do
             @utils.run(@compile_env, "#{@utils.escape @ruby_dir}/configure \
-                                    --prefix=#{@utils.escape @ruby_build} \
+                                    --prefix=#{@utils.escape @ruby_build_1} \
                                     --enable-bundled-libyaml \
                                     --without-gmp \
                                     --disable-dtrace \
@@ -488,7 +490,7 @@ class Compiler
         @compile_env['ENCLOSE_IO_RUBYC_2ND_PASS'] = '1'
         Dir.chdir(pass_2) do
           @utils.run(@compile_env, "#{@utils.escape @ruby_dir}/configure \
-                                  --prefix=#{@utils.escape @ruby_build} \
+                                  --prefix=#{@utils.escape @ruby_build_2} \
                                   --enable-bundled-libyaml \
                                   --without-gmp \
                                   --disable-dtrace \
@@ -515,7 +517,7 @@ class Compiler
     @work_dir_inner = File.join(@work_dir, '__enclose_io_memfs__')
     
     unless @options[:keep_tmpdir]
-      @utils.cp_r(@ruby_build, @work_dir_inner, preserve: true)
+      @utils.cp_r(@ruby_build_1, @work_dir_inner, preserve: true)
 
       Dir["#{@work_dir_inner}/**/*.{a,dylib,so,dll,lib,bundle}"].each do |thisdl|
         @utils.rm_f(thisdl)
