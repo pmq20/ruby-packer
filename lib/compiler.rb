@@ -424,15 +424,6 @@ class Compiler
         # enclose_io_memfs.o - 2nd pass
         prepare_work_dir
         prepare_local if @entrance
-        @utils.rm_f('verconf.h')
-        @utils.rm_f('rbconfig.rb')
-        @utils.rm_f('.rbconfig.time')
-        @utils.rm_f('dir.obj')
-        @utils.rm_f('file.obj')
-        @utils.rm_f('io.obj')
-        @utils.rm_f('main.obj')
-        @utils.rm_f('win32/file.obj')
-        @utils.rm_f('win32/win32.obj')
         @utils.rm_f('include/enclose_io.h')
         @utils.rm_f('enclose_io_memfs.c')
         @compile_env['ENCLOSE_IO_RUBYC_1ST_PASS'] = nil
@@ -476,14 +467,6 @@ class Compiler
         # enclose_io_memfs.o - 2nd pass
         prepare_work_dir
         prepare_local if @entrance
-        @utils.rm_f('verconf.h')
-        @utils.rm_f('rbconfig.rb')
-        @utils.rm_f('.rbconfig.time')
-        @utils.rm_f('dir.o')
-        @utils.rm_f('file.o')
-        @utils.rm_f('io.o')
-        @utils.rm_f('main.o')
-        @utils.rm_f('ruby')
         @utils.rm_f('include/enclose_io.h')
         @utils.rm_f('enclose_io_memfs.c')
         @compile_env['ENCLOSE_IO_RUBYC_1ST_PASS'] = nil
