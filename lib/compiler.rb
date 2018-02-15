@@ -310,6 +310,7 @@ class Compiler
 
     target = @ruby_dir
     @ruby_build_1 = File.join(@options[:tmpdir], 'ruby_build_1')
+    @ruby_build_1_bin = File.join(@ruby_build_1, 'bin')
     @ruby_build_2 = File.join(@options[:tmpdir], 'ruby_build_2')
 
     unless Dir.exist?(target)
@@ -508,13 +509,13 @@ class Compiler
     end
 
     @gems_dir = File.join(@work_dir_inner, "lib/ruby/gems/#{self.class.ruby_api_version}")
-    
-    @path_env = "#{File.join(@ruby_dir, 'build', 'bin')}:#{ENV['PATH']}"
+
+    @path_env = "#{File.join(@ruby_build_1, 'bin')}:#{ENV['PATH']}"
     @local_toolchain = {
       'CI' => 'true',
       'PATH' => @path_env,
-      'GEM_HOME' => nil,
-      'GEM_PATH' => nil,
+      'GEM_HOME' => @gems_dir,
+      'GEM_PATH' => @gems_dir,
       'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1',
       'ENCLOSE_IO_RUBYC_1ST_PASS' => '1',
       'ENCLOSE_IO_RUBYC_2ND_PASS' => nil
@@ -528,6 +529,10 @@ class Compiler
       gemfiles = Dir['./Gemfile']
       gems = Dir['./*.gem']
       the_bundler_gem = Dir["#{@vendor_ruby}/vendor/bundler-*.gem"].first
+
+      gem = File.join(@ruby_build_1_bin, "gem")
+      bundle = File.join(@ruby_build_1_bin, "bundle")
+
       if gemspecs.size > 0
         raise 'Multiple gemspecs detected' unless 1 == gemspecs.size
         @pre_prepare_dir = File.join(@options[:tmpdir], '__pre_prepare__')
@@ -537,17 +542,17 @@ class Compiler
           STDERR.puts "-> Detected a gemspec, trying to build the gem" unless @options[:quiet]
           @utils.rm_f('./*.gem')
           if gemfiles.size > 0
-            @utils.run(@local_toolchain, "gem", "install", the_bundler_gem, '--verbose', '--no-rdoc', '--no-ri')
-            @utils.run(@local_toolchain, "gem", "install", the_bundler_gem, '--verbose', '--no-rdoc', '--no-ri', '--install-dir', @gems_dir)
-            @utils.run(@local_toolchain, "bundle", "install")
-            @utils.run(@local_toolchain, "bundle", "exec", "gem", "build", gemspecs.first)
+            @utils.run(@local_toolchain, gem, "install", the_bundler_gem, '--verbose', '--no-document', '--bindir', @ruby_build_1_bin)
+
+            @utils.run(@local_toolchain, bundle, "install")
+            @utils.run(@local_toolchain, bundle, "exec", gem, "build", gemspecs.first)
           else
-            @utils.run(@local_toolchain, "gem", "build", gemspecs.first)
+            @utils.run(@local_toolchain, gem, "build", gemspecs.first)
           end
           gems = Dir['./*.gem']
           raise 'gem building failed' unless 1 == gems.size
           the_gem = gems.first
-          @utils.run(@local_toolchain, "gem", "install", the_gem, "--verbose", '--no-rdoc', '--no-ri', '--install-dir', @gems_dir)
+          @utils.run(@local_toolchain, gem, "install", the_gem, "--verbose", '--no-document', '--bindir', @ruby_build_1_bin)
           if File.exist?(File.join(@gems_dir, "bin/#{@entrance}"))
             @memfs_entrance = "#{MEMFS}/lib/ruby/gems/#{self.class.ruby_api_version}/bin/#{@entrance}"
           else
@@ -565,8 +570,7 @@ class Compiler
       elsif gemfiles.size > 0
         raise 'Multiple Gemfiles detected' unless 1 == gemfiles.size
         # gem install bundler
-        @utils.run(@local_toolchain, "gem", "install", the_bundler_gem, '--verbose', '--no-rdoc', '--no-ri')
-        @utils.run(@local_toolchain, "gem", "install", the_bundler_gem, '--verbose', '--no-rdoc', '--no-ri', '--install-dir', @gems_dir)
+        @utils.run(@local_toolchain, gem, "install", the_bundler_gem, '--verbose', '--no-document', '--bindir', @ruby_build_1_bin)
         # bundle install
         @work_dir_local = File.join(@work_dir_inner, 'local')
         @env_bundle_gemfile = '/__enclose_io_memfs__/local/Gemfile'
@@ -574,8 +578,8 @@ class Compiler
           @utils.cp_r(@root, @work_dir_local)
         end
         @utils.chdir(@work_dir_local) do
-          @utils.run(@local_toolchain, 'bundle', 'install', '--deployment')
-          if 0 == @utils.run_allow_failures(@local_toolchain, 'bundle', 'show', 'rails')
+          @utils.run(@local_toolchain, bundle, 'install', '--deployment')
+          if 0 == @utils.run_allow_failures(@local_toolchain, bundle, 'show', 'rails')
             STDERR.puts "-> Detected a Rails project" unless @options[:quiet]
             @enclose_io_rails = true
             @utils.rm_rf('tmp')
@@ -589,7 +593,7 @@ class Compiler
             if File.exist?("bin/#{@entrance}")
               @memfs_entrance = "#{MEMFS}/local/bin/#{@entrance}"
             else
-              @utils.run(@local_toolchain, 'bundle', 'install', '--deployment', '--binstubs')
+              @utils.run(@local_toolchain, bundle, 'install', '--deployment', '--binstubs')
               if File.exist?("bin/#{@entrance}")
                 @memfs_entrance = "#{MEMFS}/local/bin/#{@entrance}"
               else
@@ -613,7 +617,7 @@ class Compiler
         @utils.chdir(@pre_prepare_dir) do
           STDERR.puts "-> Detected a gem file, trying to locally install the gem" unless @options[:quiet]
           the_gem = gems.first
-          @utils.run(@local_toolchain, "gem", "install", the_gem, '--verbose',  '--no-rdoc', '--no-ri', '--install-dir', @gems_dir)
+          @utils.run(@local_toolchain, gem, "install", the_gem, '--verbose',  '--no-rdoc', '--no-ri', '--install-dir', @gems_dir)
           if File.exist?(File.join(@gems_dir, "bin/#{@entrance}"))
             @memfs_entrance = "#{MEMFS}/lib/ruby/gems/#{self.class.ruby_api_version}/bin/#{@entrance}"
           else
