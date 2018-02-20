@@ -446,18 +446,22 @@ class Compiler
           @utils.cp('ruby_static.exe', @options[:output])
         end
       else
+        ruby_configure = File.join(@ruby_dir, "configure")
+
         unless File.exist?(@ruby_build_1)
           @compile_env['ENCLOSE_IO_RUBYC_1ST_PASS'] = '1'
           @compile_env['ENCLOSE_IO_RUBYC_2ND_PASS'] = nil
           # enclose_io_memfs.o - 1st pass
           Dir.chdir(pass_1) do
-            @utils.run(@compile_env, "#{@utils.escape @ruby_dir}/configure \
-                                    --prefix=#{@utils.escape @ruby_build_1} \
-                                    --enable-bundled-libyaml \
-                                    --without-gmp \
-                                    --disable-dtrace \
-                                    --enable-debug-env \
-                                    --disable-install-rdoc")
+            @utils.run(@compile_env,
+                       ruby_configure,
+                       "--prefix", @ruby_build_1,
+                       "--enable-bundled-libyaml",
+                       "--without-gmp",
+                       "--disable-dtrace",
+                       "--enable-debug-env",
+                       "--disable-install-rdoc")
+
             @utils.run(@compile_env, "make #{@options[:make_args]}")
             @utils.run(@compile_env, "make install")
           end
@@ -473,14 +477,19 @@ class Compiler
         @compile_env['ENCLOSE_IO_RUBYC_1ST_PASS'] = nil
         @compile_env['ENCLOSE_IO_RUBYC_2ND_PASS'] = '1'
         Dir.chdir(pass_2) do
-          @utils.run(@compile_env, "#{@utils.escape @ruby_dir}/configure \
-                                  --prefix=#{@utils.escape @ruby_build_2} \
-                                  --enable-bundled-libyaml \
-                                  --without-gmp \
-                                  --disable-dtrace \
-                                  --enable-debug-env \
-                                  --disable-install-rdoc \
-                                  --with-static-linked-ext")
+          baseruby = File.join(@ruby_build_1_bin, "ruby")
+
+          @utils.run(@compile_env,
+                     ruby_configure,
+                     "--prefix", @ruby_build_2,
+                     "--with-baseruby=#{baseruby}",
+                     "--enable-bundled-libyaml",
+                     "--without-gmp",
+                     "--disable-dtrace",
+                     "--enable-debug-env",
+                     "--disable-install-rdoc",
+                     "--with-static-linked-ext")
+
           make_enclose_io_memfs
           make_enclose_io_vars
           @utils.run(@compile_env, "make #{@options[:make_args]}")
