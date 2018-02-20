@@ -458,7 +458,7 @@ class Compiler
                                     --disable-dtrace \
                                     --enable-debug-env \
                                     --disable-install-rdoc")
-            @utils.run(@compile_env, "make #{@options[:make_args]} -j1")
+            @utils.run(@compile_env, "make #{@options[:make_args]}")
             @utils.run(@compile_env, "make install")
           end
           File.open(File.join(@ruby_dir, 'ext', 'Setup'), 'w') do |f|
