@@ -1,5 +1,5 @@
 # frozen_string_literal: false
-# $Id: test_fileutils.rb 56892 2016-11-24 03:01:59Z nobu $
+# $Id: test_fileutils.rb 58631 2017-05-09 14:56:38Z nagachika $
 
 require 'fileutils'
 require 'etc'
@@ -903,6 +903,24 @@ class TestFileUtils < Test::Unit::TestCase
     Dir.rmdir 'tmp'
 
     mkdir_p '/'
+  end
+
+  if /mswin|mingw|cygwin/ =~ RUBY_PLATFORM
+    def test_mkdir_p_root
+      if /cygwin/ =~ RUBY_PLATFORM
+        tmpdir = `cygpath -ma .`.chomp
+      else
+        tmpdir = Dir.pwd
+      end
+      skip "No drive letter" unless /\A[a-z]:/i =~ tmpdir
+      drive = "./#{$&}"
+      assert_file_not_exist drive
+      mkdir_p "#{tmpdir}/none/dir"
+      assert_directory "none/dir"
+      assert_file_not_exist drive
+    ensure
+      Dir.rmdir(drive) if drive and File.directory?(drive)
+    end
   end
 
   def test_mkdir_p_file_perm

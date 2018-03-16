@@ -2,7 +2,7 @@
 
   dir.c -
 
-  $Author: nobu $
+  $Author: nagachika $
   created at: Wed Jan  5 09:51:01 JST 1994
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -1527,8 +1527,13 @@ join_path(const char *path, long len, int dirsep, const char *name, size_t namle
 }
 
 #ifdef HAVE_GETATTRLIST
+# if defined HAVE_FGETATTRLIST
+#   define is_case_sensitive(dirp, path) is_case_sensitive(dirp)
+# else
+#   define is_case_sensitive(dirp, path) is_case_sensitive(path)
+# endif
 static int
-is_case_sensitive(DIR *dirp)
+is_case_sensitive(DIR *dirp, const char *path)
 {
     struct {
 	u_int32_t length;
@@ -1539,10 +1544,15 @@ is_case_sensitive(DIR *dirp)
     const int idx = VOL_CAPABILITIES_FORMAT;
     const uint32_t mask = VOL_CAP_FMT_CASE_SENSITIVE;
 
-    if (squash_find_entry(dirp)) { return 1; }
+	if (squash_find_entry(dirp)) { return 1; }
 
+#   if defined HAVE_FGETATTRLIST
     if (fgetattrlist(dirfd(dirp), &al, attrbuf, sizeof(attrbuf), FSOPT_NOFOLLOW))
 	return -1;
+#   else
+    if (getattrlist(path, &al, attrbuf, sizeof(attrbuf), FSOPT_NOFOLLOW))
+	return -1;
+#   endif
     if (!(cap->valid[idx] & mask))
 	return -1;
     return (cap->capabilities[idx] & mask) != 0;
@@ -1837,7 +1847,7 @@ glob_helper(
 	}
 # endif
 # ifdef HAVE_GETATTRLIST
-	if (is_case_sensitive(dirp) == 0)
+	if (is_case_sensitive(dirp, path) == 0)
 	    flags |= FNM_CASEFOLD;
 # endif
 	while ((dp = READDIR(dirp, enc)) != NULL) {

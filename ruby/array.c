@@ -2,7 +2,7 @@
 
   array.c -
 
-  $Author: naruse $
+  $Author: nagachika $
   created at: Fri Aug  6 09:46:12 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -1775,8 +1775,8 @@ rb_ary_insert(int argc, VALUE *argv, VALUE ary)
 
     rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
     rb_ary_modify_check(ary);
-    if (argc == 1) return ary;
     pos = NUM2LONG(argv[0]);
+    if (argc == 1) return ary;
     if (pos == -1) {
 	pos = RARRAY_LEN(ary);
     }
@@ -5883,7 +5883,8 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
  *  This method is safe to use with mutable objects such as hashes, strings or
  *  other arrays:
  *
- *     Array.new(4) { Hash.new } #=> [{}, {}, {}, {}]
+ *     Array.new(4) { Hash.new }  #=> [{}, {}, {}, {}]
+ *     Array.new(4) {|i| i.to_s } #=> ["0", "1", "2", "3"]
  *
  *  This is also a quick way to build up multi-dimensional arrays:
  *
