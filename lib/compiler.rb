@@ -80,15 +80,15 @@ class Compiler
     init_entrance if entrance
     init_tmpdir
 
-    STDERR.puts "Ruby Compiler (rubyc) v#{::Compiler::VERSION}" unless @options[:quiet]
+    log "Ruby Compiler (rubyc) v#{::Compiler::VERSION}"
     if entrance
-      STDERR.puts "- entrance: #{@entrance}" unless @options[:quiet]
+      log "- entrance: #{@entrance}"
     else
-      STDERR.puts "- entrance: not provided, a single Ruby interpreter executable will be produced." unless @options[:quiet]
-      STDERR.puts "- HINT: call rubyc with --help to see more options and use case examples" unless @options[:quiet]
+      log "- entrance: not provided, a single Ruby interpreter executable will be produced."
+      log "- HINT: call rubyc with --help to see more options and use case examples"
     end
-    STDERR.puts "- options: #{@options}" unless @options[:quiet]
-    STDERR.puts unless @options[:quiet]
+    log "- options: #{@options}"
+    log
 
     prepare_flags1
   end
@@ -128,7 +128,7 @@ class Compiler
           break 
         end
       end
-      STDERR.puts "-> Project root not supplied, #{@root} assumed." unless @options[:quiet]
+      log "-> Project root not supplied, #{@root} assumed."
     end
   end
 
@@ -137,7 +137,13 @@ class Compiler
       raise Error, "Tempdir #{@options[:tmpdir]} cannot reside inside #{@root}."
     end
   end
-  
+
+  def log(message = nil)
+    return if @options[:quiet]
+
+    $stderr.puts message
+  end
+
   def stuff_zlib
     target = File.join(@options[:tmpdir], 'zlib')
     unless Dir.exist?(target)
@@ -556,7 +562,7 @@ class Compiler
         @utils.rm_rf(@pre_prepare_dir)
         @utils.cp_r(@root, @pre_prepare_dir)
         @utils.chdir(@pre_prepare_dir) do
-          STDERR.puts "-> Detected a gemspec, trying to build the gem" unless @options[:quiet]
+          log "-> Detected a gemspec, trying to build the gem"
           @utils.rm_f('./*.gem')
           if gemfiles.size > 0
             @utils.run(@local_toolchain, gem, "install", the_bundler_gem, '--verbose', '--no-document', '--bindir', @ruby_build_1_bin)
@@ -598,7 +604,7 @@ class Compiler
         @utils.chdir(@work_dir_local) do
           @utils.run(@local_toolchain, bundle, 'install', '--deployment')
           if 0 == @utils.run_allow_failures(@local_toolchain, bundle, 'show', 'rails')
-            STDERR.puts "-> Detected a Rails project" unless @options[:quiet]
+            log "-> Detected a Rails project"
             @enclose_io_rails = true
             @utils.rm_rf('tmp')
             @utils.rm_rf('log')
@@ -633,7 +639,7 @@ class Compiler
         @utils.rm_rf(@pre_prepare_dir)
         @utils.cp_r(@root, @pre_prepare_dir)
         @utils.chdir(@pre_prepare_dir) do
-          STDERR.puts "-> Detected a gem file, trying to locally install the gem" unless @options[:quiet]
+          log "-> Detected a gem file, trying to locally install the gem"
           the_gem = gems.first
           @utils.run(@local_toolchain, gem, "install", the_gem, '--verbose',  '--no-rdoc', '--no-ri', '--install-dir', @gems_dir)
           if File.exist?(File.join(@gems_dir, "bin/#{@entrance}"))
@@ -673,15 +679,15 @@ class Compiler
       if @work_dir_local
         @utils.chdir(@work_dir_local) do
           if Dir.exist?('.git')
-            STDERR.puts `git status` unless @options[:quiet]
+            log `git status`
             @utils.rm_rf('.git')
           end
           if File.exist?('a.exe')
-            STDERR.puts `dir a.exe` unless @options[:quiet]
+            log `dir a.exe`
             @utils.rm_rf('a.exe')
           end
           if File.exist?('a.out')
-            STDERR.puts `ls -l a.out` unless @options[:quiet]
+            log `ls -l a.out`
             @utils.rm_rf('a.out')
           end
         end
