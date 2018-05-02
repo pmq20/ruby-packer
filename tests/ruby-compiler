@@ -60,10 +60,7 @@ if Gem.win_platform?
   ]
 else
   cmds = [
-    "make update-rubyspec",
     "make test",
-    "make test-all",
-    "make test-rubyspec",
   ]
 end
 
