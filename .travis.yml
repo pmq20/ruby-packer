@@ -9,9 +9,14 @@ os:
 
 sudo: enabled
 
+addons:
+  apt:
+    packages:
+      - squashfs-tools
+      - texinfo
+
 before_install:
-  - sudo apt-get update -qq
-  - sudo apt-get install -qq squashfs-tools
+  - ./travis/osx_deps.sh
 
 before_script:
   - mksquashfs -version
