@@ -3,9 +3,9 @@
 #
 #--
 # $Release Version: 1.1.2 $
-# $Revision: 53141 $
-# $Id: scanf.rb 53141 2015-12-16 05:07:31Z naruse $
-# $Author: naruse $
+# $Revision: 60261 $
+# $Id: scanf.rb 60261 2017-10-21 12:34:13Z nobu $
+# $Author: nobu $
 #++
 #
 # == Description
@@ -295,7 +295,7 @@ module Scanf
 
     def extract_float(s)
       return nil unless s &&! skip
-      if /\A(?<sign>[-+]?)0[xX](?<frac>\.\h+|\h+(?:\.\h*)?)[pP](?<exp>[-+]\d+)/ =~ s
+      if /\A(?<sign>[-+]?)0[xX](?<frac>\.\h+|\h+(?:\.\h*)?)[pP](?<exp>[-+]?\d+)/ =~ s
         f1, f2 = frac.split('.')
         f = f1.hex
         if f2
@@ -411,11 +411,11 @@ module Scanf
 
           # %f
         when /%\*?[aefgAEFG]/
-          [ '([-+]?(?:0[xX](?:\.\h+|\h+(?:\.\h*)?)[pP][-+]\d+|\d+(?![\d.])|\d*\.\d*(?:[eE][-+]?\d+)?))', :extract_float ]
+          [ '([-+]?(?:0[xX](?:\.\h+|\h+(?:\.\h*)?)[pP][-+]?\d+|\d+(?![\d.])|\d*\.\d*(?:[eE][-+]?\d+)?))', :extract_float ]
 
           # %5f
         when /%\*?(\d+)[aefgAEFG]/
-          [ '(?=[-+]?(?:0[xX](?:\.\h+|\h+(?:\.\h*)?)[pP][-+]\d+|\d+(?![\d.])|\d*\.\d*(?:[eE][-+]?\d+)?))' +
+          [ '(?=[-+]?(?:0[xX](?:\.\h+|\h+(?:\.\h*)?)[pP][-+]?\d+|\d+(?![\d.])|\d*\.\d*(?:[eE][-+]?\d+)?))' +
             "(\\S{1,#{$1}})", :extract_float ]
 
           # %5s

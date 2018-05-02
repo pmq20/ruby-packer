@@ -2,7 +2,7 @@
 #
 #   irb/ruby-lex.rb - ruby lexcal analyzer
 #   	$Release Version: 0.9.6$
-#   	$Revision: 57027 $
+#   	$Revision: 58418 $
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
@@ -262,9 +262,18 @@ class RubyLex
   end
 
   def lex
-    until (((tk = token).kind_of?(TkNL) || tk.kind_of?(TkEND_OF_SCRIPT)) &&
-        !@continue or
-        tk.nil?)
+    continue = @continue
+    while tk = token
+      case tk
+      when TkNL, TkEND_OF_SCRIPT
+        @continue = continue unless continue.nil?
+        break unless @continue
+      when TkSPACE, TkCOMMENT
+      when TkSEMICOLON, TkBEGIN, TkELSE
+        @continue = continue = false
+      else
+        continue = nil
+      end
     end
     line = get_readed
     if line == "" and tk.kind_of?(TkEND_OF_SCRIPT) || tk.nil?
@@ -406,7 +415,7 @@ class RubyLex
       if @lex_state != EXPR_END && @lex_state != EXPR_CLASS &&
           (@lex_state != EXPR_ARG || @space_seen)
         c = peek(0)
-        if /\S/ =~ c && (/["'`]/ =~ c || /\w/ =~ c || c == "-" || c == "~")
+        if /[-~"'`\w]/ =~ c
           tk = identify_here_document
         end
       end

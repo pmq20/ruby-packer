@@ -1,6 +1,6 @@
 "exec" "${RUBY-ruby}" "-x" "$0" "$@" || true # -*- mode: ruby; coding: utf-8 -*-
 #!./ruby
-# $Id: runner.rb 56395 2016-10-11 16:36:14Z kazu $
+# $Id: runner.rb 60671 2017-11-06 07:35:37Z ko1 $
 
 # NOTE:
 # Never use optparse in this file.
@@ -254,6 +254,7 @@ def show_progress(message = '')
     end
   end
 rescue Interrupt
+  $stderr.puts "\##{@count} #{@location}"
   raise Interrupt
 rescue Exception => err
   $stderr.print 'E'
@@ -261,23 +262,17 @@ rescue Exception => err
   error err.message, message
 end
 
-# NativeClient is special.  The binary is cross-compiled.  But runs on the build environment.
-# So RUBY_PLATFORM in this process is not useful to detect it.
-def nacl?
-  @ruby and File.basename(@ruby.split(/\s/).first)['sel_ldr']
-end
-
-def assert_check(testsrc, message = '', opt = '')
+def assert_check(testsrc, message = '', opt = '', **argh)
   show_progress(message) {
-    result = get_result_string(testsrc, opt)
+    result = get_result_string(testsrc, opt, **argh)
     check_coredump
     yield(result)
   }
 end
 
-def assert_equal(expected, testsrc, message = '')
+def assert_equal(expected, testsrc, message = '', opt = '', **argh)
   newtest
-  assert_check(testsrc, message) {|result|
+  assert_check(testsrc, message, opt, **argh) {|result|
     if expected == result
       nil
     else
@@ -318,13 +313,10 @@ def assert_valid_syntax(testsrc, message = '')
   }
 end
 
-def assert_normal_exit(testsrc, *rest)
+def assert_normal_exit(testsrc, *rest, timeout: nil, **opt)
   newtest
-  opt = {}
-  opt = rest.pop if Hash === rest.last
   message, ignore_signals = rest
   message ||= ''
-  timeout = opt[:timeout]
   show_progress(message) {
     faildesc = nil
     filename = make_srcfile(testsrc)
@@ -419,18 +411,19 @@ def untabify(str)
   str.gsub(/^\t+/) {' ' * (8 * $&.size) }
 end
 
-def make_srcfile(src)
+def make_srcfile(src, frozen_string_literal: nil)
   filename = 'bootstraptest.tmp.rb'
   File.open(filename, 'w') {|f|
+    f.puts "#frozen_string_literal:true" if frozen_string_literal
     f.puts "GC.stress = true" if $stress
     f.puts "print(begin; #{src}; end)"
   }
   filename
 end
 
-def get_result_string(src, opt = '')
+def get_result_string(src, opt = '', **argh)
   if @ruby
-    filename = make_srcfile(src)
+    filename = make_srcfile(src, **argh)
     begin
       `#{@ruby} -W0 #{opt} #{filename}`
     ensure

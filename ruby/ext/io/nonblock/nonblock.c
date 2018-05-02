@@ -1,8 +1,8 @@
 /**********************************************************************
 
-  io/wait.c -
+  io/nonblock.c -
 
-  $Author: nobu $
+  $Author: mame $
   created at: Tue Jul 14 21:53:18 2009
 
   All the files in this distribution are covered under the Ruby's

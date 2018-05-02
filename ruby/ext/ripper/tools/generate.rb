@@ -1,5 +1,5 @@
-# frozen_string_literal: false
-# $Id: generate.rb 53143 2015-12-16 05:31:54Z naruse $
+# frozen_string_literal: true
+# $Id: generate.rb 57538 2017-02-05 07:54:32Z kazu $
 
 require 'optparse'
 
@@ -68,7 +68,7 @@ def usage(msg)
 end
 
 def generate_eventids1(ids)
-  buf = ""
+  buf = "".dup
   buf << %Q[static struct {\n]
   ids.each do |id, arity|
     buf << %Q[    ID id_#{id};\n]
@@ -101,7 +101,7 @@ def generate_eventids1(ids)
 end
 
 def generate_eventids2_table(ids)
-  buf = ""
+  buf = "".dup
   buf << %Q[static void\n]
   buf << %Q[ripper_init_eventids2_table(VALUE self)\n]
   buf << %Q[{\n]

@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 # = net/pop.rb
 #
 # Copyright (c) 1999-2007 Yukihiro Matsumoto.
@@ -16,7 +16,7 @@
 # NOTE: You can find Japanese version of this document at:
 # http://docs.ruby-lang.org/ja/latest/library/net=2fpop.html
 #
-#   $Id: pop.rb 56865 2016-11-21 23:05:41Z normal $
+#   $Id: pop.rb 59472 2017-08-02 15:10:42Z kazu $
 #
 # See Net::POP3 for documentation.
 #
@@ -168,8 +168,8 @@ module Net
   #     require 'net/pop'
   #
   #     # Use APOP authentication if $isapop == true
-  #     pop = Net::POP3.APOP($is_apop).new('apop.example.com', 110)
-  #     pop.start(YourAccount', 'YourPassword') do |pop|
+  #     pop = Net::POP3.APOP($isapop).new('apop.example.com', 110)
+  #     pop.start('YourAccount', 'YourPassword') do |pop|
   #       # Rest of the code is the same.
   #     end
   #
@@ -196,7 +196,7 @@ module Net
   class POP3 < Protocol
 
     # svn revision of this library
-    Revision = %q$Revision: 56865 $.split[1]
+    Revision = %q$Revision: 59472 $.split[1]
 
     #
     # Class Parameters
@@ -550,7 +550,7 @@ module Net
         context.set_params(@ssl_params)
         s = OpenSSL::SSL::SSLSocket.new(s, context)
         s.sync_close = true
-        s.connect
+        ssl_socket_connect(s, @open_timeout)
         if context.verify_mode != OpenSSL::SSL::VERIFY_NONE
           s.post_connection_check(@address)
         end
@@ -771,7 +771,7 @@ module Net
     # === Example without block
     #
     #     POP3.start('pop.example.com', 110,
-    #                'YourAccount, 'YourPassword') do |pop|
+    #                'YourAccount', 'YourPassword') do |pop|
     #       n = 1
     #       pop.mails.each do |popmail|
     #         File.open("inbox/#{n}", 'w') do |f|
@@ -785,7 +785,7 @@ module Net
     # === Example with block
     #
     #     POP3.start('pop.example.com', 110,
-    #                'YourAccount, 'YourPassword') do |pop|
+    #                'YourAccount', 'YourPassword') do |pop|
     #       n = 1
     #       pop.mails.each do |popmail|
     #         File.open("inbox/#{n}", 'w') do |f|
@@ -844,7 +844,7 @@ module Net
     # === Example
     #
     #     POP3.start('pop.example.com', 110,
-    #                'YourAccount, 'YourPassword') do |pop|
+    #                'YourAccount', 'YourPassword') do |pop|
     #       n = 1
     #       pop.mails.each do |popmail|
     #         File.open("inbox/#{n}", 'w') do |f|

@@ -2,7 +2,7 @@
 #
 #   irb/slex.rb - simple lex analyzer
 #   	$Release Version: 0.9.6$
-#   	$Revision: 53141 $
+#   	$Revision: 57291 $
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
@@ -53,7 +53,7 @@ module IRB
       node.preproc=proc
     end
 
-    #要チェック?
+    # need a check?
     def postproc(token)
       node = search(token, proc)
       node.postproc=proc

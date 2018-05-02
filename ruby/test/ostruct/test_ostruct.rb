@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'test/unit'
 require 'ostruct'
 
@@ -52,12 +52,14 @@ class TC_OpenStruct < Test::Unit::TestCase
     foo.bar = 1
     foo.baz = 2
     assert_equal("#<OpenStruct bar=1, baz=2>", foo.inspect)
+    assert_equal(false, foo.inspect.frozen?)
 
     foo = OpenStruct.new
     foo.bar = OpenStruct.new
     assert_equal('#<OpenStruct bar=#<OpenStruct>>', foo.inspect)
     foo.bar.foo = foo
     assert_equal('#<OpenStruct bar=#<OpenStruct foo=#<OpenStruct ...>>>', foo.inspect)
+    assert_equal(false, foo.inspect.frozen?)
   end
 
   def test_frozen
@@ -191,5 +193,29 @@ class TC_OpenStruct < Test::Unit::TestCase
     }
     os = assert_nothing_raised(ArgumentError, bug) {c.allocate}
     assert_instance_of(c, os)
+  end
+
+  def test_private_method
+    os = OpenStruct.new
+    class << os
+      private
+      def foo
+      end
+    end
+    assert_raise_with_message(NoMethodError, /private method/) do
+      os.foo true, true
+    end
+  end
+
+  def test_protected_method
+    os = OpenStruct.new
+    class << os
+      protected
+      def foo
+      end
+    end
+    assert_raise_with_message(NoMethodError, /protected method/) do
+      os.foo true, true
+    end
   end
 end

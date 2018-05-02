@@ -237,6 +237,38 @@ f_zero_p(VALUE x)
 
 #define f_nonzero_p(x) (!f_zero_p(x))
 
+VALUE rb_flo_is_finite_p(VALUE num);
+inline static int
+f_finite_p(VALUE x)
+{
+    if (RB_INTEGER_TYPE_P(x)) {
+        return TRUE;
+    }
+    else if (RB_FLOAT_TYPE_P(x)) {
+	return (int)rb_flo_is_finite_p(x);
+    }
+    else if (RB_TYPE_P(x, T_RATIONAL)) {
+	return TRUE;
+    }
+    return RTEST(rb_funcallv(x, id_finite_p, 0, 0));
+}
+
+VALUE rb_flo_is_infinite_p(VALUE num);
+inline static VALUE
+f_infinite_p(VALUE x)
+{
+    if (RB_INTEGER_TYPE_P(x)) {
+        return Qnil;
+    }
+    else if (RB_FLOAT_TYPE_P(x)) {
+	return rb_flo_is_infinite_p(x);
+    }
+    else if (RB_TYPE_P(x, T_RATIONAL)) {
+        return Qnil;
+    }
+    return rb_funcallv(x, id_infinite_p, 0, 0);
+}
+
 inline static int
 f_kind_of_p(VALUE x, VALUE c)
 {
@@ -266,6 +298,7 @@ nucomp_s_new_internal(VALUE klass, VALUE real, VALUE imag)
 
     RCOMPLEX_SET_REAL(obj, real);
     RCOMPLEX_SET_IMAG(obj, imag);
+    OBJ_FREEZE_RAW(obj);
 
     return (VALUE)obj;
 }
@@ -1217,7 +1250,7 @@ nucomp_hash(VALUE self)
     n = rb_hash(dat->imag);
     h[1] = NUM2LONG(n);
     v = rb_memhash(h, sizeof(h));
-    return LONG2FIX(v);
+    return ST2FIX(v);
 }
 
 /* :nodoc: */
@@ -1320,29 +1353,23 @@ nucomp_inspect(VALUE self)
  * call-seq:
  *    cmp.finite?  ->  true or false
  *
- * Returns +true+ if +cmp+'s magnitude is finite number,
- * oterwise returns +false+.
+ * Returns +true+ if +cmp+'s magnitude is a finite number,
+ * otherwise returns +false+.
  */
 static VALUE
 rb_complex_finite_p(VALUE self)
 {
-    VALUE magnitude = nucomp_abs(self);
+    get_dat1(self);
 
-    if (FINITE_TYPE_P(magnitude)) {
+    if (f_finite_p(dat->real) && f_finite_p(dat->imag)) {
 	return Qtrue;
     }
-    else if (RB_FLOAT_TYPE_P(magnitude)) {
-	const double f = RFLOAT_VALUE(magnitude);
-	return isinf(f) ? Qfalse : Qtrue;
-    }
-    else {
-	return rb_funcall(magnitude, id_finite_p, 0);
-    }
+    return Qfalse;
 }
 
 /*
  * call-seq:
- *    cmp.infinite?  ->  nil or 1 or -1
+ *    cmp.infinite?  ->  nil or 1
  *
  * Returns values corresponding to the value of +cmp+'s magnitude:
  *
@@ -1357,21 +1384,12 @@ rb_complex_finite_p(VALUE self)
 static VALUE
 rb_complex_infinite_p(VALUE self)
 {
-    VALUE magnitude = nucomp_abs(self);
+    get_dat1(self);
 
-    if (FINITE_TYPE_P(magnitude)) {
+    if (NIL_P(f_infinite_p(dat->real)) && NIL_P(f_infinite_p(dat->imag))) {
 	return Qnil;
     }
-    if (RB_FLOAT_TYPE_P(magnitude)) {
-	const double f = RFLOAT_VALUE(magnitude);
-	if (isinf(f)) {
-	    return INT2FIX(f < 0 ? -1 : 1);
-	}
-	return Qnil;
-    }
-    else {
-	return rb_funcall(magnitude, id_infinite_p, 0);
-    }
+    return ONE;
 }
 
 /* :nodoc: */
@@ -1389,6 +1407,7 @@ nucomp_loader(VALUE self, VALUE a)
 
     RCOMPLEX_SET_REAL(dat, rb_ivar_get(a, id_i_real));
     RCOMPLEX_SET_IMAG(dat, rb_ivar_get(a, id_i_imag));
+    OBJ_FREEZE_RAW(self);
 
     return self;
 }
@@ -1444,20 +1463,6 @@ rb_Complex(VALUE x, VALUE y)
     a[0] = x;
     a[1] = y;
     return nucomp_s_convert(2, a, rb_cComplex);
-}
-
-VALUE
-rb_complex_set_real(VALUE cmp, VALUE r)
-{
-    RCOMPLEX_SET_REAL(cmp, r);
-    return cmp;
-}
-
-VALUE
-rb_complex_set_imag(VALUE cmp, VALUE i)
-{
-    RCOMPLEX_SET_IMAG(cmp, i);
-    return cmp;
 }
 
 VALUE

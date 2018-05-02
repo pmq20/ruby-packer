@@ -2,7 +2,7 @@
 
   main.c -
 
-  $Author: ko1 $
+  $Author: nobu $
   created at: Fri Aug 19 13:19:58 JST 1994
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -14,6 +14,12 @@
 #include "vm_debug.h"
 #ifdef HAVE_LOCALE_H
 #include <locale.h>
+#endif
+#if RUBY_DEVEL && !defined RUBY_DEBUG_ENV
+# define RUBY_DEBUG_ENV 1
+#endif
+#if defined RUBY_DEBUG_ENV && !RUBY_DEBUG_ENV
+# undef RUBY_DEBUG_ENV
 #endif
 #ifdef RUBY_DEBUG_ENV
 #include <stdlib.h>

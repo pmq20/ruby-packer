@@ -9,6 +9,8 @@
 #ifndef  RUBY_BIG_DECIMAL_H
 #define  RUBY_BIG_DECIMAL_H 1
 
+#define RUBY_NO_OLD_COMPATIBILITY
+
 #include "ruby/ruby.h"
 #include <float.h>
 
@@ -138,6 +140,12 @@ rb_sym2str(VALUE sym)
 {
     return rb_id2str(SYM2ID(sym));
 }
+#endif
+
+#ifndef ST2FIX
+# undef RB_ST2FIX
+# define RB_ST2FIX(h) LONG2FIX((long)(h))
+# define ST2FIX(h) RB_ST2FIX(h)
 #endif
 
 #ifdef vabs

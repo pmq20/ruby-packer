@@ -1,6 +1,6 @@
 # frozen_string_literal: false
 # $RoughId: test.rb,v 1.4 2001/07/13 15:38:27 knu Exp $
-# $Id: test_digest.rb 56500 2016-10-27 06:26:09Z nobu $
+# $Id: test_digest.rb 61186 2017-12-12 18:44:21Z eregon $
 
 require 'test/unit'
 require 'tempfile'
@@ -264,6 +264,7 @@ module TestDigest
         assert_nothing_raised {
           t = Thread.start {
             sleep 0.1
+            Thread.current.report_on_exception = false
             Digest::Foo.new
           }
           Digest(:Foo).new

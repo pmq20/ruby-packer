@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 ##
 # RDoc::Markup parses plain text documents and attempts to decompose them into
 # their constituent parts.  Some of these parts are high-level: paragraphs,
@@ -377,7 +377,7 @@
 #
 # Example links:
 #
-#   https://github.com/rdoc/rdoc
+#   https://github.com/ruby/rdoc
 #   mailto:user@example.com
 #   {RDoc Documentation}[http://rdoc.rubyforge.org]
 #   {RDoc Markup}[rdoc-ref:RDoc::Markup]
@@ -764,7 +764,7 @@ Ruby #{RUBY_VERSION}-p#{RUBY_PATCHLEVEL} #{RUBY_RELEASE_DATE}
 
 Please file a bug report with the above information at:
 
-https://github.com/rdoc/rdoc/issues
+https://github.com/ruby/rdoc/issues
 
     EOF
     raise

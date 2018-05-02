@@ -85,22 +85,13 @@ rb_construct_expanded_load_path(enum expand_type type, int *has_relative, int *h
 	if (is_string)
 	    rb_str_freeze(path);
 	as_str = rb_get_path_check_convert(path, as_str, level);
-	expanded_path = rb_file_expand_path_fast(as_str, Qnil);
-	rb_str_freeze(expanded_path);
+	expanded_path = rb_check_realpath(Qnil, as_str);
+	if (NIL_P(expanded_path)) expanded_path = as_str;
 	rb_ary_push(ary, rb_fstring(expanded_path));
     }
     rb_obj_freeze(ary);
     vm->expanded_load_path = ary;
     rb_ary_replace(vm->load_path_snapshot, vm->load_path);
-}
-
-static VALUE
-load_path_getcwd(void)
-{
-    char *cwd = my_getcwd();
-    VALUE cwd_str = rb_filesystem_str_new_cstr(cwd);
-    xfree(cwd);
-    return cwd_str;
 }
 
 VALUE
@@ -114,7 +105,7 @@ rb_get_expanded_load_path(void)
 	int has_relative = 0, has_non_cache = 0;
 	rb_construct_expanded_load_path(EXPAND_ALL, &has_relative, &has_non_cache);
 	if (has_relative) {
-	    vm->load_path_check_cache = load_path_getcwd();
+	    vm->load_path_check_cache = rb_dir_getwd_ospath();
 	}
 	else if (has_non_cache) {
 	    /* Non string object. */
@@ -132,7 +123,7 @@ rb_get_expanded_load_path(void)
     }
     else if (vm->load_path_check_cache) {
 	int has_relative = 1, has_non_cache = 1;
-	VALUE cwd = load_path_getcwd();
+	VALUE cwd = rb_dir_getwd_ospath();
 	if (!rb_str_equal(vm->load_path_check_cache, cwd)) {
 	    /* Current working directory or filesystem encoding was changed.
 	       Expand relative load path and non-cacheable objects again. */
@@ -571,23 +562,24 @@ rb_provide_feature(VALUE feature)
 void
 rb_provide(const char *feature)
 {
-    rb_provide_feature(rb_usascii_str_new2(feature));
+    rb_provide_feature(rb_fstring_cstr(feature));
 }
 
 NORETURN(static void load_failed(VALUE));
 const rb_iseq_t *rb_iseq_load_iseq(VALUE fname);
 
 static int
-rb_load_internal0(rb_thread_t *th, VALUE fname, int wrap)
+rb_load_internal0(rb_execution_context_t *ec, VALUE fname, int wrap)
 {
-    int state;
+    enum ruby_tag_type state;
+    rb_thread_t *th = rb_ec_thread_ptr(ec);
     volatile VALUE wrapper = th->top_wrapper;
     volatile VALUE self = th->top_self;
 #if !defined __GNUC__
     rb_thread_t *volatile th0 = th;
 #endif
 
-    th->errinfo = Qnil; /* ensure */
+    th->ec->errinfo = Qnil; /* ensure */
 
     if (!wrap) {
 	th->top_wrapper = 0;
@@ -599,10 +591,10 @@ rb_load_internal0(rb_thread_t *th, VALUE fname, int wrap)
 	rb_extend_object(th->top_self, th->top_wrapper);
     }
 
-    TH_PUSH_TAG(th);
-    state = EXEC_TAG();
-    if (state == 0) {
-	NODE *node;
+    EC_PUSH_TAG(th->ec);
+    state = EC_EXEC_TAG();
+    if (state == TAG_NONE) {
+	rb_ast_t *ast;
 	const rb_iseq_t *iseq;
 
 	if ((iseq = rb_iseq_load_iseq(fname)) != NULL) {
@@ -611,12 +603,14 @@ rb_load_internal0(rb_thread_t *th, VALUE fname, int wrap)
 	else {
 	    VALUE parser = rb_parser_new();
 	    rb_parser_set_context(parser, NULL, FALSE);
-	    node = (NODE *)rb_parser_load_file(parser, fname);
-	    iseq = rb_iseq_new_top(node, rb_str_new2("<top (required)>"), fname, rb_realpath_internal(Qnil, fname, 1), NULL);
+	    ast = (rb_ast_t *)rb_parser_load_file(parser, fname);
+	    iseq = rb_iseq_new_top(ast->root, rb_fstring_cstr("<top (required)>"),
+			    fname, rb_realpath_internal(Qnil, fname, 1), NULL);
+	    rb_ast_dispose(ast);
 	}
 	rb_iseq_eval(iseq);
     }
-    TH_POP_TAG();
+    EC_POP_TAG();
 
 #if !defined __GNUC__
     th = th0;
@@ -626,13 +620,15 @@ rb_load_internal0(rb_thread_t *th, VALUE fname, int wrap)
     th->top_wrapper = wrapper;
 
     if (state) {
+	/* usually state == TAG_RAISE only, except for
+	 * rb_iseq_load_iseq case */
 	VALUE exc = rb_vm_make_jump_tag_but_local_jump(state, Qundef);
 	if (NIL_P(exc)) return state;
-	th->errinfo = exc;
+	th->ec->errinfo = exc;
 	return TAG_RAISE;
     }
 
-    if (!NIL_P(th->errinfo)) {
+    if (!NIL_P(th->ec->errinfo)) {
 	/* exception during load */
 	return TAG_RAISE;
     }
@@ -642,11 +638,11 @@ rb_load_internal0(rb_thread_t *th, VALUE fname, int wrap)
 static void
 rb_load_internal(VALUE fname, int wrap)
 {
-    rb_thread_t *curr_th = GET_THREAD();
-    int state = rb_load_internal0(curr_th, fname, wrap);
+    rb_execution_context_t *ec = GET_EC();
+    int state = rb_load_internal0(ec, fname, wrap);
     if (state) {
-	if (state == TAG_RAISE) rb_exc_raise(curr_th->errinfo);
-	TH_JUMP_TAG(curr_th, state);
+	if (state == TAG_RAISE) rb_exc_raise(ec->errinfo);
+	EC_JUMP_TAG(ec, state);
     }
 }
 
@@ -665,19 +661,19 @@ rb_load(VALUE fname, int wrap)
 }
 
 void
-rb_load_protect(VALUE fname, int wrap, int *state)
+rb_load_protect(VALUE fname, int wrap, int *pstate)
 {
-    int status;
+    enum ruby_tag_type state;
     volatile VALUE path = 0;
 
-    PUSH_TAG();
-    if ((status = EXEC_TAG()) == 0) {
+    EC_PUSH_TAG(GET_EC());
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
 	path = file_to_load(fname);
     }
-    POP_TAG();
-    if (!status) status = rb_load_internal0(GET_THREAD(), path, wrap);
-    if (state)
-	*state = status;
+    EC_POP_TAG();
+
+    if (state == TAG_NONE) state = rb_load_internal0(GET_EC(), path, wrap);
+    if (state != TAG_NONE) *pstate = state;
 }
 
 /*
@@ -701,10 +697,10 @@ rb_f_load(int argc, VALUE *argv)
 
     rb_scan_args(argc, argv, "11", &fname, &wrap);
 
-    RUBY_DTRACE_HOOK(LOAD_ENTRY, StringValuePtr(fname));
-
     orig_fname = rb_get_path_check_to_string(fname, rb_safe_level());
     fname = rb_str_encode_ospath(orig_fname);
+    RUBY_DTRACE_HOOK(LOAD_ENTRY, RSTRING_PTR(orig_fname));
+
     path = rb_find_file(fname);
     if (!path) {
 	if (!rb_file_load_ok(RSTRING_PTR(fname)))
@@ -713,10 +709,12 @@ rb_f_load(int argc, VALUE *argv)
     }
     rb_load_internal(path, RTEST(wrap));
 
-    RUBY_DTRACE_HOOK(LOAD_RETURN, StringValuePtr(fname));
+    RUBY_DTRACE_HOOK(LOAD_RETURN, RSTRING_PTR(orig_fname));
 
     return Qtrue;
 }
+
+extern VALUE rb_mWarning;
 
 static char *
 load_lock(const char *ftptr)
@@ -731,7 +729,7 @@ load_lock(const char *ftptr)
 	st_insert(loading_tbl, (st_data_t)ftptr, data);
 	return (char *)ftptr;
     }
-    else if (RB_TYPE_P((VALUE)data, T_IMEMO) && imemo_type((VALUE)data) == imemo_memo) {
+    else if (imemo_type_p(data, imemo_memo)) {
 	struct MEMO *memo = MEMO_CAST(data);
 	void (*init)(void) = (void (*)(void))memo->u3.func;
 	data = (st_data_t)rb_thread_shield_new();
@@ -740,8 +738,9 @@ load_lock(const char *ftptr)
 	return (char *)"";
     }
     if (RTEST(ruby_verbose)) {
-	rb_warning("loading in progress, circular require considered harmful - %s", ftptr);
-	rb_backtrace_print_to(rb_stderr);
+	VALUE warning = rb_warning_string("loading in progress, circular require considered harmful - %s", ftptr);
+	rb_backtrace_each(rb_str_append, warning);
+	rb_warning_warn(rb_mWarning, warning);
     }
     switch (rb_thread_shield_wait((VALUE)data)) {
       case Qfalse:
@@ -956,33 +955,31 @@ int
 rb_require_internal(VALUE fname, int safe)
 {
     volatile int result = -1;
-    rb_thread_t *th = GET_THREAD();
-    volatile VALUE errinfo = th->errinfo;
-    int state;
+    rb_execution_context_t *ec = GET_EC();
+    volatile VALUE errinfo = ec->errinfo;
+    enum ruby_tag_type state;
     struct {
 	int safe;
     } volatile saved;
     char *volatile ftptr = 0;
+    VALUE path;
 
-    RUBY_DTRACE_HOOK(REQUIRE_ENTRY, StringValuePtr(fname));
+    fname = rb_get_path_check(fname, safe);
+    path = rb_str_encode_ospath(fname);
+    RUBY_DTRACE_HOOK(REQUIRE_ENTRY, RSTRING_PTR(fname));
 
-    TH_PUSH_TAG(th);
+    EC_PUSH_TAG(ec);
     saved.safe = rb_safe_level();
-    if ((state = EXEC_TAG()) == 0) {
-	VALUE path;
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
 	long handle;
 	int found;
 
-	rb_set_safe_level_force(safe);
-	FilePathValue(fname);
 	rb_set_safe_level_force(0);
 
-	RUBY_DTRACE_HOOK(FIND_REQUIRE_ENTRY, StringValuePtr(fname));
-
-	path = rb_str_encode_ospath(fname);
+	RUBY_DTRACE_HOOK(FIND_REQUIRE_ENTRY, RSTRING_PTR(fname));
 	found = search_required(path, &path, safe);
+	RUBY_DTRACE_HOOK(FIND_REQUIRE_RETURN, RSTRING_PTR(fname));
 
-	RUBY_DTRACE_HOOK(FIND_REQUIRE_RETURN, StringValuePtr(fname));
 	if (found) {
 	    if (!path || !(ftptr = load_lock(RSTRING_PTR(path)))) {
 		result = 0;
@@ -994,7 +991,7 @@ rb_require_internal(VALUE fname, int safe)
 	    else {
 		switch (found) {
 		  case 'r':
-		    state = rb_load_internal0(th, path, 0);
+		    state = rb_load_internal0(ec, path, 0);
 		    break;
 
 		  case 's':
@@ -1010,18 +1007,19 @@ rb_require_internal(VALUE fname, int safe)
 	    }
 	}
     }
-    TH_POP_TAG();
+    EC_POP_TAG();
     load_unlock(ftptr, !state);
 
     rb_set_safe_level_force(saved.safe);
     if (state) {
+	RB_GC_GUARD(fname);
 	/* never TAG_RETURN */
 	return state;
     }
 
-    th->errinfo = errinfo;
+    ec->errinfo = errinfo;
 
-    RUBY_DTRACE_HOOK(REQUIRE_RETURN, StringValuePtr(fname));
+    RUBY_DTRACE_HOOK(REQUIRE_RETURN, RSTRING_PTR(fname));
 
     return result;
 }
@@ -1043,7 +1041,7 @@ rb_require_safe(VALUE fname, int safe)
 
     if (result > TAG_RETURN) {
 	if (result == TAG_RAISE) rb_exc_raise(rb_errinfo());
-	JUMP_TAG(result);
+	EC_JUMP_TAG(GET_EC(), result);
     }
     if (result < 0) {
 	load_failed(fname);
@@ -1055,8 +1053,7 @@ rb_require_safe(VALUE fname, int safe)
 VALUE
 rb_require(const char *fname)
 {
-    VALUE fn = rb_str_new2(fname);
-    OBJ_FREEZE(fn);
+    VALUE fn = rb_str_new_cstr(fname);
     return rb_require_safe(fn, rb_safe_level());
 }
 

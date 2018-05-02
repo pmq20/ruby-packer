@@ -3,7 +3,7 @@
  *
  *   Copyright (C) UENO Katsuhiro 2000-2003
  *
- * $Id: zlib.c 59807 2017-09-10 02:40:45Z nagachika $
+ * $Id: zlib.c 60379 2017-10-23 07:06:12Z nobu $
  */
 
 #include <ruby.h>
@@ -197,7 +197,7 @@ static VALUE rb_gzwriter_s_allocate(VALUE);
 static VALUE rb_gzwriter_s_open(int, VALUE*, VALUE);
 static VALUE rb_gzwriter_initialize(int, VALUE*, VALUE);
 static VALUE rb_gzwriter_flush(int, VALUE*, VALUE);
-static VALUE rb_gzwriter_write(VALUE, VALUE);
+static VALUE rb_gzwriter_write(int, VALUE*, VALUE);
 static VALUE rb_gzwriter_putc(VALUE, VALUE);
 
 static VALUE rb_gzreader_s_allocate(VALUE);
@@ -451,7 +451,7 @@ rb_zlib_adler32(int argc, VALUE *argv, VALUE klass)
 static VALUE
 rb_zlib_adler32_combine(VALUE klass, VALUE adler1, VALUE adler2, VALUE len2)
 {
-  return ULONG2NUM(
+    return ULONG2NUM(
 	adler32_combine(NUM2ULONG(adler1), NUM2ULONG(adler2), NUM2LONG(len2)));
 }
 #else
@@ -489,7 +489,7 @@ rb_zlib_crc32(int argc, VALUE *argv, VALUE klass)
 static VALUE
 rb_zlib_crc32_combine(VALUE klass, VALUE crc1, VALUE crc2, VALUE len2)
 {
-  return ULONG2NUM(
+    return ULONG2NUM(
 	crc32_combine(NUM2ULONG(crc1), NUM2ULONG(crc2), NUM2LONG(len2)));
 }
 #else
@@ -644,7 +644,7 @@ zstream_expand_buffer(struct zstream *z)
 	}
 	else {
 	    zstream_expand_buffer_into(z,
-		    ZSTREAM_AVAIL_OUT_STEP_MAX - buf_filled);
+				       ZSTREAM_AVAIL_OUT_STEP_MAX - buf_filled);
 	}
     }
     else {
@@ -1381,7 +1381,7 @@ rb_zstream_data_type(VALUE obj)
 static VALUE
 rb_zstream_adler(VALUE obj)
 {
-	return rb_uint2inum(get_zstream(obj)->stream.adler);
+    return rb_uint2inum(get_zstream(obj)->stream.adler);
 }
 
 /*
@@ -2673,7 +2673,7 @@ gzfile_calc_crc(struct gzfile *gz, VALUE str)
     }
     else {
 	gz->crc = checksum_long(crc32, gz->crc, (Bytef*)RSTRING_PTR(str) + gz->ungetc,
-			RSTRING_LEN(str) - gz->ungetc);
+				RSTRING_LEN(str) - gz->ungetc);
 	gz->ungetc = 0;
     }
 }
@@ -3566,18 +3566,23 @@ rb_gzwriter_flush(int argc, VALUE *argv, VALUE obj)
  * Same as IO.
  */
 static VALUE
-rb_gzwriter_write(VALUE obj, VALUE str)
+rb_gzwriter_write(int argc, VALUE *argv, VALUE obj)
 {
     struct gzfile *gz = get_gzfile(obj);
+    size_t total = 0;
 
-    if (!RB_TYPE_P(str, T_STRING))
-	str = rb_obj_as_string(str);
-    if (gz->enc2 && gz->enc2 != rb_ascii8bit_encoding()) {
-	str = rb_str_conv_enc(str, rb_enc_get(str), gz->enc2);
+    while (argc-- > 0) {
+	VALUE str = *argv++;
+	if (!RB_TYPE_P(str, T_STRING))
+	    str = rb_obj_as_string(str);
+	if (gz->enc2 && gz->enc2 != rb_ascii8bit_encoding()) {
+	    str = rb_str_conv_enc(str, rb_enc_get(str), gz->enc2);
+	}
+	gzfile_write(gz, (Bytef*)RSTRING_PTR(str), RSTRING_LEN(str));
+	total += RSTRING_LEN(str);
+	RB_GC_GUARD(str);
     }
-    gzfile_write(gz, (Bytef*)RSTRING_PTR(str), RSTRING_LEN(str));
-    RB_GC_GUARD(str);
-    return INT2FIX(RSTRING_LEN(str));
+    return SIZET2NUM(total);
 }
 
 /*
@@ -4245,6 +4250,14 @@ rb_gzreader_external_encoding(VALUE self)
     return rb_enc_from_encoding(get_gzfile(self)->enc);
 }
 
+static VALUE
+zlib_gzip_ensure(VALUE arg)
+{
+    struct gzfile *gz = (struct gzfile *)arg;
+    rb_rescue((VALUE(*)())gz->end, arg, NULL, Qnil);
+    return Qnil;
+}
+
 static void
 zlib_gzip_end(struct gzfile *gz)
 {
@@ -4257,6 +4270,7 @@ zlib_gzip_end(struct gzfile *gz)
 #define OPTHASH_GIVEN_P(opts) \
     (argc > 0 && !NIL_P((opts) = rb_check_hash_type(argv[argc-1])) && (--argc, 1))
 static ID id_level, id_strategy;
+static VALUE zlib_gzip_run(VALUE arg);
 
 /*
  * call-seq:
@@ -4285,9 +4299,8 @@ zlib_s_gzip(int argc, VALUE *argv, VALUE klass)
 {
     struct gzfile gz0;
     struct gzfile *gz = &gz0;
-    long len;
     int err;
-    VALUE src, opts, level=Qnil, strategy=Qnil;
+    VALUE src, opts, level=Qnil, strategy=Qnil, args[2];
 
     if (OPTHASH_GIVEN_P(opts)) {
 	ID keyword_ids[2];
@@ -4309,9 +4322,23 @@ zlib_s_gzip(int argc, VALUE *argv, VALUE klass)
     err = deflateInit2(&gz->z.stream, gz->level, Z_DEFLATED,
 		       -MAX_WBITS, DEF_MEM_LEVEL, ARG_STRATEGY(strategy));
     if (err != Z_OK) {
+	zlib_gzip_end(gz);
 	raise_zlib_error(err, gz->z.stream.msg);
     }
     ZSTREAM_READY(&gz->z);
+    args[0] = (VALUE)gz;
+    args[1] = src;
+    return rb_ensure(zlib_gzip_run, (VALUE)args, zlib_gzip_ensure, (VALUE)gz);
+}
+
+static VALUE
+zlib_gzip_run(VALUE arg)
+{
+    VALUE *args = (VALUE *)arg;
+    struct gzfile *gz = (struct gzfile *)args[0];
+    VALUE src = args[1];
+    long len;
+
     gzfile_make_header(gz);
     len = RSTRING_LEN(src);
     if (len > 0) {
@@ -4327,9 +4354,10 @@ static void
 zlib_gunzip_end(struct gzfile *gz)
 {
     gz->z.flags |= ZSTREAM_FLAG_CLOSING;
-    gzfile_check_footer(gz);
     zstream_end(&gz->z);
 }
+
+static VALUE zlib_gunzip_run(VALUE arg);
 
 /*
  * call-seq:
@@ -4355,7 +4383,6 @@ zlib_gunzip(VALUE klass, VALUE src)
     struct gzfile gz0;
     struct gzfile *gz = &gz0;
     int err;
-    VALUE dst;
 
     StringValue(src);
 
@@ -4367,14 +4394,24 @@ zlib_gunzip(VALUE klass, VALUE src)
     gz->io = Qundef;
     gz->z.input = src;
     ZSTREAM_READY(&gz->z);
+    return rb_ensure(zlib_gunzip_run, (VALUE)gz, zlib_gzip_ensure, (VALUE)gz);
+}
+
+static VALUE
+zlib_gunzip_run(VALUE arg)
+{
+    struct gzfile *gz = (struct gzfile *)arg;
+    VALUE dst;
+
     gzfile_read_header(gz);
     dst = zstream_detach_buffer(&gz->z);
     gzfile_calc_crc(gz, dst);
-	    if (!ZSTREAM_IS_FINISHED(&gz->z)) {
-		rb_raise(cGzError, "unexpected end of file");
-	    }
-    if (NIL_P(gz->z.input))
+    if (!ZSTREAM_IS_FINISHED(&gz->z)) {
+	rb_raise(cGzError, "unexpected end of file");
+    }
+    if (NIL_P(gz->z.input)) {
 	rb_raise(cNoFooter, "footer is not found");
+    }
     gzfile_check_footer(gz);
     return dst;
 }
@@ -4618,7 +4655,7 @@ Init_zlib(void)
     rb_define_alloc_func(cGzipWriter, rb_gzwriter_s_allocate);
     rb_define_method(cGzipWriter, "initialize", rb_gzwriter_initialize,-1);
     rb_define_method(cGzipWriter, "flush", rb_gzwriter_flush, -1);
-    rb_define_method(cGzipWriter, "write", rb_gzwriter_write, 1);
+    rb_define_method(cGzipWriter, "write", rb_gzwriter_write, -1);
     rb_define_method(cGzipWriter, "putc", rb_gzwriter_putc, 1);
     rb_define_method(cGzipWriter, "<<", rb_gzwriter_addstr, 1);
     rb_define_method(cGzipWriter, "printf", rb_gzwriter_printf, -1);

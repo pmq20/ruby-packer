@@ -1900,6 +1900,50 @@ class TestRefinement < Test::Unit::TestCase
     end
   end
 
+  class ParentDefiningPrivateMethod
+    private
+    def some_inherited_method
+    end
+  end
+
+  module MixinDefiningPrivateMethod
+    private
+    def some_included_method
+    end
+  end
+
+  class SomeChildClassToRefine < ParentDefiningPrivateMethod
+    include MixinDefiningPrivateMethod
+
+    private
+    def some_method
+    end
+  end
+
+  def test_refine_inherited_method_with_visibility_changes
+    Module.new do
+      refine(SomeChildClassToRefine) do
+        def some_inherited_method; end
+        def some_included_method; end
+        def some_method; end
+      end
+    end
+
+    obj = SomeChildClassToRefine.new
+
+    assert_raise_with_message(NoMethodError, /private/) do
+      obj.some_inherited_method
+    end
+
+    assert_raise_with_message(NoMethodError, /private/) do
+      obj.some_included_method
+    end
+
+    assert_raise_with_message(NoMethodError, /private/) do
+      obj.some_method
+    end
+  end
+
   def test_refined_method_alias_warning
     c = Class.new do
       def t; :t end
@@ -1915,6 +1959,119 @@ class TestRefinement < Test::Unit::TestCase
         alias foo f
       end
     end
+  end
+
+  def test_using_wrong_argument
+    bug = '[ruby-dev:50270] [Bug #13956]'
+    pattern = /expected Module/
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+    bug = ""#{bug.dump}
+    pattern = /#{pattern}/
+    begin;
+      assert_raise_with_message(TypeError, pattern, bug) {
+        using(1) do end
+      }
+    end;
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+    bug = ""#{bug.dump}
+    pattern = /#{pattern}/
+    begin;
+      assert_raise_with_message(TypeError, pattern, bug) {
+        Module.new {using(1) {}}
+      }
+    end;
+  end
+
+  class ToString
+    c = self
+    using Module.new {refine(c) {def to_s; "ok"; end}}
+    def string
+      "#{self}"
+    end
+  end
+
+  def test_tostring
+    assert_equal("ok", ToString.new.string)
+    assert_predicate(ToString.new.taint.string, :tainted?)
+  end
+
+  class ToSymbol
+    c = self
+    using Module.new {refine(c) {def intern; "<#{upcase}>"; end}}
+    def symbol
+      :"#{@string}"
+    end
+    def initialize(string)
+      @string = string
+    end
+  end
+
+  def test_dsym_literal
+    assert_equal(:foo, ToSymbol.new("foo").symbol)
+  end
+
+  def test_unused_refinement_for_module
+    bug14068 = '[ruby-core:83613] [Bug #14068]'
+    assert_in_out_err([], <<-INPUT, ["M1#foo"], [], bug14068)
+      module M1
+        def foo
+          puts "M1#foo"
+        end
+      end
+
+      module M2
+      end
+
+      module UnusedRefinement
+        refine(M2) do
+          def foo
+            puts "M2#foo"
+          end
+        end
+      end
+
+      include M1
+      include M2
+      foo()
+    INPUT
+  end
+
+  def test_refining_module_repeatedly
+    bug14070 = '[ruby-core:83617] [Bug #14070]'
+    assert_in_out_err([], <<-INPUT, ["ok"], [], bug14070)
+      1000.times do
+        Class.new do
+          include Enumerable
+        end
+
+        Module.new do
+          refine Enumerable do
+            def foo
+            end
+          end
+        end
+      end
+      puts "ok"
+    INPUT
+  end
+
+  def test_super_from_refined_module
+    a = EnvUtil.labeled_module("A") do
+      def foo;"[A#{super}]";end
+    end
+    b = EnvUtil.labeled_class("B") do
+      def foo;"[B]";end
+    end
+    c = EnvUtil.labeled_class("C", b) do
+      include a
+      def foo;"[C#{super}]";end
+    end
+    d = EnvUtil.labeled_module("D") do
+      refine(a) do
+        def foo;end
+      end
+    end
+    assert_equal("[C[A[B]]]", c.new.foo, '[ruby-dev:50390] [Bug #14232]')
   end
 
   private

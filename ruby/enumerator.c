@@ -2,13 +2,13 @@
 
   enumerator.c - provides Enumerator class
 
-  $Author: nagachika $
+  $Author: nobu $
 
   Copyright (C) 2001-2003 Akinori MUSHA
 
   $Idaemons: /home/cvs/rb/enumerator/enumerator.c,v 1.1.1.1 2001/07/15 10:12:48 knu Exp $
   $RoughId: enumerator.c,v 1.6 2003/07/27 11:03:24 nobu Exp $
-  $Id: enumerator.c 59363 2017-07-18 12:42:38Z nagachika $
+  $Id: enumerator.c 60204 2017-10-18 04:35:25Z nobu $
 
 ************************************************/
 
@@ -1119,11 +1119,11 @@ enumerator_size(VALUE obj)
 	for (i = 0; i < RARRAY_LEN(e->procs); i++) {
 	    VALUE proc = RARRAY_AREF(e->procs, i);
 	    struct proc_entry *entry = proc_entry_ptr(proc);
-	    lazyenum_size_func *size = entry->fn->size;
-	    if (!size) {
+	    lazyenum_size_func *size_fn = entry->fn->size;
+	    if (!size_fn) {
 		return Qnil;
 	    }
-	    receiver = (*size)(proc, receiver);
+	    receiver = (*size_fn)(proc, receiver);
 	}
 	return receiver;
     }

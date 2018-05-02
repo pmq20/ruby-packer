@@ -1,9 +1,5 @@
 # -*- coding: us-ascii -*-
 # frozen_string_literal: true
-begin
-  require 'openssl'
-rescue LoadError
-end
 
 # == Secure random number generator interface.
 #
@@ -48,14 +44,49 @@ end
 #
 
 module SecureRandom
-  if defined?(OpenSSL::Random) && /mswin|mingw/ !~ RUBY_PLATFORM
-    def self.gen_random(n)
+  @rng_chooser = Mutex.new # :nodoc:
+
+  class << self
+    def bytes(n)
+      return gen_random(n)
+    end
+
+    def gen_random(n)
+      ret = Random.urandom(1)
+      if ret.nil?
+        begin
+          require 'openssl'
+        rescue NoMethodError
+          raise NotImplementedError, "No random device"
+        else
+          @rng_chooser.synchronize do
+            class << self
+              remove_method :gen_random
+              alias gen_random gen_random_openssl
+            end
+          end
+          return gen_random(n)
+        end
+      else
+        @rng_chooser.synchronize do
+          class << self
+            remove_method :gen_random
+            alias gen_random gen_random_urandom
+          end
+        end
+        return gen_random(n)
+      end
+    end
+
+    private
+
+    def gen_random_openssl(n)
       @pid = 0 unless defined?(@pid)
       pid = $$
       unless @pid == pid
         now = Process.clock_gettime(Process::CLOCK_REALTIME, :nanosecond)
         OpenSSL::Random.random_add([now, @pid, pid].join(""), 0.0)
-        seed = Random.raw_seed(16)
+        seed = Random.urandom(16)
         if (seed)
           OpenSSL::Random.random_add(seed, 16)
         end
@@ -63,9 +94,9 @@ module SecureRandom
       end
       return OpenSSL::Random.random_bytes(n)
     end
-  else
-    def self.gen_random(n)
-      ret = Random.raw_seed(n)
+
+    def gen_random_urandom(n)
+      ret = Random.urandom(n)
       unless ret
         raise NotImplementedError, "No random device"
       end
@@ -74,10 +105,6 @@ module SecureRandom
       end
       ret
     end
-  end
-
-  class << self
-    alias bytes gen_random
   end
 end
 
@@ -175,53 +202,6 @@ module Random::Formatter
     s
   end
 
-=begin
-  # SecureRandom.random_number generates a random number.
-  #
-  # If a positive integer is given as _n_,
-  # +SecureRandom.random_number+ returns an integer, such that:
-  # +0 <= SecureRandom.random_number(n) < n+.
-  #
-  #   p SecureRandom.random_number(100) #=> 15
-  #   p SecureRandom.random_number(100) #=> 88
-  #
-  # If 0 is given or an argument is not given,
-  # +SecureRandom.random_number+ returns a float, such that:
-  # +0.0 <= SecureRandom.random_number() < 1.0+.
-  #
-  #   p SecureRandom.random_number #=> 0.596506046187744
-  #   p SecureRandom.random_number #=> 0.350621695741409
-  #
-  def random_number(n=0)
-    if 0 < n
-      if defined? OpenSSL::BN
-        OpenSSL::BN.rand_range(n).to_i
-      else
-        hex = n.to_s(16)
-        hex = '0' + hex if (hex.length & 1) == 1
-        bin = [hex].pack("H*")
-        mask = bin[0].ord
-        mask |= mask >> 1
-        mask |= mask >> 2
-        mask |= mask >> 4
-        begin
-          rnd = random_bytes(bin.length)
-          rnd[0] = (rnd[0].ord & mask).chr
-        end until rnd < bin
-        rnd.unpack("H*")[0].hex
-      end
-    else
-      # assumption: Float::MANT_DIG <= 64
-      if defined? OpenSSL::BN
-        i64 = OpenSSL::BN.rand(64, -1).to_i
-      else
-        i64 = random_bytes(8).unpack("Q")[0]
-      end
-      Math.ldexp(i64 >> (64-Float::MANT_DIG), -Float::MANT_DIG)
-    end
-  end
-=end
-
   # SecureRandom.uuid generates a random v4 UUID (Universally Unique IDentifier).
   #
   #   p SecureRandom.uuid #=> "2d931510-d99f-494a-8c67-87feb05e1594"
@@ -242,9 +222,73 @@ module Random::Formatter
     "%08x-%04x-%04x-%04x-%04x%08x" % ary
   end
 
-  private
-  def gen_random(n)
+  private def gen_random(n)
     self.bytes(n)
+  end
+
+  # SecureRandom.choose generates a string that randomly draws from a
+  # source array of characters.
+  #
+  # The argument _source_ specifies the array of characters from which
+  # to generate the string.
+  # The argument _n_ specifies the length, in characters, of the string to be
+  # generated.
+  #
+  # The result may contain whatever characters are in the source array.
+  #
+  #   p SecureRandom.choose([*'l'..'r'], 16) #=> "lmrqpoonmmlqlron"
+  #   p SecureRandom.choose([*'0'..'9'], 5) #=> "27309"
+  #
+  # If a secure random number generator is not available,
+  # +NotImplementedError+ is raised.
+  private def choose(source, n)
+    size = source.size
+    m = 1
+    limit = size
+    while limit * size <= 0x100000000
+      limit *= size
+      m += 1
+    end
+    result = ''.dup
+    while m <= n
+      rs = random_number(limit)
+      is = rs.digits(size)
+      (m-is.length).times { is << 0 }
+      result << source.values_at(*is).join('')
+      n -= m
+    end
+    if 0 < n
+      rs = random_number(limit)
+      is = rs.digits(size)
+      if is.length < n
+        (n-is.length).times { is << 0 }
+      else
+        is.pop while n < is.length
+      end
+      result.concat source.values_at(*is).join('')
+    end
+    result
+  end
+
+  ALPHANUMERIC = [*'A'..'Z', *'a'..'z', *'0'..'9']
+  # SecureRandom.alphanumeric generates a random alphanumeric string.
+  #
+  # The argument _n_ specifies the length, in characters, of the alphanumeric
+  # string to be generated.
+  #
+  # If _n_ is not specified or is nil, 16 is assumed.
+  # It may be larger in the future.
+  #
+  # The result may contain A-Z, a-z and 0-9.
+  #
+  #   p SecureRandom.alphanumeric #=> "2BuBuLf3WfSKyQbR"
+  #   p SecureRandom.alphanumeric(10) #=> "i6K93NdqiH"
+  #
+  # If a secure random number generator is not available,
+  # +NotImplementedError+ is raised.
+  def alphanumeric(n=nil)
+    n = 16 if n.nil?
+    choose(ALPHANUMERIC, n)
   end
 end
 

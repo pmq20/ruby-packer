@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #--
 # Copyright (c) 2001,2003 Akinori MUSHA <knu@iDaemons.org>
 #
@@ -7,7 +7,7 @@
 #
 # $Idaemons: /home/cvs/rb/abbrev.rb,v 1.2 2001/05/30 09:37:45 knu Exp $
 # $RoughId: abbrev.rb,v 1.4 2003/10/14 19:45:42 knu Exp $
-# $Id: abbrev.rb 53141 2015-12-16 05:07:31Z naruse $
+# $Id: abbrev.rb 57585 2017-02-09 16:12:00Z kazu $
 #++
 
 ##

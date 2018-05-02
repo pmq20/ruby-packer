@@ -1,7 +1,6 @@
 .\"Ruby is copyrighted by Yukihiro Matsumoto <matz@netlab.jp>.
 .Dd October 31, 2015
-.Dt RUBY(1) "" "Ruby Programmers Reference Guide"
-.\".Dt RUBY 1
+.Dt RUBY \&1 "Ruby Programmer's Reference Guide"
 .Os UNIX
 .Sh NAME
 .Nm ruby
@@ -218,6 +217,18 @@ on machines that don't support it, in the following manner:
   exec /usr/local/bin/ruby -S $0 $*
 .Ed
 .Pp
+On some systems
+.Li "$0"
+does not always contain the full pathname, so you need the
+.Fl S
+switch to tell Ruby to search for the script if necessary (to handle embedded
+spaces and such).  A better construct than
+.Li "$*"
+would be
+.Li ${1+"$@"} ,
+but it does not work if the script is being interpreted by
+.Xr csh 1 .
+.Pp
 .It Fl T Ns Op Ar level=1
 Turns on taint checks at the specified level (default 1).
 .Pp
@@ -342,18 +353,6 @@ and set the corresponding variable in the script.  For example:
 # prints "true" if invoked with `-xyz' switch.
 print "true\en" if $xyz
 .Ed
-.Pp
-On some systems
-.Li "$0"
-does not always contain the full pathname, so you need the
-.Fl S
-switch to tell Ruby to search for the script if necessary (to handle embedded
-spaces and such).  A better construct than
-.Li "$*"
-would be
-.Li ${1+"$@"} ,
-but it does not work if the script is being interpreted by
-.Xr csh 1 .
 .Pp
 .It Fl v
 Enables verbose mode.  Ruby will print its version at the beginning
@@ -641,15 +640,17 @@ Comprehensive catalog of Ruby libraries.
 .Pp
 .Sh REPORTING BUGS
 .Bl -bullet
-.Li Security vulnerabilities should be reported via an email to
-.Aq security@ruby-lang.org .
-Reported problems will be published after they've been fixed.
+.It
+Security vulnerabilities should be reported via an email to
+.Mt security@ruby-lang.org .
+Reported problems will be published after being fixed.
 .Pp
-.Li And you can report other bugs and feature requests via the
+.It
+Other bugs and feature requests can be reported via the
 Ruby Issue Tracking System
 .Pq Lk https://bugs.ruby-lang.org/ .
 Do not report security vulnerabilities
-via the system because it publishes the vulnerabilities immediately.
+via this system because it publishes the vulnerabilities immediately.
 .El
 .Sh AUTHORS
 Ruby is designed and implemented by

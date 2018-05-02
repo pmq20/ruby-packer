@@ -1,6 +1,6 @@
 # -*- ruby -*-
 _VERSION = "0.4.6"
-date = %w$Date:: 2016-09-11 19:33:36 +0900#$[1]
+date = %w$Date:: 2017-09-16 08:46:46 +0900#$[1]
 
 Gem::Specification.new do |s|
   s.name = "io-console"
@@ -10,12 +10,15 @@ Gem::Specification.new do |s|
   s.email = "nobu@ruby-lang.org"
   s.description = "add console capabilities to IO instances."
   s.required_ruby_version = ">= 2.0.0"
-  s.homepage = "https://www.ruby-lang.org"
+  s.homepage = "https://github.com/ruby/io-console"
   s.authors = ["Nobu Nakada"]
   s.require_path = %[lib]
-  s.files = %w[console.c depend extconf.rb lib/console/size.rb win32_vk.inc]
-  s.extensions = %w[extconf.rb]
+  s.files = %w[ext/io/console/console.c ext/io/console/extconf.rb lib/console/size.rb ext/io/console/win32_vk.inc]
+  s.extensions = %w[ext/io/console/extconf.rb]
   s.license = "BSD-2-Clause"
   s.cert_chain  = %w[certs/nobu.pem]
   s.signing_key = File.expand_path("~/.ssh/gem-private_key.pem") if $0 =~ /gem\z/
+
+  s.add_development_dependency 'rake-compiler'
+  s.add_development_dependency 'rake-compiler-dock', ">= 0.6.1"
 end

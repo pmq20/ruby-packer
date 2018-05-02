@@ -431,7 +431,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     assert File.exist?(a1_cache_gem)
   end
 
-  unless win_platform? # File.chmod doesn't work
+  unless win_platform? || Process.uid.zero? # File.chmod doesn't work
     def test_download_local_read_only
       FileUtils.mv @a1_gem, @tempdir
       local_path = File.join @tempdir, @a1.file_name
@@ -555,7 +555,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       nil
     end
 
-    assert_equal nil, fetcher.fetch_path(@uri + 'foo.gz', Time.at(0))
+    assert_nil fetcher.fetch_path(@uri + 'foo.gz', Time.at(0))
   end
 
   def test_fetch_path_io_error
@@ -621,7 +621,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       nil
     end
 
-    assert_equal nil, fetcher.fetch_path(URI.parse(@gem_repo), Time.at(0))
+    assert_nil fetcher.fetch_path(URI.parse(@gem_repo), Time.at(0))
   end
 
   def test_implicit_no_proxy

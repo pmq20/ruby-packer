@@ -2,7 +2,7 @@
 #
 #   irb/lc/help-message.rb -
 #   	$Release Version: 0.9.6$
-#   	$Revision: 41028 $
+#   	$Revision: 58415 $
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
@@ -11,7 +11,6 @@
 #
 Usage:  irb.rb [options] [programfile] [arguments]
   -f		    Suppress read of ~/.irbrc
-  -m		    Bc mode (load mathn, fraction or matrix are available)
   -d                Set $DEBUG to true (same as `ruby -d')
   -r load-module    Same as `ruby -r'
   -I path           Specify $LOAD_PATH directory

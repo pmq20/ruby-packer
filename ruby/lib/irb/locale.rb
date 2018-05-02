@@ -2,7 +2,7 @@
 #
 #   irb/locale.rb - internationalization module
 #   	$Release Version: 0.9.6$
-#   	$Revision: 53141 $
+#   	$Revision: 61155 $
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
@@ -31,7 +31,7 @@ module IRB # :nodoc:
         if @encoding_name
           begin load 'irb/encoding_aliases.rb'; rescue LoadError; end
           if @encoding = @@legacy_encoding_alias_map[@encoding_name]
-            warn "%s is obsolete. use %s" % ["#{@lang}_#{@territory}.#{@encoding_name}", "#{@lang}_#{@territory}.#{@encoding.name}"]
+            warn(("%s is obsolete. use %s" % ["#{@lang}_#{@territory}.#{@encoding_name}", "#{@lang}_#{@territory}.#{@encoding.name}"]), uplevel: 1)
           end
           @encoding = Encoding.find(@encoding_name) rescue nil
         end

@@ -2,7 +2,7 @@
 
   method.h -
 
-  $Author: ktsj $
+  $Author: mame $
   created at: Wed Jul 15 20:02:33 2009
 
   Copyright (C) 2009 Koichi Sasada
@@ -37,6 +37,7 @@ typedef struct rb_scope_visi_struct {
     unsigned int module_func : 1;
 } rb_scope_visibility_t;
 
+/*! CREF (Class REFerence) */
 typedef struct rb_cref_struct {
     VALUE flags;
     const VALUE refinements;
@@ -98,18 +99,18 @@ METHOD_ENTRY_FLAGS_COPY(rb_method_entry_t *dst, const rb_method_entry_t *src)
 }
 
 typedef enum {
-    VM_METHOD_TYPE_ISEQ,
-    VM_METHOD_TYPE_CFUNC,
-    VM_METHOD_TYPE_ATTRSET,
-    VM_METHOD_TYPE_IVAR,
+    VM_METHOD_TYPE_ISEQ,      /*!< Ruby method */
+    VM_METHOD_TYPE_CFUNC,     /*!< C method */
+    VM_METHOD_TYPE_ATTRSET,   /*!< attr_writer or attr_accessor */
+    VM_METHOD_TYPE_IVAR,      /*!< attr_reader or attr_accessor */
     VM_METHOD_TYPE_BMETHOD,
     VM_METHOD_TYPE_ZSUPER,
     VM_METHOD_TYPE_ALIAS,
     VM_METHOD_TYPE_UNDEF,
     VM_METHOD_TYPE_NOTIMPLEMENTED,
-    VM_METHOD_TYPE_OPTIMIZED, /* Kernel#send, Proc#call, etc */
-    VM_METHOD_TYPE_MISSING,   /* wrapper for method_missing(id) */
-    VM_METHOD_TYPE_REFINED,
+    VM_METHOD_TYPE_OPTIMIZED, /*!< Kernel#send, Proc#call, etc */
+    VM_METHOD_TYPE_MISSING,   /*!< wrapper for method_missing(id) */
+    VM_METHOD_TYPE_REFINED,   /*!< refinement */
 
     END_OF_ENUMERATION(VM_METHOD_TYPE)
 } rb_method_type_t;
@@ -120,8 +121,8 @@ typedef struct rb_iseq_struct rb_iseq_t;
 #endif
 
 typedef struct rb_method_iseq_struct {
-    const rb_iseq_t * const iseqptr;              /* should be separated from iseqval */
-    rb_cref_t * const cref;                       /* should be marked */
+    const rb_iseq_t * const iseqptr; /*!< iseq pointer, should be separated from iseqval */
+    rb_cref_t * const cref;          /*!< class reference, should be marked */
 } rb_method_iseq_t; /* check rb_add_method_iseq() when modify the fields */
 
 typedef struct rb_method_cfunc_struct {
@@ -144,10 +145,16 @@ typedef struct rb_method_refined_struct {
     const VALUE owner;
 } rb_method_refined_t;
 
-typedef struct rb_method_definition_struct {
-    rb_method_type_t type :  8; /* method type */
-    int alias_count       : 28;
-    int complemented_count: 28;
+enum method_optimized_type {
+    OPTIMIZED_METHOD_TYPE_SEND,
+    OPTIMIZED_METHOD_TYPE_CALL,
+    OPTIMIZED_METHOD_TYPE__MAX
+};
+
+PACKED_STRUCT_UNALIGNED(struct rb_method_definition_struct {
+    unsigned int type :  4; /* method type */
+    int alias_count : 28;
+    int complemented_count : 28;
 
     union {
 	rb_method_iseq_t iseq;
@@ -157,16 +164,13 @@ typedef struct rb_method_definition_struct {
 	rb_method_refined_t refined;
 
 	const VALUE proc;                 /* should be marked */
-	enum method_optimized_type {
-	    OPTIMIZED_METHOD_TYPE_SEND,
-	    OPTIMIZED_METHOD_TYPE_CALL,
-
-	    OPTIMIZED_METHOD_TYPE__MAX
-	} optimize_type;
+	enum method_optimized_type optimize_type;
     } body;
 
     ID original_id;
-} rb_method_definition_t;
+});
+
+typedef struct rb_method_definition_struct rb_method_definition_t;
 
 #define UNDEFINED_METHOD_ENTRY_P(me) (!(me) || !(me)->def || (me)->def->type == VM_METHOD_TYPE_UNDEF)
 #define UNDEFINED_REFINED_METHOD_P(def) \
@@ -184,14 +188,15 @@ rb_method_entry_t *rb_method_entry_create(ID called_id, VALUE klass, rb_method_v
 const rb_method_entry_t *rb_method_entry_at(VALUE obj, ID id);
 
 const rb_method_entry_t *rb_method_entry(VALUE klass, ID id);
-const rb_method_entry_t *rb_method_entry_with_refinements(VALUE klass, ID id);
-const rb_method_entry_t *rb_method_entry_without_refinements(VALUE klass, ID id);
+const rb_method_entry_t *rb_method_entry_without_refinements(VALUE klass, ID id, VALUE *defined_class);
 const rb_method_entry_t *rb_resolve_refined_method(VALUE refinements, const rb_method_entry_t *me);
+RUBY_SYMBOL_EXPORT_BEGIN
+const rb_method_entry_t *rb_resolve_me_location(const rb_method_entry_t *, VALUE[5]);
+RUBY_SYMBOL_EXPORT_END
 
 const rb_callable_method_entry_t *rb_callable_method_entry(VALUE klass, ID id);
-const rb_callable_method_entry_t *rb_callable_method_entry_with_refinements(VALUE klass, ID id);
-const rb_callable_method_entry_t *rb_callable_method_entry_without_refinements(VALUE klass, ID id);
-const rb_callable_method_entry_t *rb_resolve_refined_method_callable(VALUE refinements, const rb_callable_method_entry_t *me);
+const rb_callable_method_entry_t *rb_callable_method_entry_with_refinements(VALUE klass, ID id, VALUE *defined_class);
+const rb_callable_method_entry_t *rb_callable_method_entry_without_refinements(VALUE klass, ID id, VALUE *defined_class);
 
 int rb_method_entry_arity(const rb_method_entry_t *me);
 int rb_method_entry_eq(const rb_method_entry_t *m1, const rb_method_entry_t *m2);

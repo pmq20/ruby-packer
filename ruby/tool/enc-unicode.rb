@@ -14,8 +14,8 @@ if ARGV[0] == "--header"
   header = true
   ARGV.shift
 end
-unless ARGV.size == 1
-  abort "Usage: #{$0} data_directory"
+unless ARGV.size == 2
+  abort "Usage: #{$0} data_directory emoji_data_directory"
 end
 
 $unicode_version = File.basename(ARGV[0])[/\A[.\d]+\z/]
@@ -133,14 +133,15 @@ def parse_scripts(data, categories)
   files = [
     {:fn => 'DerivedCoreProperties.txt', :title => 'Derived Property'},
     {:fn => 'Scripts.txt', :title => 'Script'},
-    {:fn => 'PropList.txt', :title => 'Binary Property'}
+    {:fn => 'PropList.txt', :title => 'Binary Property'},
+    {:fn => 'emoji-data.txt', :title => 'Emoji'}
   ]
   current = nil
   cps = []
   names = {}
   files.each do |file|
     data_foreach(file[:fn]) do |line|
-      if /^# Total code points: / =~ line
+      if /^# Total (?:code points|elements): / =~ line
         data[current] = cps
         categories[current] = file[:title]
         (names[file[:title]] ||= []) << current
@@ -212,7 +213,7 @@ def parse_GraphemeBreakProperty(data)
   current = nil
   cps = []
   ages = []
-  data_foreach('GraphemeBreakProperty.txt') do |line|
+  data_foreach('auxiliary/GraphemeBreakProperty.txt') do |line|
     if /^# Total code points: / =~ line
       constname = constantize_Grapheme_Cluster_Break(current)
       data[constname] = cps
@@ -301,22 +302,24 @@ def constantize_blockname(name)
 end
 
 def get_file(name)
-  File.join(ARGV[0], name)
+  File.join(ARGV[name.start_with?("emoji-") ? 1 : 0], name)
 end
 
 def data_foreach(name, &block)
   fn = get_file(name)
   warn "Reading #{name}"
-  pat = /^# #{name.sub(/\./, '-([\\d.]+)\\.')}/
+  pat = /^# #{File.basename(name).sub(/\./, '-([\\d.]+)\\.')}/
   File.open(fn, 'rb') do |f|
     line = f.gets
-    unless pat =~ line
-      raise ArgumentError, "#{name}: no Unicode version"
-    end
-    if !$unicode_version
-      $unicode_version = $1
-    elsif $unicode_version != $1
-      raise ArgumentError, "#{name}: Unicode version mismatch: #$1"
+    unless /^emoji-/ =~ name
+      unless pat =~ line
+        raise ArgumentError, "#{name}: no Unicode version"
+      end
+      if !$unicode_version
+        $unicode_version = $1
+      elsif $unicode_version != $1
+        raise ArgumentError, "#{name}: Unicode version mismatch: #$1"
+      end
     end
     f.each(&block)
   end
@@ -336,22 +339,29 @@ class Unifdef
   def ifdef(sym)
     if @kwdonly
       @stdout.puts "#ifdef #{sym}"
-      return
+    else
+      @stack << @top
+      @top << tmp = [sym]
+      @top = tmp
     end
-    @stack << @top
-    @top << tmp = [sym]
-    @top = tmp
+    if block_given?
+      begin
+        return yield
+      ensure
+        endif(sym)
+      end
+    end
   end
   def endif(sym)
     if @kwdonly
       @stdout.puts "#endif /* #{sym} */"
-      return
+    else
+      unless sym == @top[0]
+        restore
+        raise ArgumentError, "#{sym} unmatch to #{@top[0]}"
+      end
+      @top = @stack.pop
     end
-    unless sym == @top[0]
-      restore
-      raise ArgumentError, "#{sym} unmatch to #{@top[0]}"
-    end
-    @top = @stack.pop
   end
   def show(dest, *syms)
     _show(dest, @output, syms)
@@ -390,6 +400,7 @@ props, data = parse_unicode_data(get_file('UnicodeData.txt'))
 categories = {}
 props.concat parse_scripts(data, categories)
 aliases = parse_aliases(data)
+ages = blocks = graphemeBreaks = nil
 define_posix_props(data)
 POSIX_NAMES.each do |name|
   if name == 'XPosixPunct'
@@ -400,35 +411,35 @@ POSIX_NAMES.each do |name|
     make_const(name, data[name], "[[:#{name}:]]")
   end
 end
-output.ifdef :USE_UNICODE_PROPERTIES
-props.each do |name|
-  category = categories[name] ||
-    case name.size
-    when 1 then 'Major Category'
-    when 2 then 'General Category'
-    else        '-'
-    end
-  make_const(name, data[name], category)
+output.ifdef :USE_UNICODE_PROPERTIES do
+  props.each do |name|
+    category = categories[name] ||
+               case name.size
+               when 1 then 'Major Category'
+               when 2 then 'General Category'
+               else        '-'
+               end
+    make_const(name, data[name], category)
+  end
+  output.ifdef :USE_UNICODE_AGE_PROPERTIES do
+    ages = parse_age(data)
+  end
+  graphemeBreaks = parse_GraphemeBreakProperty(data)
+  blocks = parse_block(data)
 end
-output.ifdef :USE_UNICODE_AGE_PROPERTIES
-ages = parse_age(data)
-output.endif :USE_UNICODE_AGE_PROPERTIES
-graphemeBreaks = parse_GraphemeBreakProperty(data)
-blocks = parse_block(data)
-output.endif :USE_UNICODE_PROPERTIES
 puts(<<'__HEREDOC')
 
 static const OnigCodePoint* const CodeRanges[] = {
 __HEREDOC
 POSIX_NAMES.each{|name|puts"  CR_#{name},"}
-output.ifdef :USE_UNICODE_PROPERTIES
-props.each{|name| puts"  CR_#{name},"}
-output.ifdef :USE_UNICODE_AGE_PROPERTIES
-ages.each{|name|  puts"  CR_#{constantize_agename(name)},"}
-output.endif :USE_UNICODE_AGE_PROPERTIES
-graphemeBreaks.each{|name|  puts"  CR_#{constantize_Grapheme_Cluster_Break(name)},"}
-blocks.each{|name|puts"  CR_#{name},"}
-output.endif :USE_UNICODE_PROPERTIES
+output.ifdef :USE_UNICODE_PROPERTIES do
+  props.each{|name| puts"  CR_#{name},"}
+  output.ifdef :USE_UNICODE_AGE_PROPERTIES do
+    ages.each{|name|  puts"  CR_#{constantize_agename(name)},"}
+  end
+  graphemeBreaks.each{|name|  puts"  CR_#{constantize_Grapheme_Cluster_Break(name)},"}
+  blocks.each{|name|puts"  CR_#{name},"}
+end
 
 puts(<<'__HEREDOC')
 };
@@ -436,8 +447,11 @@ struct uniname2ctype_struct {
   short name;
   unsigned short ctype;
 };
+#define uniname2ctype_offset(str) offsetof(struct uniname2ctype_pool_t, uniname2ctype_pool_##str)
 
+#if !(/*ANSI*/+0)
 static const struct uniname2ctype_struct *uniname2ctype_p(const char *, unsigned int);
+#endif
 %}
 struct uniname2ctype_struct;
 %%
@@ -452,39 +466,39 @@ POSIX_NAMES.each do |name|
   name_to_index[name] = i
   puts"%-40s %3d" % [name + ',', i]
 end
-output.ifdef :USE_UNICODE_PROPERTIES
-props.each do |name|
-  i += 1
-  name = normalize_propname(name)
-  name_to_index[name] = i
-  puts "%-40s %3d" % [name + ',', i]
+output.ifdef :USE_UNICODE_PROPERTIES do
+  props.each do |name|
+    i += 1
+    name = normalize_propname(name)
+    name_to_index[name] = i
+    puts "%-40s %3d" % [name + ',', i]
+  end
+  aliases.each_pair do |k, v|
+    next if name_to_index[k]
+    next unless v = name_to_index[v]
+    puts "%-40s %3d" % [k + ',', v]
+  end
+  output.ifdef :USE_UNICODE_AGE_PROPERTIES do
+    ages.each do |name|
+      i += 1
+      name = "age=#{name}"
+      name_to_index[name] = i
+      puts "%-40s %3d" % [name + ',', i]
+    end
+  end
+  graphemeBreaks.each do |name|
+    i += 1
+    name = "graphemeclusterbreak=#{name.delete('_').downcase}"
+    name_to_index[name] = i
+    puts "%-40s %3d" % [name + ',', i]
+  end
+  blocks.each do |name|
+    i += 1
+    name = normalize_propname(name)
+    name_to_index[name] = i
+    puts "%-40s %3d" % [name + ',', i]
+  end
 end
-aliases.each_pair do |k, v|
-  next if name_to_index[k]
-  next unless v = name_to_index[v]
-  puts "%-40s %3d" % [k + ',', v]
-end
-output.ifdef :USE_UNICODE_AGE_PROPERTIES
-ages.each do |name|
-  i += 1
-  name = "age=#{name}"
-  name_to_index[name] = i
-  puts "%-40s %3d" % [name + ',', i]
-end
-output.endif :USE_UNICODE_AGE_PROPERTIES
-graphemeBreaks.each do |name|
-  i += 1
-  name = "graphemeclusterbreak=#{name.delete('_').downcase}"
-  name_to_index[name] = i
-  puts "%-40s %3d" % [name + ',', i]
-end
-blocks.each do |name|
-  i += 1
-  name = normalize_propname(name)
-  name_to_index[name] = i
-  puts "%-40s %3d" % [name + ',', i]
-end
-output.endif :USE_UNICODE_PROPERTIES
 puts(<<'__HEREDOC')
 %%
 static int
@@ -524,9 +538,17 @@ if header
   fds.each(&:close)
   IO.popen(%W[diff -DUSE_UNICODE_AGE_PROPERTIES #{fds[1].path} #{fds[0].path}], "r") {|age|
     IO.popen(%W[diff -DUSE_UNICODE_PROPERTIES #{fds[2].path} -], "r", in: age) {|f|
+      ansi = false
       f.each {|line|
-        line.gsub!(/\(int\)\(long\)&\(\((struct uniname2ctype_pool_t) \*\)0\)->(uniname2ctype_pool_str\d+),\s+/,
-                   'offsetof(\1, \2), ')
+        if /ANSI-C code produced by gperf/ =~ line
+          ansi = true
+        end
+        line.sub!(/\/\*ANSI\*\//, '1') if ansi
+        line.gsub!(/\(int\)\((?:long|size_t)\)&\(\(struct uniname2ctype_pool_t \*\)0\)->uniname2ctype_pool_(str\d+),\s+/,
+                   'uniname2ctype_offset(\1), ')
+        if (/^(uniname2ctype_hash) /=~line)..(/^\}/=~line)
+          line.sub!(/^( *(?:register\s+)?(.*\S)\s+hval\s*=\s*)(?=len;)/, '\1(\2)')
+        end
         puts line
       }
     }

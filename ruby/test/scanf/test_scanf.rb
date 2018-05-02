@@ -1,5 +1,5 @@
 # frozen_string_literal: false
-# $Id: test_scanf.rb 53141 2015-12-16 05:07:31Z naruse $
+# $Id: test_scanf.rb 60261 2017-10-21 12:34:13Z nobu $
 #
 # scanf for Ruby
 #
@@ -258,6 +258,7 @@ module ScanfTests
       [ "%G", "+3.25e2", [325.0] ],
       [ "%f", "3.z", [3.0] ],
       [ "%a", "0X1P+10", [1024.0] ],
+      [ "%a", "0X1P10", [1024.0] ],
       [ "%A", "0x1.deadbeefp+99", [1.1851510441583988e+30] ],
 
 # Testing embedded matches including literal '[' behavior

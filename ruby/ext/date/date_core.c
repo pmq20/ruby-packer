@@ -51,18 +51,18 @@ static double positive_inf, negative_inf;
 #define f_add3(x,y,z) f_add(f_add(x, y), z)
 #define f_sub3(x,y,z) f_sub(f_sub(x, y), z)
 
-inline static VALUE
+inline static int
 f_cmp(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x) && FIXNUM_P(y)) {
 	long c = FIX2LONG(x) - FIX2LONG(y);
 	if (c > 0)
-	    c = 1;
+	    return 1;
 	else if (c < 0)
-	    c = -1;
-	return INT2FIX(c);
+	    return -1;
+	return 0;
     }
-    return rb_funcall(x, id_cmp, 1, y);
+    return rb_cmpint(rb_funcallv(x, id_cmp, 1, &y), x, y);
 }
 
 inline static VALUE
@@ -6154,6 +6154,7 @@ static VALUE
 d_lite_step(int argc, VALUE *argv, VALUE self)
 {
     VALUE limit, step, date;
+    int c;
 
     rb_scan_args(argc, argv, "11", &limit, &step);
 
@@ -6168,25 +6169,22 @@ d_lite_step(int argc, VALUE *argv, VALUE self)
     RETURN_ENUMERATOR(self, argc, argv);
 
     date = self;
-    switch (FIX2INT(f_cmp(step, INT2FIX(0)))) {
-      case -1:
+    c = f_cmp(step, INT2FIX(0));
+    if (c < 0) {
 	while (FIX2INT(d_lite_cmp(date, limit)) >= 0) {
 	    rb_yield(date);
 	    date = d_lite_plus(date, step);
 	}
-	break;
-      case 0:
+    }
+    else if (c == 0) {
 	while (1)
 	    rb_yield(date);
-	break;
-      case 1:
+    }
+    else /* if (c > 0) */ {
 	while (FIX2INT(d_lite_cmp(date, limit)) <= 0) {
 	    rb_yield(date);
 	    date = d_lite_plus(date, step);
 	}
-	break;
-      default:
-	abort();
     }
     return self;
 }
@@ -6241,9 +6239,9 @@ cmp_gen(VALUE self, VALUE other)
     get_d1(self);
 
     if (k_numeric_p(other))
-	return f_cmp(m_ajd(dat), other);
+	return INT2FIX(f_cmp(m_ajd(dat), other));
     else if (k_date_p(other))
-	return f_cmp(m_ajd(dat), f_ajd(other));
+	return INT2FIX(f_cmp(m_ajd(dat), f_ajd(other)));
     return rb_num_coerce_cmp(self, other, rb_intern("<=>"));
 }
 
@@ -6735,9 +6733,9 @@ date_strftime_internal(int argc, VALUE *argv, VALUE self,
  * Any text not listed as a directive will be passed through to the
  * output string.
  *
- * The directive consists of a percent (%) character,
- * zero or more flags, optional minimum field width,
- * optional modifier and a conversion specifier
+ * A directive consists of a percent (%) character,
+ * zero or more flags, an optional minimum field width,
+ * an optional modifier, and a conversion specifier
  * as follows.
  *
  *    %<flags><width><modifier><conversion>
@@ -7710,8 +7708,8 @@ datetime_s_now(int argc, VALUE *argv, VALUE klass)
 	s = 59;
 #ifdef HAVE_STRUCT_TM_TM_GMTOFF
     of = tm.tm_gmtoff;
-#elif defined(HAVE_VAR_TIMEZONE)
-#ifdef HAVE_VAR_ALTZONE
+#elif defined(HAVE_TIMEZONE)
+#ifdef HAVE_ALTZONE
     of = (long)-((tm.tm_isdst > 0) ? altzone : timezone);
 #else
     of = (long)-timezone;
@@ -8179,9 +8177,9 @@ dt_lite_to_s(VALUE self)
  * Any text not listed as a directive will be passed through to the
  * output string.
  *
- * The directive consists of a percent (%) character,
- * zero or more flags, optional minimum field width,
- * optional modifier and a conversion specifier
+ * A directive consists of a percent (%) character,
+ * zero or more flags, an optional minimum field width,
+ * an optional modifier, and a conversion specifier
  * as follows.
  *
  *    %<flags><width><modifier><conversion>
@@ -8375,8 +8373,8 @@ iso8601_timediv(VALUE self, long n)
  *    dt.iso8601([n=0])    ->  string
  *    dt.xmlschema([n=0])  ->  string
  *
- * This method is equivalent to strftime('%FT%T').  The optional
- * argument +n+ is the number of digits for fractional seconds.
+ * This method is equivalent to strftime('%FT%T%:z').
+ * The optional argument +n+ is the number of digits for fractional seconds.
  *
  *    DateTime.parse('2001-02-03T04:05:06.123456789+07:00').iso8601(9)
  *				#=> "2001-02-03T04:05:06.123456789+07:00"
@@ -8398,8 +8396,8 @@ dt_lite_iso8601(int argc, VALUE *argv, VALUE self)
  * call-seq:
  *    dt.rfc3339([n=0])  ->  string
  *
- * This method is equivalent to strftime('%FT%T').  The optional
- * argument n is length of fractional seconds.
+ * This method is equivalent to strftime('%FT%T%:z').
+ * The optional argument +n+ is the number of digits for fractional seconds.
  *
  *    DateTime.parse('2001-02-03T04:05:06.123456789+07:00').rfc3339(9)
  *				#=> "2001-02-03T04:05:06.123456789+07:00"
@@ -8414,8 +8412,8 @@ dt_lite_rfc3339(int argc, VALUE *argv, VALUE self)
  * call-seq:
  *    dt.jisx0301([n=0])  ->  string
  *
- * Returns a string in a JIS X 0301 format.  The optional argument n
- * is length of fractional seconds.
+ * Returns a string in a JIS X 0301 format.
+ * The optional argument +n+ is the number of digits for fractional seconds.
  *
  *    DateTime.parse('2001-02-03T04:05:06.123456789+07:00').jisx0301(9)
  *				#=> "H13.02.03T04:05:06.123456789+07:00"

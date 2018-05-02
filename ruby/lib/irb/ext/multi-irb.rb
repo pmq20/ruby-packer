@@ -2,7 +2,7 @@
 #
 #   irb/multi-irb.rb - multiple irb module
 #   	$Release Version: 0.9.6$
-#   	$Revision: 53141 $
+#   	$Revision: 60139 $
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
@@ -10,7 +10,6 @@
 #
 #
 IRB.fail CantShiftToMultiIrbMode unless defined?(Thread)
-require "thread"
 
 module IRB
   class JobManager

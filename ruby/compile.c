@@ -2,7 +2,7 @@
 
   compile.c - ruby node tree -> VM instruction sequence
 
-  $Author: nagachika $
+  $Author: naruse $
   created at: 04/01/01 03:42:15 JST
 
   Copyright (C) 2004-2007 Koichi Sasada
@@ -36,10 +36,10 @@
 
 typedef struct iseq_link_element {
     enum {
-	ISEQ_ELEMENT_NONE,
 	ISEQ_ELEMENT_LABEL,
 	ISEQ_ELEMENT_INSN,
-	ISEQ_ELEMENT_ADJUST
+	ISEQ_ELEMENT_ADJUST,
+	ISEQ_ELEMENT_TRACE
     } type;
     struct iseq_link_element *next;
     struct iseq_link_element *prev;
@@ -72,10 +72,13 @@ typedef struct iseq_label_data {
 typedef struct iseq_insn_data {
     LINK_ELEMENT link;
     enum ruby_vminsn_type insn_id;
-    unsigned int line_no;
     int operand_size;
     int sc_state;
     VALUE *operands;
+    struct {
+	int line_no;
+	rb_event_flag_t events;
+    } insn_info;
 } INSN;
 
 typedef struct iseq_adjust_data {
@@ -84,6 +87,11 @@ typedef struct iseq_adjust_data {
     int line_no;
 } ADJUST;
 
+typedef struct iseq_trace_data {
+    LINK_ELEMENT link;
+    rb_event_flag_t event;
+} TRACE;
+
 struct ensure_range {
     LABEL *begin;
     LABEL *end;
@@ -91,7 +99,7 @@ struct ensure_range {
 };
 
 struct iseq_compile_data_ensure_node_stack {
-    NODE *ensure_node;
+    const NODE *ensure_node;
     struct iseq_compile_data_ensure_node_stack *prev;
     struct ensure_range *erange;
 };
@@ -146,30 +154,18 @@ struct iseq_compile_data_ensure_node_stack {
 
 #define debug_node_start(node)  ((void) \
   (compile_debug_print_indent(1) && \
-   (ruby_debug_print_node(1, CPDEBUG, "", (NODE *)(node)), gl_node_level)), \
+   (ruby_debug_print_node(1, CPDEBUG, "", (const NODE *)(node)), gl_node_level)), \
    gl_node_level++)
 
 #define debug_node_end()  gl_node_level --
 
 #else
 
-static inline ID
-r_id(ID id)
-{
-    return id;
-}
-
-static inline VALUE
-r_value(VALUE value)
-{
-    return value;
-}
-
-#define debugi(header, id)                 r_id(id)
-#define debugp(header, value)              r_value(value)
-#define debugp_verbose(header, value)      r_value(value)
-#define debugp_verbose_node(header, value) r_value(value)
-#define debugp_param(header, value)        r_value(value)
+#define debugi(header, id)                 ((void)0)
+#define debugp(header, value)              ((void)0)
+#define debugp_verbose(header, value)      ((void)0)
+#define debugp_verbose_node(header, value) ((void)0)
+#define debugp_param(header, value)        ((void)0)
 #define debug_node_start(node)             ((void)0)
 #define debug_node_end()                   ((void)0)
 #endif
@@ -187,9 +183,7 @@ r_value(VALUE value)
 
 /* create new label */
 #define NEW_LABEL(l) new_label_body(iseq, (l))
-
-#define iseq_path(iseq) ((iseq)->body->location.path)
-#define iseq_absolute_path(iseq) ((iseq)->body->location.absolute_path)
+#define LABEL_FORMAT "<L%03d>"
 
 #define NEW_ISEQ(node, name, type, line_no) \
   new_child_iseq(iseq, (node), rb_fstring(name), 0, (type), (line_no))
@@ -207,7 +201,7 @@ r_value(VALUE value)
 
 /* insert an instruction before prev */
 #define INSERT_BEFORE_INSN(prev, line, insn) \
-  INSERT_ELEM_PREV(&(prev)->link, (LINK_ELEMENT *) new_insn_body(iseq, (line), BIN(insn), 0))
+  ELEM_INSERT_PREV(&(prev)->link, (LINK_ELEMENT *) new_insn_body(iseq, (line), BIN(insn), 0))
 
 /* add an instruction with some operands (1, 2, 3, 5) */
 #define ADD_INSN1(seq, line, insn, op1) \
@@ -216,7 +210,7 @@ r_value(VALUE value)
 
 /* insert an instruction with some operands (1, 2, 3, 5) before prev */
 #define INSERT_BEFORE_INSN1(prev, line, insn, op1) \
-  INSERT_ELEM_PREV(&(prev)->link, (LINK_ELEMENT *) \
+  ELEM_INSERT_PREV(&(prev)->link, (LINK_ELEMENT *) \
            new_insn_body(iseq, (line), BIN(insn), 1, (VALUE)(op1)))
 
 #define LABEL_REF(label) ((label)->refcnt++)
@@ -254,29 +248,57 @@ r_value(VALUE value)
 #define ADD_SEND_R(seq, line, id, argc, block, flag, keywords) \
   ADD_ELEM((seq), (LINK_ELEMENT *) new_insn_send(iseq, (line), (id), (VALUE)(argc), (block), (VALUE)(flag), (keywords)))
 
-#define ADD_TRACE(seq, line, event) \
+#define ADD_TRACE(seq, event) \
+  ADD_ELEM((seq), (LINK_ELEMENT *)new_trace_body(iseq, (event)))
+#define ADD_TRACE_LINE_COVERAGE(seq, line) \
   do { \
-      if ((event) == RUBY_EVENT_LINE && ISEQ_COVERAGE(iseq) && \
-	  (line) > 0 && \
-	  (line) != ISEQ_COMPILE_DATA(iseq)->last_coverable_line) { \
-	  RARRAY_ASET(ISEQ_COVERAGE(iseq), (line) - 1, INT2FIX(0)); \
-	  ISEQ_COMPILE_DATA(iseq)->last_coverable_line = (line); \
-	  ADD_INSN1((seq), (line), trace, INT2FIX(RUBY_EVENT_COVERAGE)); \
-      } \
-      if (ISEQ_COMPILE_DATA(iseq)->option->trace_instruction) { \
-	  ADD_INSN1((seq), (line), trace, INT2FIX(event)); \
+      if (ISEQ_COVERAGE(iseq) && \
+	  ISEQ_LINE_COVERAGE(iseq) && \
+	  (line) > 0) { \
+	  RARRAY_ASET(ISEQ_LINE_COVERAGE(iseq), (line) - 1, INT2FIX(0)); \
+	  ADD_INSN2((seq), (line), tracecoverage, INT2FIX(RUBY_EVENT_COVERAGE_LINE), INT2FIX(line)); \
       } \
   } while (0)
 
-#define ADD_GETLOCAL(seq, line, idx, level) \
+
+#define DECL_BRANCH_BASE(branches, first_line, first_column, last_line, last_column, type) \
   do { \
-      ADD_INSN2((seq), (line), getlocal, INT2FIX((idx) + VM_ENV_DATA_SIZE - 1), INT2FIX(level)); \
+      if (ISEQ_COVERAGE(iseq) && \
+	  ISEQ_BRANCH_COVERAGE(iseq) && \
+	  (first_line) > 0) { \
+	  VALUE structure = RARRAY_AREF(ISEQ_BRANCH_COVERAGE(iseq), 0); \
+	  branches = rb_ary_tmp_new(0); \
+	  rb_ary_push(structure, branches); \
+	  rb_ary_push(branches, ID2SYM(rb_intern(type))); \
+	  rb_ary_push(branches, INT2FIX(first_line)); \
+	  rb_ary_push(branches, INT2FIX(first_column)); \
+	  rb_ary_push(branches, INT2FIX(last_line)); \
+	  rb_ary_push(branches, INT2FIX(last_column)); \
+      } \
+  } while (0)
+#define ADD_TRACE_BRANCH_COVERAGE(seq, first_line, first_column, last_line, last_column, type, branches) \
+  do { \
+      if (ISEQ_COVERAGE(iseq) && \
+	  ISEQ_BRANCH_COVERAGE(iseq) && \
+	  (first_line) > 0) { \
+	  VALUE counters = RARRAY_AREF(ISEQ_BRANCH_COVERAGE(iseq), 1); \
+	  long counter_idx = RARRAY_LEN(counters); \
+	  rb_ary_push(counters, INT2FIX(0)); \
+	  rb_ary_push(branches, ID2SYM(rb_intern(type))); \
+	  rb_ary_push(branches, INT2FIX(first_line)); \
+	  rb_ary_push(branches, INT2FIX(first_column)); \
+	  rb_ary_push(branches, INT2FIX(last_line)); \
+	  rb_ary_push(branches, INT2FIX(last_column)); \
+	  rb_ary_push(branches, INT2FIX(counter_idx)); \
+	  ADD_INSN2((seq), (first_line), tracecoverage, INT2FIX(RUBY_EVENT_COVERAGE_BRANCH), INT2FIX(counter_idx)); \
+      } \
   } while (0)
 
-#define ADD_SETLOCAL(seq, line, idx, level) \
-  do { \
-      ADD_INSN2((seq), (line), setlocal, INT2FIX((idx) + VM_ENV_DATA_SIZE - 1), INT2FIX(level)); \
-  } while (0)
+static void iseq_add_getlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, int line, int idx, int level);
+static void iseq_add_setlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, int line, int idx, int level);
+
+#define ADD_GETLOCAL(seq, line, idx, level) iseq_add_getlocal(iseq, (seq), (line), (idx), (level))
+#define ADD_SETLOCAL(seq, line, idx, level) iseq_add_setlocal(iseq, (seq), (line), (idx), (level))
 
 /* add label */
 #define ADD_LABEL(seq, label) \
@@ -298,8 +320,8 @@ r_value(VALUE value)
 			   (VALUE)(ls) | 1, (VALUE)(le) | 1,			\
 			   (VALUE)(iseqv), (VALUE)(lc) | 1);			\
     LABEL_UNREMOVABLE(ls);							\
-    LABEL_UNREMOVABLE(le);							\
-    LABEL_UNREMOVABLE(lc);							\
+    LABEL_REF(le);								\
+    LABEL_REF(lc);								\
     rb_ary_push(ISEQ_COMPILE_DATA(iseq)->catch_table_ary, freeze_hide_obj(_e));	\
 } while (0)
 
@@ -332,17 +354,22 @@ r_value(VALUE value)
 #define IS_INSN(link) ((link)->type == ISEQ_ELEMENT_INSN)
 #define IS_LABEL(link) ((link)->type == ISEQ_ELEMENT_LABEL)
 #define IS_ADJUST(link) ((link)->type == ISEQ_ELEMENT_ADJUST)
+#define IS_TRACE(link) ((link)->type == ISEQ_ELEMENT_TRACE)
 #define IS_INSN_ID(iobj, insn) (INSN_OF(iobj) == BIN(insn))
+#define IS_NEXT_INSN_ID(link, insn) \
+    ((link)->next && IS_INSN((link)->next) && IS_INSN_ID((link)->next, insn))
 
 /* error */
-typedef void (*compile_error_func)(rb_iseq_t *, int, const char *, ...);
+#if CPDEBUG > 0
+NORETURN(static void append_compile_error(rb_iseq_t *iseq, int line, const char *fmt, ...));
+#endif
 
 static void
 append_compile_error(rb_iseq_t *iseq, int line, const char *fmt, ...)
 {
     VALUE err_info = ISEQ_COMPILE_DATA(iseq)->err_info;
-    VALUE file = iseq->body->location.path;
-    VALUE err = err_info;
+    VALUE file = rb_iseq_path(iseq);
+    VALUE err = err_info == Qtrue ? Qfalse : err_info;
     va_list args;
 
     va_start(args, fmt);
@@ -352,54 +379,54 @@ append_compile_error(rb_iseq_t *iseq, int line, const char *fmt, ...)
 	RB_OBJ_WRITE(iseq, &ISEQ_COMPILE_DATA(iseq)->err_info, err);
 	rb_set_errinfo(err);
     }
+    else if (!err_info) {
+	RB_OBJ_WRITE(iseq, &ISEQ_COMPILE_DATA(iseq)->err_info, Qtrue);
+    }
+    if (compile_debug) rb_exc_fatal(err);
 }
 
+#if 0
 static void
 compile_bug(rb_iseq_t *iseq, int line, const char *fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
-    rb_report_bug_valist(iseq->body->location.path, line, fmt, args);
+    rb_report_bug_valist(rb_iseq_path(iseq), line, fmt, args);
     va_end(args);
     abort();
 }
+#endif
 
-NOINLINE(static compile_error_func prepare_compile_error(rb_iseq_t *iseq));
-
-static compile_error_func
-prepare_compile_error(rb_iseq_t *iseq)
-{
-    if (compile_debug) return &compile_bug;
-    return &append_compile_error;
-}
-
-#define COMPILE_ERROR prepare_compile_error(iseq)
+#define COMPILE_ERROR append_compile_error
 
 #define ERROR_ARGS_AT(n) iseq, nd_line(n),
 #define ERROR_ARGS ERROR_ARGS_AT(node)
 
-#define EXPECT_NODE(prefix, node, ndtype) \
+#define EXPECT_NODE(prefix, node, ndtype, errval) \
 do { \
-    NODE *error_node = (node); \
+    const NODE *error_node = (node); \
     enum node_type error_type = nd_type(error_node); \
     if (error_type != (ndtype)) { \
-	compile_bug(ERROR_ARGS_AT(error_node) \
-		    prefix ": " #ndtype " is expected, but %s", \
-		    ruby_node_name(error_type)); \
+	COMPILE_ERROR(ERROR_ARGS_AT(error_node) \
+		      prefix ": " #ndtype " is expected, but %s", \
+		      ruby_node_name(error_type)); \
+	return errval; \
     } \
 } while (0)
 
-#define EXPECT_NODE_NONULL(prefix, parent, ndtype) \
+#define EXPECT_NODE_NONULL(prefix, parent, ndtype, errval) \
 do { \
-    compile_bug(ERROR_ARGS_AT(parent) \
-		prefix ": must be " #ndtype ", but 0"); \
+    COMPILE_ERROR(ERROR_ARGS_AT(parent) \
+		  prefix ": must be " #ndtype ", but 0"); \
+    return errval; \
 } while (0)
 
-#define UNKNOWN_NODE(prefix, node) \
+#define UNKNOWN_NODE(prefix, node, errval) \
 do { \
-    NODE *error_node = (node); \
-    compile_bug(ERROR_ARGS_AT(error_node) prefix ": unknown node (%s)", \
-		ruby_node_name(nd_type(error_node))); \
+    const NODE *error_node = (node); \
+    COMPILE_ERROR(ERROR_ARGS_AT(error_node) prefix ": unknown node (%s)", \
+		  ruby_node_name(nd_type(error_node))); \
+    return errval; \
 } while (0)
 
 #define COMPILE_OK 1
@@ -441,7 +468,8 @@ freeze_hide_obj(VALUE obj)
 #define gl_node_level ISEQ_COMPILE_DATA(iseq)->node_level
 #endif
 
-static void dump_disasm_list(LINK_ELEMENT *elem);
+static void dump_disasm_list_with_cursor(const LINK_ELEMENT *link, const LINK_ELEMENT *curr, const LABEL *dest);
+static void dump_disasm_list(const LINK_ELEMENT *elem);
 
 static int insn_data_length(INSN *iobj);
 static int calc_sp_depth(int depth, INSN *iobj);
@@ -449,20 +477,24 @@ static int calc_sp_depth(int depth, INSN *iobj);
 static INSN *new_insn_body(rb_iseq_t *iseq, int line_no, enum ruby_vminsn_type insn_id, int argc, ...);
 static LABEL *new_label_body(rb_iseq_t *iseq, long line);
 static ADJUST *new_adjust_body(rb_iseq_t *iseq, LABEL *label, int line);
+static TRACE *new_trace_body(rb_iseq_t *iseq, rb_event_flag_t event);
 
-static int iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const anchor, NODE *n, int);
+
+static int iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *anchor, const NODE *n, int);
 static int iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *const anchor);
 static int iseq_optimize(rb_iseq_t *iseq, LINK_ANCHOR *const anchor);
 static int iseq_insns_unification(rb_iseq_t *iseq, LINK_ANCHOR *const anchor);
 
 static int iseq_set_local_table(rb_iseq_t *iseq, const ID *tbl);
 static int iseq_set_exception_local_table(rb_iseq_t *iseq);
-static int iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const anchor, NODE *node);
+static int iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const anchor, const NODE *const node);
 
 static int iseq_set_sequence_stackcaching(rb_iseq_t *iseq, LINK_ANCHOR *const anchor);
 static int iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor);
 static int iseq_set_exception_table(rb_iseq_t *iseq);
 static int iseq_set_optargs_table(rb_iseq_t *iseq);
+
+static int compile_defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, VALUE needstr);
 
 /*
  * To make Array to LinkedList, use link_anchor
@@ -539,8 +571,6 @@ iseq_add_mark_object(const rb_iseq_t *iseq, VALUE v)
     return COMPILE_OK;
 }
 
-#define ruby_sourcefile		RSTRING_PTR(iseq->body->location.path)
-
 static int
 iseq_add_mark_object_compile_time(const rb_iseq_t *iseq, VALUE v)
 {
@@ -548,6 +578,14 @@ iseq_add_mark_object_compile_time(const rb_iseq_t *iseq, VALUE v)
 	rb_ary_push(ISEQ_COMPILE_DATA(iseq)->mark_ary, v);
     }
     return COMPILE_OK;
+}
+
+static inline VALUE
+freeze_literal(rb_iseq_t *iseq, VALUE lit)
+{
+    lit = rb_fstring(lit);
+    rb_ary_push(ISEQ_COMPILE_DATA(iseq)->mark_ary, lit);
+    return lit;
 }
 
 static int
@@ -559,7 +597,7 @@ validate_label(st_data_t name, st_data_t label, st_data_t arg)
 	do {
 	    COMPILE_ERROR(iseq, lobj->position,
 			  "%"PRIsVALUE": undefined label",
-			  rb_id2str((ID)name));
+			  rb_sym2str((VALUE)name));
 	} while (0);
     }
     return ST_CONTINUE;
@@ -573,7 +611,7 @@ validate_labels(rb_iseq_t *iseq, st_table *labels_table)
 }
 
 VALUE
-rb_iseq_compile_node(rb_iseq_t *iseq, NODE *node)
+rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
 {
     DECL_ANCHOR(ret);
     INIT_ANCHOR(ret);
@@ -582,6 +620,12 @@ rb_iseq_compile_node(rb_iseq_t *iseq, NODE *node)
 	COMPILE(ret, "nil", node);
 	iseq_set_local_table(iseq, 0);
     }
+    else if (imemo_type_p((VALUE)node, imemo_ifunc)) {
+	const struct vm_ifunc *ifunc = (struct vm_ifunc *)node;
+	/* user callback */
+	(*ifunc->func)(iseq, ret, ifunc->data);
+    }
+    /* assume node is T_NODE */
     else if (nd_type(node) == NODE_SCOPE) {
 	/* iseq type of top, method, class, block */
 	iseq_set_local_table(iseq, node->nd_tbl);
@@ -596,29 +640,33 @@ rb_iseq_compile_node(rb_iseq_t *iseq, NODE *node)
 		start->rescued = LABEL_RESCUE_BEG;
 		end->rescued = LABEL_RESCUE_END;
 
-		ADD_TRACE(ret, FIX2INT(iseq->body->location.first_lineno), RUBY_EVENT_B_CALL);
+		ADD_TRACE(ret, RUBY_EVENT_B_CALL);
+		ADD_INSN (ret, FIX2INT(iseq->body->location.first_lineno), nop);
 		ADD_LABEL(ret, start);
 		CHECK(COMPILE(ret, "block body", node->nd_body));
 		ADD_LABEL(ret, end);
-		ADD_TRACE(ret, nd_line(node), RUBY_EVENT_B_RETURN);
+		ADD_TRACE(ret, RUBY_EVENT_B_RETURN);
+		ISEQ_COMPILE_DATA(iseq)->last_line = iseq->body->location.code_range.last_loc.lineno;
 
 		/* wide range catch handler must put at last */
-		ADD_CATCH_ENTRY(CATCH_TYPE_REDO, start, end, 0, start);
-		ADD_CATCH_ENTRY(CATCH_TYPE_NEXT, start, end, 0, end);
+		ADD_CATCH_ENTRY(CATCH_TYPE_REDO, start, end, NULL, start);
+		ADD_CATCH_ENTRY(CATCH_TYPE_NEXT, start, end, NULL, end);
 		break;
 	    }
 	  case ISEQ_TYPE_CLASS:
 	    {
-		ADD_TRACE(ret, FIX2INT(iseq->body->location.first_lineno), RUBY_EVENT_CLASS);
+		ADD_TRACE(ret, RUBY_EVENT_CLASS);
 		CHECK(COMPILE(ret, "scoped node", node->nd_body));
-		ADD_TRACE(ret, nd_line(node), RUBY_EVENT_END);
+		ADD_TRACE(ret, RUBY_EVENT_END);
+		ISEQ_COMPILE_DATA(iseq)->last_line = nd_line(node);
 		break;
 	    }
 	  case ISEQ_TYPE_METHOD:
 	    {
-		ADD_TRACE(ret, FIX2INT(iseq->body->location.first_lineno), RUBY_EVENT_CALL);
+		ADD_TRACE(ret, RUBY_EVENT_CALL);
 		CHECK(COMPILE(ret, "scoped node", node->nd_body));
-		ADD_TRACE(ret, nd_line(node), RUBY_EVENT_RETURN);
+		ADD_TRACE(ret, RUBY_EVENT_RETURN);
+		ISEQ_COMPILE_DATA(iseq)->last_line = nd_line(node);
 		break;
 	    }
 	  default: {
@@ -627,22 +675,18 @@ rb_iseq_compile_node(rb_iseq_t *iseq, NODE *node)
 	  }
 	}
     }
-    else if (RB_TYPE_P((VALUE)node, T_IMEMO)) {
-	const struct vm_ifunc *ifunc = (struct vm_ifunc *)node;
-	/* user callback */
-	(*ifunc->func)(iseq, ret, ifunc->data);
-    }
     else {
+	const char *m;
+#define INVALID_ISEQ_TYPE(type) \
+	ISEQ_TYPE_##type: m = #type; goto invalid_iseq_type
 	switch (iseq->body->type) {
-	  case ISEQ_TYPE_METHOD:
-	  case ISEQ_TYPE_CLASS:
-	  case ISEQ_TYPE_BLOCK:
-	  case ISEQ_TYPE_EVAL:
-	  case ISEQ_TYPE_MAIN:
-	  case ISEQ_TYPE_TOP:
-	    COMPILE_ERROR(ERROR_ARGS "compile/should not be reached: %s:%d",
-			  __FILE__, __LINE__);
-	    return COMPILE_NG;
+	  case INVALID_ISEQ_TYPE(METHOD);
+	  case INVALID_ISEQ_TYPE(CLASS);
+	  case INVALID_ISEQ_TYPE(BLOCK);
+	  case INVALID_ISEQ_TYPE(EVAL);
+	  case INVALID_ISEQ_TYPE(MAIN);
+	  case INVALID_ISEQ_TYPE(TOP);
+#undef INVALID_ISEQ_TYPE /* invalid iseq types end */
 	  case ISEQ_TYPE_RESCUE:
 	    iseq_set_exception_local_table(iseq);
 	    CHECK(COMPILE(ret, "rescue", node));
@@ -656,7 +700,11 @@ rb_iseq_compile_node(rb_iseq_t *iseq, NODE *node)
 	    CHECK(COMPILE(ret, "defined guard", node));
 	    break;
 	  default:
-	    compile_bug(ERROR_ARGS "unknown scope");
+	    COMPILE_ERROR(ERROR_ARGS "unknown scope: %d", iseq->body->type);
+	    return COMPILE_NG;
+	  invalid_iseq_type:
+	    COMPILE_ERROR(ERROR_ARGS "compile/ISEQ_TYPE_%s should not be reached", m);
+	    return COMPILE_NG;
 	}
     }
 
@@ -848,11 +896,17 @@ compile_data_alloc_adjust(rb_iseq_t *iseq)
     return (ADJUST *)compile_data_alloc(iseq, sizeof(ADJUST));
 }
 
+static TRACE *
+compile_data_alloc_trace(rb_iseq_t *iseq)
+{
+    return (TRACE *)compile_data_alloc(iseq, sizeof(TRACE));
+}
+
 /*
  * elem1, elemX => elem1, elem2, elemX
  */
 static void
-INSERT_ELEM_NEXT(LINK_ELEMENT *elem1, LINK_ELEMENT *elem2)
+ELEM_INSERT_NEXT(LINK_ELEMENT *elem1, LINK_ELEMENT *elem2)
 {
     elem2->next = elem1->next;
     elem2->prev = elem1;
@@ -866,7 +920,7 @@ INSERT_ELEM_NEXT(LINK_ELEMENT *elem1, LINK_ELEMENT *elem2)
  * elem1, elemX => elemX, elem2, elem1
  */
 static void
-INSERT_ELEM_PREV(LINK_ELEMENT *elem1, LINK_ELEMENT *elem2)
+ELEM_INSERT_PREV(LINK_ELEMENT *elem1, LINK_ELEMENT *elem2)
 {
     elem2->prev = elem1->prev;
     elem2->next = elem1;
@@ -876,12 +930,11 @@ INSERT_ELEM_PREV(LINK_ELEMENT *elem1, LINK_ELEMENT *elem2)
     }
 }
 
-#if 0
 /*
  * elemX, elem1, elemY => elemX, elem2, elemY
  */
 static void
-REPLACE_ELEM(LINK_ELEMENT *elem1, LINK_ELEMENT *elem2)
+ELEM_REPLACE(LINK_ELEMENT *elem1, LINK_ELEMENT *elem2)
 {
     elem2->prev = elem1->prev;
     elem2->next = elem1->next;
@@ -892,10 +945,9 @@ REPLACE_ELEM(LINK_ELEMENT *elem1, LINK_ELEMENT *elem2)
 	elem1->next->prev = elem2;
     }
 }
-#endif
 
 static void
-REMOVE_ELEM(LINK_ELEMENT *elem)
+ELEM_REMOVE(LINK_ELEMENT *elem)
 {
     elem->prev->next = elem->next;
     if (elem->next) {
@@ -904,7 +956,7 @@ REMOVE_ELEM(LINK_ELEMENT *elem)
 }
 
 static LINK_ELEMENT *
-FIRST_ELEMENT(LINK_ANCHOR *const anchor)
+FIRST_ELEMENT(const LINK_ANCHOR *const anchor)
 {
     return anchor->anchor.next;
 }
@@ -928,14 +980,42 @@ POP_ELEMENT(ISEQ_ARG_DECLARE LINK_ANCHOR *const anchor)
 #define POP_ELEMENT(anchor) POP_ELEMENT(iseq, (anchor))
 #endif
 
-static int
-LIST_SIZE_ZERO(LINK_ANCHOR *const anchor)
+static LINK_ELEMENT *
+ELEM_FIRST_INSN(LINK_ELEMENT *elem)
 {
-    if (anchor->anchor.next == 0) {
-	return 1;
+    while (elem) {
+	switch (elem->type) {
+	  case ISEQ_ELEMENT_INSN:
+	  case ISEQ_ELEMENT_ADJUST:
+	    return elem;
+	  default:
+	    elem = elem->next;
+	}
+    }
+    return NULL;
+}
+
+static int
+LIST_INSN_SIZE_ONE(const LINK_ANCHOR *const anchor)
+{
+    LINK_ELEMENT *first_insn = ELEM_FIRST_INSN(FIRST_ELEMENT(anchor));
+    if (first_insn != NULL &&
+	ELEM_FIRST_INSN(first_insn->next) == NULL) {
+	return TRUE;
     }
     else {
-	return 0;
+	return FALSE;
+    }
+}
+
+static int
+LIST_INSN_SIZE_ZERO(const LINK_ANCHOR *const anchor)
+{
+    if (ELEM_FIRST_INSN(FIRST_ELEMENT(anchor)) == NULL) {
+	return TRUE;
+    }
+    else {
+	return FALSE;
     }
 }
 
@@ -1010,7 +1090,21 @@ debug_list(ISEQ_ARG_DECLARE LINK_ANCHOR *const anchor)
 #if CPDEBUG < 0
 #define debug_list(anc) debug_list(iseq, (anc))
 #endif
+#else
+#define debug_list(anc) ((void)0)
 #endif
+
+static TRACE *
+new_trace_body(rb_iseq_t *iseq, rb_event_flag_t event)
+{
+    TRACE *trace = compile_data_alloc_trace(iseq);
+
+    trace->link.type = ISEQ_ELEMENT_TRACE;
+    trace->link.next = NULL;
+    trace->event = event;
+
+    return trace;
+}
 
 static LABEL *
 new_label_body(rb_iseq_t *iseq, long line)
@@ -1026,6 +1120,7 @@ new_label_body(rb_iseq_t *iseq, long line)
     labelobj->refcnt = 0;
     labelobj->set = 0;
     labelobj->rescued = LABEL_RESCUE_NONE;
+    labelobj->unremovable = 0;
     return labelobj;
 }
 
@@ -1046,12 +1141,14 @@ new_insn_core(rb_iseq_t *iseq, int line_no,
 	      int insn_id, int argc, VALUE *argv)
 {
     INSN *iobj = compile_data_alloc_insn(iseq);
+
     /* printf("insn_id: %d, line: %d\n", insn_id, line_no); */
 
     iobj->link.type = ISEQ_ELEMENT_INSN;
     iobj->link.next = 0;
     iobj->insn_id = insn_id;
-    iobj->line_no = line_no;
+    iobj->insn_info.line_no = line_no;
+    iobj->insn_info.events = 0;
     iobj->operands = argv;
     iobj->operand_size = argc;
     iobj->sc_state = 0;
@@ -1097,7 +1194,7 @@ new_callinfo(rb_iseq_t *iseq, ID mid, int argc, unsigned int flag, struct rb_cal
 	iseq->body->ci_size++;
     }
 
-    if (!(ci->flag & (VM_CALL_ARGS_SPLAT | VM_CALL_ARGS_BLOCKARG)) &&
+    if (!(ci->flag & (VM_CALL_ARGS_SPLAT | VM_CALL_ARGS_BLOCKARG | VM_CALL_KW_SPLAT)) &&
 	kw_arg == NULL && !has_blockiseq) {
 	ci->flag |= VM_CALL_ARGS_SIMPLE;
     }
@@ -1115,14 +1212,14 @@ new_insn_send(rb_iseq_t *iseq, int line_no, ID id, VALUE argc, const rb_iseq_t *
 }
 
 static rb_iseq_t *
-new_child_iseq(rb_iseq_t *iseq, NODE *node,
+new_child_iseq(rb_iseq_t *iseq, const NODE *const node,
 	       VALUE name, const rb_iseq_t *parent, enum iseq_type type, int line_no)
 {
     rb_iseq_t *ret_iseq;
 
     debugs("[new_child_iseq]> ---------------------------------------\n");
     ret_iseq = rb_iseq_new_with_opt(node, name,
-				    iseq_path(iseq), iseq_absolute_path(iseq),
+				    rb_iseq_path(iseq), rb_iseq_realpath(iseq),
 				    INT2FIX(line_no), parent, type, ISEQ_COMPILE_DATA(iseq)->option);
     debugs("[new_child_iseq]< ---------------------------------------\n");
     iseq_add_mark_object(iseq, (VALUE)ret_iseq);
@@ -1258,6 +1355,47 @@ get_dyna_var_idx(const rb_iseq_t *iseq, ID id, int *level, int *ls)
     return idx;
 }
 
+static int
+iseq_local_block_param_p(const rb_iseq_t *iseq, unsigned int idx, unsigned int level)
+{
+    while (level > 0) {
+	iseq = iseq->body->parent_iseq;
+	level--;
+    }
+    if (iseq->body->local_iseq == iseq && /* local variables */
+	iseq->body->param.flags.has_block &&
+	iseq->body->local_table_size - iseq->body->param.block_start == idx) {
+	return TRUE;
+    }
+    else {
+	return FALSE;
+    }
+}
+
+static void
+iseq_add_getlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, int line, int idx, int level)
+{
+    if (iseq_local_block_param_p(iseq, idx, level)) {
+	ADD_INSN2(seq, line, getblockparam, INT2FIX((idx) + VM_ENV_DATA_SIZE - 1), INT2FIX(level));
+    }
+    else {
+	ADD_INSN2(seq, line, getlocal, INT2FIX((idx) + VM_ENV_DATA_SIZE - 1), INT2FIX(level));
+    }
+}
+
+static void
+iseq_add_setlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, int line, int idx, int level)
+{
+    if (iseq_local_block_param_p(iseq, idx, level)) {
+	ADD_INSN2(seq, line, setblockparam, INT2FIX((idx) + VM_ENV_DATA_SIZE - 1), INT2FIX(level));
+    }
+    else {
+	ADD_INSN2(seq, line, setlocal, INT2FIX((idx) + VM_ENV_DATA_SIZE - 1), INT2FIX(level));
+    }
+}
+
+
+
 static void
 iseq_calc_param_size(rb_iseq_t *iseq)
 {
@@ -1299,7 +1437,7 @@ static void
 iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
 			    const struct rb_args_info *args)
 {
-    NODE *node = args->kw_args;
+    const NODE *node = args->kw_args;
     struct rb_iseq_param_keyword *keyword;
     const VALUE default_values = rb_ary_tmp_new(1);
     const VALUE complex_mark = rb_str_tmp_new(0);
@@ -1307,13 +1445,13 @@ iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
 
     iseq->body->param.flags.has_kw = TRUE;
     iseq->body->param.keyword = keyword = ZALLOC_N(struct rb_iseq_param_keyword, 1);
-    keyword->bits_start = get_dyna_var_idx_at_raw(iseq, args->kw_rest_arg->nd_vid);
+    keyword->bits_start = get_dyna_var_idx_at_raw(iseq, args->kw_rest_arg->nd_cflag);
 
     while (node) {
-	NODE *val_node = node->nd_body->nd_value;
+	const NODE *val_node = node->nd_body->nd_value;
 	VALUE dv;
 
-	if (val_node == (NODE *)-1) {
+	if (val_node == (const NODE *)-1) {
 	    ++rkw;
 	}
 	else {
@@ -1346,8 +1484,8 @@ iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
 
     keyword->num = kw;
 
-    if (args->kw_rest_arg->nd_cflag != 0) {
-	keyword->rest_start =  get_dyna_var_idx_at_raw(iseq, args->kw_rest_arg->nd_cflag);
+    if (args->kw_rest_arg->nd_vid != 0) {
+	keyword->rest_start =  get_dyna_var_idx_at_raw(iseq, args->kw_rest_arg->nd_vid);
 	iseq->body->param.flags.has_kwrest = TRUE;
     }
     keyword->required_num = rkw;
@@ -1367,7 +1505,7 @@ iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
 }
 
 static int
-iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, NODE *node_args)
+iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *const node_args)
 {
     debugs("iseq_set_arguments: %s\n", node_args ? "" : "0");
 
@@ -1377,7 +1515,7 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, NODE *node_args)
 	int last_comma = 0;
 	ID block_id = 0;
 
-	EXPECT_NODE("iseq_set_arguments", node_args, NODE_ARGS);
+	EXPECT_NODE("iseq_set_arguments", node_args, NODE_ARGS, COMPILE_NG);
 
 	iseq->body->param.lead_num = (int)args->pre_args_num;
 	if (iseq->body->param.lead_num > 0) iseq->body->param.flags.has_lead = TRUE;
@@ -1397,7 +1535,7 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, NODE *node_args)
 	}
 
 	if (args->opt_args) {
-	    NODE *node = args->opt_args;
+	    const NODE *node = args->opt_args;
 	    LABEL *label;
 	    VALUE labels = rb_ary_tmp_new(1);
 	    VALUE *opt_table;
@@ -1573,18 +1711,173 @@ get_ivar_ic_value(rb_iseq_t *iseq,ID id)
     return val;
 }
 
+#define BADINSN_DUMP(anchor, list, dest) \
+    dump_disasm_list_with_cursor(&anchor->anchor, list, dest)
+
+#define BADINSN_ERROR \
+    (xfree(generated_iseq), \
+     xfree(insns_info), \
+     BADINSN_DUMP(anchor, list, NULL), \
+     COMPILE_ERROR)
+
+static int
+fix_sp_depth(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
+{
+    int stack_max = 0, sp = 0, line = 0;
+    LINK_ELEMENT *list;
+
+    for (list = FIRST_ELEMENT(anchor); list; list = list->next) {
+	if (list->type == ISEQ_ELEMENT_LABEL) {
+	    LABEL *lobj = (LABEL *)list;
+	    lobj->set = TRUE;
+	}
+    }
+
+    for (list = FIRST_ELEMENT(anchor); list; list = list->next) {
+	switch (list->type) {
+	  case ISEQ_ELEMENT_INSN:
+	    {
+		int j, len, insn;
+		const char *types;
+		VALUE *operands;
+		INSN *iobj = (INSN *)list;
+
+		/* update sp */
+		sp = calc_sp_depth(sp, iobj);
+		if (sp < 0) {
+		    BADINSN_DUMP(anchor, list, NULL);
+		    COMPILE_ERROR(iseq, iobj->insn_info.line_no,
+				  "argument stack underflow (%d)", sp);
+		    return -1;
+		}
+		if (sp > stack_max) {
+		    stack_max = sp;
+		}
+
+		line = iobj->insn_info.line_no;
+		/* fprintf(stderr, "insn: %-16s, sp: %d\n", insn_name(iobj->insn_id), sp); */
+		operands = iobj->operands;
+		insn = iobj->insn_id;
+		types = insn_op_types(insn);
+		len = insn_len(insn);
+
+		/* operand check */
+		if (iobj->operand_size != len - 1) {
+		    /* printf("operand size miss! (%d, %d)\n", iobj->operand_size, len); */
+		    BADINSN_DUMP(anchor, list, NULL);
+		    COMPILE_ERROR(iseq, iobj->insn_info.line_no,
+				  "operand size miss! (%d for %d)",
+				  iobj->operand_size, len - 1);
+		    return -1;
+		}
+
+		for (j = 0; types[j]; j++) {
+		    if (types[j] == TS_OFFSET) {
+			/* label(destination position) */
+			LABEL *lobj = (LABEL *)operands[j];
+			if (!lobj->set) {
+			    BADINSN_DUMP(anchor, list, NULL);
+			    COMPILE_ERROR(iseq, iobj->insn_info.line_no,
+					  "unknown label: "LABEL_FORMAT, lobj->label_no);
+			    return -1;
+			}
+			if (lobj->sp == -1) {
+			    lobj->sp = sp;
+			}
+		    }
+		}
+		break;
+	    }
+	  case ISEQ_ELEMENT_LABEL:
+	    {
+		LABEL *lobj = (LABEL *)list;
+		if (lobj->sp == -1) {
+		    lobj->sp = sp;
+		}
+		else {
+		    sp = lobj->sp;
+		}
+		break;
+	    }
+	  case ISEQ_ELEMENT_TRACE:
+	    {
+		/* ignore */
+		break;
+	    }
+	  case ISEQ_ELEMENT_ADJUST:
+	    {
+		ADJUST *adjust = (ADJUST *)list;
+		int orig_sp = sp;
+
+		sp = adjust->label ? adjust->label->sp : 0;
+		if (adjust->line_no != -1 && orig_sp - sp < 0) {
+		    BADINSN_DUMP(anchor, list, NULL);
+		    COMPILE_ERROR(iseq, adjust->line_no,
+				  "iseq_set_sequence: adjust bug %d < %d",
+				  orig_sp, sp);
+		    return -1;
+		}
+		break;
+	    }
+	  default:
+	    BADINSN_DUMP(anchor, list, NULL);
+	    COMPILE_ERROR(iseq, line, "unknown list type: %d", list->type);
+	    return -1;
+	}
+    }
+    return stack_max;
+}
+
+static int
+add_insn_info(struct iseq_insn_info_entry *insns_info, int insns_info_index, int code_index, LINK_ELEMENT *list)
+{
+    if (list->type == ISEQ_ELEMENT_INSN) {
+	INSN *iobj = (INSN *)list;
+	if (insns_info_index == 0 ||
+	    insns_info[insns_info_index-1].line_no != iobj->insn_info.line_no ||
+	    insns_info[insns_info_index-1].events  != iobj->insn_info.events) {
+	    insns_info[insns_info_index].position   = code_index;
+	    insns_info[insns_info_index].line_no    = iobj->insn_info.line_no;
+	    insns_info[insns_info_index].events     = iobj->insn_info.events;
+	    return TRUE;
+	}
+	else {
+	    return FALSE;
+	}
+    }
+    else if (list->type == ISEQ_ELEMENT_ADJUST) {
+	ADJUST *adjust = (ADJUST *)list;
+	if (insns_info_index > 0 ||
+	    insns_info[insns_info_index-1].line_no != adjust->line_no) {
+	    insns_info[insns_info_index].position   = code_index;
+	    insns_info[insns_info_index].line_no    = adjust->line_no;
+	    insns_info[insns_info_index].events     = 0;
+	    return TRUE;
+	}
+	else {
+	    return FALSE;
+	}
+    }
+    else {
+	VM_UNREACHABLE(add_insn_info);
+    }
+}
+
 /**
   ruby insn object list -> raw instruction sequence
  */
 static int
 iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 {
-    struct iseq_line_info_entry *line_info_table;
-    unsigned int last_line = 0;
+    struct iseq_insn_info_entry *insns_info;
     LINK_ELEMENT *list;
     VALUE *generated_iseq;
+    rb_event_flag_t events = 0;
 
-    int insn_num, code_index, line_info_index, sp, stack_max = 0, line = 0;
+    int insn_num, code_index, insns_info_index, sp = 0;
+    int stack_max = fix_sp_depth(iseq, anchor);
+
+    if (stack_max < 0) return COMPILE_NG;
 
     /* fix label position */
     list = FIRST_ELEMENT(anchor);
@@ -1594,53 +1887,58 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 	  case ISEQ_ELEMENT_INSN:
 	    {
 		INSN *iobj = (INSN *)list;
-		line = iobj->line_no;
+		/* update sp */
+		sp = calc_sp_depth(sp, iobj);
 		code_index += insn_data_length(iobj);
 		insn_num++;
+		iobj->insn_info.events |= events;
+		events = 0;
 		break;
 	    }
 	  case ISEQ_ELEMENT_LABEL:
 	    {
 		LABEL *lobj = (LABEL *)list;
 		lobj->position = code_index;
-		lobj->set = TRUE;
+		sp = lobj->sp;
 		break;
 	    }
-	  case ISEQ_ELEMENT_NONE:
+	  case ISEQ_ELEMENT_TRACE:
 	    {
-		/* ignore */
+		TRACE *trace = (TRACE *)list;
+		events |= trace->event;
 		break;
 	    }
 	  case ISEQ_ELEMENT_ADJUST:
 	    {
 		ADJUST *adjust = (ADJUST *)list;
 		if (adjust->line_no != -1) {
-		    code_index += 2 /* insn + 1 operand */;
-		    insn_num++;
+		    int orig_sp = sp;
+		    sp = adjust->label ? adjust->label->sp : 0;
+		    if (orig_sp - sp > 0) {
+			if (orig_sp - sp > 1) code_index++; /* 1 operand */
+			code_index++; /* insn */
+			insn_num++;
+		    }
 		}
 		break;
 	    }
-	  default:
-	    dump_disasm_list(FIRST_ELEMENT(anchor));
-	    dump_disasm_list(list);
-	    COMPILE_ERROR(iseq, line, "error: set_sequence");
-	    return COMPILE_NG;
 	}
 	list = list->next;
     }
 
     /* make instruction sequence */
     generated_iseq = ALLOC_N(VALUE, code_index);
-    line_info_table = ALLOC_N(struct iseq_line_info_entry, insn_num);
+    insns_info = ALLOC_N(struct iseq_insn_info_entry, insn_num);
     iseq->body->is_entries = ZALLOC_N(union iseq_inline_storage_entry, iseq->body->is_size);
     iseq->body->ci_entries = (struct rb_call_info *)ruby_xmalloc(sizeof(struct rb_call_info) * iseq->body->ci_size +
 								 sizeof(struct rb_call_info_with_kwarg) * iseq->body->ci_kw_size);
+    MEMZERO(iseq->body->ci_entries + iseq->body->ci_size, struct rb_call_info_with_kwarg,  iseq->body->ci_kw_size); /* need to clear ci_kw entries */
     iseq->body->cc_entries = ZALLOC_N(struct rb_call_cache, iseq->body->ci_size + iseq->body->ci_kw_size);
 
     ISEQ_COMPILE_DATA(iseq)->ci_index = ISEQ_COMPILE_DATA(iseq)->ci_kw_index = 0;
 
     list = FIRST_ELEMENT(anchor);
-    line_info_index = code_index = sp = 0;
+    insns_info_index = code_index = sp = 0;
 
     while (list) {
 	switch (list->type) {
@@ -1653,28 +1951,12 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 
 		/* update sp */
 		sp = calc_sp_depth(sp, iobj);
-		if (sp > stack_max) {
-		    stack_max = sp;
-		}
-
 		/* fprintf(stderr, "insn: %-16s, sp: %d\n", insn_name(iobj->insn_id), sp); */
 		operands = iobj->operands;
 		insn = iobj->insn_id;
 		generated_iseq[code_index] = insn;
 		types = insn_op_types(insn);
 		len = insn_len(insn);
-
-		/* operand check */
-		if (iobj->operand_size != len - 1) {
-		    /* printf("operand size miss! (%d, %d)\n", iobj->operand_size, len); */
-		    dump_disasm_list(list);
-		    xfree(generated_iseq);
-		    xfree(line_info_table);
-		    COMPILE_ERROR(iseq, iobj->line_no,
-				  "operand size miss! (%d for %d)",
-				  iobj->operand_size, len - 1);
-		    return COMPILE_NG;
-		}
 
 		for (j = 0; types[j]; j++) {
 		    char type = types[j];
@@ -1684,14 +1966,6 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 			{
 			    /* label(destination position) */
 			    LABEL *lobj = (LABEL *)operands[j];
-			    if (!lobj->set) {
-				COMPILE_ERROR(iseq, iobj->line_no,
-					      "unknown label");
-				return COMPILE_NG;
-			    }
-			    if (lobj->sp == -1) {
-				lobj->sp = sp;
-			    }
 			    generated_iseq[code_index + 1 + j] = lobj->position - (code_index + len);
 			    break;
 			}
@@ -1778,30 +2052,19 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 			generated_iseq[code_index + 1 + j] = operands[j];
 			break;
 		      default:
-			xfree(generated_iseq);
-			xfree(line_info_table);
-			COMPILE_ERROR(iseq, iobj->line_no,
+			BADINSN_ERROR(iseq, iobj->insn_info.line_no,
 				      "unknown operand type: %c", type);
 			return COMPILE_NG;
 		    }
 		}
-		if (last_line != iobj->line_no) {
-		    line_info_table[line_info_index].line_no = last_line = iobj->line_no;
-		    line_info_table[line_info_index].position = code_index;
-		    line_info_index++;
-		}
+		if (add_insn_info(insns_info, insns_info_index, code_index, (LINK_ELEMENT *)iobj)) insns_info_index++;
 		code_index += len;
 		break;
 	    }
 	  case ISEQ_ELEMENT_LABEL:
 	    {
 		LABEL *lobj = (LABEL *)list;
-		if (lobj->sp == -1) {
-		    lobj->sp = sp;
-		}
-		else {
-		    sp = lobj->sp;
-		}
+		sp = lobj->sp;
 		break;
 	    }
 	  case ISEQ_ELEMENT_ADJUST:
@@ -1817,29 +2080,26 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 		}
 
 		if (adjust->line_no != -1) {
-		    if (orig_sp - sp > 0) {
-			if (last_line != (unsigned int)adjust->line_no) {
-			    line_info_table[line_info_index].line_no = last_line = adjust->line_no;
-			    line_info_table[line_info_index].position = code_index;
-			    line_info_index++;
-			}
+		    const int diff = orig_sp - sp;
+		    if (diff > 0) {
+			if (add_insn_info(insns_info, insns_info_index, code_index, (LINK_ELEMENT *)adjust)) insns_info_index++;
+		    }
+		    if (diff > 1) {
 			generated_iseq[code_index++] = BIN(adjuststack);
 			generated_iseq[code_index++] = orig_sp - sp;
 		    }
-		    else if (orig_sp - sp == 0) {
-			/* jump to next insn */
-			if (last_line != (unsigned int)adjust->line_no) {
-			    line_info_table[line_info_index].line_no = last_line = adjust->line_no;
-			    line_info_table[line_info_index].position = code_index;
-			    line_info_index++;
-			}
-			generated_iseq[code_index++] = BIN(nop);
-			generated_iseq[code_index++] = BIN(nop);
+		    else if (diff == 1) {
+			generated_iseq[code_index++] = BIN(pop);
 		    }
-		    else {
-			compile_bug(iseq, adjust->line_no,
-				    "iseq_set_sequence: adjust bug %d < %d",
-				    orig_sp, sp);
+		    else if (diff < 0) {
+			int label_no = adjust->label ? adjust->label->label_no : -1;
+			xfree(generated_iseq);
+			xfree(insns_info);
+			debug_list(anchor);
+			COMPILE_ERROR(iseq, adjust->line_no,
+				      "iseq_set_sequence: adjust bug to %d %d < %d",
+				      label_no, orig_sp, sp);
+			return COMPILE_NG;
 		    }
 		}
 		break;
@@ -1855,9 +2115,12 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     iseq->body->iseq_size = code_index;
     iseq->body->stack_max = stack_max;
 
-    REALLOC_N(line_info_table, struct iseq_line_info_entry, line_info_index);
-    iseq->body->line_info_table = line_info_table;
-    iseq->body->line_info_size = line_info_index;
+    /* get rid of memory leak when REALLOC failed */
+    iseq->body->insns_info = insns_info;
+
+    REALLOC_N(insns_info, struct iseq_insn_info_entry, insns_info_index);
+    iseq->body->insns_info = insns_info;
+    iseq->body->insns_info_size = insns_info_index;
 
     return COMPILE_OK;
 }
@@ -1956,13 +2219,30 @@ get_destination_insn(INSN *iobj)
 {
     LABEL *lobj = (LABEL *)OPERAND_AT(iobj, 0);
     LINK_ELEMENT *list;
+    rb_event_flag_t events = 0;
 
     list = lobj->link.next;
     while (list) {
-	if (IS_INSN(list) || IS_ADJUST(list)) {
+	switch (list->type) {
+	  case ISEQ_ELEMENT_INSN:
+	  case ISEQ_ELEMENT_ADJUST:
+	    goto found;
+	  case ISEQ_ELEMENT_LABEL:
+	    /* ignore */
+	    break;
+	  case ISEQ_ELEMENT_TRACE:
+	    {
+		TRACE *trace = (TRACE *)list;
+		events |= trace->event;
+	    }
 	    break;
 	}
 	list = list->next;
+    }
+  found:
+    if (list && IS_INSN(list)) {
+	INSN *iobj = (INSN *)list;
+	iobj->insn_info.events |= events;
     }
     return list;
 }
@@ -2000,7 +2280,7 @@ unref_destination(INSN *iobj, int pos)
 {
     LABEL *lobj = (LABEL *)OPERAND_AT(iobj, pos);
     --lobj->refcnt;
-    if (!lobj->refcnt) REMOVE_ELEM(&lobj->link);
+    if (!lobj->refcnt) ELEM_REMOVE(&lobj->link);
 }
 
 static void
@@ -2012,33 +2292,61 @@ replace_destination(INSN *dobj, INSN *nobj)
     --dl->refcnt;
     ++nl->refcnt;
     OPERAND_AT(dobj, 0) = n;
-    if (!dl->refcnt) REMOVE_ELEM(&dl->link);
+    if (!dl->refcnt) ELEM_REMOVE(&dl->link);
+}
+
+static LABEL*
+find_destination(INSN *i)
+{
+    int pos, len = insn_len(i->insn_id);
+    for (pos = 0; pos < len; ++pos) {
+	if (insn_op_types(i->insn_id)[pos] == TS_OFFSET) {
+	    return (LABEL *)OPERAND_AT(i, pos);
+	}
+    }
+    return 0;
 }
 
 static int
 remove_unreachable_chunk(rb_iseq_t *iseq, LINK_ELEMENT *i)
 {
     LINK_ELEMENT *first = i, *end;
+    int *unref_counts = 0, nlabels = ISEQ_COMPILE_DATA(iseq)->label_no;
 
     if (!i) return 0;
-    while (i) {
+    unref_counts = ALLOCA_N(int, nlabels);
+    MEMZERO(unref_counts, int, nlabels);
+    end = i;
+    do {
+	LABEL *lab;
 	if (IS_INSN(i)) {
-	    if (IS_INSN_ID(i, jump) || IS_INSN_ID(i, leave)) {
+	    if (IS_INSN_ID(i, leave)) {
+		end = i;
 		break;
+	    }
+	    else if ((lab = find_destination((INSN *)i)) != 0) {
+		if (lab->unremovable) break;
+		unref_counts[lab->label_no]++;
 	    }
 	}
 	else if (IS_LABEL(i)) {
-	    if (((LABEL *)i)->unremovable) return 0;
-	    if (((LABEL *)i)->refcnt > 0) {
+	    lab = (LABEL *)i;
+	    if (lab->unremovable) return 0;
+	    if (lab->refcnt > unref_counts[lab->label_no]) {
 		if (i == first) return 0;
-		i = i->prev;
 		break;
 	    }
+	    continue;
 	}
-	else return 0;
-	i = i->next;
-    }
-    end = i;
+	else if (IS_TRACE(i)) {
+	    /* do nothing */
+	}
+	else if (IS_ADJUST(i)) {
+	    LABEL *dest = ((ADJUST *)i)->label;
+	    if (dest && dest->unremovable) return 0;
+	}
+	end = i;
+    } while ((i = i->next) != 0);
     i = first;
     do {
 	if (IS_INSN(i)) {
@@ -2059,28 +2367,49 @@ remove_unreachable_chunk(rb_iseq_t *iseq, LINK_ELEMENT *i)
 		}
 	    }
 	}
-	REMOVE_ELEM(i);
+	ELEM_REMOVE(i);
     } while ((i != end) && (i = i->next) != 0);
     return 1;
 }
 
 static int
+iseq_pop_newarray(rb_iseq_t *iseq, INSN *iobj)
+{
+    switch (OPERAND_AT(iobj, 0)) {
+      case INT2FIX(0): /* empty array */
+	ELEM_REMOVE(&iobj->link);
+	return TRUE;
+      case INT2FIX(1): /* single element array */
+	ELEM_REMOVE(&iobj->link);
+	return FALSE;
+      default:
+	iobj->insn_id = BIN(adjuststack);
+	return TRUE;
+    }
+}
+
+static int
+same_debug_pos_p(LINK_ELEMENT *iobj1, LINK_ELEMENT *iobj2)
+{
+    VALUE debug1 = OPERAND_AT(iobj1, 0);
+    VALUE debug2 = OPERAND_AT(iobj2, 0);
+    if (debug1 == debug2) return TRUE;
+    if (!RB_TYPE_P(debug1, T_ARRAY)) return FALSE;
+    if (!RB_TYPE_P(debug2, T_ARRAY)) return FALSE;
+    if (RARRAY_LEN(debug1) != 2) return FALSE;
+    if (RARRAY_LEN(debug2) != 2) return FALSE;
+    if (RARRAY_AREF(debug1, 0) != RARRAY_AREF(debug2, 0)) return FALSE;
+    if (RARRAY_AREF(debug1, 1) != RARRAY_AREF(debug2, 1)) return FALSE;
+    return TRUE;
+}
+
+static int
 iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcallopt)
 {
-    INSN *iobj = (INSN *)list;
+    INSN *const iobj = (INSN *)list;
   again:
     if (IS_INSN_ID(iobj, jump)) {
 	INSN *niobj, *diobj, *piobj;
-	/*
-	 *  useless jump elimination:
-	 *     jump LABEL1
-	 *     ...
-	 *   LABEL1:
-	 *     jump LABEL2
-	 *
-	 *   => in this case, first jump instruction should jump to
-	 *      LABEL2 directly
-	 */
 	diobj = (INSN *)get_destination_insn(iobj);
 	niobj = (INSN *)get_next_insn(iobj);
 
@@ -2092,15 +2421,27 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	     *   LABEL:
 	     */
 	    unref_destination(iobj, 0);
-	    REMOVE_ELEM(&iobj->link);
+	    ELEM_REMOVE(&iobj->link);
+	    return COMPILE_OK;
 	}
 	else if (iobj != diobj && IS_INSN_ID(diobj, jump) &&
 		 OPERAND_AT(iobj, 0) != OPERAND_AT(diobj, 0)) {
+	    /*
+	     *  useless jump elimination:
+	     *     jump LABEL1
+	     *     ...
+	     *   LABEL1:
+	     *     jump LABEL2
+	     *
+	     *   => in this case, first jump instruction should jump to
+	     *      LABEL2 directly
+	     */
 	    replace_destination(iobj, diobj);
 	    remove_unreachable_chunk(iseq, iobj->link.next);
 	    goto again;
 	}
 	else if (IS_INSN_ID(diobj, leave)) {
+	    INSN *pop;
 	    /*
 	     *  jump LABEL
 	     *  ...
@@ -2108,45 +2449,98 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	     *  leave
 	     * =>
 	     *  leave
+	     *  pop
 	     *  ...
 	     * LABEL:
 	     *  leave
 	     */
-	    INSN *popiobj = new_insn_core(iseq, iobj->line_no,
-					  BIN(pop), 0, 0);
 	    /* replace */
 	    unref_destination(iobj, 0);
 	    iobj->insn_id = BIN(leave);
 	    iobj->operand_size = 0;
-	    INSERT_ELEM_NEXT(&iobj->link, &popiobj->link);
+	    iobj->insn_info = diobj->insn_info;
+	    /* adjust stack depth */
+	    pop = new_insn_body(iseq, diobj->insn_info.line_no, BIN(pop), 0);
+	    ELEM_INSERT_NEXT(&iobj->link, &pop->link);
 	    goto again;
 	}
-	/*
-	 * useless jump elimination (if/unless destination):
-	 *   if   L1
-	 *   jump L2
-	 * L1:
-	 *   ...
-	 * L2:
-	 *
-	 * ==>
-	 *   unless L2
-	 * L1:
-	 *   ...
-	 * L2:
-	 */
 	else if ((piobj = (INSN *)get_prev_insn(iobj)) != 0 &&
 		 (IS_INSN_ID(piobj, branchif) ||
 		  IS_INSN_ID(piobj, branchunless))) {
-	    if (niobj == (INSN *)get_destination_insn(piobj)) {
+	    INSN *pdiobj = (INSN *)get_destination_insn(piobj);
+	    if (niobj == pdiobj) {
+		/*
+		 * useless jump elimination (if/unless destination):
+		 *   if   L1
+		 *   jump L2
+		 * L1:
+		 *   ...
+		 * L2:
+		 *
+		 * ==>
+		 *   unless L2
+		 * L1:
+		 *   ...
+		 * L2:
+		 */
 		piobj->insn_id = (IS_INSN_ID(piobj, branchif))
 		  ? BIN(branchunless) : BIN(branchif);
 		replace_destination(piobj, iobj);
-		REMOVE_ELEM(&iobj->link);
+		ELEM_REMOVE(&iobj->link);
+		return COMPILE_OK;
+	    }
+	    else if (diobj == pdiobj) {
+		/*
+		 * useless jump elimination (if/unless before jump):
+		 * L1:
+		 *   ...
+		 *   if   L1
+		 *   jump L1
+		 *
+		 * ==>
+		 * L1:
+		 *   ...
+		 *   pop
+		 *   jump L1
+		 */
+		INSN *popiobj = new_insn_core(iseq, iobj->insn_info.line_no,
+					      BIN(pop), 0, 0);
+		ELEM_REPLACE(&piobj->link, &popiobj->link);
 	    }
 	}
-	else if (remove_unreachable_chunk(iseq, iobj->link.next)) {
+	if (remove_unreachable_chunk(iseq, iobj->link.next)) {
 	    goto again;
+	}
+    }
+
+    /*
+     * putstring "beg"
+     * putstring "end"
+     * newrange excl
+     *
+     * ==>
+     *
+     * putobject "beg".."end"
+     */
+    if (IS_INSN_ID(iobj, checkmatch)) {
+	INSN *range = (INSN *)get_prev_insn(iobj);
+	INSN *beg, *end;
+
+	if (range && IS_INSN_ID(range, newrange) &&
+		(end = (INSN *)get_prev_insn(range)) != 0 &&
+		IS_INSN_ID(end, putstring) &&
+		(beg = (INSN *)get_prev_insn(end)) != 0 &&
+		IS_INSN_ID(beg, putstring)) {
+	    VALUE str_beg = OPERAND_AT(beg, 0);
+	    VALUE str_end = OPERAND_AT(end, 0);
+	    int excl = FIX2INT(OPERAND_AT(range, 0));
+	    VALUE lit_range = rb_range_new(str_beg, str_end, excl);
+
+	    iseq_add_mark_object_compile_time(iseq, lit_range);
+	    ELEM_REMOVE(&beg->link);
+	    ELEM_REMOVE(&end->link);
+	    range->insn_id = BIN(putobject);
+	    OPERAND_AT(range, 0) = lit_range;
 	}
     }
 
@@ -2236,21 +2630,29 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 			    OPERAND_AT(pobj, 0) == Qfalse :
 			    FALSE);
 		}
-		else if (IS_INSN_ID(pobj, putstring) || IS_INSN_ID(pobj, duparray)) {
+		else if (IS_INSN_ID(pobj, putstring) ||
+			 IS_INSN_ID(pobj, duparray) ||
+			 IS_INSN_ID(pobj, newarray)) {
 		    cond = IS_INSN_ID(iobj, branchif);
 		}
 		else if (IS_INSN_ID(pobj, putnil)) {
 		    cond = !IS_INSN_ID(iobj, branchif);
 		}
 		else break;
-		REMOVE_ELEM(iobj->link.prev);
+		if (prev_dup || !IS_INSN_ID(pobj, newarray)) {
+		    ELEM_REMOVE(iobj->link.prev);
+		}
+		else if (!iseq_pop_newarray(iseq, pobj)) {
+		    pobj = new_insn_core(iseq, pobj->insn_info.line_no, BIN(pop), 0, NULL);
+		    ELEM_INSERT_NEXT(&iobj->link, &pobj->link);
+		}
 		if (cond) {
 		    iobj->insn_id = BIN(jump);
 		    goto again;
 		}
 		else {
 		    unref_destination(iobj, 0);
-		    REMOVE_ELEM(&iobj->link);
+		    ELEM_REMOVE(&iobj->link);
 		}
 		break;
 	    }
@@ -2270,11 +2672,15 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	if (IS_INSN(prev)) {
 	    enum ruby_vminsn_type previ = ((INSN *)prev)->insn_id;
 	    if (previ == BIN(putobject) || previ == BIN(putnil) ||
-		previ == BIN(putself) || previ == BIN(putstring)) {
+		previ == BIN(putself) || previ == BIN(putstring) ||
+		previ == BIN(duparray)) {
 		/* just push operand or static value and pop soon, no
 		 * side effects */
-		REMOVE_ELEM(prev);
-		REMOVE_ELEM(&iobj->link);
+		ELEM_REMOVE(prev);
+		ELEM_REMOVE(&iobj->link);
+	    }
+	    else if (previ == BIN(newarray) && iseq_pop_newarray(iseq, (INSN*)prev)) {
+		ELEM_REMOVE(&iobj->link);
 	    }
 	}
     }
@@ -2295,7 +2701,83 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	LINK_ELEMENT *next = iobj->link.next;
 	if (IS_INSN(next) && IS_INSN_ID(next, splatarray)) {
 	    /* remove splatarray following always-array insn */
-	    REMOVE_ELEM(next);
+	    ELEM_REMOVE(next);
+	}
+    }
+
+    if (IS_INSN_ID(iobj, tostring)) {
+	LINK_ELEMENT *next = iobj->link.next;
+	/*
+	 *  tostring
+	 *  concatstrings 1
+	 * =>
+	 *  tostring
+	 */
+	if (IS_INSN(next) && IS_INSN_ID(next, concatstrings) &&
+	    OPERAND_AT(next, 0) == INT2FIX(1)) {
+	    ELEM_REMOVE(next);
+	}
+    }
+
+    if (IS_INSN_ID(iobj, putstring) ||
+	(IS_INSN_ID(iobj, putobject) && RB_TYPE_P(OPERAND_AT(iobj, 0), T_STRING))) {
+	/*
+	 *  putstring ""
+	 *  concatstrings N
+	 * =>
+	 *  concatstrings N-1
+	 */
+	if (IS_NEXT_INSN_ID(&iobj->link, concatstrings) &&
+	    RSTRING_LEN(OPERAND_AT(iobj, 0)) == 0) {
+	    INSN *next = (INSN *)iobj->link.next;
+	    if ((OPERAND_AT(next, 0) = FIXNUM_INC(OPERAND_AT(next, 0), -1)) == INT2FIX(1)) {
+		ELEM_REMOVE(&next->link);
+	    }
+	    ELEM_REMOVE(&iobj->link);
+	}
+    }
+
+    if (IS_INSN_ID(iobj, concatstrings)) {
+	/*
+	 *  concatstrings N
+	 *  concatstrings M
+	 * =>
+	 *  concatstrings N+M-1
+	 */
+	LINK_ELEMENT *next = iobj->link.next, *freeze = 0;
+	INSN *jump = 0;
+	if (IS_INSN(next) && IS_INSN_ID(next, freezestring))
+	    next = (freeze = next)->next;
+	if (IS_INSN(next) && IS_INSN_ID(next, jump))
+	    next = get_destination_insn(jump = (INSN *)next);
+	if (IS_INSN(next) && IS_INSN_ID(next, concatstrings)) {
+	    int n = FIX2INT(OPERAND_AT(iobj, 0)) + FIX2INT(OPERAND_AT(next, 0)) - 1;
+	    OPERAND_AT(iobj, 0) = INT2FIX(n);
+	    if (jump) {
+		LABEL *label = ((LABEL *)OPERAND_AT(jump, 0));
+		if (!--label->refcnt) {
+		    ELEM_REMOVE(&label->link);
+		}
+		else {
+		    label = NEW_LABEL(0);
+		    OPERAND_AT(jump, 0) = (VALUE)label;
+		}
+		label->refcnt++;
+		if (freeze && IS_NEXT_INSN_ID(next, freezestring)) {
+		    if (same_debug_pos_p(freeze, next->next)) {
+			ELEM_REMOVE(freeze);
+		    }
+		    else {
+			next = next->next;
+		    }
+		}
+		ELEM_INSERT_NEXT(next, &label->link);
+		CHECK(iseq_peephole_optimize(iseq, get_next_insn(jump), do_tailcallopt));
+	    }
+	    else {
+		if (freeze) ELEM_REMOVE(freeze);
+		ELEM_REMOVE(next);
+	    }
 	}
     }
 
@@ -2321,7 +2803,6 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 		}
 		switch (INSN_OF(next)) {
 		  case BIN(nop):
-		  /*case BIN(trace):*/
 		    next = next->next;
 		    break;
 		  case BIN(jump):
@@ -2353,13 +2834,41 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	}
     }
 
-    #define IS_TRACE_LINE(insn) \
-	(IS_INSN_ID(insn, trace) && \
-	 OPERAND_AT(insn, 0) == INT2FIX(RUBY_EVENT_LINE))
-    if (IS_TRACE_LINE(iobj) && iobj->link.prev && IS_INSN(iobj->link.prev)) {
-	INSN *piobj = (INSN *)iobj->link.prev;
-	if (IS_TRACE_LINE(piobj)) {
-	    REMOVE_ELEM(iobj->link.prev);
+    if (IS_INSN_ID(iobj, dup)) {
+	if (IS_NEXT_INSN_ID(&iobj->link, setlocal)) {
+	    LINK_ELEMENT *set1 = iobj->link.next, *set2 = NULL;
+	    if (IS_NEXT_INSN_ID(set1, setlocal)) {
+		set2 = set1->next;
+		if (OPERAND_AT(set1, 0) == OPERAND_AT(set2, 0) &&
+		    OPERAND_AT(set1, 1) == OPERAND_AT(set2, 1)) {
+		    ELEM_REMOVE(set1);
+		    ELEM_REMOVE(&iobj->link);
+		}
+	    }
+	    else if (IS_NEXT_INSN_ID(set1, dup) &&
+		     IS_NEXT_INSN_ID(set1->next, setlocal)) {
+		set2 = set1->next->next;
+		if (OPERAND_AT(set1, 0) == OPERAND_AT(set2, 0) &&
+		    OPERAND_AT(set1, 1) == OPERAND_AT(set2, 1)) {
+		    ELEM_REMOVE(set1->next);
+		    ELEM_REMOVE(set2);
+		}
+	    }
+	}
+    }
+
+    if (IS_INSN_ID(iobj, getlocal)) {
+	LINK_ELEMENT *niobj = &iobj->link;
+	if (IS_NEXT_INSN_ID(niobj, dup)) {
+	    niobj = niobj->next;
+	}
+	if (IS_NEXT_INSN_ID(niobj, setlocal)) {
+	    LINK_ELEMENT *set1 = niobj->next;
+	    if (OPERAND_AT(iobj, 0) == OPERAND_AT(set1, 0) &&
+		OPERAND_AT(iobj, 1) == OPERAND_AT(set1, 1)) {
+		ELEM_REMOVE(set1);
+		ELEM_REMOVE(niobj);
+	    }
 	}
     }
 
@@ -2400,11 +2909,11 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
 		switch (ci->mid) {
 		  case idMax:
 		    iobj->insn_id = BIN(opt_newarray_max);
-		    REMOVE_ELEM(&niobj->link);
+		    ELEM_REMOVE(&niobj->link);
 		    return COMPILE_OK;
 		  case idMin:
 		    iobj->insn_id = BIN(opt_newarray_min);
-		    REMOVE_ELEM(&niobj->link);
+		    ELEM_REMOVE(&niobj->link);
 		    return COMPILE_OK;
 		}
 	    }
@@ -2553,7 +3062,7 @@ new_unified_insn(rb_iseq_t *iseq,
 	list = list->next;
     }
 
-    return new_insn_core(iseq, iobj->line_no, insn_id, argc, operands);
+    return new_insn_core(iseq, iobj->insn_info.line_no, insn_id, argc, operands);
 }
 #endif
 
@@ -2621,7 +3130,7 @@ iseq_insns_unification(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 #include "opt_sc.inc"
 
 static int
-insn_set_sc_state(rb_iseq_t *iseq, INSN *iobj, int state)
+insn_set_sc_state(rb_iseq_t *iseq, const LINK_ELEMENT *anchor, INSN *iobj, int state)
 {
     int nstate;
     int insn_id;
@@ -2636,11 +3145,11 @@ insn_set_sc_state(rb_iseq_t *iseq, INSN *iobj, int state)
 
 	if (lobj->sc_state != 0) {
 	    if (lobj->sc_state != nstate) {
-		dump_disasm_list((LINK_ELEMENT *)iobj);
-		dump_disasm_list((LINK_ELEMENT *)lobj);
-		printf("\n-- %d, %d\n", lobj->sc_state, nstate);
-		COMPILE_ERROR(iseq, iobj->line_no,
-			      "insn_set_sc_state error\n");
+		BADINSN_DUMP(anchor, iobj, lobj);
+		COMPILE_ERROR(iseq, iobj->insn_info.line_no,
+			      "insn_set_sc_state error: %d at "LABEL_FORMAT
+			      ", %d expected\n",
+			      lobj->sc_state, lobj->label_no, nstate);
 		return COMPILE_NG;
 	    }
 	}
@@ -2708,7 +3217,7 @@ iseq_set_sequence_stackcaching(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 				new_insn_body(iseq, 0, BIN(reput), 0);
 
 			    /* replace this insn */
-			    REPLACE_ELEM(list, (LINK_ELEMENT *)rpobj);
+			    ELEM_REPLACE(list, (LINK_ELEMENT *)rpobj);
 			    list = (LINK_ELEMENT *)rpobj;
 			    goto redo_point;
 			}
@@ -2719,7 +3228,7 @@ iseq_set_sequence_stackcaching(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 			if (state == SCS_AB || state == SCS_BA) {
 			    state = (state == SCS_AB ? SCS_BA : SCS_AB);
 
-			    REMOVE_ELEM(list);
+			    ELEM_REMOVE(list);
 			    list = list->next;
 			    goto redo_point;
 			}
@@ -2741,12 +3250,12 @@ iseq_set_sequence_stackcaching(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 			  case SCS_XX:
 			    goto normal_insn;
 			  default:
-			    COMPILE_ERROR(iseq, iobj->line_no,
+			    COMPILE_ERROR(iseq, iobj->insn_info.line_no,
 					  "unreachable");
 			    return COMPILE_NG;
 			}
 			/* remove useless pop */
-			REMOVE_ELEM(list);
+			ELEM_REMOVE(list);
 			list = list->next;
 			goto redo_point;
 		    }
@@ -2754,7 +3263,7 @@ iseq_set_sequence_stackcaching(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 		    /* none */
 		}		/* end of switch */
 	      normal_insn:
-		state = insn_set_sc_state(iseq, iobj, state);
+		state = insn_set_sc_state(iseq, anchor, iobj, state);
 		break;
 	    }
 	  case ISEQ_ELEMENT_LABEL:
@@ -2774,9 +3283,32 @@ iseq_set_sequence_stackcaching(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 }
 
 static int
-compile_dstr_fragments(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int *cntp)
+all_string_result_p(const NODE *node)
 {
-    NODE *list = node->nd_next;
+    if (!node) return FALSE;
+    switch (nd_type(node)) {
+      case NODE_STR: case NODE_DSTR:
+	return TRUE;
+      case NODE_IF: case NODE_UNLESS:
+	if (!node->nd_body || !node->nd_else) return FALSE;
+	if (all_string_result_p(node->nd_body))
+	    return all_string_result_p(node->nd_else);
+	return FALSE;
+      case NODE_AND: case NODE_OR:
+	if (!node->nd_2nd)
+	    return all_string_result_p(node->nd_1st);
+	if (!all_string_result_p(node->nd_1st))
+	    return FALSE;
+	return all_string_result_p(node->nd_2nd);
+      default:
+	return FALSE;
+    }
+}
+
+static int
+compile_dstr_fragments(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int *cntp)
+{
+    const NODE *list = node->nd_next;
     VALUE lit = node->nd_lit;
     LINK_ELEMENT *first_lit = 0;
     int cnt = 0;
@@ -2785,29 +3317,30 @@ compile_dstr_fragments(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int 
     if (!NIL_P(lit)) {
 	cnt++;
 	if (!RB_TYPE_P(lit, T_STRING)) {
-	    compile_bug(ERROR_ARGS "dstr: must be string: %s",
-			rb_builtin_type_name(TYPE(lit)));
+	    COMPILE_ERROR(ERROR_ARGS "dstr: must be string: %s",
+			  rb_builtin_type_name(TYPE(lit)));
+	    return COMPILE_NG;
 	}
-	lit = node->nd_lit = rb_fstring(lit);
+	lit = freeze_literal(iseq, lit);
 	ADD_INSN1(ret, nd_line(node), putobject, lit);
 	if (RSTRING_LEN(lit) == 0) first_lit = LAST_ELEMENT(ret);
     }
 
     while (list) {
-	node = list->nd_head;
-	if (nd_type(node) == NODE_STR) {
-	    node->nd_lit = rb_fstring(node->nd_lit);
-	    ADD_INSN1(ret, nd_line(node), putobject, node->nd_lit);
+	const NODE *const head = list->nd_head;
+	if (nd_type(head) == NODE_STR) {
+	    lit = freeze_literal(iseq, head->nd_lit);
+	    ADD_INSN1(ret, nd_line(head), putobject, lit);
 	    lit = Qnil;
 	}
 	else {
-	    CHECK(COMPILE(ret, "each string", node));
+	    CHECK(COMPILE(ret, "each string", head));
 	}
 	cnt++;
 	list = list->nd_next;
     }
     if (NIL_P(lit) && first_lit) {
-	REMOVE_ELEM(first_lit);
+	ELEM_REMOVE(first_lit);
 	--cnt;
     }
     *cntp = cnt;
@@ -2816,7 +3349,7 @@ compile_dstr_fragments(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int 
 }
 
 static int
-compile_dstr(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node)
+compile_dstr(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node)
 {
     int cnt;
     CHECK(compile_dstr_fragments(iseq, ret, node, &cnt));
@@ -2825,7 +3358,7 @@ compile_dstr(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node)
 }
 
 static int
-compile_dregx(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node)
+compile_dregx(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node)
 {
     int cnt;
     CHECK(compile_dstr_fragments(iseq, ret, node, &cnt));
@@ -2834,7 +3367,7 @@ compile_dregx(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node)
 }
 
 static int
-compile_flip_flop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int again,
+compile_flip_flop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int again,
 		  LABEL *then_label, LABEL *else_label)
 {
     const int line = nd_line(node);
@@ -2867,31 +3400,32 @@ compile_flip_flop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int again
 }
 
 static int
-compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *cond,
+compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *cond,
 			 LABEL *then_label, LABEL *else_label)
 {
+  again:
     switch (nd_type(cond)) {
       case NODE_AND:
 	{
 	    LABEL *label = NEW_LABEL(nd_line(cond));
 	    CHECK(compile_branch_condition(iseq, ret, cond->nd_1st, label,
 					   else_label));
+	    if (!label->refcnt) break;
 	    ADD_LABEL(ret, label);
-	    CHECK(compile_branch_condition(iseq, ret, cond->nd_2nd, then_label,
-					   else_label));
-	    break;
+	    cond = cond->nd_2nd;
+	    goto again;
 	}
       case NODE_OR:
 	{
 	    LABEL *label = NEW_LABEL(nd_line(cond));
 	    CHECK(compile_branch_condition(iseq, ret, cond->nd_1st, then_label,
 					   label));
+	    if (!label->refcnt) break;
 	    ADD_LABEL(ret, label);
-	    compile_branch_condition(iseq, ret, cond->nd_2nd, then_label,
-				     else_label);
-	    break;
+	    cond = cond->nd_2nd;
+	    goto again;
 	}
-      case NODE_LIT:		/* NODE_LIT is always not true */
+      case NODE_LIT:		/* NODE_LIT is always true */
       case NODE_TRUE:
       case NODE_STR:
       case NODE_ZARRAY:
@@ -2910,8 +3444,12 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *cond,
       case NODE_FLIP3:
 	CHECK(compile_flip_flop(iseq, ret, cond, FALSE, then_label, else_label));
 	break;
+      case NODE_DEFINED:
+	CHECK(compile_defined_expr(iseq, ret, cond, Qfalse));
+	goto branch;
       default:
 	CHECK(COMPILE(ret, "branch condition", cond));
+      branch:
 	ADD_INSNL(ret, nd_line(cond), branchunless, else_label);
 	ADD_INSNL(ret, nd_line(cond), jump, then_label);
 	break;
@@ -2922,18 +3460,23 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *cond,
 static int
 compile_array_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 			  const NODE *const root_node,
-			  struct rb_call_info_kw_arg **const kw_arg_ptr)
+			  struct rb_call_info_kw_arg **const kw_arg_ptr,
+			  unsigned int *flag)
 {
     if (kw_arg_ptr == NULL) return FALSE;
 
     if (nd_type(root_node) == NODE_HASH && root_node->nd_head && nd_type(root_node->nd_head) == NODE_ARRAY) {
-	NODE *node = root_node->nd_head;
+	const NODE *node = root_node->nd_head;
 
 	while (node) {
-	    NODE *key_node = node->nd_head;
+	    const NODE *key_node = node->nd_head;
 
 	    assert(nd_type(node) == NODE_ARRAY);
-	    if (key_node && nd_type(key_node) == NODE_LIT && RB_TYPE_P(key_node->nd_lit, T_SYMBOL)) {
+	    if (!key_node) {
+		if (flag && !root_node->nd_alen) *flag |= VM_CALL_KW_SPLAT;
+		return FALSE;
+	    }
+	    else if (nd_type(key_node) == NODE_LIT && RB_TYPE_P(key_node->nd_lit, T_SYMBOL)) {
 		/* can be keywords */
 	    }
 	    else {
@@ -2955,8 +3498,8 @@ compile_array_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 	    *kw_arg_ptr = kw_arg;
 
 	    for (i=0; node != NULL; i++, node = node->nd_next->nd_next) {
-		NODE *key_node = node->nd_head;
-		NODE *val_node = node->nd_next->nd_head;
+		const NODE *key_node = node->nd_head;
+		const NODE *val_node = node->nd_next->nd_head;
 		keywords[i] = key_node->nd_lit;
 		COMPILE(ret, "keyword values", val_node);
 	    }
@@ -2974,7 +3517,7 @@ enum compile_array_type_t {
 };
 
 static inline int
-static_literal_node_p(NODE *node)
+static_literal_node_p(const NODE *node)
 {
     node = node->nd_head;
     switch (nd_type(node)) {
@@ -2989,7 +3532,7 @@ static_literal_node_p(NODE *node)
 }
 
 static inline VALUE
-static_literal_value(NODE *node)
+static_literal_value(const NODE *node)
 {
     node = node->nd_head;
     switch (nd_type(node)) {
@@ -3005,10 +3548,11 @@ static_literal_value(NODE *node)
 }
 
 static int
-compile_array_(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE* node_root,
-	       enum compile_array_type_t type, struct rb_call_info_kw_arg **keywords_ptr, int popped)
+compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_root,
+	      enum compile_array_type_t type, struct rb_call_info_kw_arg **keywords_ptr,
+	      unsigned int *flag, int popped)
 {
-    NODE *node = node_root;
+    const NODE *node = node_root;
     int line = (int)nd_line(node);
     int len = 0;
 
@@ -3026,15 +3570,15 @@ compile_array_(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE* node_root,
 	int first = 1, i;
 
 	while (node) {
-	    NODE *start_node = node, *end_node;
-	    NODE *kw = 0;
+	    const NODE *start_node = node, *end_node;
+	    const NODE *kw = 0;
 	    const int max = 0x100;
 	    DECL_ANCHOR(anchor);
 	    INIT_ANCHOR(anchor);
 
 	    for (i=0; i<max && node; i++, len++, node = node->nd_next) {
 		if (CPDEBUG > 0) {
-		    EXPECT_NODE("compile_array", node, NODE_ARRAY);
+		    EXPECT_NODE("compile_array", node, NODE_ARRAY, -1);
 		}
 
 		if (type != COMPILE_ARRAY_TYPE_ARRAY && !node->nd_head) {
@@ -3051,7 +3595,9 @@ compile_array_(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE* node_root,
 		    opt_p = 0;
 		}
 
-		if (type == COMPILE_ARRAY_TYPE_ARGS && node->nd_next == NULL /* last node */ && compile_array_keyword_arg(iseq, anchor, node->nd_head, keywords_ptr)) {
+		if (type == COMPILE_ARRAY_TYPE_ARGS &&
+		    node->nd_next == NULL /* last node */ &&
+		    compile_array_keyword_arg(iseq, anchor, node->nd_head, keywords_ptr, flag)) {
 		    len--;
 		}
 		else {
@@ -3108,14 +3654,15 @@ compile_array_(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE* node_root,
 			    ADD_SEND(ret, line, id_core_hash_merge_ary, INT2FIX(1));
 			    /* wrong number of arguments -----------------------^ */
 #else
-			    compile_bug(ERROR_ARGS "core#hash_merge_ary");
+			    COMPILE_ERROR(ERROR_ARGS "core#hash_merge_ary");
+			    return -1;
 #endif
 			}
 		    }
 		}
 	    }
 	    else {
-		if (!popped) {
+		if (!popped || kw) {
 		    switch (type) {
 		      case COMPILE_ARRAY_TYPE_ARRAY:
 			ADD_INSN1(anchor, line, newarray, INT2FIX(i));
@@ -3132,23 +3679,36 @@ compile_array_(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE* node_root,
 		      case COMPILE_ARRAY_TYPE_HASH:
 			if (i > 0) {
 			    if (first) {
-				ADD_INSN1(anchor, line, newhash, INT2FIX(i));
+				if (!popped) {
+				    ADD_INSN1(anchor, line, newhash, INT2FIX(i));
+				}
 				APPEND_LIST(ret, anchor);
 			    }
 			    else {
-				ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-				ADD_INSN(ret, line, swap);
+				if (!popped) {
+				    ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+				    ADD_INSN(ret, line, swap);
+				}
 				APPEND_LIST(ret, anchor);
-				ADD_SEND(ret, line, id_core_hash_merge_ptr, INT2FIX(i + 1));
+				if (!popped) {
+				    ADD_SEND(ret, line, id_core_hash_merge_ptr, INT2FIX(i + 1));
+				}
 			    }
 			}
 			if (kw) {
 			    VALUE nhash = (i > 0 || !first) ? INT2FIX(2) : INT2FIX(1);
-			    ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-			    if (i > 0 || !first) ADD_INSN(ret, line, swap);
+			    if (!popped) {
+				ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+				if (i > 0 || !first) ADD_INSN(ret, line, swap);
+			    }
 			    COMPILE(ret, "keyword splat", kw);
-			    ADD_SEND(ret, line, id_core_hash_merge_kwd, nhash);
-			    if (nhash == INT2FIX(1)) ADD_SEND(ret, line, rb_intern("dup"), INT2FIX(0));
+			    if (popped) {
+				ADD_INSN(ret, line, pop);
+			    }
+			    else {
+				ADD_SEND(ret, line, id_core_hash_merge_kwd, nhash);
+				if (nhash == INT2FIX(1)) ADD_SEND(ret, line, rb_intern("dup"), INT2FIX(0));
+			    }
 			}
 			first = 0;
 			break;
@@ -3168,13 +3728,7 @@ compile_array_(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE* node_root,
 }
 
 static VALUE
-compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE* node_root, enum compile_array_type_t type)
-{
-    return compile_array_(iseq, ret, node_root, type, NULL, 0);
-}
-
-static VALUE
-case_when_optimizable_literal(NODE *node)
+case_when_optimizable_literal(const NODE *const node)
 {
     switch (nd_type(node)) {
       case NODE_LIT: {
@@ -3196,17 +3750,17 @@ case_when_optimizable_literal(NODE *node)
       case NODE_FALSE:
 	return Qfalse;
       case NODE_STR:
-	return node->nd_lit = rb_fstring(node->nd_lit);
+	return rb_fstring(node->nd_lit);
     }
     return Qundef;
 }
 
 static int
-when_vals(rb_iseq_t *iseq, LINK_ANCHOR *const cond_seq, NODE *vals,
+when_vals(rb_iseq_t *iseq, LINK_ANCHOR *const cond_seq, const NODE *vals,
 	  LABEL *l1, int only_special_literals, VALUE literals)
 {
     while (vals) {
-	NODE* val = vals->nd_head;
+	const NODE *val = vals->nd_head;
 	VALUE lit = case_when_optimizable_literal(val);
 
 	if (lit == Qundef) {
@@ -3214,7 +3768,8 @@ when_vals(rb_iseq_t *iseq, LINK_ANCHOR *const cond_seq, NODE *vals,
 	}
 	else {
 	    if (rb_hash_lookup(literals, lit) != Qnil) {
-		rb_compile_warning(ruby_sourcefile, nd_line(val),
+		VALUE file = rb_iseq_path(iseq);
+		rb_compile_warning(RSTRING_PTR(file), nd_line(val),
 				   "duplicated when clause is ignored");
 	    }
 	    else {
@@ -3225,9 +3780,9 @@ when_vals(rb_iseq_t *iseq, LINK_ANCHOR *const cond_seq, NODE *vals,
 	ADD_INSN(cond_seq, nd_line(val), dup); /* dup target */
 
 	if (nd_type(val) == NODE_STR) {
-	    val->nd_lit = rb_fstring(val->nd_lit);
 	    debugp_param("nd_lit", val->nd_lit);
-	    ADD_INSN1(cond_seq, nd_line(val), putobject, val->nd_lit);
+	    lit = freeze_literal(iseq, val->nd_lit);
+	    ADD_INSN1(cond_seq, nd_line(val), putobject, lit);
 	}
 	else {
 	    COMPILE(cond_seq, "when cond", val);
@@ -3241,7 +3796,7 @@ when_vals(rb_iseq_t *iseq, LINK_ANCHOR *const cond_seq, NODE *vals,
 }
 
 static int
-compile_massign_lhs(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node)
+compile_massign_lhs(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node)
 {
     switch (nd_type(node)) {
       case NODE_ATTRASGN: {
@@ -3270,7 +3825,7 @@ compile_massign_lhs(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node)
 	DECL_ANCHOR(anchor);
 	INIT_ANCHOR(anchor);
 	CHECK(COMPILE_POPPED(anchor, "nest masgn lhs", node));
-	REMOVE_ELEM(FIRST_ELEMENT(anchor));
+	ELEM_REMOVE(FIRST_ELEMENT(anchor));
 	ADD_SEQ(ret, anchor);
 	break;
       }
@@ -3278,7 +3833,7 @@ compile_massign_lhs(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node)
 	DECL_ANCHOR(anchor);
 	INIT_ANCHOR(anchor);
 	CHECK(COMPILE_POPPED(anchor, "masgn lhs", node));
-	REMOVE_ELEM(FIRST_ELEMENT(anchor));
+	ELEM_REMOVE(FIRST_ELEMENT(anchor));
 	ADD_SEQ(ret, anchor);
       }
     }
@@ -3287,7 +3842,7 @@ compile_massign_lhs(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node)
 }
 
 static int
-compile_massign_opt_lhs(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *lhsn)
+compile_massign_opt_lhs(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *lhsn)
 {
     if (lhsn) {
 	CHECK(compile_massign_opt_lhs(iseq, ret, lhsn->nd_next));
@@ -3298,14 +3853,14 @@ compile_massign_opt_lhs(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *lhsn)
 
 static int
 compile_massign_opt(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
-		    NODE *rhsn, NODE *orig_lhsn)
+		    const NODE *rhsn, const NODE *orig_lhsn)
 {
     VALUE mem[64];
     const int memsize = numberof(mem);
     int memindex = 0;
     int llen = 0, rlen = 0;
     int i;
-    NODE *lhsn = orig_lhsn;
+    const NODE *lhsn = orig_lhsn;
 
 #define MEMORY(v) { \
     int i; \
@@ -3321,7 +3876,7 @@ compile_massign_opt(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
     }
 
     while (lhsn) {
-	NODE *ln = lhsn->nd_head;
+	const NODE *ln = lhsn->nd_head;
 	switch (nd_type(ln)) {
 	  case NODE_LASGN:
 	    MEMORY(ln->nd_vid);
@@ -3329,7 +3884,6 @@ compile_massign_opt(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 	  case NODE_DASGN:
 	  case NODE_DASGN_CURR:
 	  case NODE_IASGN:
-	  case NODE_IASGN2:
 	  case NODE_CVASGN:
 	    MEMORY(ln->nd_vid);
 	    break;
@@ -3373,12 +3927,12 @@ adjust_stack(rb_iseq_t *iseq, LINK_ANCHOR *const ret, int line, int rlen, int ll
 }
 
 static int
-compile_massign(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped)
+compile_massign(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
 {
-    NODE *rhsn = node->nd_value;
-    NODE *splatn = node->nd_args;
-    NODE *lhsn = node->nd_head;
-    int lhs_splat = (splatn && (VALUE)splatn != (VALUE)-1) ? 1 : 0;
+    const NODE *rhsn = node->nd_value;
+    const NODE *splatn = node->nd_args;
+    const NODE *lhsn = node->nd_head;
+    int lhs_splat = (splatn && splatn != NODE_SPECIAL_NO_NAME_REST) ? 1 : 0;
 
     if (!popped || splatn || !compile_massign_opt(iseq, ret, rhsn, lhsn)) {
 	int llen = 0;
@@ -3432,15 +3986,15 @@ compile_massign(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped)
 	if (lhs_splat) {
 	    if (nd_type(splatn) == NODE_POSTARG) {
 		/*a, b, *r, p1, p2 */
-		NODE *postn = splatn->nd_2nd;
-		NODE *restn = splatn->nd_1st;
+		const NODE *postn = splatn->nd_2nd;
+		const NODE *restn = splatn->nd_1st;
 		int num = (int)postn->nd_alen;
-		int flag = 0x02 | (((VALUE)restn == (VALUE)-1) ? 0x00 : 0x01);
+		int flag = 0x02 | ((restn == NODE_SPECIAL_NO_NAME_REST) ? 0x00 : 0x01);
 
 		ADD_INSN2(ret, nd_line(splatn), expandarray,
 			  INT2FIX(num), INT2FIX(flag));
 
-		if ((VALUE)restn != (VALUE)-1) {
+		if (restn != NODE_SPECIAL_NO_NAME_REST) {
 		    CHECK(compile_massign_lhs(iseq, ret, restn));
 		}
 		while (postn) {
@@ -3458,23 +4012,23 @@ compile_massign(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped)
 }
 
 static int
-compile_colon2(rb_iseq_t *iseq, NODE *node,
-	       LINK_ANCHOR *const pref, LINK_ANCHOR *const body)
+compile_const_prefix(rb_iseq_t *iseq, const NODE *const node,
+		     LINK_ANCHOR *const pref, LINK_ANCHOR *const body)
 {
     switch (nd_type(node)) {
       case NODE_CONST:
-	debugi("compile_colon2 - colon", node->nd_vid);
+	debugi("compile_const_prefix - colon", node->nd_vid);
 	ADD_INSN1(body, nd_line(node), getconstant, ID2SYM(node->nd_vid));
 	break;
       case NODE_COLON3:
-	debugi("compile_colon2 - colon3", node->nd_mid);
+	debugi("compile_const_prefix - colon3", node->nd_mid);
 	ADD_INSN(body, nd_line(node), pop);
 	ADD_INSN1(body, nd_line(node), putobject, rb_cObject);
 	ADD_INSN1(body, nd_line(node), getconstant, ID2SYM(node->nd_mid));
 	break;
       case NODE_COLON2:
-	compile_colon2(iseq, node->nd_head, pref, body);
-	debugi("compile_colon2 - colon2", node->nd_mid);
+	CHECK(compile_const_prefix(iseq, node->nd_head, pref, body));
+	debugi("compile_const_prefix - colon2", node->nd_mid);
 	ADD_INSN1(body, nd_line(node), getconstant, ID2SYM(node->nd_mid));
 	break;
       default:
@@ -3484,33 +4038,35 @@ compile_colon2(rb_iseq_t *iseq, NODE *node,
     return COMPILE_OK;
 }
 
-static VALUE
-compile_cpath(LINK_ANCHOR *const ret, rb_iseq_t *iseq, NODE *cpath)
+static int
+compile_cpath(LINK_ANCHOR *const ret, rb_iseq_t *iseq, const NODE *cpath)
 {
     if (nd_type(cpath) == NODE_COLON3) {
 	/* toplevel class ::Foo */
 	ADD_INSN1(ret, nd_line(cpath), putobject, rb_cObject);
-	return Qfalse;
+	return VM_DEFINECLASS_FLAG_SCOPED;
     }
     else if (cpath->nd_head) {
 	/* Bar::Foo */
 	COMPILE(ret, "nd_else->nd_head", cpath->nd_head);
-	return Qfalse;
+	return VM_DEFINECLASS_FLAG_SCOPED;
     }
     else {
 	/* class at cbase Foo */
 	ADD_INSN1(ret, nd_line(cpath), putspecialobject,
 		  INT2FIX(VM_SPECIAL_OBJECT_CONST_BASE));
-	return Qtrue;
+	return 0;
     }
 }
 
 #define private_recv_p(node) (nd_type((node)->nd_recv) == NODE_SELF)
-
-#define defined_expr defined_expr0
 static int
 defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
-	     NODE *node, LABEL **lfinish, VALUE needstr)
+	     const NODE *const node, LABEL **lfinish, VALUE needstr);
+
+static int
+defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
+	      const NODE *const node, LABEL **lfinish, VALUE needstr)
 {
     enum defined_type expr_type = 0;
     enum node_type type;
@@ -3532,10 +4088,10 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 	break;
 
       case NODE_ARRAY:{
-	NODE *vals = node;
+	const NODE *vals = node;
 
 	do {
-	    defined_expr(iseq, ret, vals->nd_head, lfinish, Qfalse);
+	    defined_expr0(iseq, ret, vals->nd_head, lfinish, Qfalse);
 
 	    if (!lfinish[1]) {
 		lfinish[1] = NEW_LABEL(nd_line(node));
@@ -3585,19 +4141,14 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 	if (!lfinish[1]) {
 	    lfinish[1] = NEW_LABEL(nd_line(node));
 	}
-	defined_expr(iseq, ret, node->nd_head, lfinish, Qfalse);
+	defined_expr0(iseq, ret, node->nd_head, lfinish, Qfalse);
 	ADD_INSNL(ret, nd_line(node), branchunless, lfinish[1]);
+	COMPILE(ret, "defined/colon2#nd_head", node->nd_head);
 
-	if (rb_is_const_id(node->nd_mid)) {
-	    COMPILE(ret, "defined/colon2#nd_head", node->nd_head);
-	    ADD_INSN3(ret, nd_line(node), defined, INT2FIX(DEFINED_CONST),
-		      ID2SYM(node->nd_mid), needstr);
-	}
-	else {
-	    COMPILE(ret, "defined/colon2#nd_head", node->nd_head);
-	    ADD_INSN3(ret, nd_line(node), defined, INT2FIX(DEFINED_METHOD),
-		      ID2SYM(node->nd_mid), needstr);
-	}
+	ADD_INSN3(ret, nd_line(node), defined,
+		  (rb_is_const_id(node->nd_mid) ?
+		   INT2FIX(DEFINED_CONST) : INT2FIX(DEFINED_METHOD)),
+		  ID2SYM(node->nd_mid), needstr);
 	return 1;
       case NODE_COLON3:
 	ADD_INSN1(ret, nd_line(node), putobject, rb_cObject);
@@ -3607,22 +4158,23 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 
 	/* method dispatch */
       case NODE_CALL:
+      case NODE_OPCALL:
       case NODE_VCALL:
       case NODE_FCALL:
       case NODE_ATTRASGN:{
 	const int explicit_receiver =
-	    (type == NODE_CALL ||
+	    (type == NODE_CALL || type == NODE_OPCALL ||
 	     (type == NODE_ATTRASGN && !private_recv_p(node)));
 
-	if (!lfinish[1]) {
+	if (!lfinish[1] && (node->nd_args || explicit_receiver)) {
 	    lfinish[1] = NEW_LABEL(nd_line(node));
 	}
 	if (node->nd_args) {
-	    defined_expr(iseq, ret, node->nd_args, lfinish, Qfalse);
+	    defined_expr0(iseq, ret, node->nd_args, lfinish, Qfalse);
 	    ADD_INSNL(ret, nd_line(node), branchunless, lfinish[1]);
 	}
 	if (explicit_receiver) {
-	    defined_expr(iseq, ret, node->nd_recv, lfinish, Qfalse);
+	    defined_expr0(iseq, ret, node->nd_recv, lfinish, Qfalse);
 	    ADD_INSNL(ret, nd_line(node), branchunless, lfinish[1]);
 	    COMPILE(ret, "defined/recv", node->nd_recv);
 	    ADD_INSN3(ret, nd_line(node), defined, INT2FIX(DEFINED_METHOD),
@@ -3668,7 +4220,6 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
       case NODE_GASGN:
       case NODE_IASGN:
       case NODE_CDECL:
-      case NODE_CVDECL:
       case NODE_CVASGN:
 	expr_type = DEFINED_ASGN;
 	break;
@@ -3686,11 +4237,10 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
     }
     return 0;
 }
-#undef defined_expr
 
 static int
 defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
-	     NODE *node, LABEL **lfinish, VALUE needstr)
+	     const NODE *const node, LABEL **lfinish, VALUE needstr)
 {
     LINK_ELEMENT *lcur = ret->last;
     int done = defined_expr0(iseq, ret, node, lfinish, needstr);
@@ -3698,11 +4248,14 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 	int line = nd_line(node);
 	LABEL *lstart = NEW_LABEL(line);
 	LABEL *lend = NEW_LABEL(line);
-	const rb_iseq_t *rescue = NEW_CHILD_ISEQ(NEW_NIL(),
-						 rb_str_concat(rb_str_new2
-							       ("defined guard in "),
-							       iseq->body->location.label),
-						 ISEQ_TYPE_DEFINED_GUARD, 0);
+	const rb_iseq_t *rescue;
+	NODE tmp_node, *node = &tmp_node;
+	rb_node_init(node, NODE_NIL, 0, 0, 0);
+	rescue = NEW_CHILD_ISEQ(node,
+				rb_str_concat(rb_str_new2
+					      ("defined guard in "),
+					      iseq->body->location.label),
+				ISEQ_TYPE_DEFINED_GUARD, 0);
 	lstart->rescued = LABEL_RESCUE_BEG;
 	lend->rescued = LABEL_RESCUE_END;
 	APPEND_LABEL(ret, lcur, lstart);
@@ -3710,6 +4263,31 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 	ADD_CATCH_ENTRY(CATCH_TYPE_RESCUE, lstart, lend, rescue, lfinish[1]);
     }
     return done;
+}
+
+static int
+compile_defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, VALUE needstr)
+{
+    const int line = nd_line(node);
+    if (!node->nd_head) {
+	VALUE str = rb_iseq_defined_string(DEFINED_NIL);
+	ADD_INSN1(ret, line, putobject, str);
+    }
+    else {
+	LABEL *lfinish[2];
+	LINK_ELEMENT *last = ret->last;
+	lfinish[0] = NEW_LABEL(line);
+	lfinish[1] = 0;
+	defined_expr(iseq, ret, node->nd_head, lfinish, needstr);
+	if (lfinish[1]) {
+	    ELEM_INSERT_NEXT(last, &new_insn_body(iseq, line, BIN(putnil), 0)->link);
+	    ADD_INSN(ret, line, swap);
+	    ADD_INSN(ret, line, pop);
+	    ADD_LABEL(ret, lfinish[1]);
+	}
+	ADD_LABEL(ret, lfinish[0]);
+    }
+    return COMPILE_OK;
 }
 
 static VALUE
@@ -3738,7 +4316,7 @@ make_name_for_block(const rb_iseq_t *orig_iseq)
 static void
 push_ensure_entry(rb_iseq_t *iseq,
 		  struct iseq_compile_data_ensure_node_stack *enl,
-		  struct ensure_range *er, NODE *node)
+		  struct ensure_range *er, const NODE *const node)
 {
     enl->ensure_node = node;
     enl->prev = ISEQ_COMPILE_DATA(iseq)->ensure_node_stack;	/* prev */
@@ -3774,7 +4352,7 @@ add_ensure_iseq(LINK_ANCHOR *const ret, rb_iseq_t *iseq, int is_return)
 
     INIT_ANCHOR(ensure);
     while (enlp) {
-	if (enlp->erange != 0) {
+	if (enlp->erange != NULL) {
 	    DECL_ANCHOR(ensure_part);
 	    LABEL *lstart = NEW_LABEL(0);
 	    LABEL *lend = NEW_LABEL(0);
@@ -3800,7 +4378,7 @@ add_ensure_iseq(LINK_ANCHOR *const ret, rb_iseq_t *iseq, int is_return)
 }
 
 static VALUE
-setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, NODE *argn,
+setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
 	   unsigned int *flag, struct rb_call_info_kw_arg **keywords)
 {
     VALUE argc = INT2FIX(0);
@@ -3843,9 +4421,13 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, NODE *argn,
 	    INSERT_LIST(args_splat, tmp);
 	    nsplat++;
 	    *flag |= VM_CALL_ARGS_SPLAT;
+	    if (nd_type(argn->nd_body) == NODE_HASH)
+		*flag |= VM_CALL_KW_SPLAT;
 
 	    if (next_is_array) {
-		argc = INT2FIX(compile_array(iseq, args, argn->nd_head, COMPILE_ARRAY_TYPE_ARGS) + 1);
+		int len = compile_array(iseq, args, argn->nd_head, COMPILE_ARRAY_TYPE_ARGS, NULL, flag, FALSE);
+		if (len < 0) return Qnil;
+		argc = INT2FIX(len + 1);
 	    }
 	    else {
 		argn = argn->nd_head;
@@ -3855,11 +4437,13 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, NODE *argn,
 	  }
 	  case NODE_ARRAY:
 	    {
-		argc = INT2FIX(compile_array_(iseq, args, argn, COMPILE_ARRAY_TYPE_ARGS, keywords, FALSE));
+		int len = compile_array(iseq, args, argn, COMPILE_ARRAY_TYPE_ARGS, keywords, flag, FALSE);
+		if (len < 0) return Qnil;
+		argc = INT2FIX(len);
 		break;
 	    }
 	  default: {
-	    UNKNOWN_NODE("setup_arg", argn);
+	    UNKNOWN_NODE("setup_arg", argn, Qnil);
 	  }
 	}
     }
@@ -3867,22 +4451,32 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, NODE *argn,
     if (nsplat > 1) {
 	int i;
 	for (i=1; i<nsplat; i++) {
-	    ADD_INSN(args_splat, nd_line(args), concatarray);
+	    ADD_INSN(args_splat, nd_line(argn), concatarray);
 	}
     }
 
-    if (!LIST_SIZE_ZERO(args_splat)) {
+    if (!LIST_INSN_SIZE_ZERO(args_splat)) {
 	ADD_SEQ(args, args_splat);
     }
 
     if (*flag & VM_CALL_ARGS_BLOCKARG) {
+	if (LIST_INSN_SIZE_ONE(arg_block)) {
+	    LINK_ELEMENT *elem = FIRST_ELEMENT(arg_block);
+	    if (elem->type == ISEQ_ELEMENT_INSN) {
+		INSN *iobj = (INSN *)elem;
+		if (iobj->insn_id == BIN(getblockparam)) {
+		    iobj->insn_id = BIN(getlocal);
+		    *flag |= VM_CALL_ARGS_BLOCKARG_BLOCKPARAM;
+		}
+	    }
+	}
 	ADD_SEQ(args, arg_block);
     }
     return argc;
 }
 
 static VALUE
-build_postexe_iseq(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *body)
+build_postexe_iseq(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *body)
 {
     int line = nd_line(body);
     VALUE argc = INT2FIX(0);
@@ -3895,9 +4489,9 @@ build_postexe_iseq(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *body)
 }
 
 static void
-compile_named_capture_assign(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node)
+compile_named_capture_assign(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node)
 {
-    NODE *vars;
+    const NODE *vars;
     LINK_ELEMENT *last;
     int line = nd_line(node);
     LABEL *fail_label = NEW_LABEL(line), *end_label = NEW_LABEL(line);
@@ -3920,7 +4514,7 @@ compile_named_capture_assign(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node
 	last = last->next; /* putobject :var */
 	cap = new_insn_send(iseq, line, idAREF, INT2FIX(1),
 			    NULL, INT2FIX(0), NULL);
-	INSERT_ELEM_PREV(last->next, (LINK_ELEMENT *)cap);
+	ELEM_INSERT_PREV(last->next, (LINK_ELEMENT *)cap);
 #if !defined(NAMED_CAPTURE_SINGLE_OPT) || NAMED_CAPTURE_SINGLE_OPT-0
 	if (!vars->nd_next && vars == node) {
 	    /* only one name */
@@ -3954,11 +4548,896 @@ compile_named_capture_assign(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node
 }
 
 static int
-number_literal_p(NODE *n)
+number_literal_p(const NODE *n)
 {
     return (n && nd_type(n) == NODE_LIT && RB_INTEGER_TYPE_P(n->nd_lit));
 }
 
+static int
+compile_if(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped, const enum node_type type)
+{
+    const NODE *const node_body = type == NODE_IF ? node->nd_body : node->nd_else;
+    const NODE *const node_else = type == NODE_IF ? node->nd_else : node->nd_body;
+
+    const int line = nd_line(node);
+    const int lineno = nd_first_lineno(node);
+    const int column = nd_first_column(node);
+    const int last_lineno = nd_last_lineno(node);
+    const int last_column = nd_last_column(node);
+    DECL_ANCHOR(cond_seq);
+    DECL_ANCHOR(then_seq);
+    DECL_ANCHOR(else_seq);
+    LABEL *then_label, *else_label, *end_label;
+    VALUE branches = 0;
+
+    INIT_ANCHOR(cond_seq);
+    INIT_ANCHOR(then_seq);
+    INIT_ANCHOR(else_seq);
+    then_label = NEW_LABEL(line);
+    else_label = NEW_LABEL(line);
+    end_label = 0;
+
+    compile_branch_condition(iseq, cond_seq, node->nd_cond,
+			     then_label, else_label);
+    CHECK(COMPILE_(then_seq, "then", node_body, popped));
+    CHECK(COMPILE_(else_seq, "else", node_else, popped));
+
+    ADD_SEQ(ret, cond_seq);
+
+    if (then_label->refcnt && else_label->refcnt) {
+	DECL_BRANCH_BASE(branches, lineno, column, last_lineno, last_column, type == NODE_IF ? "if" : "unless");
+    }
+
+    if (then_label->refcnt) {
+	ADD_LABEL(ret, then_label);
+	if (else_label->refcnt) {
+	    ADD_TRACE_BRANCH_COVERAGE(
+		ret,
+		node_body ? nd_first_lineno(node_body) : lineno,
+		node_body ? nd_first_column(node_body) : column,
+		node_body ? nd_last_lineno(node_body) : last_lineno,
+		node_body ? nd_last_column(node_body) : last_column,
+		type == NODE_IF ? "then" : "else",
+		branches);
+	}
+	ADD_SEQ(ret, then_seq);
+	end_label = NEW_LABEL(line);
+	ADD_INSNL(ret, line, jump, end_label);
+    }
+
+    if (else_label->refcnt) {
+	ADD_LABEL(ret, else_label);
+	if (then_label->refcnt) {
+	    ADD_TRACE_BRANCH_COVERAGE(
+		ret,
+		node_else ? nd_first_lineno(node_else) : lineno,
+		node_else ? nd_first_column(node_else) : column,
+		node_else ? nd_last_lineno(node_else) : last_lineno,
+		node_else ? nd_last_column(node_else) : last_column,
+		type == NODE_IF ? "else" : "then",
+		branches);
+	}
+	ADD_SEQ(ret, else_seq);
+    }
+
+    if (end_label) {
+	ADD_LABEL(ret, end_label);
+    }
+
+    return COMPILE_OK;
+}
+
+static int
+compile_case(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_node, int popped)
+{
+    const NODE *vals;
+    const NODE *node = orig_node;
+    LABEL *endlabel, *elselabel;
+    DECL_ANCHOR(head);
+    DECL_ANCHOR(body_seq);
+    DECL_ANCHOR(cond_seq);
+    int only_special_literals = 1;
+    VALUE literals = rb_hash_new();
+    int line, lineno, column, last_lineno, last_column;
+    enum node_type type;
+    VALUE branches = 0;
+
+    INIT_ANCHOR(head);
+    INIT_ANCHOR(body_seq);
+    INIT_ANCHOR(cond_seq);
+
+    rb_hash_tbl_raw(literals)->type = &cdhash_type;
+
+    CHECK(COMPILE(head, "case base", node->nd_head));
+
+    DECL_BRANCH_BASE(branches, nd_first_lineno(node), nd_first_column(node), nd_last_lineno(node), nd_last_column(node), "case");
+
+    node = node->nd_body;
+    type = nd_type(node);
+    line = nd_line(node);
+    lineno = nd_first_lineno(node);
+    column = nd_first_column(node);
+    last_lineno = nd_last_lineno(node);
+    last_column = nd_last_column(node);
+
+    if (type != NODE_WHEN) {
+	COMPILE_ERROR(ERROR_ARGS "NODE_CASE: unexpected node. must be NODE_WHEN, but %s", ruby_node_name(type));
+	return COMPILE_NG;
+    }
+
+    endlabel = NEW_LABEL(line);
+    elselabel = NEW_LABEL(line);
+
+    ADD_SEQ(ret, head);	/* case VAL */
+
+    while (type == NODE_WHEN) {
+	LABEL *l1;
+
+	l1 = NEW_LABEL(line);
+	ADD_LABEL(body_seq, l1);
+	ADD_INSN(body_seq, line, pop);
+	ADD_TRACE_BRANCH_COVERAGE(
+		body_seq,
+		node->nd_body ? nd_first_lineno(node->nd_body) : lineno,
+		node->nd_body ? nd_first_column(node->nd_body) : column,
+		node->nd_body ? nd_last_lineno(node->nd_body) : last_lineno,
+		node->nd_body ? nd_last_column(node->nd_body) : last_column,
+		"when",
+		branches);
+	CHECK(COMPILE_(body_seq, "when body", node->nd_body, popped));
+	ADD_INSNL(body_seq, line, jump, endlabel);
+
+	vals = node->nd_head;
+	if (vals) {
+	    switch (nd_type(vals)) {
+	      case NODE_ARRAY:
+		only_special_literals = when_vals(iseq, cond_seq, vals, l1, only_special_literals, literals);
+		break;
+	      case NODE_SPLAT:
+	      case NODE_ARGSCAT:
+	      case NODE_ARGSPUSH:
+		only_special_literals = 0;
+		ADD_INSN (cond_seq, nd_line(vals), dup);
+		CHECK(COMPILE(cond_seq, "when/cond splat", vals));
+		ADD_INSN1(cond_seq, nd_line(vals), checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_CASE | VM_CHECKMATCH_ARRAY));
+		ADD_INSNL(cond_seq, nd_line(vals), branchif, l1);
+		break;
+	      default:
+		UNKNOWN_NODE("NODE_CASE", vals, COMPILE_NG);
+	    }
+	}
+	else {
+	    EXPECT_NODE_NONULL("NODE_CASE", node, NODE_ARRAY, COMPILE_NG);
+	}
+
+	node = node->nd_next;
+	if (!node) {
+	    break;
+	}
+	type = nd_type(node);
+	line = nd_line(node);
+	lineno = nd_first_lineno(node);
+	column = nd_first_column(node);
+	last_lineno = nd_last_lineno(node);
+	last_column = nd_last_column(node);
+    }
+    /* else */
+    if (node) {
+	ADD_LABEL(cond_seq, elselabel);
+	ADD_INSN(cond_seq, line, pop);
+	ADD_TRACE_BRANCH_COVERAGE(cond_seq, nd_first_lineno(node), nd_first_column(node), nd_last_lineno(node), nd_last_column(node), "else", branches);
+	CHECK(COMPILE_(cond_seq, "else", node, popped));
+	ADD_INSNL(cond_seq, line, jump, endlabel);
+    }
+    else {
+	debugs("== else (implicit)\n");
+	ADD_LABEL(cond_seq, elselabel);
+	ADD_INSN(cond_seq, nd_line(orig_node), pop);
+	ADD_TRACE_BRANCH_COVERAGE(cond_seq, nd_first_lineno(orig_node), nd_first_column(orig_node), nd_last_lineno(orig_node), nd_last_column(orig_node), "else", branches);
+	if (!popped) {
+	    ADD_INSN(cond_seq, nd_line(orig_node), putnil);
+	}
+	ADD_INSNL(cond_seq, nd_line(orig_node), jump, endlabel);
+    }
+
+    if (only_special_literals) {
+	iseq_add_mark_object(iseq, literals);
+
+	ADD_INSN(ret, nd_line(orig_node), dup);
+	ADD_INSN2(ret, nd_line(orig_node), opt_case_dispatch, literals, elselabel);
+	LABEL_REF(elselabel);
+    }
+
+    ADD_SEQ(ret, cond_seq);
+    ADD_SEQ(ret, body_seq);
+    ADD_LABEL(ret, endlabel);
+    return COMPILE_OK;
+}
+
+static int
+compile_case2(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_node, int popped)
+{
+    const NODE *vals;
+    const NODE *val;
+    const NODE *node = orig_node->nd_body;
+    LABEL *endlabel;
+    DECL_ANCHOR(body_seq);
+    VALUE branches = 0;
+
+    DECL_BRANCH_BASE(branches, nd_first_lineno(orig_node), nd_first_column(orig_node), nd_last_lineno(orig_node), nd_last_column(orig_node), "case");
+
+    INIT_ANCHOR(body_seq);
+    endlabel = NEW_LABEL(nd_line(node));
+
+    while (node && nd_type(node) == NODE_WHEN) {
+	const int line = nd_line(node);
+	const int lineno = nd_first_lineno(node);
+	const int column = nd_first_column(node);
+	const int last_lineno = nd_last_lineno(node);
+	const int last_column = nd_last_column(node);
+	LABEL *l1 = NEW_LABEL(line);
+	ADD_LABEL(body_seq, l1);
+	ADD_TRACE_BRANCH_COVERAGE(
+		body_seq,
+		node->nd_body ? nd_first_lineno(node->nd_body) : lineno,
+		node->nd_body ? nd_first_column(node->nd_body) : column,
+		node->nd_body ? nd_last_lineno(node->nd_body) : last_lineno,
+		node->nd_body ? nd_last_column(node->nd_body) : last_column,
+		"when",
+		branches);
+	CHECK(COMPILE_(body_seq, "when", node->nd_body, popped));
+	ADD_INSNL(body_seq, line, jump, endlabel);
+
+	vals = node->nd_head;
+	if (!vals) {
+	    COMPILE_ERROR(ERROR_ARGS "NODE_WHEN: must be NODE_ARRAY, but 0");
+	    return COMPILE_NG;
+	}
+	switch (nd_type(vals)) {
+	  case NODE_ARRAY:
+	    while (vals) {
+		val = vals->nd_head;
+		CHECK(COMPILE(ret, "when2", val));
+		ADD_INSNL(ret, nd_line(val), branchif, l1);
+		vals = vals->nd_next;
+	    }
+	    break;
+	  case NODE_SPLAT:
+	  case NODE_ARGSCAT:
+	  case NODE_ARGSPUSH:
+	    ADD_INSN(ret, nd_line(vals), putnil);
+	    CHECK(COMPILE(ret, "when2/cond splat", vals));
+	    ADD_INSN1(ret, nd_line(vals), checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_WHEN | VM_CHECKMATCH_ARRAY));
+	    ADD_INSNL(ret, nd_line(vals), branchif, l1);
+	    break;
+	  default:
+	    UNKNOWN_NODE("NODE_WHEN", vals, COMPILE_NG);
+	}
+	node = node->nd_next;
+    }
+    /* else */
+    ADD_TRACE_BRANCH_COVERAGE(
+	ret,
+	node ? nd_first_lineno(node) : nd_first_lineno(orig_node),
+	node ? nd_first_column(node) : nd_first_column(orig_node),
+	node ? nd_last_lineno(node) : nd_last_lineno(orig_node),
+	node ? nd_last_column(node) : nd_last_column(orig_node),
+	"else",
+	branches);
+    CHECK(COMPILE_(ret, "else", node, popped));
+    ADD_INSNL(ret, nd_line(orig_node), jump, endlabel);
+
+    ADD_SEQ(ret, body_seq);
+    ADD_LABEL(ret, endlabel);
+    return COMPILE_OK;
+}
+
+static int
+compile_loop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped, const enum node_type type)
+{
+    const int line = (int)nd_line(node);
+    const int lineno = nd_first_lineno(node);
+    const int column = nd_first_column(node);
+    const int last_lineno = nd_last_lineno(node);
+    const int last_column = nd_last_column(node);
+    LABEL *prev_start_label = ISEQ_COMPILE_DATA(iseq)->start_label;
+    LABEL *prev_end_label = ISEQ_COMPILE_DATA(iseq)->end_label;
+    LABEL *prev_redo_label = ISEQ_COMPILE_DATA(iseq)->redo_label;
+    int prev_loopval_popped = ISEQ_COMPILE_DATA(iseq)->loopval_popped;
+    VALUE branches = 0;
+
+    struct iseq_compile_data_ensure_node_stack enl;
+
+    LABEL *next_label = ISEQ_COMPILE_DATA(iseq)->start_label = NEW_LABEL(line);	/* next  */
+    LABEL *redo_label = ISEQ_COMPILE_DATA(iseq)->redo_label = NEW_LABEL(line);	/* redo  */
+    LABEL *break_label = ISEQ_COMPILE_DATA(iseq)->end_label = NEW_LABEL(line);	/* break */
+    LABEL *end_label = NEW_LABEL(line);
+    LABEL *adjust_label = NEW_LABEL(line);
+
+    LABEL *next_catch_label = NEW_LABEL(line);
+    LABEL *tmp_label = NULL;
+
+    ISEQ_COMPILE_DATA(iseq)->loopval_popped = 0;
+    push_ensure_entry(iseq, &enl, NULL, NULL);
+
+    if (node->nd_state == 1) {
+	ADD_INSNL(ret, line, jump, next_label);
+    }
+    else {
+	tmp_label = NEW_LABEL(line);
+	ADD_INSNL(ret, line, jump, tmp_label);
+    }
+    ADD_LABEL(ret, adjust_label);
+    ADD_INSN(ret, line, putnil);
+    ADD_LABEL(ret, next_catch_label);
+    ADD_INSN(ret, line, pop);
+    ADD_INSNL(ret, line, jump, next_label);
+    if (tmp_label) ADD_LABEL(ret, tmp_label);
+
+    ADD_LABEL(ret, redo_label);
+    DECL_BRANCH_BASE(branches, lineno, column, last_lineno, last_column, type == NODE_WHILE ? "while" : "until");
+    ADD_TRACE_BRANCH_COVERAGE(
+	ret,
+	node->nd_body ? nd_first_lineno(node->nd_body) : lineno,
+	node->nd_body ? nd_first_column(node->nd_body) : column,
+	node->nd_body ? nd_last_lineno(node->nd_body) : last_lineno,
+	node->nd_body ? nd_last_column(node->nd_body) : last_column,
+	"body",
+	branches);
+    CHECK(COMPILE_POPPED(ret, "while body", node->nd_body));
+    ADD_LABEL(ret, next_label);	/* next */
+
+    if (type == NODE_WHILE) {
+	compile_branch_condition(iseq, ret, node->nd_cond,
+				 redo_label, end_label);
+    }
+    else {
+	/* until */
+	compile_branch_condition(iseq, ret, node->nd_cond,
+				 end_label, redo_label);
+    }
+
+    ADD_LABEL(ret, end_label);
+    ADD_ADJUST_RESTORE(ret, adjust_label);
+
+    if (node->nd_state == Qundef) {
+	/* ADD_INSN(ret, line, putundef); */
+	COMPILE_ERROR(ERROR_ARGS "unsupported: putundef");
+	return COMPILE_NG;
+    }
+    else {
+	ADD_INSN(ret, line, putnil);
+    }
+
+    ADD_LABEL(ret, break_label);	/* break */
+
+    if (popped) {
+	ADD_INSN(ret, line, pop);
+    }
+
+    ADD_CATCH_ENTRY(CATCH_TYPE_BREAK, redo_label, break_label, NULL,
+		    break_label);
+    ADD_CATCH_ENTRY(CATCH_TYPE_NEXT, redo_label, break_label, NULL,
+		    next_catch_label);
+    ADD_CATCH_ENTRY(CATCH_TYPE_REDO, redo_label, break_label, NULL,
+		    ISEQ_COMPILE_DATA(iseq)->redo_label);
+
+    ISEQ_COMPILE_DATA(iseq)->start_label = prev_start_label;
+    ISEQ_COMPILE_DATA(iseq)->end_label = prev_end_label;
+    ISEQ_COMPILE_DATA(iseq)->redo_label = prev_redo_label;
+    ISEQ_COMPILE_DATA(iseq)->loopval_popped = prev_loopval_popped;
+    ISEQ_COMPILE_DATA(iseq)->ensure_node_stack = ISEQ_COMPILE_DATA(iseq)->ensure_node_stack->prev;
+    return COMPILE_OK;
+}
+
+static int
+compile_iter(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
+{
+    const int line = nd_line(node);
+    const rb_iseq_t *prevblock = ISEQ_COMPILE_DATA(iseq)->current_block;
+    LABEL *retry_label = NEW_LABEL(line);
+    LABEL *retry_end_l = NEW_LABEL(line);
+    const rb_iseq_t *child_iseq;
+
+    ADD_LABEL(ret, retry_label);
+    if (nd_type(node) == NODE_FOR) {
+	CHECK(COMPILE(ret, "iter caller (for)", node->nd_iter));
+
+	ISEQ_COMPILE_DATA(iseq)->current_block = child_iseq =
+	    NEW_CHILD_ISEQ(node->nd_body, make_name_for_block(iseq),
+			   ISEQ_TYPE_BLOCK, line);
+	ADD_SEND_WITH_BLOCK(ret, line, idEach, INT2FIX(0), child_iseq);
+    }
+    else {
+	ISEQ_COMPILE_DATA(iseq)->current_block = child_iseq =
+	    NEW_CHILD_ISEQ(node->nd_body, make_name_for_block(iseq),
+			   ISEQ_TYPE_BLOCK, line);
+	CHECK(COMPILE(ret, "iter caller", node->nd_iter));
+    }
+    ADD_LABEL(ret, retry_end_l);
+
+    if (popped) {
+	ADD_INSN(ret, line, pop);
+    }
+
+    ISEQ_COMPILE_DATA(iseq)->current_block = prevblock;
+
+    ADD_CATCH_ENTRY(CATCH_TYPE_BREAK, retry_label, retry_end_l, child_iseq, retry_end_l);
+    return COMPILE_OK;
+}
+
+static int
+compile_for(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
+{
+    const int line = nd_line(node);
+    if (node->nd_var) {
+	/* massign to var in "for"
+	 * args.length == 1 && Array === (tmp = args[0]) ? tmp : args
+	 */
+	const NODE *var = node->nd_var;
+	LABEL *not_single = NEW_LABEL(nd_line(var));
+	LABEL *not_ary = NEW_LABEL(nd_line(var));
+	CHECK(COMPILE(ret, "for var", var));
+	ADD_INSN(ret, line, dup);
+	ADD_CALL(ret, line, idLength, INT2FIX(0));
+	ADD_INSN1(ret, line, putobject, INT2FIX(1));
+	ADD_CALL(ret, line, idEq, INT2FIX(1));
+	ADD_INSNL(ret, line, branchunless, not_single);
+	ADD_INSN(ret, line, dup);
+	ADD_INSN1(ret, line, putobject, INT2FIX(0));
+	ADD_CALL(ret, line, idAREF, INT2FIX(1));
+	ADD_INSN1(ret, line, putobject, rb_cArray);
+	ADD_INSN1(ret, line, topn, INT2FIX(1));
+	ADD_CALL(ret, line, idEqq, INT2FIX(1));
+	ADD_INSNL(ret, line, branchunless, not_ary);
+	ADD_INSN(ret, line, swap);
+	ADD_LABEL(ret, not_ary);
+	ADD_INSN(ret, line, pop);
+	ADD_LABEL(ret, not_single);
+	return COMPILE_OK;
+    }
+    else {
+	return compile_iter(iseq, ret, node, popped);
+    }
+}
+
+static int
+compile_break(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
+{
+    const int line = nd_line(node);
+    unsigned long level = 0;
+
+    if (ISEQ_COMPILE_DATA(iseq)->redo_label != 0) {
+	/* while/until */
+	LABEL *splabel = NEW_LABEL(0);
+	ADD_LABEL(ret, splabel);
+	ADD_ADJUST(ret, line, ISEQ_COMPILE_DATA(iseq)->redo_label);
+	CHECK(COMPILE_(ret, "break val (while/until)", node->nd_stts,
+		       ISEQ_COMPILE_DATA(iseq)->loopval_popped));
+	add_ensure_iseq(ret, iseq, 0);
+	ADD_INSNL(ret, line, jump, ISEQ_COMPILE_DATA(iseq)->end_label);
+	ADD_ADJUST_RESTORE(ret, splabel);
+
+	if (!popped) {
+	    ADD_INSN(ret, line, putnil);
+	}
+    }
+    else if (iseq->body->type == ISEQ_TYPE_BLOCK) {
+      break_by_insn:
+	/* escape from block */
+	CHECK(COMPILE(ret, "break val (block)", node->nd_stts));
+	ADD_INSN1(ret, line, throw, INT2FIX(level | TAG_BREAK));
+	if (popped) {
+	    ADD_INSN(ret, line, pop);
+	}
+    }
+    else if (iseq->body->type == ISEQ_TYPE_EVAL) {
+      break_in_eval:
+	COMPILE_ERROR(ERROR_ARGS "Can't escape from eval with break");
+	return COMPILE_NG;
+    }
+    else {
+	const rb_iseq_t *ip = iseq->body->parent_iseq;
+
+	while (ip) {
+	    if (!ISEQ_COMPILE_DATA(ip)) {
+		ip = 0;
+		break;
+	    }
+
+	    level++;
+	    if (ISEQ_COMPILE_DATA(ip)->redo_label != 0) {
+		level = VM_THROW_NO_ESCAPE_FLAG;
+		goto break_by_insn;
+	    }
+	    else if (ip->body->type == ISEQ_TYPE_BLOCK) {
+		level <<= VM_THROW_LEVEL_SHIFT;
+		goto break_by_insn;
+	    }
+	    else if (ip->body->type == ISEQ_TYPE_EVAL) {
+		goto break_in_eval;
+	    }
+
+	    ip = ip->body->parent_iseq;
+	}
+	COMPILE_ERROR(ERROR_ARGS "Invalid break");
+	return COMPILE_NG;
+    }
+    return COMPILE_OK;
+}
+
+static int
+compile_next(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
+{
+    const int line = nd_line(node);
+    unsigned long level = 0;
+
+    if (ISEQ_COMPILE_DATA(iseq)->redo_label != 0) {
+	LABEL *splabel = NEW_LABEL(0);
+	debugs("next in while loop\n");
+	ADD_LABEL(ret, splabel);
+	CHECK(COMPILE(ret, "next val/valid syntax?", node->nd_stts));
+	add_ensure_iseq(ret, iseq, 0);
+	ADD_ADJUST(ret, line, ISEQ_COMPILE_DATA(iseq)->redo_label);
+	ADD_INSNL(ret, line, jump, ISEQ_COMPILE_DATA(iseq)->start_label);
+	ADD_ADJUST_RESTORE(ret, splabel);
+	if (!popped) {
+	    ADD_INSN(ret, line, putnil);
+	}
+    }
+    else if (ISEQ_COMPILE_DATA(iseq)->end_label) {
+	LABEL *splabel = NEW_LABEL(0);
+	debugs("next in block\n");
+	ADD_LABEL(ret, splabel);
+	ADD_ADJUST(ret, line, ISEQ_COMPILE_DATA(iseq)->start_label);
+	CHECK(COMPILE(ret, "next val", node->nd_stts));
+	add_ensure_iseq(ret, iseq, 0);
+	ADD_INSNL(ret, line, jump, ISEQ_COMPILE_DATA(iseq)->end_label);
+	ADD_ADJUST_RESTORE(ret, splabel);
+	splabel->unremovable = FALSE;
+
+	if (!popped) {
+	    ADD_INSN(ret, line, putnil);
+	}
+    }
+    else if (iseq->body->type == ISEQ_TYPE_EVAL) {
+      next_in_eval:
+	COMPILE_ERROR(ERROR_ARGS "Can't escape from eval with next");
+	return COMPILE_NG;
+    }
+    else {
+	const rb_iseq_t *ip = iseq;
+
+	while (ip) {
+	    if (!ISEQ_COMPILE_DATA(ip)) {
+		ip = 0;
+		break;
+	    }
+
+	    level = VM_THROW_NO_ESCAPE_FLAG;
+	    if (ISEQ_COMPILE_DATA(ip)->redo_label != 0) {
+		/* while loop */
+		break;
+	    }
+	    else if (ip->body->type == ISEQ_TYPE_BLOCK) {
+		break;
+	    }
+	    else if (ip->body->type == ISEQ_TYPE_EVAL) {
+		goto next_in_eval;
+	    }
+
+	    ip = ip->body->parent_iseq;
+	}
+	if (ip != 0) {
+	    CHECK(COMPILE(ret, "next val", node->nd_stts));
+	    ADD_INSN1(ret, line, throw, INT2FIX(level | TAG_NEXT));
+
+	    if (popped) {
+		ADD_INSN(ret, line, pop);
+	    }
+	}
+	else {
+	    COMPILE_ERROR(ERROR_ARGS "Invalid next");
+	    return COMPILE_NG;
+	}
+    }
+    return COMPILE_OK;
+}
+
+static int
+compile_redo(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
+{
+    const int line = nd_line(node);
+
+    if (ISEQ_COMPILE_DATA(iseq)->redo_label) {
+	LABEL *splabel = NEW_LABEL(0);
+	debugs("redo in while");
+	ADD_LABEL(ret, splabel);
+	ADD_ADJUST(ret, line, ISEQ_COMPILE_DATA(iseq)->redo_label);
+	add_ensure_iseq(ret, iseq, 0);
+	ADD_INSNL(ret, line, jump, ISEQ_COMPILE_DATA(iseq)->redo_label);
+	ADD_ADJUST_RESTORE(ret, splabel);
+	if (!popped) {
+	    ADD_INSN(ret, line, putnil);
+	}
+    }
+    else if (iseq->body->type == ISEQ_TYPE_EVAL) {
+      redo_in_eval:
+	COMPILE_ERROR(ERROR_ARGS "Can't escape from eval with redo");
+	return COMPILE_NG;
+    }
+    else if (ISEQ_COMPILE_DATA(iseq)->start_label) {
+	LABEL *splabel = NEW_LABEL(0);
+
+	debugs("redo in block");
+	ADD_LABEL(ret, splabel);
+	add_ensure_iseq(ret, iseq, 0);
+	ADD_ADJUST(ret, line, ISEQ_COMPILE_DATA(iseq)->start_label);
+	ADD_INSNL(ret, line, jump, ISEQ_COMPILE_DATA(iseq)->start_label);
+	ADD_ADJUST_RESTORE(ret, splabel);
+
+	if (!popped) {
+	    ADD_INSN(ret, line, putnil);
+	}
+    }
+    else {
+	const rb_iseq_t *ip = iseq;
+	const unsigned long level = VM_THROW_NO_ESCAPE_FLAG;
+
+	while (ip) {
+	    if (!ISEQ_COMPILE_DATA(ip)) {
+		ip = 0;
+		break;
+	    }
+
+	    if (ISEQ_COMPILE_DATA(ip)->redo_label != 0) {
+		break;
+	    }
+	    else if (ip->body->type == ISEQ_TYPE_BLOCK) {
+		break;
+	    }
+	    else if (ip->body->type == ISEQ_TYPE_EVAL) {
+		goto redo_in_eval;
+	    }
+
+	    ip = ip->body->parent_iseq;
+	}
+	if (ip != 0) {
+	    ADD_INSN(ret, line, putnil);
+	    ADD_INSN1(ret, line, throw, INT2FIX(level | TAG_REDO));
+
+	    if (popped) {
+		ADD_INSN(ret, line, pop);
+	    }
+	}
+	else {
+	    COMPILE_ERROR(ERROR_ARGS "Invalid redo");
+	    return COMPILE_NG;
+	}
+    }
+    return COMPILE_OK;
+}
+
+static int
+compile_retry(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
+{
+    const int line = nd_line(node);
+
+    if (iseq->body->type == ISEQ_TYPE_RESCUE) {
+	ADD_INSN(ret, line, putnil);
+	ADD_INSN1(ret, line, throw, INT2FIX(TAG_RETRY));
+
+	if (popped) {
+	    ADD_INSN(ret, line, pop);
+	}
+    }
+    else {
+	COMPILE_ERROR(ERROR_ARGS "Invalid retry");
+	return COMPILE_NG;
+    }
+    return COMPILE_OK;
+}
+
+static int
+compile_rescue(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
+{
+    const int line = nd_line(node);
+    LABEL *lstart = NEW_LABEL(line);
+    LABEL *lend = NEW_LABEL(line);
+    LABEL *lcont = NEW_LABEL(line);
+    const rb_iseq_t *rescue = NEW_CHILD_ISEQ(node->nd_resq,
+					     rb_str_concat(rb_str_new2("rescue in "), iseq->body->location.label),
+					     ISEQ_TYPE_RESCUE, line);
+
+    lstart->rescued = LABEL_RESCUE_BEG;
+    lend->rescued = LABEL_RESCUE_END;
+    ADD_LABEL(ret, lstart);
+    CHECK(COMPILE(ret, "rescue head", node->nd_head));
+    ADD_LABEL(ret, lend);
+    if (node->nd_else) {
+	ADD_INSN(ret, line, pop);
+	CHECK(COMPILE(ret, "rescue else", node->nd_else));
+    }
+    ADD_INSN(ret, line, nop);
+    ADD_LABEL(ret, lcont);
+
+    if (popped) {
+	ADD_INSN(ret, line, pop);
+    }
+
+    /* register catch entry */
+    ADD_CATCH_ENTRY(CATCH_TYPE_RESCUE, lstart, lend, rescue, lcont);
+    ADD_CATCH_ENTRY(CATCH_TYPE_RETRY, lend, lcont, NULL, lstart);
+    return COMPILE_OK;
+}
+
+static int
+compile_resbody(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
+{
+    const int line = nd_line(node);
+    const NODE *resq = node;
+    const NODE *narg;
+    LABEL *label_miss, *label_hit;
+
+    while (resq) {
+	label_miss = NEW_LABEL(line);
+	label_hit = NEW_LABEL(line);
+
+	narg = resq->nd_args;
+	if (narg) {
+	    switch (nd_type(narg)) {
+	      case NODE_ARRAY:
+		while (narg) {
+		    ADD_GETLOCAL(ret, line, LVAR_ERRINFO, 0);
+		    CHECK(COMPILE(ret, "rescue arg", narg->nd_head));
+		    ADD_INSN1(ret, line, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_RESCUE));
+		    ADD_INSNL(ret, line, branchif, label_hit);
+		    narg = narg->nd_next;
+		}
+		break;
+	      case NODE_SPLAT:
+	      case NODE_ARGSCAT:
+	      case NODE_ARGSPUSH:
+		ADD_GETLOCAL(ret, line, LVAR_ERRINFO, 0);
+		CHECK(COMPILE(ret, "rescue/cond splat", narg));
+		ADD_INSN1(ret, line, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_RESCUE | VM_CHECKMATCH_ARRAY));
+		ADD_INSNL(ret, line, branchif, label_hit);
+		break;
+	      default:
+		UNKNOWN_NODE("NODE_RESBODY", narg, COMPILE_NG);
+	    }
+	}
+	else {
+	    ADD_GETLOCAL(ret, line, LVAR_ERRINFO, 0);
+	    ADD_INSN1(ret, line, putobject, rb_eStandardError);
+	    ADD_INSN1(ret, line, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_RESCUE));
+	    ADD_INSNL(ret, line, branchif, label_hit);
+	}
+	ADD_INSNL(ret, line, jump, label_miss);
+	ADD_LABEL(ret, label_hit);
+	CHECK(COMPILE(ret, "resbody body", resq->nd_body));
+	if (ISEQ_COMPILE_DATA(iseq)->option->tailcall_optimization) {
+	    ADD_INSN(ret, line, nop);
+	}
+	ADD_INSN(ret, line, leave);
+	ADD_LABEL(ret, label_miss);
+	resq = resq->nd_head;
+    }
+    return COMPILE_OK;
+}
+
+static int
+compile_ensure(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
+{
+    const int line = nd_line(node);
+    DECL_ANCHOR(ensr);
+    const rb_iseq_t *ensure = NEW_CHILD_ISEQ(node->nd_ensr,
+					     rb_str_concat(rb_str_new2 ("ensure in "), iseq->body->location.label),
+					     ISEQ_TYPE_ENSURE, line);
+    LABEL *lstart = NEW_LABEL(line);
+    LABEL *lend = NEW_LABEL(line);
+    LABEL *lcont = NEW_LABEL(line);
+    LINK_ELEMENT *last;
+    int last_leave = 0;
+    struct ensure_range er;
+    struct iseq_compile_data_ensure_node_stack enl;
+    struct ensure_range *erange;
+
+    INIT_ANCHOR(ensr);
+    CHECK(COMPILE_POPPED(ensr, "ensure ensr", node->nd_ensr));
+    last = ensr->last;
+    last_leave = last && IS_INSN(last) && IS_INSN_ID(last, leave);
+
+    er.begin = lstart;
+    er.end = lend;
+    er.next = 0;
+    push_ensure_entry(iseq, &enl, &er, node->nd_ensr);
+
+    ADD_LABEL(ret, lstart);
+    CHECK(COMPILE_(ret, "ensure head", node->nd_head, (popped | last_leave)));
+    ADD_LABEL(ret, lend);
+    if (LIST_INSN_SIZE_ZERO(ensr)) {
+	ADD_INSN(ret, line, nop);
+    }
+    else {
+	ADD_SEQ(ret, ensr);
+	if (!popped && last_leave) {
+	    ADD_INSN(ret, line, putnil);
+	}
+    }
+    ADD_LABEL(ret, lcont);
+    if (last_leave) ADD_INSN(ret, line, pop);
+
+    erange = ISEQ_COMPILE_DATA(iseq)->ensure_node_stack->erange;
+    if (lstart->link.next != &lend->link) {
+	while (erange) {
+	    ADD_CATCH_ENTRY(CATCH_TYPE_ENSURE, erange->begin, erange->end,
+			    ensure, lcont);
+	    erange = erange->next;
+	}
+    }
+
+    ISEQ_COMPILE_DATA(iseq)->ensure_node_stack = enl.prev;
+    return COMPILE_OK;
+}
+
+static int
+compile_return(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
+{
+    const int line = nd_line(node);
+
+    if (iseq) {
+	enum iseq_type type = iseq->body->type;
+	const rb_iseq_t *is = iseq;
+	enum iseq_type t = type;
+	const NODE *retval = node->nd_stts;
+	LABEL *splabel = 0;
+
+	while (t == ISEQ_TYPE_RESCUE || t == ISEQ_TYPE_ENSURE) {
+	    if (!(is = is->body->parent_iseq)) break;
+	    t = is->body->type;
+	}
+	switch (t) {
+	  case ISEQ_TYPE_TOP:
+	  case ISEQ_TYPE_MAIN:
+	    if (is == iseq) {
+		/* plain top-level, leave directly */
+		type = ISEQ_TYPE_METHOD;
+	    }
+	    break;
+	  default:
+	    break;
+	}
+
+	if (type == ISEQ_TYPE_METHOD) {
+	    splabel = NEW_LABEL(0);
+	    ADD_LABEL(ret, splabel);
+	    ADD_ADJUST(ret, line, 0);
+	}
+
+	CHECK(COMPILE(ret, "return nd_stts (return val)", retval));
+
+	if (type == ISEQ_TYPE_METHOD) {
+	    add_ensure_iseq(ret, iseq, 1);
+	    ADD_TRACE(ret, RUBY_EVENT_RETURN);
+	    ADD_INSN(ret, line, leave);
+	    ADD_ADJUST_RESTORE(ret, splabel);
+
+	    if (!popped) {
+		ADD_INSN(ret, line, putnil);
+	    }
+	}
+	else {
+	    ADD_INSN1(ret, line, throw, INT2FIX(TAG_RETURN));
+	    if (popped) {
+		ADD_INSN(ret, line, pop);
+	    }
+	}
+    }
+    return COMPILE_OK;
+}
+
+static int iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int popped);
 /**
   compile each node
 
@@ -3967,21 +5446,25 @@ number_literal_p(NODE *n)
   popped: This node will be popped
  */
 static int
-iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped)
+iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, const NODE *node, int popped)
 {
-    enum node_type type;
-    LINK_ELEMENT *saved_last_element = 0;
-    int line;
-
     if (node == 0) {
 	if (!popped) {
+	    int lineno = ISEQ_COMPILE_DATA(iseq)->last_line;
+	    if (lineno == 0) lineno = FIX2INT(rb_iseq_first_lineno(iseq));
 	    debugs("node: NODE_NIL(implicit)\n");
-	    ADD_INSN(ret, ISEQ_COMPILE_DATA(iseq)->last_line, putnil);
+	    ADD_INSN(ret, lineno, putnil);
 	}
 	return COMPILE_OK;
     }
+    return iseq_compile_each0(iseq, ret, node, popped);
+}
 
-    line = (int)nd_line(node);
+static int
+iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int popped)
+{
+    const int line = (int)nd_line(node);
+    const enum node_type type = nd_type(node);
 
     if (ISEQ_COMPILE_DATA(iseq)->last_line == line) {
 	/* ignore */
@@ -3989,16 +5472,14 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
     else {
 	if (node->flags & NODE_FL_NEWLINE) {
 	    ISEQ_COMPILE_DATA(iseq)->last_line = line;
-	    ADD_TRACE(ret, line, RUBY_EVENT_LINE);
-	    saved_last_element = ret->last;
+	    ADD_TRACE_LINE_COVERAGE(ret, line);
+	    ADD_TRACE(ret, RUBY_EVENT_LINE);
 	}
     }
 
     debug_node_start(node);
 #undef BEFORE_RETURN
 #define BEFORE_RETURN debug_node_end()
-
-    type = nd_type(node);
 
     switch (type) {
       case NODE_BLOCK:{
@@ -4012,692 +5493,51 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	}
 	break;
       }
-      case NODE_IF:{
-	DECL_ANCHOR(cond_seq);
-	DECL_ANCHOR(then_seq);
-	DECL_ANCHOR(else_seq);
-	LABEL *then_label, *else_label, *end_label;
-
-	INIT_ANCHOR(cond_seq);
-	INIT_ANCHOR(then_seq);
-	INIT_ANCHOR(else_seq);
-	then_label = NEW_LABEL(line);
-	else_label = NEW_LABEL(line);
-	end_label = NEW_LABEL(line);
-
-	compile_branch_condition(iseq, cond_seq, node->nd_cond,
-				 then_label, else_label);
-	CHECK(COMPILE_(then_seq, "then", node->nd_body, popped));
-	CHECK(COMPILE_(else_seq, "else", node->nd_else, popped));
-
-	ADD_SEQ(ret, cond_seq);
-
-	ADD_LABEL(ret, then_label);
-	ADD_SEQ(ret, then_seq);
-	ADD_INSNL(ret, line, jump, end_label);
-
-	ADD_LABEL(ret, else_label);
-	ADD_SEQ(ret, else_seq);
-
-	ADD_LABEL(ret, end_label);
-
+      case NODE_IF:
+      case NODE_UNLESS:
+	CHECK(compile_if(iseq, ret, node, popped, type));
 	break;
-      }
-      case NODE_CASE:{
-	NODE *vals;
-	NODE *tempnode = node;
-	LABEL *endlabel, *elselabel;
-	DECL_ANCHOR(head);
-	DECL_ANCHOR(body_seq);
-	DECL_ANCHOR(cond_seq);
-	int only_special_literals = 1;
-	VALUE literals = rb_hash_new();
-
-	INIT_ANCHOR(head);
-	INIT_ANCHOR(body_seq);
-	INIT_ANCHOR(cond_seq);
-
-	rb_hash_tbl_raw(literals)->type = &cdhash_type;
-
-	if (node->nd_head == 0) {
-	    CHECK(COMPILE_(ret, "when", node->nd_body, popped));
-	    break;
-	}
-	CHECK(COMPILE(head, "case base", node->nd_head));
-
-	node = node->nd_body;
-	type = nd_type(node);
-	line = nd_line(node);
-
-	if (type != NODE_WHEN) {
-	    COMPILE_ERROR(ERROR_ARGS "NODE_CASE: unexpected node. must be NODE_WHEN, but %s", ruby_node_name(type));
-	  ng:
-	    debug_node_end();
-	    return COMPILE_NG;
-	}
-
-	endlabel = NEW_LABEL(line);
-	elselabel = NEW_LABEL(line);
-
-	ADD_SEQ(ret, head);	/* case VAL */
-
-	while (type == NODE_WHEN) {
-	    LABEL *l1;
-
-	    l1 = NEW_LABEL(line);
-	    ADD_LABEL(body_seq, l1);
-	    ADD_INSN(body_seq, line, pop);
-	    CHECK(COMPILE_(body_seq, "when body", node->nd_body, popped));
-	    ADD_INSNL(body_seq, line, jump, endlabel);
-
-	    vals = node->nd_head;
-	    if (vals) {
-		switch (nd_type(vals)) {
-		  case NODE_ARRAY:
-		    only_special_literals = when_vals(iseq, cond_seq, vals, l1, only_special_literals, literals);
-		    break;
-		  case NODE_SPLAT:
-		  case NODE_ARGSCAT:
-		  case NODE_ARGSPUSH:
-		    only_special_literals = 0;
-		    ADD_INSN (cond_seq, nd_line(vals), dup);
-		    CHECK(COMPILE(cond_seq, "when/cond splat", vals));
-		    ADD_INSN1(cond_seq, nd_line(vals), checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_CASE | VM_CHECKMATCH_ARRAY));
-		    ADD_INSNL(cond_seq, nd_line(vals), branchif, l1);
-		    break;
-		  default:
-		    UNKNOWN_NODE("NODE_CASE", vals);
-		}
-	    }
-	    else {
-		EXPECT_NODE_NONULL("NODE_CASE", node, NODE_ARRAY);
-	    }
-
-	    node = node->nd_next;
-	    if (!node) {
-		break;
-	    }
-	    type = nd_type(node);
-	    line = nd_line(node);
-	}
-	/* else */
-	if (node) {
-	    ADD_LABEL(cond_seq, elselabel);
-	    ADD_INSN(cond_seq, line, pop);
-	    CHECK(COMPILE_(cond_seq, "else", node, popped));
-	    ADD_INSNL(cond_seq, line, jump, endlabel);
-	}
-	else {
-	    debugs("== else (implicit)\n");
-	    ADD_LABEL(cond_seq, elselabel);
-	    ADD_INSN(cond_seq, nd_line(tempnode), pop);
-	    if (!popped) {
-		ADD_INSN(cond_seq, nd_line(tempnode), putnil);
-	    }
-	    ADD_INSNL(cond_seq, nd_line(tempnode), jump, endlabel);
-	}
-
-	if (only_special_literals) {
-	    iseq_add_mark_object(iseq, literals);
-
-	    ADD_INSN(ret, nd_line(tempnode), dup);
-	    ADD_INSN2(ret, nd_line(tempnode), opt_case_dispatch, literals, elselabel);
-	    LABEL_REF(elselabel);
-	}
-
-	ADD_SEQ(ret, cond_seq);
-	ADD_SEQ(ret, body_seq);
-	ADD_LABEL(ret, endlabel);
+      case NODE_CASE:
+	CHECK(compile_case(iseq, ret, node, popped));
 	break;
-      }
-      case NODE_WHEN:{
-	NODE *vals;
-	NODE *val;
-	NODE *orig_node = node;
-	LABEL *endlabel;
-	DECL_ANCHOR(body_seq);
-
-	INIT_ANCHOR(body_seq);
-	endlabel = NEW_LABEL(line);
-
-	while (node && nd_type(node) == NODE_WHEN) {
-	    LABEL *l1 = NEW_LABEL(line = nd_line(node));
-	    ADD_LABEL(body_seq, l1);
-	    CHECK(COMPILE_(body_seq, "when", node->nd_body, popped));
-	    ADD_INSNL(body_seq, line, jump, endlabel);
-
-	    vals = node->nd_head;
-	    if (!vals) {
-		compile_bug(ERROR_ARGS "NODE_WHEN: must be NODE_ARRAY, but 0");
-	    }
-	    switch (nd_type(vals)) {
-	      case NODE_ARRAY:
-		while (vals) {
-		    val = vals->nd_head;
-		    CHECK(COMPILE(ret, "when2", val));
-		    ADD_INSNL(ret, nd_line(val), branchif, l1);
-		    vals = vals->nd_next;
-		}
-		break;
-	      case NODE_SPLAT:
-	      case NODE_ARGSCAT:
-	      case NODE_ARGSPUSH:
-		ADD_INSN(ret, nd_line(vals), putnil);
-		CHECK(COMPILE(ret, "when2/cond splat", vals));
-		ADD_INSN1(ret, nd_line(vals), checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_WHEN | VM_CHECKMATCH_ARRAY));
-		ADD_INSNL(ret, nd_line(vals), branchif, l1);
-		break;
-	      default:
-		UNKNOWN_NODE("NODE_WHEN", vals);
-	    }
-	    node = node->nd_next;
-	}
-	/* else */
-	CHECK(COMPILE_(ret, "else", node, popped));
-	ADD_INSNL(ret, nd_line(orig_node), jump, endlabel);
-
-	ADD_SEQ(ret, body_seq);
-	ADD_LABEL(ret, endlabel);
-
+      case NODE_CASE2:
+	CHECK(compile_case2(iseq, ret, node, popped));
 	break;
-      }
-      case NODE_OPT_N:
       case NODE_WHILE:
-      case NODE_UNTIL:{
-	LABEL *prev_start_label = ISEQ_COMPILE_DATA(iseq)->start_label;
-	LABEL *prev_end_label = ISEQ_COMPILE_DATA(iseq)->end_label;
-	LABEL *prev_redo_label = ISEQ_COMPILE_DATA(iseq)->redo_label;
-	int prev_loopval_popped = ISEQ_COMPILE_DATA(iseq)->loopval_popped;
-
-	struct iseq_compile_data_ensure_node_stack enl;
-
-	LABEL *next_label = ISEQ_COMPILE_DATA(iseq)->start_label = NEW_LABEL(line);	/* next  */
-	LABEL *redo_label = ISEQ_COMPILE_DATA(iseq)->redo_label = NEW_LABEL(line);	/* redo  */
-	LABEL *break_label = ISEQ_COMPILE_DATA(iseq)->end_label = NEW_LABEL(line);	/* break */
-	LABEL *end_label = NEW_LABEL(line);
-	LABEL *adjust_label = NEW_LABEL(line);
-
-	LABEL *next_catch_label = NEW_LABEL(line);
-	LABEL *tmp_label = NULL;
-
-	ISEQ_COMPILE_DATA(iseq)->loopval_popped = 0;
-	push_ensure_entry(iseq, &enl, 0, 0);
-
-	if (type == NODE_OPT_N || node->nd_state == 1) {
-	    ADD_INSNL(ret, line, jump, next_label);
-	}
-	else {
-	    tmp_label = NEW_LABEL(line);
-	    ADD_INSNL(ret, line, jump, tmp_label);
-	}
-	ADD_LABEL(ret, adjust_label);
-	ADD_INSN(ret, line, putnil);
-	ADD_LABEL(ret, next_catch_label);
-	ADD_INSN(ret, line, pop);
-	ADD_INSNL(ret, line, jump, next_label);
-	if (tmp_label) ADD_LABEL(ret, tmp_label);
-
-	ADD_LABEL(ret, redo_label);
-	CHECK(COMPILE_POPPED(ret, "while body", node->nd_body));
-	ADD_LABEL(ret, next_label);	/* next */
-
-	if (type == NODE_WHILE) {
-	    compile_branch_condition(iseq, ret, node->nd_cond,
-				     redo_label, end_label);
-	}
-	else if (type == NODE_UNTIL) {
-	    /* until */
-	    compile_branch_condition(iseq, ret, node->nd_cond,
-				     end_label, redo_label);
-	}
-	else {
-	    ADD_CALL_RECEIVER(ret, line);
-	    ADD_CALL(ret, line, idGets, INT2FIX(0));
-	    ADD_INSNL(ret, line, branchif, redo_label);
-	    /* opt_n */
-	}
-
-	ADD_LABEL(ret, end_label);
-	ADD_ADJUST_RESTORE(ret, adjust_label);
-
-	if (node->nd_state == Qundef) {
-	    /* ADD_INSN(ret, line, putundef); */
-	    compile_bug(ERROR_ARGS "unsupported: putundef");
-	}
-	else {
-	    ADD_INSN(ret, line, putnil);
-	}
-
-	ADD_LABEL(ret, break_label);	/* break */
-
-	if (popped) {
-	    ADD_INSN(ret, line, pop);
-	}
-
-	ADD_CATCH_ENTRY(CATCH_TYPE_BREAK, redo_label, break_label,
-			0, break_label);
-	ADD_CATCH_ENTRY(CATCH_TYPE_NEXT, redo_label, break_label, 0,
-			next_catch_label);
-	ADD_CATCH_ENTRY(CATCH_TYPE_REDO, redo_label, break_label, 0,
-			ISEQ_COMPILE_DATA(iseq)->redo_label);
-
-	ISEQ_COMPILE_DATA(iseq)->start_label = prev_start_label;
-	ISEQ_COMPILE_DATA(iseq)->end_label = prev_end_label;
-	ISEQ_COMPILE_DATA(iseq)->redo_label = prev_redo_label;
-	ISEQ_COMPILE_DATA(iseq)->loopval_popped = prev_loopval_popped;
-	ISEQ_COMPILE_DATA(iseq)->ensure_node_stack = ISEQ_COMPILE_DATA(iseq)->ensure_node_stack->prev;
+      case NODE_UNTIL:
+	CHECK(compile_loop(iseq, ret, node, popped, type));
 	break;
-      }
       case NODE_FOR:
-	if (node->nd_var) {
-	    /* massign to var in "for"
-	     * args.length == 1 && Array === (tmp = args[0]) ? tmp : args
-	     */
-	    NODE *var = node->nd_var;
-	    LABEL *not_single = NEW_LABEL(nd_line(var));
-	    LABEL *not_ary = NEW_LABEL(nd_line(var));
-	    CHECK(COMPILE(ret, "for var", var));
-	    ADD_INSN(ret, line, dup);
-	    ADD_CALL(ret, line, idLength, INT2FIX(0));
-	    ADD_INSN1(ret, line, putobject, INT2FIX(1));
-	    ADD_CALL(ret, line, idEq, INT2FIX(1));
-	    ADD_INSNL(ret, line, branchunless, not_single);
-	    ADD_INSN(ret, line, dup);
-	    ADD_INSN1(ret, line, putobject, INT2FIX(0));
-	    ADD_CALL(ret, line, idAREF, INT2FIX(1));
-	    ADD_INSN1(ret, line, putobject, rb_cArray);
-	    ADD_INSN1(ret, line, topn, INT2FIX(1));
-	    ADD_CALL(ret, line, idEqq, INT2FIX(1));
-	    ADD_INSNL(ret, line, branchunless, not_ary);
-	    ADD_INSN(ret, line, swap);
-	    ADD_LABEL(ret, not_ary);
-	    ADD_INSN(ret, line, pop);
-	    ADD_LABEL(ret, not_single);
-	    break;
-	}
-      case NODE_ITER:{
-	const rb_iseq_t *prevblock = ISEQ_COMPILE_DATA(iseq)->current_block;
-	LABEL *retry_label = NEW_LABEL(line);
-	LABEL *retry_end_l = NEW_LABEL(line);
-
-	ADD_LABEL(ret, retry_label);
-	if (nd_type(node) == NODE_FOR) {
-	    CHECK(COMPILE(ret, "iter caller (for)", node->nd_iter));
-
-	    ISEQ_COMPILE_DATA(iseq)->current_block = NEW_CHILD_ISEQ(node->nd_body, make_name_for_block(iseq),
-							       ISEQ_TYPE_BLOCK, line);
-	    ADD_SEND_WITH_BLOCK(ret, line, idEach, INT2FIX(0), ISEQ_COMPILE_DATA(iseq)->current_block);
-	}
-	else {
-	    ISEQ_COMPILE_DATA(iseq)->current_block = NEW_CHILD_ISEQ(node->nd_body, make_name_for_block(iseq),
-							       ISEQ_TYPE_BLOCK, line);
-	    CHECK(COMPILE(ret, "iter caller", node->nd_iter));
-	}
-	ADD_LABEL(ret, retry_end_l);
-
-	if (popped) {
-	    ADD_INSN(ret, line, pop);
-	}
-
-	ISEQ_COMPILE_DATA(iseq)->current_block = prevblock;
-
-	ADD_CATCH_ENTRY(CATCH_TYPE_BREAK, retry_label, retry_end_l, 0, retry_end_l);
-
+	CHECK(compile_for(iseq, ret, node, popped));
 	break;
-      }
-      case NODE_BREAK:{
-	unsigned long level = 0;
-
-	if (ISEQ_COMPILE_DATA(iseq)->redo_label != 0) {
-	    /* while/until */
-	    LABEL *splabel = NEW_LABEL(0);
-	    ADD_LABEL(ret, splabel);
-	    ADD_ADJUST(ret, line, ISEQ_COMPILE_DATA(iseq)->redo_label);
-	    CHECK(COMPILE_(ret, "break val (while/until)", node->nd_stts,
-			   ISEQ_COMPILE_DATA(iseq)->loopval_popped));
-	    add_ensure_iseq(ret, iseq, 0);
-	    ADD_INSNL(ret, line, jump, ISEQ_COMPILE_DATA(iseq)->end_label);
-	    ADD_ADJUST_RESTORE(ret, splabel);
-
-	    if (!popped) {
-		ADD_INSN(ret, line, putnil);
-	    }
-	}
-	else if (iseq->body->type == ISEQ_TYPE_BLOCK) {
-	  break_by_insn:
-	    /* escape from block */
-	    CHECK(COMPILE(ret, "break val (block)", node->nd_stts));
-	    ADD_INSN1(ret, line, throw, INT2FIX(level | TAG_BREAK));
-	    if (popped) {
-		ADD_INSN(ret, line, pop);
-	    }
-	}
-	else if (iseq->body->type == ISEQ_TYPE_EVAL) {
-	  break_in_eval:
-	    COMPILE_ERROR(ERROR_ARGS "Can't escape from eval with break");
-	    goto ng;
-	}
-	else {
-	    const rb_iseq_t *ip = iseq->body->parent_iseq;
-
-	    while (ip) {
-		if (!ISEQ_COMPILE_DATA(ip)) {
-		    ip = 0;
-		    break;
-		}
-
-		level++;
-		if (ISEQ_COMPILE_DATA(ip)->redo_label != 0) {
-		    level = VM_THROW_NO_ESCAPE_FLAG;
-		    goto break_by_insn;
-		}
-		else if (ip->body->type == ISEQ_TYPE_BLOCK) {
-		    level <<= VM_THROW_LEVEL_SHIFT;
-		    goto break_by_insn;
-		}
-		else if (ip->body->type == ISEQ_TYPE_EVAL) {
-		    goto break_in_eval;
-		}
-
-		ip = ip->body->parent_iseq;
-	    }
-	    COMPILE_ERROR(ERROR_ARGS "Invalid break");
-	    goto ng;
-	}
+      case NODE_ITER:
+	CHECK(compile_iter(iseq, ret, node, popped));
 	break;
-      }
-      case NODE_NEXT:{
-	unsigned long level = 0;
-
-	if (ISEQ_COMPILE_DATA(iseq)->redo_label != 0) {
-	    LABEL *splabel = NEW_LABEL(0);
-	    debugs("next in while loop\n");
-	    ADD_LABEL(ret, splabel);
-	    CHECK(COMPILE(ret, "next val/valid syntax?", node->nd_stts));
-	    add_ensure_iseq(ret, iseq, 0);
-	    ADD_ADJUST(ret, line, ISEQ_COMPILE_DATA(iseq)->redo_label);
-	    ADD_INSNL(ret, line, jump, ISEQ_COMPILE_DATA(iseq)->start_label);
-	    ADD_ADJUST_RESTORE(ret, splabel);
-	    if (!popped) {
-		ADD_INSN(ret, line, putnil);
-	    }
-	}
-	else if (ISEQ_COMPILE_DATA(iseq)->end_label) {
-	    LABEL *splabel = NEW_LABEL(0);
-	    debugs("next in block\n");
-	    ADD_LABEL(ret, splabel);
-	    ADD_ADJUST(ret, line, ISEQ_COMPILE_DATA(iseq)->start_label);
-	    CHECK(COMPILE(ret, "next val", node->nd_stts));
-	    add_ensure_iseq(ret, iseq, 0);
-	    ADD_INSNL(ret, line, jump, ISEQ_COMPILE_DATA(iseq)->end_label);
-	    ADD_ADJUST_RESTORE(ret, splabel);
-
-	    if (!popped) {
-		ADD_INSN(ret, line, putnil);
-	    }
-	}
-	else if (iseq->body->type == ISEQ_TYPE_EVAL) {
-	  next_in_eval:
-	    COMPILE_ERROR(ERROR_ARGS "Can't escape from eval with next");
-	    goto ng;
-	}
-	else {
-	    const rb_iseq_t *ip = iseq;
-
-	    while (ip) {
-		if (!ISEQ_COMPILE_DATA(ip)) {
-		    ip = 0;
-		    break;
-		}
-
-		level = VM_THROW_NO_ESCAPE_FLAG;
-		if (ISEQ_COMPILE_DATA(ip)->redo_label != 0) {
-		    /* while loop */
-		    break;
-		}
-		else if (ip->body->type == ISEQ_TYPE_BLOCK) {
-		    break;
-		}
-		else if (ip->body->type == ISEQ_TYPE_EVAL) {
-		    goto next_in_eval;
-		}
-
-		ip = ip->body->parent_iseq;
-	    }
-	    if (ip != 0) {
-		CHECK(COMPILE(ret, "next val", node->nd_stts));
-		ADD_INSN1(ret, line, throw, INT2FIX(level | TAG_NEXT));
-
-		if (popped) {
-		    ADD_INSN(ret, line, pop);
-		}
-	    }
-	    else {
-		COMPILE_ERROR(ERROR_ARGS "Invalid next");
-		goto ng;
-	    }
-	}
+      case NODE_BREAK:
+	CHECK(compile_break(iseq, ret, node, popped));
 	break;
-      }
-      case NODE_REDO:{
-	if (ISEQ_COMPILE_DATA(iseq)->redo_label) {
-	    LABEL *splabel = NEW_LABEL(0);
-	    debugs("redo in while");
-	    ADD_LABEL(ret, splabel);
-	    ADD_ADJUST(ret, line, ISEQ_COMPILE_DATA(iseq)->redo_label);
-	    add_ensure_iseq(ret, iseq, 0);
-	    ADD_INSNL(ret, line, jump, ISEQ_COMPILE_DATA(iseq)->redo_label);
-	    ADD_ADJUST_RESTORE(ret, splabel);
-	    if (!popped) {
-		ADD_INSN(ret, line, putnil);
-	    }
-	}
-	else if (iseq->body->type == ISEQ_TYPE_EVAL) {
-	  redo_in_eval:
-	    COMPILE_ERROR(ERROR_ARGS "Can't escape from eval with redo");
-	    goto ng;
-	}
-	else if (ISEQ_COMPILE_DATA(iseq)->start_label) {
-	    LABEL *splabel = NEW_LABEL(0);
-
-	    debugs("redo in block");
-	    ADD_LABEL(ret, splabel);
-	    add_ensure_iseq(ret, iseq, 0);
-	    ADD_ADJUST(ret, line, ISEQ_COMPILE_DATA(iseq)->start_label);
-	    ADD_INSNL(ret, line, jump, ISEQ_COMPILE_DATA(iseq)->start_label);
-	    ADD_ADJUST_RESTORE(ret, splabel);
-
-	    if (!popped) {
-		ADD_INSN(ret, line, putnil);
-	    }
-	}
-	else {
-	    const rb_iseq_t *ip = iseq;
-	    const unsigned long level = VM_THROW_NO_ESCAPE_FLAG;
-
-	    while (ip) {
-		if (!ISEQ_COMPILE_DATA(ip)) {
-		    ip = 0;
-		    break;
-		}
-
-		if (ISEQ_COMPILE_DATA(ip)->redo_label != 0) {
-		    break;
-		}
-		else if (ip->body->type == ISEQ_TYPE_BLOCK) {
-		    break;
-		}
-		else if (ip->body->type == ISEQ_TYPE_EVAL) {
-		    goto redo_in_eval;
-		}
-
-		ip = ip->body->parent_iseq;
-	    }
-	    if (ip != 0) {
-		ADD_INSN(ret, line, putnil);
-		ADD_INSN1(ret, line, throw, INT2FIX(level | TAG_REDO));
-
-		if (popped) {
-		    ADD_INSN(ret, line, pop);
-		}
-	    }
-	    else {
-		COMPILE_ERROR(ERROR_ARGS "Invalid redo");
-		goto ng;
-	    }
-	}
+      case NODE_NEXT:
+	CHECK(compile_next(iseq, ret, node, popped));
 	break;
-      }
-      case NODE_RETRY:{
-	if (iseq->body->type == ISEQ_TYPE_RESCUE) {
-	    ADD_INSN(ret, line, putnil);
-	    ADD_INSN1(ret, line, throw, INT2FIX(TAG_RETRY));
-
-	    if (popped) {
-		ADD_INSN(ret, line, pop);
-	    }
-	}
-	else {
-	    COMPILE_ERROR(ERROR_ARGS "Invalid retry");
-	    goto ng;
-	}
+      case NODE_REDO:
+	CHECK(compile_redo(iseq, ret, node, popped));
 	break;
-      }
+      case NODE_RETRY:
+	CHECK(compile_retry(iseq, ret, node, popped));
+	break;
       case NODE_BEGIN:{
 	CHECK(COMPILE_(ret, "NODE_BEGIN", node->nd_body, popped));
 	break;
       }
-      case NODE_RESCUE:{
-	LABEL *lstart = NEW_LABEL(line);
-	LABEL *lend = NEW_LABEL(line);
-	LABEL *lcont = NEW_LABEL(line);
-	const rb_iseq_t *rescue = NEW_CHILD_ISEQ(node->nd_resq,
-						 rb_str_concat(rb_str_new2("rescue in "), iseq->body->location.label),
-						 ISEQ_TYPE_RESCUE, line);
-
-	lstart->rescued = LABEL_RESCUE_BEG;
-	lend->rescued = LABEL_RESCUE_END;
-	ADD_LABEL(ret, lstart);
-	CHECK(COMPILE(ret, "rescue head", node->nd_head));
-	ADD_LABEL(ret, lend);
-	if (node->nd_else) {
-	    ADD_INSN(ret, line, pop);
-	    CHECK(COMPILE(ret, "rescue else", node->nd_else));
-	}
-	ADD_INSN(ret, line, nop);
-	ADD_LABEL(ret, lcont);
-
-	if (popped) {
-	    ADD_INSN(ret, line, pop);
-	}
-
-	/* register catch entry */
-	ADD_CATCH_ENTRY(CATCH_TYPE_RESCUE, lstart, lend, rescue, lcont);
-	ADD_CATCH_ENTRY(CATCH_TYPE_RETRY, lend, lcont, 0, lstart);
+      case NODE_RESCUE:
+	CHECK(compile_rescue(iseq, ret, node, popped));
 	break;
-      }
-      case NODE_RESBODY:{
-	NODE *resq = node;
-	NODE *narg;
-	LABEL *label_miss, *label_hit;
-
-	while (resq) {
-	    label_miss = NEW_LABEL(line);
-	    label_hit = NEW_LABEL(line);
-
-	    narg = resq->nd_args;
-	    if (narg) {
-		switch (nd_type(narg)) {
-		  case NODE_ARRAY:
-		    while (narg) {
-			ADD_GETLOCAL(ret, line, LVAR_ERRINFO, 0);
-			CHECK(COMPILE(ret, "rescue arg", narg->nd_head));
-			ADD_INSN1(ret, line, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_RESCUE));
-			ADD_INSNL(ret, line, branchif, label_hit);
-			narg = narg->nd_next;
-		    }
-		    break;
-		  case NODE_SPLAT:
-		  case NODE_ARGSCAT:
-		  case NODE_ARGSPUSH:
-		    ADD_GETLOCAL(ret, line, LVAR_ERRINFO, 0);
-		    CHECK(COMPILE(ret, "rescue/cond splat", narg));
-		    ADD_INSN1(ret, line, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_RESCUE | VM_CHECKMATCH_ARRAY));
-		    ADD_INSNL(ret, line, branchif, label_hit);
-		    break;
-		  default:
-		    UNKNOWN_NODE("NODE_RESBODY", narg);
-		}
-	    }
-	    else {
-		ADD_GETLOCAL(ret, line, LVAR_ERRINFO, 0);
-		ADD_INSN1(ret, line, putobject, rb_eStandardError);
-		ADD_INSN1(ret, line, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_RESCUE));
-		ADD_INSNL(ret, line, branchif, label_hit);
-	    }
-	    ADD_INSNL(ret, line, jump, label_miss);
-	    ADD_LABEL(ret, label_hit);
-	    CHECK(COMPILE(ret, "resbody body", resq->nd_body));
-	    if (ISEQ_COMPILE_DATA(iseq)->option->tailcall_optimization) {
-		ADD_INSN(ret, line, nop);
-	    }
-	    ADD_INSN(ret, line, leave);
-	    ADD_LABEL(ret, label_miss);
-	    resq = resq->nd_head;
-	}
+      case NODE_RESBODY:
+	CHECK(compile_resbody(iseq, ret, node, popped));
 	break;
-      }
-      case NODE_ENSURE:{
-	DECL_ANCHOR(ensr);
-	const rb_iseq_t *ensure = NEW_CHILD_ISEQ(node->nd_ensr,
-						 rb_str_concat(rb_str_new2 ("ensure in "), iseq->body->location.label),
-						 ISEQ_TYPE_ENSURE, line);
-	LABEL *lstart = NEW_LABEL(line);
-	LABEL *lend = NEW_LABEL(line);
-	LABEL *lcont = NEW_LABEL(line);
-	LINK_ELEMENT *last;
-	int last_leave = 0;
-	struct ensure_range er;
-	struct iseq_compile_data_ensure_node_stack enl;
-	struct ensure_range *erange;
-
-	INIT_ANCHOR(ensr);
-	CHECK(COMPILE_POPPED(ensr, "ensure ensr", node->nd_ensr));
-	last = ensr->last;
-	last_leave = last && IS_INSN(last) && IS_INSN_ID(last, leave);
-
-	er.begin = lstart;
-	er.end = lend;
-	er.next = 0;
-	push_ensure_entry(iseq, &enl, &er, node->nd_ensr);
-
-	ADD_LABEL(ret, lstart);
-	CHECK(COMPILE_(ret, "ensure head", node->nd_head, (popped | last_leave)));
-	ADD_LABEL(ret, lend);
-	if (ensr->anchor.next == 0) {
-	    ADD_INSN(ret, line, nop);
-	}
-	else {
-	    ADD_SEQ(ret, ensr);
-	    if (!popped && last_leave) {
-		ADD_INSN(ret, line, putnil);
-	    }
-	}
-	ADD_LABEL(ret, lcont);
-	if (last_leave) ADD_INSN(ret, line, pop);
-
-	erange = ISEQ_COMPILE_DATA(iseq)->ensure_node_stack->erange;
-	if (lstart->link.next != &lend->link) {
-	    while (erange) {
-		ADD_CATCH_ENTRY(CATCH_TYPE_ENSURE, erange->begin, erange->end,
-				ensure, lcont);
-		erange = erange->next;
-	    }
-	}
-
-	ISEQ_COMPILE_DATA(iseq)->ensure_node_stack = enl.prev;
+      case NODE_ENSURE:
+	CHECK(compile_ensure(iseq, ret, node, popped));
 	break;
-      }
 
       case NODE_AND:
       case NODE_OR:{
@@ -4729,7 +5569,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	ID id = node->nd_vid;
 	int idx = iseq->body->local_iseq->body->local_table_size - get_local_var_idx(iseq, id);
 
-	debugs("lvar: %"PRIsVALUE" idx: %d\n", rb_id2str(id), idx);
+	debugs("lvar: %s idx: %d\n", rb_id2name(id), idx);
 	CHECK(COMPILE(ret, "rvalue", node->nd_value));
 
 	if (!popped) {
@@ -4741,18 +5581,20 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
       case NODE_DASGN:
       case NODE_DASGN_CURR:{
 	int idx, lv, ls;
+	ID id = node->nd_vid;
 	CHECK(COMPILE(ret, "dvalue", node->nd_value));
-	debugi("dassn id", rb_id2str(node->nd_vid) ? node->nd_vid : '*');
+	debugi("dassn id", rb_id2str(id) ? id : '*');
 
 	if (!popped) {
 	    ADD_INSN(ret, line, dup);
 	}
 
-	idx = get_dyna_var_idx(iseq, node->nd_vid, &lv, &ls);
+	idx = get_dyna_var_idx(iseq, id, &lv, &ls);
 
 	if (idx < 0) {
-	    compile_bug(ERROR_ARGS "NODE_DASGN(_CURR): unknown id (%"PRIsVALUE")",
-			rb_id2str(node->nd_vid));
+	    COMPILE_ERROR(ERROR_ARGS "NODE_DASGN(_CURR): unknown id (%"PRIsVALUE")",
+			  rb_id2str(id));
+	    goto ng;
 	}
 	ADD_SETLOCAL(ret, line, ls - idx, lv);
 	break;
@@ -4767,8 +5609,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 		  ((VALUE)node->nd_entry | 1));
 	break;
       }
-      case NODE_IASGN:
-      case NODE_IASGN2:{
+      case NODE_IASGN:{
 	CHECK(COMPILE(ret, "lvalue", node->nd_value));
 	if (!popped) {
 	    ADD_INSN(ret, line, dup);
@@ -4849,6 +5690,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	  default:
 	    INIT_ANCHOR(args);
 	    argc = setup_args(iseq, args, node->nd_args->nd_head, &flag, NULL);
+	    CHECK(!NIL_P(argc));
 	    ADD_SEQ(ret, args);
 	}
 	ADD_INSN1(ret, line, dupn, FIXNUM_INC(argc, 1 + boff));
@@ -5037,8 +5879,11 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 		ADD_INSN1(ret, line, topn, INT2FIX(1));
 	    }
 	    ADD_SEND_WITH_FLAG(ret, line, aid, INT2FIX(1), INT2FIX(asgnflag));
+	    if (lskip && popped) {
+		ADD_LABEL(ret, lskip);
+	    }
 	    ADD_INSN(ret, line, pop);
-	    if (lskip) {
+	    if (lskip && !popped) {
 		ADD_LABEL(ret, lskip);
 	    }
 	}
@@ -5152,16 +5997,22 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	break;
       }
       case NODE_CALL:
+      case NODE_OPCALL:
 	/* optimization shortcut
 	 *   "literal".freeze -> opt_str_freeze("literal")
 	 */
 	if (node->nd_recv && nd_type(node->nd_recv) == NODE_STR &&
-	    node->nd_mid == idFreeze && node->nd_args == NULL &&
+	    (node->nd_mid == idFreeze || node->nd_mid == idUMinus) &&
+	    node->nd_args == NULL &&
 	    ISEQ_COMPILE_DATA(iseq)->current_block == NULL &&
 	    ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction) {
-	    VALUE str = rb_fstring(node->nd_recv->nd_lit);
-	    iseq_add_mark_object(iseq, str);
-	    ADD_INSN1(ret, line, opt_str_freeze, str);
+	    VALUE str = freeze_literal(iseq, node->nd_recv->nd_lit);
+	    if (node->nd_mid == idUMinus) {
+		ADD_INSN1(ret, line, opt_str_uminus, str);
+	    }
+	    else {
+		ADD_INSN1(ret, line, opt_str_freeze, str);
+	    }
 	    if (popped) {
 		ADD_INSN(ret, line, pop);
 	    }
@@ -5175,8 +6026,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	    nd_type(node->nd_args->nd_head) == NODE_STR &&
 	    ISEQ_COMPILE_DATA(iseq)->current_block == NULL &&
 	    ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction) {
-	    VALUE str = rb_fstring(node->nd_args->nd_head->nd_lit);
-	    node->nd_args->nd_head->nd_lit = str;
+	    VALUE str = freeze_literal(iseq, node->nd_args->nd_head->nd_lit);
 	    CHECK(COMPILE(ret, "recv", node->nd_recv));
 	    ADD_INSN3(ret, line, opt_aref_with,
 		      new_callinfo(iseq, idAREF, 1, 0, NULL, FALSE),
@@ -5196,7 +6046,9 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	*/
 	DECL_ANCHOR(recv);
 	DECL_ANCHOR(args);
-	LABEL *lskip = 0;
+	LABEL *else_label = 0;
+	LABEL *end_label = 0;
+	VALUE branches = 0;
 	ID mid = node->nd_mid;
 	VALUE argc;
 	unsigned int flag = 0;
@@ -5236,7 +6088,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 		LABEL *label;
 		st_data_t data;
 		st_table *labels_table = ISEQ_COMPILE_DATA(iseq)->labels_table;
-		ID label_name;
+		VALUE label_name;
 
 		if (!labels_table) {
 		    labels_table = st_init_numtable();
@@ -5245,7 +6097,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 		if (nd_type(node->nd_args->nd_head) == NODE_LIT &&
 		    SYMBOL_P(node->nd_args->nd_head->nd_lit)) {
 
-		    label_name = SYM2ID(node->nd_args->nd_head->nd_lit);
+		    label_name = node->nd_args->nd_head->nd_lit;
 		    if (!st_lookup(labels_table, (st_data_t)label_name, &data)) {
 			label = NEW_LABEL(line);
 			label->position = line;
@@ -5272,12 +6124,16 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	}
 #endif
 	/* receiver */
-	if (type == NODE_CALL || type == NODE_QCALL) {
+	if (type == NODE_CALL || type == NODE_OPCALL || type == NODE_QCALL) {
 	    CHECK(COMPILE(recv, "recv", node->nd_recv));
 	    if (type == NODE_QCALL) {
-		lskip = NEW_LABEL(line);
+		else_label = NEW_LABEL(line);
+		end_label = NEW_LABEL(line);
+
+		DECL_BRANCH_BASE(branches, nd_first_lineno(node), nd_first_column(node), nd_last_lineno(node), nd_last_column(node), "&.");
 		ADD_INSN(recv, line, dup);
-		ADD_INSNL(recv, line, branchnil, lskip);
+		ADD_INSNL(recv, line, branchnil, else_label);
+		ADD_TRACE_BRANCH_COVERAGE(recv, nd_first_lineno(node), nd_first_column(node), nd_last_lineno(node), nd_last_column(node), "then", branches);
 	    }
 	}
 	else if (type == NODE_FCALL || type == NODE_VCALL) {
@@ -5285,8 +6141,9 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	}
 
 	/* args */
-	if (nd_type(node) != NODE_VCALL) {
+	if (type != NODE_VCALL) {
 	    argc = setup_args(iseq, args, node->nd_args, &flag, &keywords);
+	    CHECK(!NIL_P(argc));
 	}
 	else {
 	    argc = INT2FIX(0);
@@ -5298,7 +6155,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	debugp_param("call args argc", argc);
 	debugp_param("call method", ID2SYM(mid));
 
-	switch (nd_type(node)) {
+	switch ((int)type) {
 	  case NODE_VCALL:
 	    flag |= VM_CALL_VCALL;
 	    /* VCALL is funcall, so fall through */
@@ -5308,8 +6165,11 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 
 	ADD_SEND_R(ret, line, mid, argc, parent_block, INT2FIX(flag), keywords);
 
-	if (lskip) {
-	    ADD_LABEL(ret, lskip);
+	if (else_label && end_label) {
+	    ADD_INSNL(ret, line, jump, end_label);
+	    ADD_LABEL(ret, else_label);
+	    ADD_TRACE_BRANCH_COVERAGE(ret, nd_first_lineno(node), nd_first_column(node), nd_last_lineno(node), nd_last_column(node), "else", branches);
+	    ADD_LABEL(ret, end_label);
 	}
 	if (popped) {
 	    ADD_INSN(ret, line, pop);
@@ -5326,8 +6186,9 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 
 	INIT_ANCHOR(args);
 	ISEQ_COMPILE_DATA(iseq)->current_block = NULL;
-	if (nd_type(node) == NODE_SUPER) {
+	if (type == NODE_SUPER) {
 	    VALUE vargc = setup_args(iseq, args, node->nd_args, &flag, &keywords);
+	    CHECK(!NIL_P(vargc));
 	    argc = FIX2INT(vargc);
 	}
 	else {
@@ -5357,7 +6218,9 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	    if (liseq->body->param.flags.has_rest) {
 		/* rest argument */
 		int idx = liseq->body->local_table_size - liseq->body->param.rest_start;
+
 		ADD_GETLOCAL(args, line, idx, lvar_level);
+		ADD_INSN1(args, line, splatarray, Qfalse);
 
 		argc = liseq->body->param.rest_start + 1;
 		flag |= VM_CALL_ARGS_SPLAT;
@@ -5430,7 +6293,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	}
 
 	/* dummy receiver */
-	ADD_INSN1(ret, line, putobject, nd_type(node) == NODE_ZSUPER ? Qfalse : Qtrue);
+	ADD_INSN1(ret, line, putobject, type == NODE_ZSUPER ? Qfalse : Qtrue);
 	ADD_SEQ(ret, args);
 	ADD_INSN3(ret, line, invokesuper,
 		  new_callinfo(iseq, 0, argc, flag | VM_CALL_SUPER | VM_CALL_FCALL, keywords, parent_block != NULL),
@@ -5443,7 +6306,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	break;
       }
       case NODE_ARRAY:{
-	compile_array_(iseq, ret, node, COMPILE_ARRAY_TYPE_ARRAY, NULL, popped);
+	CHECK(compile_array(iseq, ret, node, COMPILE_ARRAY_TYPE_ARRAY, NULL, NULL, popped) >= 0);
 	break;
       }
       case NODE_ZARRAY:{
@@ -5453,99 +6316,43 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	break;
       }
       case NODE_VALUES:{
-	NODE *n = node;
+	const NODE *n = node;
+	if (popped) {
+	    COMPILE_ERROR(ERROR_ARGS "NODE_VALUES: must not be popped");
+	}
 	while (n) {
 	    CHECK(COMPILE(ret, "values item", n->nd_head));
 	    n = n->nd_next;
 	}
 	ADD_INSN1(ret, line, newarray, INT2FIX(node->nd_alen));
-	if (popped) {
-	    ADD_INSN(ret, line, pop);
-	}
 	break;
       }
       case NODE_HASH:{
 	DECL_ANCHOR(list);
-	int type = node->nd_head ? nd_type(node->nd_head) : NODE_ZARRAY;
+	enum node_type type = node->nd_head ? nd_type(node->nd_head) : NODE_ZARRAY;
 
 	INIT_ANCHOR(list);
 	switch (type) {
 	  case NODE_ARRAY:
-	    compile_array(iseq, list, node->nd_head, COMPILE_ARRAY_TYPE_HASH);
+	    CHECK(compile_array(iseq, list, node->nd_head, COMPILE_ARRAY_TYPE_HASH, NULL, NULL, popped) >= 0);
 	    ADD_SEQ(ret, list);
 	    break;
 
 	  case NODE_ZARRAY:
+	    if (popped) break;
 	    ADD_INSN1(ret, line, newhash, INT2FIX(0));
 	    break;
 
 	  default:
-	    compile_bug(ERROR_ARGS_AT(node->nd_head) "can't make hash with this node: %s",
-			ruby_node_name(type));
-	}
-
-	if (popped) {
-	    ADD_INSN(ret, line, pop);
+	    COMPILE_ERROR(ERROR_ARGS_AT(node->nd_head) "can't make hash with this node: %s",
+			  ruby_node_name(type));
+	    goto ng;
 	}
 	break;
       }
-      case NODE_RETURN:{
-	rb_iseq_t *is = iseq;
-
-	if (is) {
-	    enum iseq_type type = is->body->type;
-	    const rb_iseq_t *parent_iseq = is->body->parent_iseq;
-	    enum iseq_type parent_type;
-
-	    if (type == ISEQ_TYPE_TOP) {
-		LABEL *splabel = NEW_LABEL(line);
-		ADD_LABEL(ret, splabel);
-		ADD_ADJUST(ret, line, 0);
-		ADD_INSN(ret, line, putnil);
-		ADD_INSN(ret, line, leave);
-		ADD_ADJUST_RESTORE(ret, splabel);
-	    }
-	    else if ((type == ISEQ_TYPE_RESCUE || type == ISEQ_TYPE_ENSURE || type == ISEQ_TYPE_MAIN) &&
-		     parent_iseq &&
-		     ((parent_type = parent_iseq->body->type) == ISEQ_TYPE_TOP ||
-		      parent_type == ISEQ_TYPE_MAIN)) {
-		ADD_INSN(ret, line, putnil);
-		ADD_INSN1(ret, line, throw, INT2FIX(TAG_RETURN));
-		if (popped) {
-		    ADD_INSN(ret, line, pop);
-		}
-	    }
-	    else {
-		LABEL *splabel = 0;
-
-		if (type == ISEQ_TYPE_METHOD) {
-		    splabel = NEW_LABEL(0);
-		    ADD_LABEL(ret, splabel);
-		    ADD_ADJUST(ret, line, 0);
-		}
-
-		CHECK(COMPILE(ret, "return nd_stts (return val)", node->nd_stts));
-
-		if (type == ISEQ_TYPE_METHOD) {
-		    add_ensure_iseq(ret, iseq, 1);
-		    ADD_TRACE(ret, line, RUBY_EVENT_RETURN);
-		    ADD_INSN(ret, line, leave);
-		    ADD_ADJUST_RESTORE(ret, splabel);
-
-		    if (!popped) {
-			ADD_INSN(ret, line, putnil);
-		    }
-		}
-		else {
-		    ADD_INSN1(ret, line, throw, INT2FIX(TAG_RETURN));
-		    if (popped) {
-			ADD_INSN(ret, line, pop);
-		    }
-		}
-	    }
-	}
+      case NODE_RETURN:
+	CHECK(compile_return(iseq, ret, node, popped));
 	break;
-      }
       case NODE_YIELD:{
 	DECL_ANCHOR(args);
 	VALUE argc;
@@ -5553,13 +6360,15 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	struct rb_call_info_kw_arg *keywords = NULL;
 
 	INIT_ANCHOR(args);
-	if (iseq->body->type == ISEQ_TYPE_TOP) {
+	if (iseq->body->type == ISEQ_TYPE_TOP ||
+	    iseq->body->type == ISEQ_TYPE_MAIN) {
 	    COMPILE_ERROR(ERROR_ARGS "Invalid yield");
 	    goto ng;
 	}
 
 	if (node->nd_head) {
 	    argc = setup_args(iseq, args, node->nd_head, &flag, &keywords);
+	    CHECK(!NIL_P(argc));
 	}
 	else {
 	    argc = INT2FIX(0);
@@ -5578,7 +6387,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	    ID id = node->nd_vid;
 	    int idx = iseq->body->local_iseq->body->local_table_size - get_local_var_idx(iseq, id);
 
-	    debugs("id: %"PRIsVALUE" idx: %d\n", rb_id2str(id), idx);
+	    debugs("id: %s idx: %d\n", rb_id2name(id), idx);
 	    ADD_GETLOCAL(ret, line, idx, get_lvar_level(iseq));
 	}
 	break;
@@ -5589,8 +6398,9 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	if (!popped) {
 	    idx = get_dyna_var_idx(iseq, node->nd_vid, &lv, &ls);
 	    if (idx < 0) {
-		compile_bug(ERROR_ARGS "unknown dvar (%"PRIsVALUE")",
-			    rb_id2str(node->nd_vid));
+		COMPILE_ERROR(ERROR_ARGS "unknown dvar (%"PRIsVALUE")",
+			      rb_id2str(node->nd_vid));
+		goto ng;
 	    }
 	    ADD_GETLOCAL(ret, line, ls - idx, lv);
 	}
@@ -5724,21 +6534,23 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
       case NODE_STR:{
 	debugp_param("nd_lit", node->nd_lit);
 	if (!popped) {
-	    node->nd_lit = rb_fstring(node->nd_lit);
+	    VALUE lit = node->nd_lit;
 	    if (!ISEQ_COMPILE_DATA(iseq)->option->frozen_string_literal) {
-		ADD_INSN1(ret, line, putstring, node->nd_lit);
+		lit = freeze_literal(iseq, lit);
+		ADD_INSN1(ret, line, putstring, lit);
 	    }
 	    else {
 		if (ISEQ_COMPILE_DATA(iseq)->option->debug_frozen_string_literal || RTEST(ruby_debug)) {
-		    VALUE debug_info = rb_ary_new_from_args(2, iseq->body->location.path, INT2FIX(line));
-		    VALUE str = rb_str_dup(node->nd_lit);
-		    rb_ivar_set(str, id_debug_created_info, rb_obj_freeze(debug_info));
-		    ADD_INSN1(ret, line, putobject, rb_obj_freeze(str));
-		    iseq_add_mark_object_compile_time(iseq, str);
+		    VALUE debug_info = rb_ary_new_from_args(2, rb_iseq_path(iseq), INT2FIX(line));
+		    lit = rb_str_dup(lit);
+		    rb_ivar_set(lit, id_debug_created_info, rb_obj_freeze(debug_info));
+		    lit = rb_str_freeze(lit);
 		}
 		else {
-		    ADD_INSN1(ret, line, putobject, node->nd_lit);
+		    lit = rb_fstring(lit);
 		}
+		ADD_INSN1(ret, line, putobject, lit);
+		iseq_add_mark_object_compile_time(iseq, lit);
 	    }
 	}
 	break;
@@ -5753,7 +6565,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	    if (ISEQ_COMPILE_DATA(iseq)->option->frozen_string_literal) {
 		VALUE debug_info = Qnil;
 		if (ISEQ_COMPILE_DATA(iseq)->option->debug_frozen_string_literal || RTEST(ruby_debug)) {
-		    debug_info = rb_ary_new_from_args(2, iseq->body->location.path, INT2FIX(line));
+		    debug_info = rb_ary_new_from_args(2, rb_iseq_path(iseq), INT2FIX(line));
 		    iseq_add_mark_object_compile_time(iseq, rb_obj_freeze(debug_info));
 		}
 		ADD_INSN1(ret, line, freezestring, debug_info);
@@ -5762,9 +6574,8 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	break;
       }
       case NODE_XSTR:{
-	node->nd_lit = rb_fstring(node->nd_lit);
 	ADD_CALL_RECEIVER(ret, line);
-	ADD_INSN1(ret, line, putobject, node->nd_lit);
+	ADD_INSN1(ret, line, putobject, freeze_literal(iseq, node->nd_lit));
 	ADD_CALL(ret, line, idBackquote, INT2FIX(1));
 
 	if (popped) {
@@ -5788,8 +6599,16 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	if (popped) {
 	    ADD_INSN(ret, line, pop);
 	}
-	else {
+	else if (!all_string_result_p(node->nd_body)) {
+	    const unsigned int flag = VM_CALL_FCALL;
+	    LABEL *isstr = NEW_LABEL(line);
+	    ADD_INSN(ret, line, dup);
+	    ADD_INSN2(ret, line, branchiftype, INT2FIX(T_STRING), isstr);
+	    LABEL_REF(isstr);
+	    ADD_INSN(ret, line, dup);
+	    ADD_SEND_R(ret, line, idTo_s, INT2FIX(0), NULL, INT2FIX(flag), NULL);
 	    ADD_INSN(ret, line, tostring);
+	    ADD_LABEL(ret, isstr);
 	}
 	break;
       }
@@ -5801,11 +6620,9 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	}
 	break;
       }
-      case NODE_DREGX_ONCE:{
+      case NODE_SCOPE:{
 	int ic_index = iseq->body->is_size++;
-	NODE *dregx_node = NEW_NODE(NODE_DREGX, node->u1.value, node->u2.value, node->u3.value);
-	NODE *block_node = NEW_NODE(NODE_SCOPE, 0, dregx_node, 0);
-	const rb_iseq_t *block_iseq = NEW_CHILD_ISEQ(block_node, make_name_for_block(iseq),
+	const rb_iseq_t *block_iseq = NEW_CHILD_ISEQ(node, make_name_for_block(iseq),
 						     ISEQ_TYPE_ONCE_GUARD, line);
 
 	ADD_INSN2(ret, line, once, block_iseq, INT2FIX(ic_index));
@@ -5894,8 +6711,8 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
       case NODE_ALIAS:{
 	ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
 	ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CBASE));
-	CHECK(COMPILE(ret, "alias arg1", node->u1.node));
-	CHECK(COMPILE(ret, "alias arg2", node->u2.node));
+	CHECK(COMPILE(ret, "alias arg1", node->nd_1st));
+	CHECK(COMPILE(ret, "alias arg2", node->nd_2nd));
 	ADD_SEND(ret, line, id_core_set_method_alias, INT2FIX(3));
 
 	if (popped) {
@@ -5905,8 +6722,8 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
       }
       case NODE_VALIAS:{
 	ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-	ADD_INSN1(ret, line, putobject, ID2SYM(node->u1.id));
-	ADD_INSN1(ret, line, putobject, ID2SYM(node->u2.id));
+	ADD_INSN1(ret, line, putobject, ID2SYM(node->nd_alias));
+	ADD_INSN1(ret, line, putobject, ID2SYM(node->nd_orig));
 	ADD_SEND(ret, line, id_core_set_variable_alias, INT2FIX(2));
 
 	if (popped) {
@@ -5917,7 +6734,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
       case NODE_UNDEF:{
 	ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
 	ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CBASE));
-	CHECK(COMPILE(ret, "undef arg", node->u2.node));
+	CHECK(COMPILE(ret, "undef arg", node->nd_undef));
 	ADD_SEND(ret, line, id_core_undef_method, INT2FIX(2));
 
 	if (popped) {
@@ -5929,11 +6746,10 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	const rb_iseq_t *class_iseq = NEW_CHILD_ISEQ(node->nd_body,
 						     rb_sprintf("<class:%"PRIsVALUE">", rb_id2str(node->nd_cpath->nd_mid)),
 						     ISEQ_TYPE_CLASS, line);
-	VALUE noscope = compile_cpath(ret, iseq, node->nd_cpath);
-	int flags = VM_DEFINECLASS_TYPE_CLASS;
+	const int flags = VM_DEFINECLASS_TYPE_CLASS |
+	    (node->nd_super ? VM_DEFINECLASS_FLAG_HAS_SUPERCLASS : 0) |
+	    compile_cpath(ret, iseq, node->nd_cpath);
 
-	if (!noscope) flags |= VM_DEFINECLASS_FLAG_SCOPED;
-	if (node->nd_super) flags |= VM_DEFINECLASS_FLAG_HAS_SUPERCLASS;
 	CHECK(COMPILE(ret, "super", node->nd_super));
 	ADD_INSN3(ret, line, defineclass, ID2SYM(node->nd_cpath->nd_mid), class_iseq, INT2FIX(flags));
 
@@ -5946,10 +6762,9 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
         const rb_iseq_t *module_iseq = NEW_CHILD_ISEQ(node->nd_body,
 						      rb_sprintf("<module:%"PRIsVALUE">", rb_id2str(node->nd_cpath->nd_mid)),
 						      ISEQ_TYPE_CLASS, line);
-	VALUE noscope = compile_cpath(ret, iseq, node->nd_cpath);
-	int flags = VM_DEFINECLASS_TYPE_MODULE;
+	const int flags = VM_DEFINECLASS_TYPE_MODULE |
+	    compile_cpath(ret, iseq, node->nd_cpath);
 
-	if (!noscope) flags |= VM_DEFINECLASS_FLAG_SCOPED;
 	ADD_INSN (ret, line, putnil); /* dummy */
 	ADD_INSN3(ret, line, defineclass, ID2SYM(node->nd_cpath->nd_mid), module_iseq, INT2FIX(flags));
 
@@ -5960,7 +6775,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
       }
       case NODE_SCLASS:{
 	ID singletonclass;
-	const rb_iseq_t *singleton_class = NEW_ISEQ(node->nd_body, rb_str_new2("singleton class"),
+	const rb_iseq_t *singleton_class = NEW_ISEQ(node->nd_body, rb_fstring_cstr("singleton class"),
 						    ISEQ_TYPE_CLASS, line);
 
 	CHECK(COMPILE(ret, "sclass#recv", node->nd_recv));
@@ -5986,8 +6801,8 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 
 	    INIT_ANCHOR(pref);
 	    INIT_ANCHOR(body);
-	    compile_colon2(iseq, node, pref, body);
-	    if (LIST_SIZE_ZERO(pref)) {
+	    CHECK(compile_const_prefix(iseq, node, pref, body));
+	    if (LIST_INSN_SIZE_ZERO(pref)) {
 		if (ISEQ_COMPILE_DATA(iseq)->option->inline_const_cache) {
 		    ADD_INSN2(ret, line, getinlinecache, lend, INT2FIX(ic_index));
 		}
@@ -6047,24 +6862,21 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
       case NODE_DOT3:{
 	int excl = type == NODE_DOT3;
 	VALUE flag = INT2FIX(excl);
-	NODE *b = node->nd_beg;
-	NODE *e = node->nd_end;
+	const NODE *b = node->nd_beg;
+	const NODE *e = node->nd_end;
 	if (number_literal_p(b) && number_literal_p(e)) {
 	    if (!popped) {
 		VALUE val = rb_range_new(b->nd_lit, e->nd_lit, excl);
 		iseq_add_mark_object_compile_time(iseq, val);
 		ADD_INSN1(ret, line, putobject, val);
 	    }
-	    break;
-	}
-	CHECK(COMPILE(ret, "min", (NODE *) node->nd_beg));
-	CHECK(COMPILE(ret, "max", (NODE *) node->nd_end));
-	if (popped) {
-	    ADD_INSN(ret, line, pop);
-	    ADD_INSN(ret, line, pop);
 	}
 	else {
-	    ADD_INSN1(ret, line, newrange, flag);
+	    CHECK(COMPILE_(ret, "min", b, popped));
+	    CHECK(COMPILE_(ret, "max", e, popped));
+	    if (!popped) {
+		ADD_INSN1(ret, line, newrange, flag);
+	    }
 	}
 	break;
       }
@@ -6073,8 +6885,8 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	LABEL *lend = NEW_LABEL(line);
 	LABEL *ltrue = NEW_LABEL(line);
 	LABEL *lfalse = NEW_LABEL(line);
-	compile_branch_condition(iseq, ret, node, ltrue, lfalse);
-	ADD_INSNL(ret, line, jump, lend);
+	CHECK(compile_flip_flop(iseq, ret, node, type == NODE_FLIP2,
+				ltrue, lfalse));
 	ADD_LABEL(ret, ltrue);
 	ADD_INSN1(ret, line, putobject, Qtrue);
 	ADD_INSNL(ret, line, jump, lend);
@@ -6132,33 +6944,17 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	}
 	break;
       }
-      case NODE_DEFINED:{
-	if (popped) break;
-	if (!node->nd_head) {
-	    VALUE str = rb_iseq_defined_string(DEFINED_NIL);
-	    ADD_INSN1(ret, nd_line(node), putobject, str);
-	}
-	else {
-	    LABEL *lfinish[2];
-	    lfinish[0] = NEW_LABEL(line);
-	    lfinish[1] = 0;
-	    ADD_INSN(ret, line, putnil);
-	    defined_expr(iseq, ret, node->nd_head, lfinish, Qtrue);
-	    ADD_INSN(ret, line, swap);
-	    ADD_INSN(ret, line, pop);
-	    if (lfinish[1]) {
-		ADD_LABEL(ret, lfinish[1]);
-	    }
-	    ADD_LABEL(ret, lfinish[0]);
+      case NODE_DEFINED:
+	if (!popped) {
+	    CHECK(compile_defined_expr(iseq, ret, node, Qtrue));
 	}
 	break;
-      }
       case NODE_POSTEXE:{
 	/* compiled to:
 	 *   ONCE{ rb_mRubyVMFrozenCore::core#set_postexe{ ... } }
 	 */
 	int is_index = iseq->body->is_size++;
-	const rb_iseq_t *once_iseq = NEW_CHILD_ISEQ((NODE *)IFUNC_NEW(build_postexe_iseq, node->nd_body, 0),
+	const rb_iseq_t *once_iseq = NEW_CHILD_ISEQ((const NODE *)IFUNC_NEW(build_postexe_iseq, node->nd_body, 0),
 						    make_name_for_block(iseq), ISEQ_TYPE_BLOCK, line);
 
 	ADD_INSN2(ret, line, once, once_iseq, INT2FIX(is_index));
@@ -6171,17 +6967,19 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
       case NODE_KW_ARG:
 	{
 	    LABEL *end_label = NEW_LABEL(nd_line(node));
-	    NODE *default_value = node->nd_body->nd_value;
+	    const NODE *default_value = node->nd_body->nd_value;
 
-	    if (default_value == (NODE *)-1) {
+	    if (default_value == (const NODE *)-1) {
 		/* required argument. do nothing */
-		compile_bug(ERROR_ARGS "unreachable");
+		COMPILE_ERROR(ERROR_ARGS "unreachable");
+		goto ng;
 	    }
 	    else if (nd_type(default_value) == NODE_LIT ||
 		     nd_type(default_value) == NODE_NIL ||
 		     nd_type(default_value) == NODE_TRUE ||
 		     nd_type(default_value) == NODE_FALSE) {
-		compile_bug(ERROR_ARGS "unreachable");
+		COMPILE_ERROR(ERROR_ARGS "unreachable");
+		goto ng;
 	    }
 	    else {
 		/* if keywordcheck(_kw_bits, nth_keyword)
@@ -6202,7 +7000,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
       case NODE_DSYM:{
 	compile_dstr(iseq, ret, node);
 	if (!popped) {
-	    ADD_SEND(ret, line, idIntern, INT2FIX(0));
+	    ADD_INSN(ret, line, intern);
 	}
 	else {
 	    ADD_INSN(ret, line, pop);
@@ -6226,9 +7024,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	    ISEQ_COMPILE_DATA(iseq)->current_block == NULL &&
 	    ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction)
 	{
-	    VALUE str = rb_fstring(node->nd_args->nd_head->nd_lit);
-	    node->nd_args->nd_head->nd_lit = str;
-	    iseq_add_mark_object(iseq, str);
+	    VALUE str = freeze_literal(iseq, node->nd_args->nd_head->nd_lit);
 	    CHECK(COMPILE(ret, "recv", node->nd_recv));
 	    CHECK(COMPILE(ret, "value", node->nd_args->nd_next->nd_head));
 	    if (!popped) {
@@ -6245,6 +7041,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	INIT_ANCHOR(recv);
 	INIT_ANCHOR(args);
 	argc = setup_args(iseq, args, node->nd_args, &flag, NULL);
+	CHECK(!NIL_P(argc));
 
 	flag |= COMPILE_RECV(recv, "recv", node);
 
@@ -6295,14 +7092,22 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
       }
       case NODE_PRELUDE:{
 	const rb_compile_option_t *orig_opt = ISEQ_COMPILE_DATA(iseq)->option;
-	if (node->nd_orig) {
-	    rb_compile_option_t new_opt = *orig_opt;
-	    rb_iseq_make_compile_option(&new_opt, node->nd_orig);
+	rb_compile_option_t new_opt = *orig_opt;
+	if (node->nd_compile_option) {
+	    rb_iseq_make_compile_option(&new_opt, node->nd_compile_option);
 	    ISEQ_COMPILE_DATA(iseq)->option = &new_opt;
 	}
+	if (!new_opt.coverage_enabled) ISEQ_COVERAGE_SET(iseq, Qfalse);
 	CHECK(COMPILE_POPPED(ret, "prelude", node->nd_head));
 	CHECK(COMPILE_(ret, "body", node->nd_body, popped));
 	ISEQ_COMPILE_DATA(iseq)->option = orig_opt;
+	/* Do NOT restore ISEQ_COVERAGE!
+	 * If ISEQ_COVERAGE is not false, finish_iseq_build function in iseq.c
+	 * will initialize the counter array of line coverage.
+	 * We keep ISEQ_COVERAGE as nil to disable this initialization.
+	 * This is not harmful assuming that NODE_PRELUDE pragma does not occur
+	 * in NODE tree except the root.
+	 */
 	break;
       }
       case NODE_LAMBDA:{
@@ -6319,15 +7124,22 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	break;
       }
       default:
-	UNKNOWN_NODE("iseq_compile_each", node);
+	UNKNOWN_NODE("iseq_compile_each", node, COMPILE_NG);
+      ng:
+	debug_node_end();
 	return COMPILE_NG;
     }
 
-    /* check & remove redundant trace(line) */
-    if (saved_last_element &&
-	ret->last == saved_last_element &&
-	((INSN *)saved_last_element)->insn_id == BIN(trace)) {
-	POP_ELEMENT(ret);
+    /* remove tracecoverage instruction if there is no relevant instruction */
+    if (IS_TRACE(ret->last) && ((TRACE*) ret->last)->event == RUBY_EVENT_LINE) {
+	LINK_ELEMENT *insn = ret->last->prev;
+	if (IS_INSN(insn) &&
+	    IS_INSN_ID(insn, tracecoverage) &&
+	    FIX2LONG(OPERAND_AT(insn, 0)) == RUBY_EVENT_COVERAGE_LINE
+	) {
+	    ELEM_REMOVE(insn); /* remove tracecovearge */
+	    RARRAY_ASET(ISEQ_LINE_COVERAGE(iseq), line - 1, Qnil);
+	}
     }
 
     debug_node_end();
@@ -6385,7 +7197,7 @@ insn_data_to_s_detail(INSN *iobj)
 	      case TS_OFFSET:	/* label(destination position) */
 		{
 		    LABEL *lobj = (LABEL *)OPERAND_AT(iobj, j);
-		    rb_str_catf(str, "<L%03d>", lobj->label_no);
+		    rb_str_catf(str, LABEL_FORMAT, lobj->label_no);
 		    break;
 		}
 		break;
@@ -6462,7 +7274,13 @@ insn_data_to_s_detail(INSN *iobj)
 }
 
 static void
-dump_disasm_list(struct iseq_link_element *link)
+dump_disasm_list(const LINK_ELEMENT *link)
+{
+    dump_disasm_list_with_cursor(link, NULL, NULL);
+}
+
+static void
+dump_disasm_list_with_cursor(const LINK_ELEMENT *link, const LINK_ELEMENT *curr, const LABEL *dest)
 {
     int pos = 0;
     INSN *iobj;
@@ -6472,24 +7290,26 @@ dump_disasm_list(struct iseq_link_element *link)
     printf("-- raw disasm--------\n");
 
     while (link) {
+	if (curr) printf(curr == link ? "*" : " ");
 	switch (link->type) {
 	  case ISEQ_ELEMENT_INSN:
 	    {
 		iobj = (INSN *)link;
 		str = insn_data_to_s_detail(iobj);
-		printf("%04d %-65s(%4u)\n", pos, StringValueCStr(str), iobj->line_no);
+		printf("%04d %-65s(%4u)\n", pos, StringValueCStr(str), iobj->insn_info.line_no);
 		pos += insn_data_length(iobj);
 		break;
 	    }
 	  case ISEQ_ELEMENT_LABEL:
 	    {
 		lobj = (LABEL *)link;
-		printf("<L%03d>\n", lobj->label_no);
+		printf(LABEL_FORMAT"%s\n", lobj->label_no, dest == lobj ? " <---" : "");
 		break;
 	    }
-	  case ISEQ_ELEMENT_NONE:
+	  case ISEQ_ELEMENT_TRACE:
 	    {
-		printf("[none]\n");
+		TRACE *trace = (TRACE *)link;
+		printf("trace: %0x\n", trace->event);
 		break;
 	    }
 	  case ISEQ_ELEMENT_ADJUST:
@@ -6519,8 +7339,8 @@ rb_insns_name_array(void)
 {
     VALUE ary = rb_ary_new();
     int i;
-    for (i = 0; i < numberof(insn_name_info); i++) {
-	rb_ary_push(ary, rb_fstring(rb_str_new2(insn_name_info[i])));
+    for (i = 0; i < VM_INSTRUCTION_SIZE; i++) {
+	rb_ary_push(ary, rb_fstring_cstr(insn_name_info[i]));
     }
     return rb_obj_freeze(ary);
 }
@@ -6530,7 +7350,7 @@ register_label(rb_iseq_t *iseq, struct st_table *labels_table, VALUE obj)
 {
     LABEL *label = 0;
     st_data_t tmp;
-    obj = rb_convert_type(obj, T_SYMBOL, "Symbol", "to_sym");
+    obj = rb_to_symbol_type(obj);
 
     if (st_lookup(labels_table, obj, &tmp) == 0) {
 	label = NEW_LABEL(0);
@@ -6583,8 +7403,7 @@ iseq_build_from_ary_exception(rb_iseq_t *iseq, struct st_table *labels_table,
 	LABEL *lstart, *lend, *lcont;
 	unsigned int sp;
 
-	v = rb_convert_type(RARRAY_AREF(exception, i), T_ARRAY,
-					 "Array", "to_ary");
+	v = rb_to_array_type(RARRAY_AREF(exception, i));
 	if (RARRAY_LEN(v) != 6) {
 	    rb_raise(rb_eSyntaxError, "wrong exception entry");
 	}
@@ -6602,7 +7421,14 @@ iseq_build_from_ary_exception(rb_iseq_t *iseq, struct st_table *labels_table,
 	lcont  = register_label(iseq, labels_table, ptr[4]);
 	sp     = NUM2UINT(ptr[5]);
 
-	(void)sp;
+	/* TODO: Dirty Hack!  Fix me */
+	if (type == CATCH_TYPE_RESCUE ||
+	    type == CATCH_TYPE_BREAK ||
+	    type == CATCH_TYPE_NEXT) {
+	    ++sp;
+	}
+
+	lcont->sp = sp;
 
 	ADD_CATCH_ENTRY(type, lstart, lend, eiseq, lcont);
 
@@ -6682,6 +7508,21 @@ iseq_build_callinfo_from_hash(rb_iseq_t *iseq, VALUE op)
     return (VALUE)new_callinfo(iseq, mid, orig_argc, flag, kw_arg, (flag & VM_CALL_ARGS_SIMPLE) == 0);
 }
 
+static rb_event_flag_t
+event_name_to_flag(VALUE sym)
+{
+#define CHECK_EVENT(ev) if (sym == ID2SYM(rb_intern(#ev))) return ev;
+		CHECK_EVENT(RUBY_EVENT_LINE);
+		CHECK_EVENT(RUBY_EVENT_CLASS);
+		CHECK_EVENT(RUBY_EVENT_END);
+		CHECK_EVENT(RUBY_EVENT_CALL);
+		CHECK_EVENT(RUBY_EVENT_RETURN);
+		CHECK_EVENT(RUBY_EVENT_B_CALL);
+		CHECK_EVENT(RUBY_EVENT_B_RETURN);
+#undef CHECK_EVENT
+    return RUBY_EVENT_NONE;
+}
+
 static int
 iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
 			 VALUE body, VALUE labels_wrapper)
@@ -6707,8 +7548,14 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
 	VALUE obj = ptr[i];
 
 	if (SYMBOL_P(obj)) {
-	    LABEL *label = register_label(iseq, labels_table, obj);
-	    ADD_LABEL(anchor, label);
+	    rb_event_flag_t event;
+	    if ((event = event_name_to_flag(obj)) != RUBY_EVENT_NONE) {
+		ADD_TRACE(anchor, event);
+	    }
+	    else {
+		LABEL *label = register_label(iseq, labels_table, obj);
+		ADD_LABEL(anchor, label);
+	    }
 	}
 	else if (FIXNUM_P(obj)) {
 	    line_no = NUM2INT(obj);
@@ -6765,7 +7612,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
 			}
 			break;
 		      case TS_GENTRY:
-			op = rb_convert_type(op, T_SYMBOL, "Symbol", "to_sym");
+			op = rb_to_symbol_type(op);
 			argv[j] = (VALUE)rb_global_entry(SYM2ID(op));
 			break;
 		      case TS_IC:
@@ -6781,16 +7628,15 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
 			argv[j] = Qfalse;
 			break;
 		      case TS_ID:
-			argv[j] = rb_convert_type(op, T_SYMBOL,
-						  "Symbol", "to_sym");
+			argv[j] = rb_to_symbol_type(op);
 			break;
 		      case TS_CDHASH:
 			{
 			    int i;
-			    VALUE map = rb_hash_new();
+			    VALUE map = rb_hash_new_with_size(RARRAY_LEN(op)/2);
 
 			    rb_hash_tbl_raw(map)->type = &cdhash_type;
-			    op = rb_convert_type(op, T_ARRAY, "Array", "to_ary");
+			    op = rb_to_array_type(op);
 			    for (i=0; i<RARRAY_LEN(op); i+=2) {
 				VALUE key = RARRAY_AREF(op, i);
 				VALUE sym = RARRAY_AREF(op, i+1);
@@ -6832,20 +7678,18 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
     return iseq_setup(iseq, anchor);
 }
 
-#define CHECK_ARRAY(v)   rb_convert_type((v), T_ARRAY, "Array", "to_ary")
-#define CHECK_SYMBOL(v)  rb_convert_type((v), T_SYMBOL, "Symbol", "to_sym")
+#define CHECK_ARRAY(v)   rb_to_array_type(v)
+#define CHECK_SYMBOL(v)  rb_to_symbol_type(v)
 
 static int
 int_param(int *dst, VALUE param, VALUE sym)
 {
     VALUE val = rb_hash_aref(param, sym);
-    switch (TYPE(val)) {
-      case T_NIL:
-	return FALSE;
-      case T_FIXNUM:
+    if (FIXNUM_P(val)) {
 	*dst = FIX2INT(val);
 	return TRUE;
-      default:
+    }
+    else if (!NIL_P(val)) {
 	rb_raise(rb_eTypeError, "invalid %+"PRIsVALUE" Fixnum: %+"PRIsVALUE,
 		 sym, val);
     }
@@ -6869,7 +7713,7 @@ iseq_build_kw(rb_iseq_t *iseq, VALUE params, VALUE keywords)
 #define SYM(s) ID2SYM(rb_intern(#s))
     (void)int_param(&keyword->bits_start, params, SYM(kwbits));
     i = keyword->bits_start - keyword->num;
-    ids = (VALUE *)&iseq->body->local_table[i];
+    ids = (ID *)&iseq->body->local_table[i];
 #undef SYM
 
     /* required args */
@@ -6886,10 +7730,11 @@ iseq_build_kw(rb_iseq_t *iseq, VALUE params, VALUE keywords)
   default_values: /* note: we intentionally preserve `i' from previous loop */
     default_len = len - i;
     if (default_len == 0) {
+	keyword->table = ids;
 	return keyword;
     }
 
-    dvs = ALLOC_N(VALUE, default_len);
+    dvs = ALLOC_N(VALUE, (unsigned int)default_len);
 
     for (j = 0; i < len; i++, j++) {
 	key = RARRAY_AREF(keywords, i);
@@ -6923,6 +7768,7 @@ rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc, VALUE locals, VALUE params,
 {
 #define SYM(s) ID2SYM(rb_intern(#s))
     int i, len;
+    unsigned int arg_size, local_size, stack_max;
     ID *tbl;
     struct st_table *labels_table = st_init_numtable();
     VALUE labels_wrapper = Data_Wrap_Struct(0, 0, st_free_table, labels_table);
@@ -6947,11 +7793,6 @@ rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc, VALUE locals, VALUE params,
 	}
     }
 
-    /*
-     * we currently ignore misc params,
-     * local_size, stack_size and param.size are all calculated
-     */
-
 #define INT_PARAM(F) int_param(&iseq->body->param.F, params, SYM(F))
     if (INT_PARAM(lead_num)) {
 	iseq->body->param.flags.has_lead = TRUE;
@@ -6961,9 +7802,16 @@ rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc, VALUE locals, VALUE params,
     if (INT_PARAM(rest_start)) iseq->body->param.flags.has_rest = TRUE;
     if (INT_PARAM(block_start)) iseq->body->param.flags.has_block = TRUE;
 #undef INT_PARAM
+    {
+#define INT_PARAM(F) F = (int_param(&x, misc, SYM(F)) ? (unsigned int)x : 0)
+	int x;
+	INT_PARAM(arg_size);
+	INT_PARAM(local_size);
+	INT_PARAM(stack_max);
+#undef INT_PARAM
+    }
 
-    switch (TYPE(arg_opt_labels)) {
-      case T_ARRAY:
+    if (RB_TYPE_P(arg_opt_labels, T_ARRAY)) {
 	len = RARRAY_LENINT(arg_opt_labels);
 	iseq->body->param.flags.has_opt = !!(len - 1 >= 0);
 
@@ -6979,19 +7827,16 @@ rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc, VALUE locals, VALUE params,
 	    iseq->body->param.opt_num = len - 1;
 	    iseq->body->param.opt_table = opt_table;
 	}
-      case T_NIL:
-	break;
-      default:
+    }
+    else if (!NIL_P(arg_opt_labels)) {
 	rb_raise(rb_eTypeError, ":opt param is not an array: %+"PRIsVALUE,
 		 arg_opt_labels);
     }
 
-    switch (TYPE(keywords)) {
-      case T_ARRAY:
+    if (RB_TYPE_P(keywords, T_ARRAY)) {
 	iseq->body->param.keyword = iseq_build_kw(iseq, params, keywords);
-      case T_NIL:
-	break;
-      default:
+    }
+    else if (!NIL_P(keywords)) {
 	rb_raise(rb_eTypeError, ":keywords param is not an array: %+"PRIsVALUE,
 		 keywords);
     }
@@ -7016,6 +7861,10 @@ rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc, VALUE locals, VALUE params,
 
     /* body */
     iseq_build_from_ary_body(iseq, anchor, body, labels_wrapper);
+
+    iseq->body->param.size = arg_size;
+    iseq->body->local_table_size = local_size;
+    iseq->body->stack_max = stack_max;
 }
 
 /* for parser */
@@ -7064,21 +7913,21 @@ rb_local_defined(ID id, const struct rb_block *base_block)
 }
 
 static int
-caller_location(VALUE *path, VALUE *absolute_path)
+caller_location(VALUE *path, VALUE *realpath)
 {
-    const rb_thread_t *const th = GET_THREAD();
+    const rb_execution_context_t *ec = GET_EC();
     const rb_control_frame_t *const cfp =
-	rb_vm_get_ruby_level_next_cfp(th, th->cfp);
+        rb_vm_get_ruby_level_next_cfp(ec, ec->cfp);
 
     if (cfp) {
 	int line = rb_vm_get_sourceline(cfp);
-	*path = cfp->iseq->body->location.path;
-	*absolute_path = cfp->iseq->body->location.absolute_path;
+	*path = rb_iseq_path(cfp->iseq);
+	*realpath = rb_iseq_realpath(cfp->iseq);
 	return line;
     }
     else {
 	*path = rb_fstring_cstr("<compiled>");
-	*absolute_path = *path;
+	*realpath = *path;
 	return 1;
     }
 }
@@ -7093,14 +7942,14 @@ static const rb_iseq_t *
 method_for_self(VALUE name, VALUE arg, rb_insn_func_t func,
 		VALUE (*build)(rb_iseq_t *, LINK_ANCHOR *const, VALUE))
 {
-    VALUE path, absolute_path;
+    VALUE path, realpath;
     accessor_args acc;
 
     acc.arg = arg;
     acc.func = func;
-    acc.line = caller_location(&path, &absolute_path);
-    return rb_iseq_new_with_opt((NODE *)IFUNC_NEW(build, (VALUE)&acc, 0),
-				rb_sym2str(name), path, absolute_path,
+    acc.line = caller_location(&path, &realpath);
+    return rb_iseq_new_with_opt((const NODE *)IFUNC_NEW(build, (VALUE)&acc, 0),
+				rb_sym2str(name), path, realpath,
 				INT2FIX(acc.line), 0, ISEQ_TYPE_METHOD, 0);
 }
 
@@ -7469,8 +8318,10 @@ ibf_load_code(const struct ibf_load *load, const rb_iseq_t *iseq, const struct r
 		break;
 	    }
 	}
-	assert(insn_len(insn) == op_index+1);
-    };
+	if (insn_len(insn) != op_index+1) {
+	    rb_raise(rb_eRuntimeError, "operand size mismatch");
+	}
+    }
 
 
     return code;
@@ -7555,16 +8406,16 @@ ibf_load_param_keyword(const struct ibf_load *load, const struct rb_iseq_constan
     }
 }
 
-static struct iseq_line_info_entry *
-ibf_dump_line_info_table(struct ibf_dump *dump, const rb_iseq_t *iseq)
+static struct iseq_insn_info_entry *
+ibf_dump_insns_info(struct ibf_dump *dump, const rb_iseq_t *iseq)
 {
-    return IBF_W(iseq->body->line_info_table, struct iseq_line_info_entry, iseq->body->line_info_size);
+    return IBF_W(iseq->body->insns_info, struct iseq_insn_info_entry, iseq->body->insns_info_size);
 }
 
-static struct iseq_line_info_entry *
-ibf_load_line_info_table(const struct ibf_load *load, const struct rb_iseq_constant_body *body)
+static struct iseq_insn_info_entry *
+ibf_load_insns_info(const struct ibf_load *load, const struct rb_iseq_constant_body *body)
 {
-    return IBF_R(body->line_info_table, struct iseq_line_info_entry, body->line_info_size);
+    return IBF_R(body->insns_info, struct iseq_insn_info_entry, body->insns_info_size);
 }
 
 static ID *
@@ -7711,15 +8562,14 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     struct rb_iseq_constant_body dump_body;
     dump_body = *iseq->body;
 
-    dump_body.location.path = ibf_dump_object(dump, dump_body.location.path);
-    dump_body.location.absolute_path = ibf_dump_object(dump, dump_body.location.absolute_path);
+    dump_body.location.pathobj = ibf_dump_object(dump, dump_body.location.pathobj); /* TODO: freeze */
     dump_body.location.base_label = ibf_dump_object(dump, dump_body.location.base_label);
     dump_body.location.label = ibf_dump_object(dump, dump_body.location.label);
 
     dump_body.iseq_encoded =    ibf_dump_code(dump, iseq);
     dump_body.param.opt_table = ibf_dump_param_opt_table(dump, iseq);
     dump_body.param.keyword =   ibf_dump_param_keyword(dump, iseq);
-    dump_body.line_info_table = ibf_dump_line_info_table(dump, iseq);
+    dump_body.insns_info =      ibf_dump_insns_info(dump, iseq);
     dump_body.local_table =     ibf_dump_local_table(dump, iseq);
     dump_body.catch_table =     ibf_dump_catch_table(dump, iseq);
     dump_body.parent_iseq =     ibf_dump_iseq(dump, iseq->body->parent_iseq);
@@ -7757,22 +8607,40 @@ ibf_load_iseq_each(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t of
     load_body->is_size = body->is_size;
     load_body->ci_size = body->ci_size;
     load_body->ci_kw_size = body->ci_kw_size;
-    load_body->line_info_size = body->line_info_size;
+    load_body->insns_info_size = body->insns_info_size;
 
     RB_OBJ_WRITE(iseq, &load_body->mark_ary, iseq_mark_ary_create((int)body->mark_ary));
 
-    RB_OBJ_WRITE(iseq, &load_body->location.path,          ibf_load_location_str(load, body->location.path));
-    RB_OBJ_WRITE(iseq, &load_body->location.absolute_path, ibf_load_location_str(load, body->location.absolute_path));
+    {
+	VALUE realpath = Qnil, path = ibf_load_object(load, body->location.pathobj);
+	if (RB_TYPE_P(path, T_STRING)) {
+	    realpath = path = rb_fstring(path);
+	}
+	else if (RB_TYPE_P(path, T_ARRAY)) {
+	    VALUE pathobj = path;
+	    if (RARRAY_LEN(pathobj) != 2) {
+		rb_raise(rb_eRuntimeError, "path object size mismatch");
+	    }
+	    path = rb_fstring(RARRAY_AREF(pathobj, 0));
+	    realpath = rb_fstring(RARRAY_AREF(pathobj, 1));
+	}
+	else {
+	    rb_raise(rb_eRuntimeError, "unexpected path object");
+	}
+	rb_iseq_pathobj_set(iseq, path, realpath);
+    }
+
     RB_OBJ_WRITE(iseq, &load_body->location.base_label,    ibf_load_location_str(load, body->location.base_label));
     RB_OBJ_WRITE(iseq, &load_body->location.label,         ibf_load_location_str(load, body->location.label));
     load_body->location.first_lineno = body->location.first_lineno;
+    load_body->location.code_range = body->location.code_range;
 
     load_body->is_entries      = ZALLOC_N(union iseq_inline_storage_entry, body->is_size);
     load_body->ci_entries      = ibf_load_ci_entries(load, body);
     load_body->cc_entries      = ZALLOC_N(struct rb_call_cache, body->ci_size + body->ci_kw_size);
     load_body->param.opt_table = ibf_load_param_opt_table(load, body);
     load_body->param.keyword   = ibf_load_param_keyword(load, body);
-    load_body->line_info_table = ibf_load_line_info_table(load, body);
+    load_body->insns_info      = ibf_load_insns_info(load, body);
     load_body->local_table     = ibf_load_local_table(load, body);
     load_body->catch_table     = ibf_load_catch_table(load, body);
     load_body->parent_iseq     = ibf_load_iseq(load, body->parent_iseq);
@@ -8088,7 +8956,7 @@ static VALUE
 ibf_load_object_hash(const struct ibf_load *load, const struct ibf_object_header *header, ibf_offset_t offset)
 {
     const struct ibf_object_hash *hash = IBF_OBJBODY(struct ibf_object_hash, offset);
-    VALUE obj = rb_hash_new();
+    VALUE obj = rb_hash_new_with_size(hash->len);
     int i;
 
     for (i=0; i<hash->len; i++) {
@@ -8512,7 +9380,7 @@ ibf_load_iseq_complete(rb_iseq_t *iseq)
     rb_iseq_t *prev_src_iseq = load->iseq;
     load->iseq = iseq;
     ibf_load_iseq_each(load, iseq, ibf_iseq_list(load)[iseq->aux.loader.index]);
-    ISEQ_COMPILE_DATA(iseq) = NULL;
+    ISEQ_COMPILE_DATA_CLEAR(iseq);
     FL_UNSET(iseq, ISEQ_NOT_LOADED_YET);
     load->iseq = prev_src_iseq;
 }
@@ -8595,22 +9463,18 @@ ibf_load_setup(struct ibf_load *load, VALUE loader_obj, VALUE str)
 static void
 ibf_loader_mark(void *ptr)
 {
-    if (ptr) {
-	struct ibf_load *load = (struct ibf_load *)ptr;
-	rb_gc_mark(load->str);
-	rb_gc_mark(load->iseq_list);
-	rb_gc_mark(load->obj_list);
-    }
+    struct ibf_load *load = (struct ibf_load *)ptr;
+    rb_gc_mark(load->str);
+    rb_gc_mark(load->iseq_list);
+    rb_gc_mark(load->obj_list);
 }
 
 static void
 ibf_loader_free(void *ptr)
 {
-    if (ptr) {
-	struct ibf_load *load = (struct ibf_load *)ptr;
-	ruby_xfree(load->id_list);
-	ruby_xfree(load);
-    }
+    struct ibf_load *load = (struct ibf_load *)ptr;
+    ruby_xfree(load->id_list);
+    ruby_xfree(load);
 }
 
 static size_t

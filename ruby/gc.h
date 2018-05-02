@@ -2,9 +2,9 @@
 #ifndef RUBY_GC_H
 #define RUBY_GC_H 1
 
-#if defined(__x86_64__) && !defined(_ILP32) && defined(__GNUC__) && !defined(__native_client__)
+#if defined(__x86_64__) && !defined(_ILP32) && defined(__GNUC__)
 #define SET_MACHINE_STACK_END(p) __asm__ __volatile__ ("movq\t%%rsp, %0" : "=r" (*(p)))
-#elif defined(__i386) && defined(__GNUC__) && !defined(__native_client__)
+#elif defined(__i386) && defined(__GNUC__)
 #define SET_MACHINE_STACK_END(p) __asm__ __volatile__ ("movl\t%%esp, %0" : "=r" (*(p)))
 #else
 NOINLINE(void rb_gc_set_stack_end(VALUE **stack_end_p));
@@ -89,6 +89,8 @@ int ruby_get_stack_grow_direction(volatile VALUE *addr);
 const char *rb_obj_info(VALUE obj);
 const char *rb_raw_obj_info(char *buff, const int buff_size, VALUE obj);
 void rb_obj_info_dump(VALUE obj);
+
+struct rb_thread_struct;
 
 RUBY_SYMBOL_EXPORT_BEGIN
 

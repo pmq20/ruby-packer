@@ -129,7 +129,6 @@ module MakeMakefile
   $vendorarchdir = CONFIG["vendorarchdir"]
 
   $mswin = /mswin/ =~ RUBY_PLATFORM
-  $bccwin = /bccwin/ =~ RUBY_PLATFORM
   $mingw = /mingw/ =~ RUBY_PLATFORM
   $cygwin = /cygwin/ =~ RUBY_PLATFORM
   $netbsd = /netbsd/ =~ RUBY_PLATFORM
@@ -464,7 +463,6 @@ MSG
       xsystem(command, *opts)
     ensure
       log_src(src)
-      MakeMakefile.rm_rf "#{CONFTEST}.dSYM"
     end
   end
 
@@ -527,6 +525,7 @@ MSG
   end
 
   def try_link0(src, opt="", *opts, &b) # :nodoc:
+    exe = CONFTEST+$EXEEXT
     cmd = link_command("", opt)
     if $universal
       require 'tmpdir'
@@ -540,7 +539,10 @@ MSG
       end
     else
       try_do(src, cmd, *opts, &b)
-    end and File.executable?(CONFTEST+$EXEEXT)
+    end and File.executable?(exe) or return nil
+    exe
+  ensure
+    MakeMakefile.rm_rf(*Dir["#{CONFTEST}*"]-[exe])
   end
 
   # Returns whether or not the +src+ can be compiled as a C source and linked
@@ -554,9 +556,9 @@ MSG
   # [+src+] a String which contains a C source
   # [+opt+] a String which contains linker options
   def try_link(src, opt="", *opts, &b)
-    try_link0(src, opt, *opts, &b)
-  ensure
-    MakeMakefile.rm_f "#{CONFTEST}*", "c0x32*"
+    exe = try_link0(src, opt, *opts, &b) or return false
+    MakeMakefile.rm_f exe
+    true
   end
 
   # Returns whether or not the +src+ can be compiled as a C source.  +opt+ is
@@ -730,7 +732,7 @@ int main() {printf("%"PRI_CONFTEST_PREFIX"#{neg ? 'd' : 'u'}\\n", conftest_const
           end
         end
       ensure
-        MakeMakefile.rm_f "#{CONFTEST}*"
+        MakeMakefile.rm_f "#{CONFTEST}#{$EXEEXT}"
       end
     end
     nil
@@ -2121,7 +2123,10 @@ RULES
     unless suffixes.empty?
       depout.unshift(".SUFFIXES: ." + suffixes.uniq.join(" .") + "\n\n")
     end
-    depout.unshift("$(OBJS): $(RUBY_EXTCONF_H)\n\n") if $extconf_h
+    if $extconf_h
+      depout.unshift("$(OBJS): $(RUBY_EXTCONF_H)\n\n")
+      depout.unshift("$(OBJS): $(hdrdir)/ruby/win32.h\n\n") if $mswin or $mingw
+    end
     depout.flatten!
     depout
   end
@@ -2297,7 +2302,7 @@ TIMESTAMP_DIR = #{$extout && $extmk ? '$(extout)/.timestamp' : '.'}
     conf << "\
 TARGET_SO_DIR =#{$extout ? " $(RUBYARCHDIR)/" : ''}
 TARGET_SO     = $(TARGET_SO_DIR)$(DLLIB)
-CLEANLIBS     = $(TARGET_SO) #{config_string('cleanlibs') {|t| t.gsub(/\$\*/) {n}}}
+CLEANLIBS     = #{'$(TARGET_SO) ' if target}#{config_string('cleanlibs') {|t| t.gsub(/\$\*/) {n}}}
 CLEANOBJS     = *.#{$OBJEXT} #{config_string('cleanobjs') {|t| t.gsub(/\$\*/, "$(TARGET)#{deffile ? '-$(arch)': ''}")} if target} *.bak
 " #"
 

@@ -141,12 +141,16 @@ rb_rational_den(VALUE rat)
 static VALUE
 BigDecimal_version(VALUE self)
 {
-    /*
-     * 1.0.0: Ruby 1.8.0
-     * 1.0.1: Ruby 1.8.1
-     * 1.1.0: Ruby 1.9.3
-    */
-    return rb_str_new2("1.1.0");
+  /*
+   * 1.0.0: Ruby 1.8.0
+   * 1.0.1: Ruby 1.8.1
+   * 1.1.0: Ruby 1.9.3
+   */
+#ifndef RUBY_BIGDECIMAL_VERSION
+# error RUBY_BIGDECIMAL_VERSION is not defined
+#endif
+  rb_warning("BigDecimal.ver is deprecated; use BigDecimal::VERSION instead.");
+  return rb_str_new2(RUBY_BIGDECIMAL_VERSION);
 }
 
 /*
@@ -231,6 +235,7 @@ static inline VALUE BigDecimal_div2(VALUE, VALUE, VALUE);
 static Real*
 GetVpValueWithPrec(VALUE v, long prec, int must)
 {
+    ENTER(1);
     Real *pv;
     VALUE num, bg;
     char szD[128];
@@ -288,13 +293,15 @@ again:
 
 #ifdef ENABLE_NUMERIC_STRING
       case T_STRING:
-	SafeStringValue(v);
-	return VpCreateRbObject(strlen(RSTRING_PTR(v)) + VpBaseFig() + 1,
+	StringValueCStr(v);
+	rb_check_safe_obj(v);
+	return VpCreateRbObject(RSTRING_LEN(v) + VpBaseFig() + 1,
 				RSTRING_PTR(v));
 #endif /* ENABLE_NUMERIC_STRING */
 
       case T_BIGNUM:
 	bg = rb_big2str(v, 10);
+	PUSH(bg);
 	return VpCreateRbObject(strlen(RSTRING_PTR(bg)) + VpBaseFig() + 1,
 				RSTRING_PTR(bg));
       default:
@@ -390,7 +397,7 @@ BigDecimal_hash(VALUE self)
  *
  * Method used to provide marshalling support.
  *
- *      inf = BigDecimal.new('Infinity')
+ *      inf = BigDecimal('Infinity')
  *        #=> Infinity
  *      BigDecimal._load(inf._dump)
  *        #=> Infinity
@@ -428,8 +435,8 @@ BigDecimal_load(VALUE self, VALUE str)
     unsigned char ch;
     unsigned long m=0;
 
-    SafeStringValue(str);
-    pch = (unsigned char *)RSTRING_PTR(str);
+    pch = (unsigned char *)StringValueCStr(str);
+    rb_check_safe_obj(str);
     /* First get max prec */
     while((*pch) != (unsigned char)'\0' && (ch = *pch++) != (unsigned char)':') {
         if(!ISDIGIT(ch)) {
@@ -643,12 +650,12 @@ GetAddSubPrec(Real *a, Real *b)
 }
 
 static SIGNED_VALUE
-GetPositiveInt(VALUE v)
+GetPrecisionInt(VALUE v)
 {
     SIGNED_VALUE n;
     n = NUM2INT(v);
     if (n < 0) {
-	rb_raise(rb_eArgError, "argument must be positive");
+	rb_raise(rb_eArgError, "negative precision");
     }
     return n;
 }
@@ -873,7 +880,7 @@ BigDecimal_to_r(VALUE self)
  * be coerced into a BigDecimal value.
  *
  * e.g.
- *   a = BigDecimal.new("1.0")
+ *   a = BigDecimal("1.0")
  *   b = a / 2.0 #=> 0.5
  *
  * Note that coercing a String to a BigDecimal is not supported by default;
@@ -1162,7 +1169,7 @@ BigDecimal_comp(VALUE self, VALUE r)
  *
  * Values may be coerced to perform the comparison:
  *
- *   BigDecimal.new('1.0') == 1.0  #=> true
+ *   BigDecimal('1.0') == 1.0  #=> true
  */
 static VALUE
 BigDecimal_eq(VALUE self, VALUE r)
@@ -1318,25 +1325,14 @@ BigDecimal_divide(Real **c, Real **res, Real **div, VALUE self, VALUE r)
     return Qnil;
 }
 
- /* call-seq:
-  * div(value, digits)
-  * quo(value)
-  *
-  * Divide by the specified value.
-  *
-  * e.g.
-  *   c = a.div(b,n)
-  *
-  * digits:: If specified and less than the number of significant digits of the
-  *          result, the result is rounded to that number of digits, according
-  *          to BigDecimal.mode.
-  *
-  * If digits is 0, the result is the same as the / operator. If not, the
-  * result is an integer BigDecimal, by analogy with Float#div.
-  *
-  * The alias quo is provided since <code>div(value, 0)</code> is the same as
-  * computing the quotient; see BigDecimal#divmod.
-  */
+/* call-seq:
+ *   a / b       -> bigdecimal
+ *   quo(value)  -> bigdecimal
+ *
+ * Divide by the specified value.
+ *
+ * See BigDecimal#div.
+ */
 static VALUE
 BigDecimal_div(VALUE self, VALUE r)
 /* For c = self/r: with round operation */
@@ -1535,8 +1531,8 @@ BigDecimal_remainder(VALUE self, VALUE r) /* remainder */
  *
  *   require 'bigdecimal'
  *
- *   a = BigDecimal.new("42")
- *   b = BigDecimal.new("9")
+ *   a = BigDecimal("42")
+ *   b = BigDecimal("9")
  *
  *   q, m = a.divmod(b)
  *
@@ -1579,7 +1575,7 @@ BigDecimal_div2(VALUE self, VALUE b, VALUE n)
     }
 
     /* div in BigDecimal sense */
-    ix = GetPositiveInt(n);
+    ix = GetPrecisionInt(n);
     if (ix == 0) {
         return BigDecimal_div(self, b);
     }
@@ -1602,6 +1598,37 @@ BigDecimal_div2(VALUE self, VALUE b, VALUE n)
     }
 }
 
+ /*
+  * Document-method: BigDecimal#div
+  *
+  * call-seq:
+  *   div(value, digits)  -> bigdecimal or integer
+  *
+  * Divide by the specified value.
+  *
+  * digits:: If specified and less than the number of significant digits of the
+  *          result, the result is rounded to that number of digits, according
+  *          to BigDecimal.mode.
+  *
+  *          If digits is 0, the result is the same as for the / operator
+  *          or #quo.
+  *
+  *          If digits is not specified, the result is an integer,
+  *          by analogy with Float#div; see also BigDecimal#divmod.
+  *
+  * Examples:
+  *
+  *   a = BigDecimal("4")
+  *   b = BigDecimal("3")
+  *
+  *   a.div(b, 3)  # => 0.133e1
+  *
+  *   a.div(b, 0)  # => 0.1333333333333333333e1
+  *   a / b        # => 0.1333333333333333333e1
+  *   a.quo(b)     # => 0.1333333333333333333e1
+  *
+  *   a.div(b)     # => 1
+  */
 static VALUE
 BigDecimal_div3(int argc, VALUE *argv, VALUE self)
 {
@@ -1617,7 +1644,7 @@ BigDecimal_add2(VALUE self, VALUE b, VALUE n)
 {
     ENTER(2);
     Real *cv;
-    SIGNED_VALUE mx = GetPositiveInt(n);
+    SIGNED_VALUE mx = GetPrecisionInt(n);
     if (mx == 0) return BigDecimal_add(self, b);
     else {
 	size_t pl = VpSetPrecLimit(0);
@@ -1647,7 +1674,7 @@ BigDecimal_sub2(VALUE self, VALUE b, VALUE n)
 {
     ENTER(2);
     Real *cv;
-    SIGNED_VALUE mx = GetPositiveInt(n);
+    SIGNED_VALUE mx = GetPrecisionInt(n);
     if (mx == 0) return BigDecimal_sub(self, b);
     else {
 	size_t pl = VpSetPrecLimit(0);
@@ -1665,7 +1692,7 @@ BigDecimal_mult2(VALUE self, VALUE b, VALUE n)
 {
     ENTER(2);
     Real *cv;
-    SIGNED_VALUE mx = GetPositiveInt(n);
+    SIGNED_VALUE mx = GetPrecisionInt(n);
     if (mx == 0) return BigDecimal_mult(self, b);
     else {
 	size_t pl = VpSetPrecLimit(0);
@@ -1719,7 +1746,7 @@ BigDecimal_sqrt(VALUE self, VALUE nFig)
     GUARD_OBJ(a, GetVpValue(self, 1));
     mx = a->Prec * (VpBaseFig() + 1);
 
-    n = GetPositiveInt(nFig) + VpDblFig() + BASE_FIG;
+    n = GetPrecisionInt(nFig) + VpDblFig() + BASE_FIG;
     if (mx <= n) mx = n;
     GUARD_OBJ(c, VpCreateRbObject(mx, "0"));
     VpSqrt(c, a);
@@ -1989,34 +2016,35 @@ BigDecimal_ceil(int argc, VALUE *argv, VALUE self)
  *
  * Examples:
  *
- *   BigDecimal.new('-123.45678901234567890').to_s('5F')
+ *   BigDecimal('-123.45678901234567890').to_s('5F')
  *     #=> '-123.45678 90123 45678 9'
  *
- *   BigDecimal.new('123.45678901234567890').to_s('+8F')
+ *   BigDecimal('123.45678901234567890').to_s('+8F')
  *     #=> '+123.45678901 23456789'
  *
- *   BigDecimal.new('123.45678901234567890').to_s(' F')
+ *   BigDecimal('123.45678901234567890').to_s(' F')
  *     #=> ' 123.4567890123456789'
  */
 static VALUE
 BigDecimal_to_s(int argc, VALUE *argv, VALUE self)
 {
     ENTER(5);
-    int   fmt = 0;   /* 0:E format */
-    int   fPlus = 0; /* =0:default,=1: set ' ' before digits ,set '+' before digits. */
+    int   fmt = 0;   /* 0: E format, 1: F format */
+    int   fPlus = 0; /* 0: default, 1: set ' ' before digits, 2: set '+' before digits. */
     Real  *vp;
     volatile VALUE str;
     char  *psz;
     char   ch;
     size_t nc, mc = 0;
+    SIGNED_VALUE m;
     VALUE  f;
 
     GUARD_OBJ(vp, GetVpValue(self, 1));
 
     if (rb_scan_args(argc, argv, "01", &f) == 1) {
 	if (RB_TYPE_P(f, T_STRING)) {
-	    SafeStringValue(f);
-	    psz = RSTRING_PTR(f);
+	    psz = StringValueCStr(f);
+	    rb_check_safe_obj(f);
 	    if (*psz == ' ') {
 		fPlus = 1;
 		psz++;
@@ -2039,7 +2067,11 @@ BigDecimal_to_s(int argc, VALUE *argv, VALUE self)
 	    }
 	}
 	else {
-	    mc = (size_t)GetPositiveInt(f);
+	    m = NUM2INT(f);
+	    if (m <= 0) {
+		rb_raise(rb_eArgError, "argument must be positive");
+	    }
+	    mc = (size_t)m;
 	}
     }
     if (fmt) {
@@ -2136,7 +2168,7 @@ BigDecimal_exponent(VALUE self)
 /* Returns debugging information about the value as a string of comma-separated
  * values in angle brackets with a leading #:
  *
- *   BigDecimal.new("1234.5678").inspect
+ *   BigDecimal("1234.5678").inspect
  *     #=> "0.12345678e4"
  *
  * The first part is the address, the second is the value as a string, and
@@ -2568,6 +2600,13 @@ static Real *BigDecimal_new(int argc, VALUE *argv);
  *                 value is omitted, this exception is raised.
  */
 static VALUE
+BigDecimal_s_new(int argc, VALUE *argv, VALUE self)
+{
+  rb_warning("BigDecimal.new is deprecated; use Kernel.BigDecimal method instead.");
+  return rb_call_super(argc, argv);
+}
+
+static VALUE
 BigDecimal_initialize(int argc, VALUE *argv, VALUE self)
 {
     ENTER(1);
@@ -2603,6 +2642,12 @@ BigDecimal_initialize_copy(VALUE self, VALUE other)
     return self;
 }
 
+static VALUE
+BigDecimal_clone(VALUE self)
+{
+  return self;
+}
+
 static Real *
 BigDecimal_new(int argc, VALUE *argv)
 {
@@ -2615,7 +2660,7 @@ BigDecimal_new(int argc, VALUE *argv)
         mf = 0;
     }
     else {
-        mf = GetPositiveInt(nFig);
+        mf = GetPrecisionInt(nFig);
     }
 
     switch (TYPE(iniValue)) {
@@ -2735,9 +2780,9 @@ BigDecimal_sign(VALUE self)
  *       BigDecimal.mode(BigDecimal::EXCEPTION_OVERFLOW, false)
  *       BigDecimal.mode(BigDecimal::EXCEPTION_NaN, false)
  *
- *       BigDecimal.new(BigDecimal('Infinity'))
- *       BigDecimal.new(BigDecimal('-Infinity'))
- *       BigDecimal(BigDecimal.new('NaN'))
+ *       BigDecimal(BigDecimal('Infinity'))
+ *       BigDecimal(BigDecimal('-Infinity'))
+ *       BigDecimal(BigDecimal('NaN'))
  *     end
  *
  * For use with the BigDecimal::EXCEPTION_*
@@ -3124,15 +3169,15 @@ get_vp_value:
  *
  *   require 'bigdecimal'
  *
- *   sum = BigDecimal.new("0")
+ *   sum = BigDecimal("0")
  *   10_000.times do
- *     sum = sum + BigDecimal.new("0.0001")
+ *     sum = sum + BigDecimal("0.0001")
  *   end
  *   print sum #=> 0.1E1
  *
  * Similarly:
  *
- *	(BigDecimal.new("1.2") - BigDecimal("1.0")) == BigDecimal("0.2") #=> true
+ *	(BigDecimal("1.2") - BigDecimal("1.0")) == BigDecimal("0.2") #=> true
  *
  *	(1.2 - 1.0) == 0.2 #=> false
  *
@@ -3146,8 +3191,8 @@ get_vp_value:
  * BigDecimal sometimes needs to return infinity, for example if you divide
  * a value by zero.
  *
- *	BigDecimal.new("1.0") / BigDecimal.new("0.0")  #=> Infinity
- *	BigDecimal.new("-1.0") / BigDecimal.new("0.0")  #=> -Infinity
+ *	BigDecimal("1.0") / BigDecimal("0.0")  #=> Infinity
+ *	BigDecimal("-1.0") / BigDecimal("0.0")  #=> -Infinity
  *
  * You can represent infinite numbers to BigDecimal using the strings
  * <code>'Infinity'</code>, <code>'+Infinity'</code> and
@@ -3160,13 +3205,13 @@ get_vp_value:
  *
  * Example:
  *
- *	BigDecimal.new("0.0") / BigDecimal.new("0.0") #=> NaN
+ *	BigDecimal("0.0") / BigDecimal("0.0") #=> NaN
  *
  * You can also create undefined values.
  *
  * NaN is never considered to be the same as any other value, even NaN itself:
  *
- *	n = BigDecimal.new('NaN')
+ *	n = BigDecimal('NaN')
  *	n == 0.0 #=> false
  *	n == n #=> false
  *
@@ -3179,11 +3224,11 @@ get_vp_value:
  * If the value which is too small to be represented is negative, a BigDecimal
  * value of negative zero is returned.
  *
- *	BigDecimal.new("1.0") / BigDecimal.new("-Infinity") #=> -0.0
+ *	BigDecimal("1.0") / BigDecimal("-Infinity") #=> -0.0
  *
  * If the value is positive, a value of positive zero is returned.
  *
- *	BigDecimal.new("1.0") / BigDecimal.new("Infinity") #=> 0.0
+ *	BigDecimal("1.0") / BigDecimal("Infinity") #=> 0.0
  *
  * (See BigDecimal.mode for how to specify limits of precision.)
  *
@@ -3192,6 +3237,19 @@ get_vp_value:
  *
  * Note also that in mathematics, there is no particular concept of negative
  * or positive zero; true mathematical zero has no sign.
+ *
+ * == bigdecimal/util
+ *
+ * When you require +bigdecimal/util+, the #to_d method will be
+ * available on BigDecimal and the native Integer, Float, Rational,
+ * and String classes:
+ *
+ *	require 'bigdecimal/util'
+ *
+ *      42.to_d         # => 0.42e2
+ *      0.5.to_d        # => 0.5e0
+ *      (2/3r).to_d(3)  # => 0.667e0
+ *      "0.5".to_d      # => 0.5e0
  *
  * == License
  *
@@ -3225,6 +3283,7 @@ Init_bigdecimal(void)
     rb_define_global_function("BigDecimal", BigDecimal_global_new, -1);
 
     /* Class methods */
+    rb_define_singleton_method(rb_cBigDecimal, "new", BigDecimal_s_new, -1);
     rb_define_singleton_method(rb_cBigDecimal, "mode", BigDecimal_mode, -1);
     rb_define_singleton_method(rb_cBigDecimal, "limit", BigDecimal_limit, -1);
     rb_define_singleton_method(rb_cBigDecimal, "double_fig", BigDecimal_double_fig, 0);
@@ -3236,6 +3295,14 @@ Init_bigdecimal(void)
     rb_define_singleton_method(rb_cBigDecimal, "save_limit", BigDecimal_save_limit, 0);
 
     /* Constants definition */
+
+#ifndef RUBY_BIGDECIMAL_VERSION
+# error RUBY_BIGDECIMAL_VERSION is not defined
+#endif
+    /*
+     * The version of bigdecimal library
+     */
+    rb_define_const(rb_cBigDecimal, "VERSION", rb_str_new2(RUBY_BIGDECIMAL_VERSION));
 
     /*
      * Base value used in internal calculations.  On a 32 bit system, BASE
@@ -3373,7 +3440,8 @@ Init_bigdecimal(void)
     rb_define_method(rb_cBigDecimal, "modulo", BigDecimal_mod, 1);
     rb_define_method(rb_cBigDecimal, "remainder", BigDecimal_remainder, 1);
     rb_define_method(rb_cBigDecimal, "divmod", BigDecimal_divmod, 1);
-    /* rb_define_method(rb_cBigDecimal, "dup", BigDecimal_dup, 0); */
+    rb_define_method(rb_cBigDecimal, "clone", BigDecimal_clone, 0);
+    rb_define_method(rb_cBigDecimal, "dup", BigDecimal_clone, 0);
     rb_define_method(rb_cBigDecimal, "to_f", BigDecimal_to_f, 0);
     rb_define_method(rb_cBigDecimal, "abs", BigDecimal_abs, 0);
     rb_define_method(rb_cBigDecimal, "sqrt", BigDecimal_sqrt, 1);
@@ -5312,7 +5380,7 @@ VpSzMantissa(Real *a,char *psz)
 
 VP_EXPORT int
 VpToSpecialString(Real *a,char *psz,int fPlus)
-    /* fPlus =0:default, =1: set ' ' before digits , =2: set '+' before digits. */
+/* fPlus = 0: default, 1: set ' ' before digits, 2: set '+' before digits. */
 {
     if (VpIsNaN(a)) {
 	sprintf(psz,SZ_NaN);
@@ -5347,7 +5415,7 @@ VpToSpecialString(Real *a,char *psz,int fPlus)
 
 VP_EXPORT void
 VpToString(Real *a, char *psz, size_t fFmt, int fPlus)
-/* fPlus =0:default, =1: set ' ' before digits , =2:set '+' before digits. */
+/* fPlus = 0: default, 1: set ' ' before digits, 2: set '+' before digits. */
 {
     size_t i, n, ZeroSup;
     BDIGIT shift, m, e, nn;
@@ -5395,7 +5463,7 @@ VpToString(Real *a, char *psz, size_t fFmt, int fPlus)
 
 VP_EXPORT void
 VpToFString(Real *a, char *psz, size_t fFmt, int fPlus)
-/* fPlus =0:default,=1: set ' ' before digits ,set '+' before digits. */
+/* fPlus = 0: default, 1: set ' ' before digits, 2: set '+' before digits. */
 {
     size_t i, n;
     BDIGIT m, e, nn;
@@ -5920,17 +5988,12 @@ Exit:
 }
 
 /*
- *
- * nf: digit position for operation.
- *
- */
-VP_EXPORT int
-VpMidRound(Real *y, unsigned short f, ssize_t nf)
-/*
  * Round relatively from the decimal point.
  *    f: rounding mode
  *   nf: digit location to round from the decimal point.
  */
+VP_EXPORT int
+VpMidRound(Real *y, unsigned short f, ssize_t nf)
 {
     /* fracf: any positive digit under rounding position? */
     /* fracf_1further: any positive digits under one further than the rounding position? */

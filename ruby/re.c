@@ -2,7 +2,7 @@
 
   re.c -
 
-  $Author: rhe $
+  $Author: kazu $
   created at: Mon Aug  9 18:24:49 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -86,14 +86,6 @@ rb_memcicmp(const void *x, const void *y, long len)
 	    return tmp;
     }
     return 0;
-}
-
-#undef rb_memcmp
-
-int
-rb_memcmp(const void *p1, const void *p2, long len)
-{
-    return memcmp(p1, p2, len);
 }
 
 #ifdef HAVE_MEMMEM
@@ -606,7 +598,7 @@ rb_reg_to_s(VALUE re)
 
 	    ++ptr;
 	    len -= 2;
-            err = onig_new(&rp, ptr, ptr + len, ONIG_OPTION_DEFAULT,
+            err = onig_new(&rp, ptr, ptr + len, options,
 			   enc, OnigDefaultSyntax, NULL);
 	    onig_free(rp);
 	    ruby_verbose = verbose;
@@ -828,9 +820,9 @@ reg_named_captures_iter(const OnigUChar *name, const OnigUChar *name_end,
 static VALUE
 rb_reg_named_captures(VALUE re)
 {
-    VALUE hash = rb_hash_new();
-    rb_reg_check(re);
-    onig_foreach_name(RREGEXP_PTR(re), reg_named_captures_iter, (void*)hash);
+    regex_t *reg = (rb_reg_check(re), RREGEXP_PTR(re));
+    VALUE hash = rb_hash_new_with_size(onig_number_of_names(reg));
+    onig_foreach_name(reg, reg_named_captures_iter, (void*)hash);
     return hash;
 }
 
@@ -1333,14 +1325,14 @@ rb_backref_set_string(VALUE string, long pos, long len)
  *      r.fixed_encoding?                               #=> true
  *      r.encoding                                      #=> #<Encoding:UTF-8>
  *      r =~ "\u{6666} a"                               #=> 2
- *      r =~ "\xa1\xa2".force_encoding("euc-jp")        #=> ArgumentError
+ *      r =~ "\xa1\xa2".force_encoding("euc-jp")        #=> Encoding::CompatibilityError
  *      r =~ "abc".force_encoding("euc-jp")             #=> 0
  *
  *      r = /\u{6666}/
  *      r.fixed_encoding?                               #=> true
  *      r.encoding                                      #=> #<Encoding:UTF-8>
  *      r =~ "\u{6666} a"                               #=> 0
- *      r =~ "\xa1\xa2".force_encoding("euc-jp")        #=> ArgumentError
+ *      r =~ "\xa1\xa2".force_encoding("euc-jp")        #=> Encoding::CompatibilityError
  *      r =~ "abc".force_encoding("euc-jp")             #=> nil
  */
 
@@ -1410,7 +1402,7 @@ rb_reg_prepare_enc(VALUE re, VALUE str, int warn)
     else if (warn && (RBASIC(re)->flags & REG_ENCODING_NONE) &&
 	enc != rb_ascii8bit_encoding() &&
 	cr != ENC_CODERANGE_7BIT) {
-	rb_warn("regexp match /.../n against to %s string",
+	rb_warn("historical binary regexp match /.../n against %s string",
 		rb_enc_name(enc));
     }
     return enc;
@@ -1586,6 +1578,83 @@ long
 rb_reg_search(VALUE re, VALUE str, long pos, int reverse)
 {
     return rb_reg_search0(re, str, pos, reverse, 1);
+}
+
+bool
+rb_reg_start_with_p(VALUE re, VALUE str)
+{
+    long result;
+    VALUE match;
+    struct re_registers regi, *regs = &regi;
+    regex_t *reg;
+    int tmpreg;
+    onig_errmsg_buffer err = "";
+
+    reg = rb_reg_prepare_re0(re, str, err);
+    tmpreg = reg != RREGEXP_PTR(re);
+    if (!tmpreg) RREGEXP(re)->usecnt++;
+
+    match = rb_backref_get();
+    if (!NIL_P(match)) {
+	if (FL_TEST(match, MATCH_BUSY)) {
+	    match = Qnil;
+	}
+	else {
+	    regs = RMATCH_REGS(match);
+	}
+    }
+    if (NIL_P(match)) {
+	MEMZERO(regs, struct re_registers, 1);
+    }
+    result = onig_match(reg,
+	    (UChar*)(RSTRING_PTR(str)),
+	    ((UChar*)(RSTRING_PTR(str)) + RSTRING_LEN(str)),
+	    (UChar*)(RSTRING_PTR(str)),
+	    regs, ONIG_OPTION_NONE);
+    if (!tmpreg) RREGEXP(re)->usecnt--;
+    if (tmpreg) {
+	if (RREGEXP(re)->usecnt) {
+	    onig_free(reg);
+	}
+	else {
+	    onig_free(RREGEXP_PTR(re));
+	    RREGEXP_PTR(re) = reg;
+	}
+    }
+    if (result < 0) {
+	if (regs == &regi)
+	    onig_region_free(regs, 0);
+	if (result == ONIG_MISMATCH) {
+	    rb_backref_set(Qnil);
+	    return false;
+	}
+	else {
+	    onig_error_code_to_str((UChar*)err, (int)result);
+	    rb_reg_raise(RREGEXP_SRC_PTR(re), RREGEXP_SRC_LEN(re), err, re);
+	}
+    }
+
+    if (NIL_P(match)) {
+	int err;
+	match = match_alloc(rb_cMatch);
+	err = rb_reg_region_copy(RMATCH_REGS(match), regs);
+	onig_region_free(regs, 0);
+	if (err) rb_memerror();
+    }
+    else {
+	FL_UNSET(match, FL_TAINT);
+    }
+
+    RMATCH(match)->str = rb_str_new4(str);
+    OBJ_INFECT(match, str);
+
+    RMATCH(match)->regexp = re;
+    RMATCH(match)->rmatch->char_offset_updated = 0;
+    rb_backref_set(match);
+
+    OBJ_INFECT(match, re);
+
+    return true;
 }
 
 VALUE
@@ -3087,9 +3156,9 @@ rb_reg_match(VALUE re, VALUE str)
  *
  *     a = "HELLO"
  *     case a
- *     when /^[a-z]*$/; print "Lower case\n"
- *     when /^[A-Z]*$/; print "Upper case\n"
- *     else;            print "Mixed case\n"
+ *     when /\A[a-z]*\z/; print "Lower case\n"
+ *     when /\A[A-Z]*\z/; print "Upper case\n"
+ *     else;              print "Mixed case\n"
  *     end
  *     #=> "Upper case"
  *

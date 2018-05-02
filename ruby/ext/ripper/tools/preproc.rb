@@ -1,5 +1,5 @@
-# frozen_string_literal: false
-# $Id: preproc.rb 53143 2015-12-16 05:31:54Z naruse $
+# frozen_string_literal: true
+# $Id: preproc.rb 59896 2017-09-14 10:53:47Z nobu $
 
 require 'optparse'
 
@@ -24,7 +24,7 @@ def main
   unless ARGV.size == 1
     abort "wrong number of arguments (#{ARGV.size} for 1)"
   end
-  out = ""
+  out = "".dup
   File.open(ARGV[0]) {|f|
     prelude f, out
     grammar f, out
@@ -40,6 +40,7 @@ def main
 end
 
 def prelude(f, out)
+  @exprs = {}
   while line = f.gets
     case line
     when %r</\*%%%\*/>
@@ -56,6 +57,16 @@ def prelude(f, out)
     when /\A%type/
       out << line.sub(/<\w+>/, '<val>')
     else
+      if (/^enum lex_state_(?:bits|e) \{/ =~ line)..(/^\}/ =~ line)
+        case line
+        when /^\s*(EXPR_\w+),\s+\/\*(.+)\*\//
+          @exprs[$1.chomp("_bit")] = $2.strip
+        when /^\s*(EXPR_\w+)\s+=\s+(.+)$/
+          name = $1
+          val = $2.chomp(",")
+          @exprs[name] = "equals to " + (val.start_with?("(") ? "<tt>#{val}</tt>" : "+#{val}+")
+        end
+      end
       out << line
     end
   end
@@ -84,9 +95,12 @@ def grammar(f, out)
 end
 
 def usercode(f, out)
-  while line = f.gets
-    out << line
-  end
+  require 'erb'
+  compiler = ERB::Compiler.new('%-')
+  compiler.put_cmd = compiler.insert_cmd = "out.<<"
+  lineno = f.lineno
+  src, = compiler.compile(f.read)
+  eval(src, binding, f.path, lineno)
 end
 
 main

@@ -3,7 +3,7 @@
 #
 # Author:: Akira Yamada <akira@ruby-lang.org>
 # License:: You can redistribute it and/or modify it under the same term as Ruby.
-# Revision:: $Id: http.rb 56298 2016-09-30 10:06:24Z hsbt $
+# Revision:: $Id: http.rb 59836 2017-09-11 06:12:40Z hsbt $
 #
 # See URI for general documentation
 #
@@ -61,30 +61,6 @@ module URI
       tmp = Util.make_components_hash(self, args)
       super(tmp)
     end
-
-=begin
-    #
-    # == Description
-    #
-    # Create a new URI::HTTP object from generic URI components as per
-    # RFC 2396. No HTTP-specific syntax checking (as per RFC 1738) is
-    # performed.
-    #
-    # Arguments are +scheme+, +userinfo+, +host+, +port+, +registry+, +path+,
-    # +opaque+, +query+ and +fragment+, in that order.
-    #
-    # Example:
-    #
-    #     uri = URI::HTTP.new("http", nil, "www.example.com", nil, nil,
-    #                         "/path", nil, "query", "fragment")
-    #
-    #
-    # See also URI::Generic.new
-    #
-    def initialize(*arg)
-      super(*arg)
-    end
-=end
 
     #
     # == Description

@@ -104,11 +104,15 @@ Init_id(void)
     REGISTER_SYMID(idTo_a, "to_a");
     REGISTER_SYMID(idTo_s, "to_s");
     REGISTER_SYMID(idTo_i, "to_i");
+    REGISTER_SYMID(idTo_r, "to_r");
     REGISTER_SYMID(idBt, "bt");
     REGISTER_SYMID(idBt_locations, "bt_locations");
     REGISTER_SYMID(idCall, "call");
     REGISTER_SYMID(idMesg, "mesg");
     REGISTER_SYMID(idException, "exception");
+    REGISTER_SYMID(idNOT, "not");
+    REGISTER_SYMID(idAND, "and");
+    REGISTER_SYMID(idOR, "or");
     REGISTER_SYMID(idUScore, "_");
     REGISTER_SYMID(idNULL, ""/*NULL*/"");
     REGISTER_SYMID(idEmptyP, "empty?");

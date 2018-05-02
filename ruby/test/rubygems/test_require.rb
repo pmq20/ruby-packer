@@ -38,18 +38,6 @@ class TestGemRequire < Gem::TestCase
     assert require(path), "'#{path}' was already required"
   end
 
-  def append_latch spec
-    dir = spec.gem_dir
-    Dir.chdir dir do
-      spec.files.each do |file|
-        File.open file, 'a' do |fp|
-          fp.puts "FILE_ENTERED_LATCH.release"
-          fp.puts "FILE_EXIT_LATCH.await"
-        end
-      end
-    end
-  end
-
   # Providing -I on the commandline should always beat gems
   def test_dash_i_beats_gems
     a1 = new_spec "a", "1", {"b" => "= 1"}, "lib/test_gem_require_a.rb"
@@ -80,6 +68,17 @@ class TestGemRequire < Gem::TestCase
     Object.send :remove_const, :HELLO if Object.const_defined? :HELLO
   end
 
+  def create_sync_thread
+    Thread.new do
+      begin
+        yield
+      ensure
+        FILE_ENTERED_LATCH.release
+        FILE_EXIT_LATCH.await
+      end
+    end
+  end
+
   def test_concurrent_require
     skip 'deadlock' if /^1\.8\./ =~ RUBY_VERSION
 
@@ -91,11 +90,8 @@ class TestGemRequire < Gem::TestCase
 
     install_specs a1, b1
 
-    append_latch a1
-    append_latch b1
-
-    t1 = Thread.new { assert_require 'a' }
-    t2 = Thread.new { assert_require 'b' }
+    t1 = create_sync_thread{ assert_require 'a' }
+    t2 = create_sync_thread{ assert_require 'b' }
 
     # wait until both files are waiting on the exit latch
     FILE_ENTERED_LATCH.await
@@ -106,10 +102,8 @@ class TestGemRequire < Gem::TestCase
     assert t1.join, "thread 1 should exit"
     assert t2.join, "thread 2 should exit"
   ensure
-    return if $! # skipping
-
-    Object.send :remove_const, :FILE_ENTERED_LATCH
-    Object.send :remove_const, :FILE_EXIT_LATCH
+    Object.send :remove_const, :FILE_ENTERED_LATCH if Object.const_defined? :FILE_ENTERED_LATCH
+    Object.send :remove_const, :FILE_EXIT_LATCH if Object.const_defined? :FILE_EXIT_LATCH
   end
 
   def test_require_is_not_lazy_with_exact_req
@@ -301,6 +295,23 @@ class TestGemRequire < Gem::TestCase
     assert_equal %w(default-2.0.0.0), loaded_spec_names
   end
 
+  def test_realworld_default_gem
+    skip "no default gems on ruby < 2.0" unless RUBY_VERSION >= "2"
+    begin
+      gem 'json'
+    rescue Gem::MissingSpecError
+      skip "default gems are only available after ruby installation"
+    end
+
+    cmd = <<-RUBY
+      $stderr = $stdout
+      require "json"
+      puts Gem.loaded_specs["json"].default_gem?
+    RUBY
+    output = Gem::Util.popen(Gem.ruby, "-e", cmd).strip
+    assert_equal "true", output
+  end
+
   def test_default_gem_and_normal_gem
     default_gem_spec = new_default_spec("default", "2.0.0.0",
                                         nil, "default/gem.rb")
@@ -364,6 +375,44 @@ class TestGemRequire < Gem::TestCase
     end
     assert c.send(:require, "a")
     assert_equal %w(a-1), loaded_spec_names
+  end
+
+
+  def test_require_bundler
+    b1 = new_spec('bundler', '1', nil, "lib/bundler/setup.rb")
+    b2a = new_spec('bundler', '2.a', nil, "lib/bundler/setup.rb")
+    install_specs b1, b2a
+
+    require "rubygems/bundler_version_finder"
+    $:.clear
+    assert_require 'bundler/setup'
+    assert_equal %w[bundler-2.a], loaded_spec_names
+    assert_empty unresolved_names
+  end
+
+  def test_require_bundler_missing_bundler_version
+    Gem::BundlerVersionFinder.stub(:bundler_version_with_reason, ["55", "reason"]) do
+      b1 = new_spec('bundler', '1.999999999', nil, "lib/bundler/setup.rb")
+      b2a = new_spec('bundler', '2.a', nil, "lib/bundler/setup.rb")
+      install_specs b1, b2a
+
+      e = assert_raises Gem::MissingSpecVersionError do
+        gem('bundler')
+      end
+      assert_match "Could not find 'bundler' (55) required by reason.", e.message
+    end
+  end
+
+  def test_require_bundler_with_bundler_version
+    Gem::BundlerVersionFinder.stub(:bundler_version_with_reason, ["1", "reason"]) do
+      b1 = new_spec('bundler', '1.999999999', nil, "lib/bundler/setup.rb")
+      b2 = new_spec('bundler', '2', nil, "lib/bundler/setup.rb")
+      install_specs b1, b2
+
+      $:.clear
+      assert_require 'bundler/setup'
+      assert_equal %w[bundler-1.999999999], loaded_spec_names
+    end
   end
 
   def silence_warnings

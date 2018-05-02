@@ -1,12 +1,13 @@
-diff -ruN ruby-2.4.1/Makefile.in ruby/Makefile.in
---- ruby-2.4.1/Makefile.in	2016-12-17 09:48:58.000000000 +0200
-+++ ruby/Makefile.in	2018-03-16 15:30:55.000000000 +0200
-@@ -218,12 +218,12 @@
+diff -ruN ruby-2.5.1/Makefile.in ruby/Makefile.in
+--- ruby-2.5.1/Makefile.in	2017-12-07 21:51:19.000000000 -0800
++++ ruby/Makefile.in	2018-05-01 18:37:56.000000000 -0700
+@@ -227,13 +227,13 @@
  miniruby$(EXEEXT):
  		@-if test -f $@; then $(MV) -f $@ $@.old; $(RM) $@.old; fi
  		$(ECHO) linking $@
 -		$(Q) $(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(MAINLIBS) $(LIBS) $(OUTFLAG)$@
 +		$(Q) $(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(MAINLIBS) $(LIBS) $(RUBYC_FLAGS) $(OUTFLAG)$@ $(LDFLAGS)
+ 		$(Q) $(POSTLINK)
  
  $(PROGRAM):
  		@$(RM) $@
@@ -16,18 +17,18 @@ diff -ruN ruby-2.4.1/Makefile.in ruby/Makefile.in
  		$(Q) $(POSTLINK)
  
  # We must `rm' the library each time this rule is invoked because "updating" a
-@@ -235,7 +235,7 @@
- 		$(Q) $(AR) $(ARFLAGS) $@ $(LIBRUBY_A_OBJS) $(INITOBJS)
- 		@-$(RANLIB) $@ 2> /dev/null || true
+@@ -247,7 +247,7 @@
+ 
+ verify-static-library: $(LIBRUBY_A)
  		$(ECHO) verifying static-library $@
 -		@$(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINOBJ) $(LIBRUBY_A) $(MAINLIBS) $(EXTLIBS) $(LIBS) $(OUTFLAG)conftest$(EXEEXT)
 +		@$(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINOBJ) $(LIBRUBY_A) $(MAINLIBS) $(EXTLIBS) $(LIBS) $(RUBYC_FLAGS) $(OUTFLAG)conftest$(EXEEXT) $(LDFLAGS)
- 		@$(RM) conftest$(EXEEXT) conftest.c
+ 		@$(RMALL) conftest$(EXEEXT) conftest.c conftest.dSYM
  
  $(LIBRUBY_SO):
-diff -ruN ruby-2.4.1/autoupdate_autoupdate.c ruby/autoupdate_autoupdate.c
---- ruby-2.4.1/autoupdate_autoupdate.c	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/autoupdate_autoupdate.c	2018-03-16 15:30:55.000000000 +0200
+diff -ruN ruby-2.5.1/autoupdate_autoupdate.c ruby/autoupdate_autoupdate.c
+--- ruby-2.5.1/autoupdate_autoupdate.c	1969-12-31 16:00:00.000000000 -0800
++++ ruby/autoupdate_autoupdate.c	2018-05-01 18:33:38.000000000 -0700
 @@ -0,0 +1,1105 @@
 +/*
 + * Copyright (c) 2017 Minqi Pan <pmq2001@gmail.com>
@@ -1134,9 +1135,9 @@ diff -ruN ruby-2.4.1/autoupdate_autoupdate.c ruby/autoupdate_autoupdate.c
 +}
 +
 +#endif // _WIN32
-diff -ruN ruby-2.4.1/autoupdate_exepath.c ruby/autoupdate_exepath.c
---- ruby-2.4.1/autoupdate_exepath.c	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/autoupdate_exepath.c	2018-03-16 15:30:55.000000000 +0200
+diff -ruN ruby-2.5.1/autoupdate_exepath.c ruby/autoupdate_exepath.c
+--- ruby-2.5.1/autoupdate_exepath.c	1969-12-31 16:00:00.000000000 -0800
++++ ruby/autoupdate_exepath.c	2018-05-01 18:33:38.000000000 -0700
 @@ -0,0 +1,164 @@
 +/*
 + * Copyright (c) 2017 Minqi Pan <pmq2001@gmail.com>
@@ -1302,9 +1303,9 @@ diff -ruN ruby-2.4.1/autoupdate_exepath.c ruby/autoupdate_exepath.c
 +  return 0;
 +}
 +#endif
-diff -ruN ruby-2.4.1/autoupdate_inflate.c ruby/autoupdate_inflate.c
---- ruby-2.4.1/autoupdate_inflate.c	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/autoupdate_inflate.c	2018-03-16 15:30:55.000000000 +0200
+diff -ruN ruby-2.5.1/autoupdate_inflate.c ruby/autoupdate_inflate.c
+--- ruby-2.5.1/autoupdate_inflate.c	1969-12-31 16:00:00.000000000 -0800
++++ ruby/autoupdate_inflate.c	2018-05-01 18:33:38.000000000 -0700
 @@ -0,0 +1,9 @@
 +/*
 + * Copyright (c) 2017 Minqi Pan <pmq2001@gmail.com>
@@ -1315,9 +1316,9 @@ diff -ruN ruby-2.4.1/autoupdate_inflate.c ruby/autoupdate_inflate.c
 +
 +#include "autoupdate.h"
 +#include "autoupdate_internal.h"
-diff -ruN ruby-2.4.1/autoupdate_tmpf.c ruby/autoupdate_tmpf.c
---- ruby-2.4.1/autoupdate_tmpf.c	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/autoupdate_tmpf.c	2018-03-16 15:30:55.000000000 +0200
+diff -ruN ruby-2.5.1/autoupdate_tmpf.c ruby/autoupdate_tmpf.c
+--- ruby-2.5.1/autoupdate_tmpf.c	1969-12-31 16:00:00.000000000 -0800
++++ ruby/autoupdate_tmpf.c	2018-05-01 18:33:38.000000000 -0700
 @@ -0,0 +1,157 @@
 +/*
 + * Copyright (c) 2017 Minqi Pan <pmq2001@gmail.com>
@@ -1476,9 +1477,9 @@ diff -ruN ruby-2.4.1/autoupdate_tmpf.c ruby/autoupdate_tmpf.c
 +}
 +
 +#endif // _WIN32
-diff -ruN ruby-2.4.1/autoupdate_utils.c ruby/autoupdate_utils.c
---- ruby-2.4.1/autoupdate_utils.c	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/autoupdate_utils.c	2018-03-16 15:30:55.000000000 +0200
+diff -ruN ruby-2.5.1/autoupdate_utils.c ruby/autoupdate_utils.c
+--- ruby-2.5.1/autoupdate_utils.c	1969-12-31 16:00:00.000000000 -0800
++++ ruby/autoupdate_utils.c	2018-05-01 18:33:38.000000000 -0700
 @@ -0,0 +1,277 @@
 +/*
 + * Copyright (c) 2017 Minqi Pan <pmq2001@gmail.com>
@@ -1757,12 +1758,12 @@ diff -ruN ruby-2.4.1/autoupdate_utils.c ruby/autoupdate_utils.c
 +#endif
 +	return 1;
 +}
-diff -ruN ruby-2.4.1/common.mk ruby/common.mk
---- ruby-2.4.1/common.mk	2016-11-30 19:29:19.000000000 +0200
-+++ ruby/common.mk	2018-03-16 15:30:55.000000000 +0200
-@@ -68,7 +68,35 @@
+diff -ruN ruby-2.5.1/common.mk ruby/common.mk
+--- ruby-2.5.1/common.mk	2018-02-18 22:36:03.000000000 -0800
++++ ruby/common.mk	2018-05-01 18:33:38.000000000 -0700
+@@ -70,7 +70,35 @@
  MAKE_ENC      = -f $(ENC_MK) V="$(V)" UNICODE_HDR_DIR="$(UNICODE_HDR_DIR)" \
- 		RUBY="$(MINIRUBY)" MINIRUBY="$(MINIRUBY)" $(MFLAGS)
+ 		RUBY="$(MINIRUBY)" MINIRUBY="$(MINIRUBY)" $(mflags)
  
 -COMMONOBJS    = array.$(OBJEXT) \
 +COMMONOBJS    = autoupdate_autoupdate.$(OBJEXT) \
@@ -1797,10 +1798,10 @@ diff -ruN ruby-2.4.1/common.mk ruby/common.mk
  		bignum.$(OBJEXT) \
  		class.$(OBJEXT) \
  		compar.$(OBJEXT) \
-diff -ruN ruby-2.4.1/dir.c ruby/dir.c
---- ruby-2.4.1/dir.c	2016-11-05 17:49:29.000000000 +0200
-+++ ruby/dir.c	2018-03-16 15:30:55.000000000 +0200
-@@ -106,6 +106,10 @@
+diff -ruN ruby-2.5.1/dir.c ruby/dir.c
+--- ruby-2.5.1/dir.c	2018-03-28 02:26:04.000000000 -0700
++++ ruby/dir.c	2018-05-01 18:41:44.000000000 -0700
+@@ -121,6 +121,10 @@
  # define NORMALIZE_UTF8PATH 0
  #endif
  
@@ -1811,7 +1812,7 @@ diff -ruN ruby-2.4.1/dir.c ruby/dir.c
  #if NORMALIZE_UTF8PATH
  #include <sys/param.h>
  #include <sys/mount.h>
-@@ -123,8 +127,10 @@
+@@ -138,8 +142,10 @@
      u_int32_t attrbuf[SIZEUP32(fsobj_tag_t)];
      struct attrlist al = {ATTR_BIT_MAP_COUNT, 0, ATTR_CMN_OBJTAG,};
  #   if defined HAVE_FGETATTRLIST
@@ -1822,39 +1823,39 @@ diff -ruN ruby-2.4.1/dir.c ruby/dir.c
      int ret = getattrlist(path, &al, attrbuf, sizeof(attrbuf), 0);
  #   endif
      if (!ret) {
-@@ -534,7 +540,12 @@
+@@ -561,7 +567,12 @@
  	else if (e == EIO) {
  	    u_int32_t attrbuf[1];
  	    struct attrlist al = {ATTR_BIT_MAP_COUNT, 0};
 -	    if (getattrlist(path, &al, attrbuf, sizeof(attrbuf), FSOPT_NOFOLLOW) == 0) {
-+	    if (enclose_io_is_path(path)) {
-+		struct stat buf;
-+		if (0 == squash_lstat(enclose_io_fs, path, &buf)) {
-+			dp->dir = opendir(path);
-+		}
++ 	    if (enclose_io_is_path(path)) {
++ 		struct stat buf;
++ 		if (0 == squash_lstat(enclose_io_fs, path, &buf)) {
++ 			dp->dir = opendir(path);
++ 		}
 +	    } else if (getattrlist(path, &al, attrbuf, sizeof(attrbuf), FSOPT_NOFOLLOW) == 0) {
- 		dp->dir = opendir(path);
+ 		dp->dir = opendir_without_gvl(path);
  	    }
  	}
-@@ -1528,6 +1539,8 @@
+@@ -1740,6 +1751,8 @@
      const int idx = VOL_CAPABILITIES_FORMAT;
      const uint32_t mask = VOL_CAP_FMT_CASE_SENSITIVE;
  
 +    if (squash_find_entry(dirp)) { return 1; }
 +
+ #   if defined HAVE_FGETATTRLIST
      if (fgetattrlist(dirfd(dirp), &al, attrbuf, sizeof(attrbuf), FSOPT_NOFOLLOW))
  	return -1;
-     if (!(cap->valid[idx] & mask))
-@@ -1969,7 +1982,7 @@
+@@ -2256,7 +2269,7 @@
  		    break;
  		}
  #if USE_NAME_ON_FS == USE_NAME_ON_FS_REAL_BASENAME
 -		if ((*cur)->type == ALPHA) {
 +		if ((*cur)->type == ALPHA && !enclose_io_if(buf)) {
- 		    long base = pathlen + (dirsep != 0);
- 		    buf = replace_real_basename(buf, base, enc, IF_NORMALIZE_UTF8PATH(1)+0,
+ 		    buf = replace_real_basename(buf, pathlen + (dirsep != 0), enc,
+ 						IF_NORMALIZE_UTF8PATH(1)+0,
  						flags, &new_pathtype);
-@@ -2668,7 +2681,7 @@
+@@ -3148,7 +3161,7 @@
      path = RSTRING_PTR(dirname);
  
  #if defined HAVE_GETATTRLIST && defined ATTR_DIR_ENTRYCOUNT
@@ -1863,9 +1864,9 @@ diff -ruN ruby-2.4.1/dir.c ruby/dir.c
  	u_int32_t attrbuf[SIZEUP32(fsobj_tag_t)];
  	struct attrlist al = {ATTR_BIT_MAP_COUNT, 0, ATTR_CMN_OBJTAG,};
  	if (getattrlist(path, &al, attrbuf, sizeof(attrbuf), 0) != 0)
-diff -ruN ruby-2.4.1/dln.c ruby/dln.c
---- ruby-2.4.1/dln.c	2016-11-19 03:16:50.000000000 +0200
-+++ ruby/dln.c	2018-03-16 15:30:55.000000000 +0200
+diff -ruN ruby-2.5.1/dln.c ruby/dln.c
+--- ruby-2.5.1/dln.c	2016-12-26 01:28:46.000000000 -0800
++++ ruby/dln.c	2018-05-01 18:33:38.000000000 -0700
 @@ -115,6 +115,10 @@
  #define isdirsep(x) ((x) == '/')
  #endif
@@ -1877,9 +1878,9 @@ diff -ruN ruby-2.4.1/dln.c ruby/dln.c
  static size_t
  init_funcname_len(const char **file)
  {
-diff -ruN ruby-2.4.1/enclose_io_memfs.c ruby/enclose_io_memfs.c
---- ruby-2.4.1/enclose_io_memfs.c	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/enclose_io_memfs.c	2018-03-16 15:30:55.000000000 +0200
+diff -ruN ruby-2.5.1/enclose_io_memfs.c ruby/enclose_io_memfs.c
+--- ruby-2.5.1/enclose_io_memfs.c	1969-12-31 16:00:00.000000000 -0800
++++ ruby/enclose_io_memfs.c	2018-05-01 18:33:38.000000000 -0700
 @@ -0,0 +1,55 @@
 +/*
 + * Copyright (c) 2017 Minqi Pan <pmq2001@gmail.com>
@@ -1936,9 +1937,9 @@ diff -ruN ruby-2.4.1/enclose_io_memfs.c ruby/enclose_io_memfs.c
 +,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 +};
 +
-diff -ruN ruby-2.4.1/enclose_io_unix.c ruby/enclose_io_unix.c
---- ruby-2.4.1/enclose_io_unix.c	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/enclose_io_unix.c	2018-03-16 15:30:55.000000000 +0200
+diff -ruN ruby-2.5.1/enclose_io_unix.c ruby/enclose_io_unix.c
+--- ruby-2.5.1/enclose_io_unix.c	1969-12-31 16:00:00.000000000 -0800
++++ ruby/enclose_io_unix.c	2018-05-01 18:33:38.000000000 -0700
 @@ -0,0 +1,1045 @@
 +/*
 + * Copyright (c) 2017 Minqi Pan <pmq2001@gmail.com>
@@ -2985,9 +2986,9 @@ diff -ruN ruby-2.4.1/enclose_io_unix.c ruby/enclose_io_unix.c
 +	return 1;
 +}
 +#endif
-diff -ruN ruby-2.4.1/enclose_io_win32.c ruby/enclose_io_win32.c
---- ruby-2.4.1/enclose_io_win32.c	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/enclose_io_win32.c	2018-03-16 15:30:55.000000000 +0200
+diff -ruN ruby-2.5.1/enclose_io_win32.c ruby/enclose_io_win32.c
+--- ruby-2.5.1/enclose_io_win32.c	1969-12-31 16:00:00.000000000 -0800
++++ ruby/enclose_io_win32.c	2018-05-01 18:33:38.000000000 -0700
 @@ -0,0 +1,1276 @@
 +/*
 + * Copyright (c) 2017 Minqi Pan <pmq2001@gmail.com>
@@ -4265,9 +4266,9 @@ diff -ruN ruby-2.4.1/enclose_io_win32.c ruby/enclose_io_win32.c
 +
 +#endif // !RUBY_EXPORT
 +#endif
-diff -ruN ruby-2.4.1/ext/dbm/extconf.rb ruby/ext/dbm/extconf.rb
---- ruby-2.4.1/ext/dbm/extconf.rb	2015-12-16 07:31:54.000000000 +0200
-+++ ruby/ext/dbm/extconf.rb	2018-03-16 15:30:55.000000000 +0200
+diff -ruN ruby-2.5.1/ext/dbm/extconf.rb ruby/ext/dbm/extconf.rb
+--- ruby-2.5.1/ext/dbm/extconf.rb	2017-01-27 20:36:08.000000000 -0800
++++ ruby/ext/dbm/extconf.rb	2018-05-01 18:33:38.000000000 -0700
 @@ -25,6 +25,9 @@
  else
    dblib = %w(libc db db2 db1 db5 db4 db3 gdbm_compat gdbm qdbm)
@@ -4278,35 +4279,35 @@ diff -ruN ruby-2.4.1/ext/dbm/extconf.rb ruby/ext/dbm/extconf.rb
  
  headers = {
    "libc" => ["ndbm.h"], # 4.3BSD original ndbm, Berkeley DB 1 in 4.4BSD libc.
-diff -ruN ruby-2.4.1/ext/openssl/ossl_x509store.c ruby/ext/openssl/ossl_x509store.c
---- ruby-2.4.1/ext/openssl/ossl_x509store.c	2016-11-30 16:41:46.000000000 +0200
-+++ ruby/ext/openssl/ossl_x509store.c	2018-03-16 15:30:56.000000000 +0200
-@@ -325,6 +325,10 @@
-  * Adds the certificates in +file+ to the certificate store.  The +file+ can
-  * contain multiple PEM-encoded certificates.
+diff -ruN ruby-2.5.1/ext/openssl/ossl_x509store.c ruby/ext/openssl/ossl_x509store.c
+--- ruby-2.5.1/ext/openssl/ossl_x509store.c	2017-09-03 05:35:27.000000000 -0700
++++ ruby/ext/openssl/ossl_x509store.c	2018-05-01 18:43:29.000000000 -0700
+@@ -332,6 +332,10 @@
+  *
+  * Adds _path_ as the hash dir to be looked up by the store.
   */
 +// --------- [Enclose.io Hack start] ---------
 +#include "enclose_io_prelude.h"
 +#include "enclose_io_common.h"
 +// --------- [Enclose.io Hack end] ---------
  static VALUE
- ossl_x509store_add_file(VALUE self, VALUE file)
+ ossl_x509store_add_path(VALUE self, VALUE dir)
  {
-@@ -339,6 +343,11 @@
+@@ -346,6 +350,11 @@
      GetX509Store(self, store);
-     lookup = X509_STORE_add_lookup(store, X509_LOOKUP_file());
+     lookup = X509_STORE_add_lookup(store, X509_LOOKUP_hash_dir());
      if(lookup == NULL) ossl_raise(eX509StoreError, NULL);
 +    // --------- [Enclose.io Hack start] ---------
 +    #ifdef ENCLOSE_IO_RUBYC_2ND_PASS
 +      path = enclose_io_ifextract(path, NULL);
 +    #endif
 +    // --------- [Enclose.io Hack end] ---------
-     if(X509_LOOKUP_load_file(lookup, path, X509_FILETYPE_PEM) != 1){
+     if(X509_LOOKUP_add_dir(lookup, path, X509_FILETYPE_PEM) != 1){
          ossl_raise(eX509StoreError, NULL);
      }
-diff -ruN ruby-2.4.1/ext/psych/.gitignore ruby/ext/psych/.gitignore
---- ruby-2.4.1/ext/psych/.gitignore	2012-11-28 06:34:41.000000000 +0200
-+++ ruby/ext/psych/.gitignore	1970-01-01 02:00:00.000000000 +0200
+diff -ruN ruby-2.5.1/ext/psych/.gitignore ruby/ext/psych/.gitignore
+--- ruby-2.5.1/ext/psych/.gitignore	2012-11-27 20:34:41.000000000 -0800
++++ ruby/ext/psych/.gitignore	1969-12-31 16:00:00.000000000 -0800
 @@ -1,11 +0,0 @@
 -/api.c
 -/config.h
@@ -4319,10 +4320,10 @@ diff -ruN ruby-2.4.1/ext/psych/.gitignore ruby/ext/psych/.gitignore
 -/writer.c
 -/yaml.h
 -/yaml_private.h
-diff -ruN ruby-2.4.1/file.c ruby/file.c
---- ruby-2.4.1/file.c	2016-12-07 04:19:29.000000000 +0200
-+++ ruby/file.c	2018-03-16 15:30:56.000000000 +0200
-@@ -96,6 +96,10 @@
+diff -ruN ruby-2.5.1/file.c ruby/file.c
+--- ruby-2.5.1/file.c	2018-03-02 00:25:51.000000000 -0800
++++ ruby/file.c	2018-05-01 18:33:38.000000000 -0700
+@@ -88,6 +88,10 @@
  #define lstat stat
  #endif
  
@@ -4333,89 +4334,9 @@ diff -ruN ruby-2.4.1/file.c ruby/file.c
  /* define system APIs */
  #ifdef _WIN32
  #include "win32/file.h"
-diff -ruN ruby-2.4.1/gems/did_you_mean-1.1.0/.gitignore ruby/gems/did_you_mean-1.1.0/.gitignore
---- ruby-2.4.1/gems/did_you_mean-1.1.0/.gitignore	2017-03-22 07:56:53.000000000 +0200
-+++ ruby/gems/did_you_mean-1.1.0/.gitignore	1970-01-01 02:00:00.000000000 +0200
-@@ -1,19 +0,0 @@
--*.gem
--*.rbc
--.bundle
--.config
--.yardoc
--Gemfile.lock
--InstalledFiles
--_yardoc
--coverage
--doc/
--lib/bundler/man
--pkg
--rdoc
--test/tmp
--test/version_tmp
--tmp
--log
--evaluation/dictionary.yml
--benchmark/results
-diff -ruN ruby-2.4.1/gems/net-telnet-0.1.1/.gitignore ruby/gems/net-telnet-0.1.1/.gitignore
---- ruby-2.4.1/gems/net-telnet-0.1.1/.gitignore	2017-03-22 07:56:53.000000000 +0200
-+++ ruby/gems/net-telnet-0.1.1/.gitignore	1970-01-01 02:00:00.000000000 +0200
-@@ -1,9 +0,0 @@
--/.bundle/
--/.yardoc
--/Gemfile.lock
--/_yardoc/
--/coverage/
--/doc/
--/pkg/
--/spec/reports/
--/tmp/
-diff -ruN ruby-2.4.1/gems/power_assert-0.4.1/.gitignore ruby/gems/power_assert-0.4.1/.gitignore
---- ruby-2.4.1/gems/power_assert-0.4.1/.gitignore	2017-03-22 07:56:53.000000000 +0200
-+++ ruby/gems/power_assert-0.4.1/.gitignore	1970-01-01 02:00:00.000000000 +0200
-@@ -1,9 +0,0 @@
--/.bundle/
--/coverage/
--/Gemfile.local
--/Gemfile.lock
--/GPATH
--/GRTAGS
--/GTAGS
--/pkg/
--/vendor/
-diff -ruN ruby-2.4.1/gems/rake-12.0.0/.gitignore ruby/gems/rake-12.0.0/.gitignore
---- ruby-2.4.1/gems/rake-12.0.0/.gitignore	2017-03-22 07:56:53.000000000 +0200
-+++ ruby/gems/rake-12.0.0/.gitignore	1970-01-01 02:00:00.000000000 +0200
-@@ -1,14 +0,0 @@
--*.bak
--*.rbc
--*.swp
--*~
--.#*
--.DS_Store
--.idea
--.rbx
--/.rdoc
--/TAGS
--/coverage
--/html
--/pkg
--Gemfile.lock
-diff -ruN ruby-2.4.1/gems/xmlrpc-0.2.1/.gitignore ruby/gems/xmlrpc-0.2.1/.gitignore
---- ruby-2.4.1/gems/xmlrpc-0.2.1/.gitignore	2017-03-22 07:56:53.000000000 +0200
-+++ ruby/gems/xmlrpc-0.2.1/.gitignore	1970-01-01 02:00:00.000000000 +0200
-@@ -1,9 +0,0 @@
--/.bundle/
--/.yardoc
--/Gemfile.lock
--/_yardoc/
--/coverage/
--/doc/
--/pkg/
--/spec/reports/
--/tmp/
-diff -ruN ruby-2.4.1/include/autoupdate.h ruby/include/autoupdate.h
---- ruby-2.4.1/include/autoupdate.h	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/include/autoupdate.h	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/include/autoupdate.h ruby/include/autoupdate.h
+--- ruby-2.5.1/include/autoupdate.h	1969-12-31 16:00:00.000000000 -0800
++++ ruby/include/autoupdate.h	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,39 @@
 +/*
 + * Copyright (c) 2017 Minqi Pan <pmq2001@gmail.com>
@@ -4456,9 +4377,9 @@ diff -ruN ruby-2.4.1/include/autoupdate.h ruby/include/autoupdate.h
 +#endif // _WIN32
 +
 +#endif /* end of include guard: AUTOUPDATE_H_8C141CA2 */
-diff -ruN ruby-2.4.1/include/autoupdate_internal.h ruby/include/autoupdate_internal.h
---- ruby-2.4.1/include/autoupdate_internal.h	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/include/autoupdate_internal.h	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/include/autoupdate_internal.h ruby/include/autoupdate_internal.h
+--- ruby-2.5.1/include/autoupdate_internal.h	1969-12-31 16:00:00.000000000 -0800
++++ ruby/include/autoupdate_internal.h	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,49 @@
 +/*
 + * Copyright (c) 2017 Minqi Pan <pmq2001@gmail.com>
@@ -4509,9 +4430,9 @@ diff -ruN ruby-2.4.1/include/autoupdate_internal.h ruby/include/autoupdate_inter
 +int autoupdate_exepath(char* buffer, size_t* size);
 +
 +#endif /* end of include guard: AUTOUPDATE_INTERNAL_H_A40E122A */
-diff -ruN ruby-2.4.1/include/enclose_io.h ruby/include/enclose_io.h
---- ruby-2.4.1/include/enclose_io.h	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/include/enclose_io.h	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/include/enclose_io.h ruby/include/enclose_io.h
+--- ruby-2.5.1/include/enclose_io.h	1969-12-31 16:00:00.000000000 -0800
++++ ruby/include/enclose_io.h	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,17 @@
 +/*
 + * Copyright (c) 2017 Minqi Pan <pmq2001@gmail.com>
@@ -4530,9 +4451,9 @@ diff -ruN ruby-2.4.1/include/enclose_io.h ruby/include/enclose_io.h
 +#include "enclose_io_unix.h"
 +
 +#endif
-diff -ruN ruby-2.4.1/include/enclose_io_common.h ruby/include/enclose_io_common.h
---- ruby-2.4.1/include/enclose_io_common.h	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/include/enclose_io_common.h	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/include/enclose_io_common.h ruby/include/enclose_io_common.h
+--- ruby-2.5.1/include/enclose_io_common.h	1969-12-31 16:00:00.000000000 -0800
++++ ruby/include/enclose_io_common.h	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,350 @@
 +/*
 + * Copyright (c) 2017 Minqi Pan <pmq2001@gmail.com>
@@ -4884,9 +4805,9 @@ diff -ruN ruby-2.4.1/include/enclose_io_common.h ruby/include/enclose_io_common.
 +#endif // !_WIN32
 +
 +#endif
-diff -ruN ruby-2.4.1/include/enclose_io_prelude.h ruby/include/enclose_io_prelude.h
---- ruby-2.4.1/include/enclose_io_prelude.h	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/include/enclose_io_prelude.h	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/include/enclose_io_prelude.h ruby/include/enclose_io_prelude.h
+--- ruby-2.5.1/include/enclose_io_prelude.h	1969-12-31 16:00:00.000000000 -0800
++++ ruby/include/enclose_io_prelude.h	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,19 @@
 +/*
 + * Copyright (c) 2017 Minqi Pan <pmq2001@gmail.com>
@@ -4907,9 +4828,9 @@ diff -ruN ruby-2.4.1/include/enclose_io_prelude.h ruby/include/enclose_io_prelud
 +#endif // _WIN32
 +
 +#endif /* end of include guard: ENCLOSE_IO_PRELUDE_H_E46A560C */
-diff -ruN ruby-2.4.1/include/enclose_io_unix.h ruby/include/enclose_io_unix.h
---- ruby-2.4.1/include/enclose_io_unix.h	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/include/enclose_io_unix.h	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/include/enclose_io_unix.h ruby/include/enclose_io_unix.h
+--- ruby-2.5.1/include/enclose_io_unix.h	1969-12-31 16:00:00.000000000 -0800
++++ ruby/include/enclose_io_unix.h	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,45 @@
 +/*
 + * Copyright (c) 2017 Minqi Pan <pmq2001@gmail.com>
@@ -4956,9 +4877,9 @@ diff -ruN ruby-2.4.1/include/enclose_io_unix.h ruby/include/enclose_io_unix.h
 +#endif // !_WIN32
 +#endif //!__cplusplus
 +#endif
-diff -ruN ruby-2.4.1/include/enclose_io_win32.h ruby/include/enclose_io_win32.h
---- ruby-2.4.1/include/enclose_io_win32.h	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/include/enclose_io_win32.h	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/include/enclose_io_win32.h ruby/include/enclose_io_win32.h
+--- ruby-2.5.1/include/enclose_io_win32.h	1969-12-31 16:00:00.000000000 -0800
++++ ruby/include/enclose_io_win32.h	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,72 @@
 +/*
 + * Copyright (c) 2017 Minqi Pan <pmq2001@gmail.com>
@@ -5032,9 +4953,9 @@ diff -ruN ruby-2.4.1/include/enclose_io_win32.h ruby/include/enclose_io_win32.h
 +#endif //_WIN32
 +#endif //!__cplusplus
 +#endif
-diff -ruN ruby-2.4.1/include/enclose_io_winapi.h ruby/include/enclose_io_winapi.h
---- ruby-2.4.1/include/enclose_io_winapi.h	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/include/enclose_io_winapi.h	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/include/enclose_io_winapi.h ruby/include/enclose_io_winapi.h
+--- ruby-2.5.1/include/enclose_io_winapi.h	1969-12-31 16:00:00.000000000 -0800
++++ ruby/include/enclose_io_winapi.h	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,246 @@
 +/*
 +* Copyright (c) 2017 Minqi Pan <pmq2001@gmail.com>
@@ -5282,9 +5203,9 @@ diff -ruN ruby-2.4.1/include/enclose_io_winapi.h ruby/include/enclose_io_winapi.
 +} REPARSE_DATA_BUFFER, *PREPARSE_DATA_BUFFER;
 +
 +#endif
-diff -ruN ruby-2.4.1/include/squash/cache.h ruby/include/squash/cache.h
---- ruby-2.4.1/include/squash/cache.h	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/include/squash/cache.h	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/include/squash/cache.h ruby/include/squash/cache.h
+--- ruby-2.5.1/include/squash/cache.h	1969-12-31 16:00:00.000000000 -0800
++++ ruby/include/squash/cache.h	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,68 @@
 +/*
 + * Copyright (c) 2012 Dave Vasilevsky <dave@vasilevsky.ca>
@@ -5354,9 +5275,9 @@ diff -ruN ruby-2.4.1/include/squash/cache.h ruby/include/squash/cache.h
 +sqfs_err sqfs_block_cache_init(sqfs_cache *cache, size_t count);
 +
 +#endif
-diff -ruN ruby-2.4.1/include/squash/common.h ruby/include/squash/common.h
---- ruby-2.4.1/include/squash/common.h	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/include/squash/common.h	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/include/squash/common.h ruby/include/squash/common.h
+--- ruby-2.5.1/include/squash/common.h	1969-12-31 16:00:00.000000000 -0800
++++ ruby/include/squash/common.h	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,80 @@
 +/*
 + * Copyright (c) 2012 Dave Vasilevsky <dave@vasilevsky.ca>
@@ -5438,9 +5359,9 @@ diff -ruN ruby-2.4.1/include/squash/common.h ruby/include/squash/common.h
 +} sqfs_md_cursor;
 +
 +#endif
-diff -ruN ruby-2.4.1/include/squash/decompress.h ruby/include/squash/decompress.h
---- ruby-2.4.1/include/squash/decompress.h	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/include/squash/decompress.h	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/include/squash/decompress.h ruby/include/squash/decompress.h
+--- ruby-2.5.1/include/squash/decompress.h	1969-12-31 16:00:00.000000000 -0800
++++ ruby/include/squash/decompress.h	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,42 @@
 +/*
 + * Copyright (c) 2012 Dave Vasilevsky <dave@vasilevsky.ca>
@@ -5484,9 +5405,9 @@ diff -ruN ruby-2.4.1/include/squash/decompress.h ruby/include/squash/decompress.
 +sqfs_decompressor sqfs_decompressor_get(sqfs_compression_type type);
 +
 +#endif
-diff -ruN ruby-2.4.1/include/squash/dir.h ruby/include/squash/dir.h
---- ruby-2.4.1/include/squash/dir.h	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/include/squash/dir.h	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/include/squash/dir.h ruby/include/squash/dir.h
+--- ruby-2.5.1/include/squash/dir.h	1969-12-31 16:00:00.000000000 -0800
++++ ruby/include/squash/dir.h	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,94 @@
 +/*
 + * Copyright (c) 2012 Dave Vasilevsky <dave@vasilevsky.ca>
@@ -5582,9 +5503,9 @@ diff -ruN ruby-2.4.1/include/squash/dir.h ruby/include/squash/dir.h
 +const char *		sqfs_dentry_name				(sqfs_dir_entry *entry);
 +
 +#endif
-diff -ruN ruby-2.4.1/include/squash/dirent.h ruby/include/squash/dirent.h
---- ruby-2.4.1/include/squash/dirent.h	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/include/squash/dirent.h	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/include/squash/dirent.h ruby/include/squash/dirent.h
+--- ruby-2.5.1/include/squash/dirent.h	1969-12-31 16:00:00.000000000 -0800
++++ ruby/include/squash/dirent.h	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,36 @@
 +/*
 + * Copyright (c) 2017 Minqi Pan <pmq2001@gmail.com>
@@ -5622,9 +5543,9 @@ diff -ruN ruby-2.4.1/include/squash/dirent.h ruby/include/squash/dirent.h
 +} SQUASH_DIR;
 +
 +#endif /* end of include guard: DIRENT_H_245C4278 */
-diff -ruN ruby-2.4.1/include/squash/fdtable.h ruby/include/squash/fdtable.h
---- ruby-2.4.1/include/squash/fdtable.h	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/include/squash/fdtable.h	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/include/squash/fdtable.h ruby/include/squash/fdtable.h
+--- ruby-2.5.1/include/squash/fdtable.h	1969-12-31 16:00:00.000000000 -0800
++++ ruby/include/squash/fdtable.h	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,31 @@
 +/*
 + * Copyright (c) 2017 Minqi Pan <pmq2001@gmail.com>
@@ -5657,9 +5578,9 @@ diff -ruN ruby-2.4.1/include/squash/fdtable.h ruby/include/squash/fdtable.h
 +extern struct squash_fdtable squash_global_fdtable;
 +
 +#endif /* end of include guard: FDTABLE_H_60F13289 */
-diff -ruN ruby-2.4.1/include/squash/file.h ruby/include/squash/file.h
---- ruby-2.4.1/include/squash/file.h	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/include/squash/file.h	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/include/squash/file.h ruby/include/squash/file.h
+--- ruby-2.5.1/include/squash/file.h	1969-12-31 16:00:00.000000000 -0800
++++ ruby/include/squash/file.h	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,78 @@
 +/*
 + * Copyright (c) 2012 Dave Vasilevsky <dave@vasilevsky.ca>
@@ -5739,9 +5660,9 @@ diff -ruN ruby-2.4.1/include/squash/file.h ruby/include/squash/file.h
 +	sqfs_blocklist *bl, sqfs_off_t start);
 +
 +#endif
-diff -ruN ruby-2.4.1/include/squash/fs.h ruby/include/squash/fs.h
---- ruby-2.4.1/include/squash/fs.h	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/include/squash/fs.h	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/include/squash/fs.h ruby/include/squash/fs.h
+--- ruby-2.5.1/include/squash/fs.h	1969-12-31 16:00:00.000000000 -0800
++++ ruby/include/squash/fs.h	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,132 @@
 +/*
 + * Copyright (c) 2012 Dave Vasilevsky <dave@vasilevsky.ca>
@@ -5875,9 +5796,9 @@ diff -ruN ruby-2.4.1/include/squash/fs.h ruby/include/squash/fs.h
 +sqfs_inode_id sqfs_inode_root(sqfs *fs);
 +
 +#endif
-diff -ruN ruby-2.4.1/include/squash/hash.h ruby/include/squash/hash.h
---- ruby-2.4.1/include/squash/hash.h	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/include/squash/hash.h	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/include/squash/hash.h ruby/include/squash/hash.h
+--- ruby-2.5.1/include/squash/hash.h	1969-12-31 16:00:00.000000000 -0800
++++ ruby/include/squash/hash.h	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,63 @@
 +/*
 + * Copyright (c) 2012 Dave Vasilevsky <dave@vasilevsky.ca>
@@ -5942,9 +5863,9 @@ diff -ruN ruby-2.4.1/include/squash/hash.h ruby/include/squash/hash.h
 +sqfs_err sqfs_hash_remove(sqfs_hash *h, sqfs_hash_key k);
 +
 +#endif
-diff -ruN ruby-2.4.1/include/squash/mutex.h ruby/include/squash/mutex.h
---- ruby-2.4.1/include/squash/mutex.h	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/include/squash/mutex.h	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/include/squash/mutex.h ruby/include/squash/mutex.h
+--- ruby-2.5.1/include/squash/mutex.h	1969-12-31 16:00:00.000000000 -0800
++++ ruby/include/squash/mutex.h	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,32 @@
 +/*
 + * Copyright (c) 2017 Minqi Pan <pmq2001@gmail.com>
@@ -5978,9 +5899,9 @@ diff -ruN ruby-2.4.1/include/squash/mutex.h ruby/include/squash/mutex.h
 +int MUTEX_DESTORY(MUTEX *mutex);
 +
 +#endif //LIBSQUASH_MUTEX_H
-diff -ruN ruby-2.4.1/include/squash/nonstd.h ruby/include/squash/nonstd.h
---- ruby-2.4.1/include/squash/nonstd.h	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/include/squash/nonstd.h	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/include/squash/nonstd.h ruby/include/squash/nonstd.h
+--- ruby-2.5.1/include/squash/nonstd.h	1969-12-31 16:00:00.000000000 -0800
++++ ruby/include/squash/nonstd.h	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,34 @@
 +/*
 + * Copyright (c) 2012 Dave Vasilevsky <dave@vasilevsky.ca>
@@ -6016,9 +5937,9 @@ diff -ruN ruby-2.4.1/include/squash/nonstd.h ruby/include/squash/nonstd.h
 +dev_t sqfs_makedev(int maj, int min);
 +
 +#endif
-diff -ruN ruby-2.4.1/include/squash/private.h ruby/include/squash/private.h
---- ruby-2.4.1/include/squash/private.h	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/include/squash/private.h	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/include/squash/private.h ruby/include/squash/private.h
+--- ruby-2.5.1/include/squash/private.h	1969-12-31 16:00:00.000000000 -0800
++++ ruby/include/squash/private.h	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,35 @@
 +/*
 + * Copyright (c) 2014 Dave Vasilevsky <dave@vasilevsky.ca>
@@ -6055,9 +5976,9 @@ diff -ruN ruby-2.4.1/include/squash/private.h ruby/include/squash/private.h
 +sqfs_err sqfs_stat(sqfs *fs, sqfs_inode *inode, struct stat *st);
 +
 +#endif
-diff -ruN ruby-2.4.1/include/squash/squashfs_fs.h ruby/include/squash/squashfs_fs.h
---- ruby-2.4.1/include/squash/squashfs_fs.h	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/include/squash/squashfs_fs.h	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/include/squash/squashfs_fs.h ruby/include/squash/squashfs_fs.h
+--- ruby-2.5.1/include/squash/squashfs_fs.h	1969-12-31 16:00:00.000000000 -0800
++++ ruby/include/squash/squashfs_fs.h	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,318 @@
 +/*
 + * squashfs_fs.h
@@ -6377,9 +6298,9 @@ diff -ruN ruby-2.4.1/include/squash/squashfs_fs.h ruby/include/squash/squashfs_f
 +};
 +
 +#endif
-diff -ruN ruby-2.4.1/include/squash/stack.h ruby/include/squash/stack.h
---- ruby-2.4.1/include/squash/stack.h	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/include/squash/stack.h	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/include/squash/stack.h ruby/include/squash/stack.h
+--- ruby-2.5.1/include/squash/stack.h	1969-12-31 16:00:00.000000000 -0800
++++ ruby/include/squash/stack.h	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,54 @@
 +/*
 + * Copyright (c) 2014 Dave Vasilevsky <dave@vasilevsky.ca>
@@ -6435,9 +6356,9 @@ diff -ruN ruby-2.4.1/include/squash/stack.h ruby/include/squash/stack.h
 +sqfs_err sqfs_stack_top(sqfs_stack *s, void *vout);
 +
 +#endif
-diff -ruN ruby-2.4.1/include/squash/table.h ruby/include/squash/table.h
---- ruby-2.4.1/include/squash/table.h	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/include/squash/table.h	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/include/squash/table.h ruby/include/squash/table.h
+--- ruby-2.5.1/include/squash/table.h	1969-12-31 16:00:00.000000000 -0800
++++ ruby/include/squash/table.h	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,41 @@
 +/*
 + * Copyright (c) 2012 Dave Vasilevsky <dave@vasilevsky.ca>
@@ -6480,9 +6401,9 @@ diff -ruN ruby-2.4.1/include/squash/table.h ruby/include/squash/table.h
 +sqfs_err sqfs_table_get(sqfs_table *table, sqfs *fs, size_t idx, void *buf);
 +
 +#endif
-diff -ruN ruby-2.4.1/include/squash/traverse.h ruby/include/squash/traverse.h
---- ruby-2.4.1/include/squash/traverse.h	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/include/squash/traverse.h	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/include/squash/traverse.h ruby/include/squash/traverse.h
+--- ruby-2.5.1/include/squash/traverse.h	1969-12-31 16:00:00.000000000 -0800
++++ ruby/include/squash/traverse.h	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,69 @@
 +/*
 + * Copyright (c) 2014 Dave Vasilevsky <dave@vasilevsky.ca>
@@ -6553,9 +6474,9 @@ diff -ruN ruby-2.4.1/include/squash/traverse.h ruby/include/squash/traverse.h
 +sqfs_err sqfs_traverse_prune(sqfs_traverse *trv);
 +
 +#endif
-diff -ruN ruby-2.4.1/include/squash/util.h ruby/include/squash/util.h
---- ruby-2.4.1/include/squash/util.h	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/include/squash/util.h	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/include/squash/util.h ruby/include/squash/util.h
+--- ruby-2.5.1/include/squash/util.h	1969-12-31 16:00:00.000000000 -0800
++++ ruby/include/squash/util.h	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,41 @@
 +/*
 + * Copyright (c) 2014 Dave Vasilevsky <dave@vasilevsky.ca>
@@ -6598,9 +6519,9 @@ diff -ruN ruby-2.4.1/include/squash/util.h ruby/include/squash/util.h
 +sqfs_err sqfs_open_image(sqfs *fs, const uint8_t *image, size_t offset);
 +
 +#endif
-diff -ruN ruby-2.4.1/include/squash/windows.h ruby/include/squash/windows.h
---- ruby-2.4.1/include/squash/windows.h	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/include/squash/windows.h	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/include/squash/windows.h ruby/include/squash/windows.h
+--- ruby-2.5.1/include/squash/windows.h	1969-12-31 16:00:00.000000000 -0800
++++ ruby/include/squash/windows.h	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,107 @@
 +/*
 + * Copyright (c) 2017 Minqi Pan <pmq2001@gmail.com>
@@ -6709,9 +6630,9 @@ diff -ruN ruby-2.4.1/include/squash/windows.h ruby/include/squash/windows.h
 +#endif
 +
 +#endif /* end of include guard: WINDOWS_H_A80B5674 */
-diff -ruN ruby-2.4.1/include/squash.h ruby/include/squash.h
---- ruby-2.4.1/include/squash.h	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/include/squash.h	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/include/squash.h ruby/include/squash.h
+--- ruby-2.5.1/include/squash.h	1969-12-31 16:00:00.000000000 -0800
++++ ruby/include/squash.h	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,244 @@
 +/*
 + * Copyright (c) 2014 Dave Vasilevsky <dave@vasilevsky.ca>
@@ -6957,11 +6878,11 @@ diff -ruN ruby-2.4.1/include/squash.h ruby/include/squash.h
 +void squash_extract_clear_cache();
 +
 +#endif
-diff -ruN ruby-2.4.1/io.c ruby/io.c
---- ruby-2.4.1/io.c	2017-03-12 20:41:38.000000000 +0200
-+++ ruby/io.c	2018-03-16 15:30:56.000000000 +0200
-@@ -138,6 +138,10 @@
- #define open	rb_w32_uopen
+diff -ruN ruby-2.5.1/io.c ruby/io.c
+--- ruby-2.5.1/io.c	2017-12-23 18:41:00.000000000 -0800
++++ ruby/io.c	2018-05-01 18:33:44.000000000 -0700
+@@ -133,6 +133,10 @@
+ #define rename(f, t)	rb_w32_urename((f), (t))
  #endif
  
 +// --------- [Enclose.io Hack start] ---------
@@ -6971,10 +6892,10 @@ diff -ruN ruby-2.4.1/io.c ruby/io.c
  VALUE rb_cIO;
  VALUE rb_eEOFError;
  VALUE rb_eIOError;
-diff -ruN ruby-2.4.1/lib/mkmf.rb ruby/lib/mkmf.rb
---- ruby-2.4.1/lib/mkmf.rb	2017-03-11 20:46:17.000000000 +0200
-+++ ruby/lib/mkmf.rb	2018-03-16 15:30:56.000000000 +0200
-@@ -2675,17 +2675,17 @@
+diff -ruN ruby-2.5.1/lib/mkmf.rb ruby/lib/mkmf.rb
+--- ruby-2.5.1/lib/mkmf.rb	2017-12-10 18:30:42.000000000 -0800
++++ ruby/lib/mkmf.rb	2018-05-01 18:33:44.000000000 -0700
+@@ -2680,17 +2680,17 @@
  
    TRY_LINK = config_string('TRY_LINK') ||
      "$(CC) #{OUTFLAG}#{CONFTEST}#{$EXEEXT} $(INCFLAGS) $(CPPFLAGS) " \
@@ -6995,9 +6916,9 @@ diff -ruN ruby-2.4.1/lib/mkmf.rb ruby/lib/mkmf.rb
      end
    end
  
-diff -ruN ruby-2.4.1/lib/rubygems/path_support.rb ruby/lib/rubygems/path_support.rb
---- ruby-2.4.1/lib/rubygems/path_support.rb	2016-03-04 02:29:40.000000000 +0200
-+++ ruby/lib/rubygems/path_support.rb	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/lib/rubygems/path_support.rb ruby/lib/rubygems/path_support.rb
+--- ruby-2.5.1/lib/rubygems/path_support.rb	2016-03-03 16:29:40.000000000 -0800
++++ ruby/lib/rubygems/path_support.rb	2018-05-01 18:33:44.000000000 -0700
 @@ -25,12 +25,28 @@
    def initialize(env)
      @home     = env["GEM_HOME"] || Gem.default_dir
@@ -7027,10 +6948,10 @@ diff -ruN ruby-2.4.1/lib/rubygems/path_support.rb ruby/lib/rubygems/path_support
      @spec_cache_dir = env["GEM_SPEC_CACHE"] || Gem.default_spec_cache_dir
  
      @spec_cache_dir = @spec_cache_dir.dup.untaint
-diff -ruN ruby-2.4.1/main.c ruby/main.c
---- ruby-2.4.1/main.c	2012-11-20 14:57:49.000000000 +0200
-+++ ruby/main.c	2018-03-16 15:30:56.000000000 +0200
-@@ -19,9 +19,112 @@
+diff -ruN ruby-2.5.1/main.c ruby/main.c
+--- ruby-2.5.1/main.c	2017-06-29 21:19:12.000000000 -0700
++++ ruby/main.c	2018-05-01 18:33:44.000000000 -0700
+@@ -25,9 +25,112 @@
  #include <stdlib.h>
  #endif
  
@@ -7143,12 +7064,12 @@ diff -ruN ruby-2.4.1/main.c ruby/main.c
  #ifdef RUBY_DEBUG_ENV
      ruby_set_debug_option(getenv("RUBY_DEBUG"));
  #endif
-diff -ruN ruby-2.4.1/prelude.c ruby/prelude.c
---- ruby-2.4.1/prelude.c	2017-03-22 07:56:53.000000000 +0200
-+++ ruby/prelude.c	2018-03-16 15:30:56.000000000 +0200
-@@ -169,6 +169,55 @@
- "end\n"
- ;
+diff -ruN ruby-2.5.1/prelude.c ruby/prelude.c
+--- ruby-2.5.1/prelude.c	2018-03-28 09:47:13.000000000 -0700
++++ ruby/prelude.c	2018-05-01 18:33:44.000000000 -0700
+@@ -195,6 +195,55 @@
+ #line 196 "prelude.c"
+ };
  
 +static const char prelude_name_enclose_io[] = "<internal:enclose_io_prelude>";
 +static const char prelude_code_enclose_io[] =
@@ -7200,11 +7121,11 @@ diff -ruN ruby-2.4.1/prelude.c ruby/prelude.c
 +"\n end"
 +;
  
- static void
- prelude_eval(VALUE code, VALUE name, int line)
-@@ -208,6 +257,13 @@
-       rb_usascii_str_new(prelude_name2, sizeof(prelude_name2) - 1),
-       INT2FIX(1));
+ #define PRELUDE_STR(n) rb_usascii_str_new_static(prelude_##n.L0, sizeof(prelude_##n))
+ #ifdef __GNUC__
+@@ -237,6 +286,13 @@
+     prelude_eval(PRELUDE_STR(code0), PRELUDE_STR(name0), 1);
+     prelude_eval(PRELUDE_STR(code1), PRELUDE_STR(name1), 1);
  
 +// --------- [Enclose.io Hack start] ---------
 +    prelude_eval(
@@ -7214,12 +7135,12 @@ diff -ruN ruby-2.4.1/prelude.c ruby/prelude.c
 +// --------- [Enclose.io Hack end] ---------
 +
  #if 0
-     puts(prelude_code0);
-     puts(prelude_code1);
-diff -ruN ruby-2.4.1/process.c ruby/process.c
---- ruby-2.4.1/process.c	2016-11-06 02:58:49.000000000 +0200
-+++ ruby/process.c	2018-03-16 15:30:56.000000000 +0200
-@@ -7561,6 +7561,12 @@
+     printf("%.*s", (int)sizeof(prelude_code0), prelude_code0.L0);
+     printf("%.*s", (int)sizeof(prelude_code1), prelude_code1.L0);
+diff -ruN ruby-2.5.1/process.c ruby/process.c
+--- ruby-2.5.1/process.c	2017-12-14 02:24:38.000000000 -0800
++++ ruby/process.c	2018-05-01 18:33:44.000000000 -0700
+@@ -7594,6 +7594,12 @@
      rb_define_global_function("exit!", rb_f_exit_bang, -1);
      rb_define_global_function("system", rb_f_system, -1);
      rb_define_global_function("spawn", rb_f_spawn, -1);
@@ -7232,7 +7153,7 @@ diff -ruN ruby-2.4.1/process.c ruby/process.c
      rb_define_global_function("sleep", rb_f_sleep, -1);
      rb_define_global_function("exit", rb_f_exit, -1);
      rb_define_global_function("abort", rb_f_abort, -1);
-@@ -7987,3 +7993,65 @@
+@@ -8047,3 +8053,65 @@
  
      InitVM(process);
  }
@@ -7298,10 +7219,10 @@ diff -ruN ruby-2.4.1/process.c ruby/process.c
 +	MUTEX_UNLOCK(&squash_global_mutex);
 +}
 +// --------- [Enclose.IO Hack end] ---------
-diff -ruN ruby-2.4.1/ruby.c ruby/ruby.c
---- ruby-2.4.1/ruby.c	2016-12-13 07:17:48.000000000 +0200
-+++ ruby/ruby.c	2018-03-16 15:30:56.000000000 +0200
-@@ -2165,6 +2165,10 @@
+diff -ruN ruby-2.5.1/ruby.c ruby/ruby.c
+--- ruby-2.5.1/ruby.c	2017-12-16 05:25:11.000000000 -0800
++++ ruby/ruby.c	2018-05-01 18:33:44.000000000 -0700
+@@ -2208,6 +2208,10 @@
      rb_define_hooked_variable("$PROGRAM_NAME", &rb_progname, 0, set_arg0);
  
      rb_define_module_function(rb_mProcess, "argv0", proc_argv0, 0);
@@ -7312,8 +7233,8 @@ diff -ruN ruby-2.4.1/ruby.c ruby/ruby.c
      rb_define_module_function(rb_mProcess, "setproctitle", proc_setproctitle, 1);
  
      /*
-@@ -2265,3 +2269,31 @@
- #endif
+@@ -2315,3 +2319,31 @@
+     }
      fill_standard_fds();
  }
 +
@@ -7344,9 +7265,9 @@ diff -ruN ruby-2.4.1/ruby.c ruby/ruby.c
 +	}
 +}
 +// --------- [Enclose.IO Hack end] ---------
-diff -ruN ruby-2.4.1/squash_cache.c ruby/squash_cache.c
---- ruby-2.4.1/squash_cache.c	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/squash_cache.c	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/squash_cache.c ruby/squash_cache.c
+--- ruby-2.5.1/squash_cache.c	1969-12-31 16:00:00.000000000 -0800
++++ ruby/squash_cache.c	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,99 @@
 +/*
 + * Copyright (c) 2012 Dave Vasilevsky <dave@vasilevsky.ca>
@@ -7447,9 +7368,9 @@ diff -ruN ruby-2.4.1/squash_cache.c ruby/squash_cache.c
 +	return sqfs_cache_init(cache, sizeof(sqfs_block_cache_entry), count,
 +		&sqfs_block_cache_dispose);
 +}
-diff -ruN ruby-2.4.1/squash_decompress.c ruby/squash_decompress.c
---- ruby-2.4.1/squash_decompress.c	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/squash_decompress.c	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/squash_decompress.c ruby/squash_decompress.c
+--- ruby-2.5.1/squash_decompress.c	1969-12-31 16:00:00.000000000 -0800
++++ ruby/squash_decompress.c	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,44 @@
 +/*
 + * Copyright (c) 2012 Dave Vasilevsky <dave@vasilevsky.ca>
@@ -7495,9 +7416,9 @@ diff -ruN ruby-2.4.1/squash_decompress.c ruby/squash_decompress.c
 +	assert(ZLIB_COMPRESSION == type);
 +	return &sqfs_decompressor_zlib;
 +}
-diff -ruN ruby-2.4.1/squash_dir.c ruby/squash_dir.c
---- ruby-2.4.1/squash_dir.c	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/squash_dir.c	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/squash_dir.c ruby/squash_dir.c
+--- ruby-2.5.1/squash_dir.c	1969-12-31 16:00:00.000000000 -0800
++++ ruby/squash_dir.c	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,486 @@
 +/*
 + * Copyright (c) 2012 Dave Vasilevsky <dave@vasilevsky.ca>
@@ -7985,9 +7906,9 @@ diff -ruN ruby-2.4.1/squash_dir.c ruby/squash_dir.c
 +		short *found) {
 +	return sqfs_lookup_path_inner(fs, inode, path, found, 0);
 +}
-diff -ruN ruby-2.4.1/squash_dirent.c ruby/squash_dirent.c
---- ruby-2.4.1/squash_dirent.c	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/squash_dirent.c	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/squash_dirent.c ruby/squash_dirent.c
+--- ruby-2.5.1/squash_dirent.c	1969-12-31 16:00:00.000000000 -0800
++++ ruby/squash_dirent.c	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,215 @@
 +/*
 + * Copyright (c) 2017 Minqi Pan <pmq2001@gmail.com>
@@ -8204,9 +8125,9 @@ diff -ruN ruby-2.4.1/squash_dirent.c ruby/squash_dirent.c
 +{
 +	return dirp->fd;
 +}
-diff -ruN ruby-2.4.1/squash_extract.c ruby/squash_extract.c
---- ruby-2.4.1/squash_extract.c	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/squash_extract.c	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/squash_extract.c ruby/squash_extract.c
+--- ruby-2.5.1/squash_extract.c	1969-12-31 16:00:00.000000000 -0800
++++ ruby/squash_extract.c	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,265 @@
 +/*
 + * Copyright (c) 2017 Minqi Pan <pmq2001@gmail.com>
@@ -8473,9 +8394,9 @@ diff -ruN ruby-2.4.1/squash_extract.c ruby/squash_extract.c
 +		ptr = ptr->next;
 +	}
 +}
-diff -ruN ruby-2.4.1/squash_fd.c ruby/squash_fd.c
---- ruby-2.4.1/squash_fd.c	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/squash_fd.c	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/squash_fd.c ruby/squash_fd.c
+--- ruby-2.5.1/squash_fd.c	1969-12-31 16:00:00.000000000 -0800
++++ ruby/squash_fd.c	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,233 @@
 +/*
 + * Copyright (c) 2017 Minqi Pan <pmq2001@gmail.com>
@@ -8710,9 +8631,9 @@ diff -ruN ruby-2.4.1/squash_fd.c ruby/squash_fd.c
 +	MUTEX_UNLOCK(&squash_global_mutex);
 +	return ret;
 +}
-diff -ruN ruby-2.4.1/squash_file.c ruby/squash_file.c
---- ruby-2.4.1/squash_file.c	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/squash_file.c	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/squash_file.c ruby/squash_file.c
+--- ruby-2.5.1/squash_file.c	1969-12-31 16:00:00.000000000 -0800
++++ ruby/squash_file.c	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,329 @@
 +/*
 + * Copyright (c) 2012 Dave Vasilevsky <dave@vasilevsky.ca>
@@ -9043,9 +8964,9 @@ diff -ruN ruby-2.4.1/squash_file.c ruby/squash_file.c
 +	return ret;
 +}
 +
-diff -ruN ruby-2.4.1/squash_fs.c ruby/squash_fs.c
---- ruby-2.4.1/squash_fs.c	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/squash_fs.c	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/squash_fs.c ruby/squash_fs.c
+--- ruby-2.5.1/squash_fs.c	1969-12-31 16:00:00.000000000 -0800
++++ ruby/squash_fs.c	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,434 @@
 +/*
 + * Copyright (c) 2012 Dave Vasilevsky <dave@vasilevsky.ca>
@@ -9481,9 +9402,9 @@ diff -ruN ruby-2.4.1/squash_fs.c ruby/squash_fs.c
 +	return SQFS_OK;
 +}
 +#undef INODE_TYPE
-diff -ruN ruby-2.4.1/squash_hash.c ruby/squash_hash.c
---- ruby-2.4.1/squash_hash.c	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/squash_hash.c	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/squash_hash.c ruby/squash_hash.c
+--- ruby-2.5.1/squash_hash.c	1969-12-31 16:00:00.000000000 -0800
++++ ruby/squash_hash.c	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,131 @@
 +/*
 + * Copyright (c) 2012 Dave Vasilevsky <dave@vasilevsky.ca>
@@ -9616,9 +9537,9 @@ diff -ruN ruby-2.4.1/squash_hash.c ruby/squash_hash.c
 +	}
 +	return SQFS_OK;
 +}
-diff -ruN ruby-2.4.1/squash_mutex.c ruby/squash_mutex.c
---- ruby-2.4.1/squash_mutex.c	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/squash_mutex.c	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/squash_mutex.c ruby/squash_mutex.c
+--- ruby-2.5.1/squash_mutex.c	1969-12-31 16:00:00.000000000 -0800
++++ ruby/squash_mutex.c	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,49 @@
 +/*
 + * Copyright (c) 2017 Minqi Pan <pmq2001@gmail.com>
@@ -9669,9 +9590,9 @@ diff -ruN ruby-2.4.1/squash_mutex.c ruby/squash_mutex.c
 +    return pthread_mutex_destroy(mutex);
 +#endif
 +}
-diff -ruN ruby-2.4.1/squash_nonstd-makedev.c ruby/squash_nonstd-makedev.c
---- ruby-2.4.1/squash_nonstd-makedev.c	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/squash_nonstd-makedev.c	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/squash_nonstd-makedev.c ruby/squash_nonstd-makedev.c
+--- ruby-2.5.1/squash_nonstd-makedev.c	1969-12-31 16:00:00.000000000 -0800
++++ ruby/squash_nonstd-makedev.c	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,35 @@
 +/*
 + * Copyright (c) 2012 Dave Vasilevsky <dave@vasilevsky.ca>
@@ -9708,9 +9629,9 @@ diff -ruN ruby-2.4.1/squash_nonstd-makedev.c ruby/squash_nonstd-makedev.c
 +dev_t sqfs_makedev(int maj, int min) {
 +	return makedev(maj, min);
 +}
-diff -ruN ruby-2.4.1/squash_nonstd-stat.c ruby/squash_nonstd-stat.c
---- ruby-2.4.1/squash_nonstd-stat.c	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/squash_nonstd-stat.c	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/squash_nonstd-stat.c ruby/squash_nonstd-stat.c
+--- ruby-2.5.1/squash_nonstd-stat.c	1969-12-31 16:00:00.000000000 -0800
++++ ruby/squash_nonstd-stat.c	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,58 @@
 +/*
 + * Copyright (c) 2012 Dave Vasilevsky <dave@vasilevsky.ca>
@@ -9770,9 +9691,9 @@ diff -ruN ruby-2.4.1/squash_nonstd-stat.c ruby/squash_nonstd-stat.c
 +	return 0;
 +}
 +
-diff -ruN ruby-2.4.1/squash_private.c ruby/squash_private.c
---- ruby-2.4.1/squash_private.c	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/squash_private.c	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/squash_private.c ruby/squash_private.c
+--- ruby-2.5.1/squash_private.c	1969-12-31 16:00:00.000000000 -0800
++++ ruby/squash_private.c	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,47 @@
 +/*
 + * Copyright (c) 2014 Dave Vasilevsky <dave@vasilevsky.ca>
@@ -9821,9 +9742,9 @@ diff -ruN ruby-2.4.1/squash_private.c ruby/squash_private.c
 +	
 +	return SQFS_OK;
 +}
-diff -ruN ruby-2.4.1/squash_readlink.c ruby/squash_readlink.c
---- ruby-2.4.1/squash_readlink.c	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/squash_readlink.c	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/squash_readlink.c ruby/squash_readlink.c
+--- ruby-2.5.1/squash_readlink.c	1969-12-31 16:00:00.000000000 -0800
++++ ruby/squash_readlink.c	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,85 @@
 +/*
 + * Copyright (c) 2017 Minqi Pan <pmq2001@gmail.com>
@@ -9910,9 +9831,9 @@ diff -ruN ruby-2.4.1/squash_readlink.c ruby/squash_readlink.c
 +	}
 +	return -1;
 +}
-diff -ruN ruby-2.4.1/squash_scandir.c ruby/squash_scandir.c
---- ruby-2.4.1/squash_scandir.c	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/squash_scandir.c	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/squash_scandir.c ruby/squash_scandir.c
+--- ruby-2.5.1/squash_scandir.c	1969-12-31 16:00:00.000000000 -0800
++++ ruby/squash_scandir.c	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,66 @@
 +/*
 + * Copyright (c) 2017 Minqi Pan <pmq2001@gmail.com>
@@ -9981,9 +9902,9 @@ diff -ruN ruby-2.4.1/squash_scandir.c ruby/squash_scandir.c
 +
 +}
 \ No newline at end of file
-diff -ruN ruby-2.4.1/squash_stack.c ruby/squash_stack.c
---- ruby-2.4.1/squash_stack.c	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/squash_stack.c	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/squash_stack.c ruby/squash_stack.c
+--- ruby-2.5.1/squash_stack.c	1969-12-31 16:00:00.000000000 -0800
++++ ruby/squash_stack.c	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,130 @@
 +/*
 + * Copyright (c) 2014 Dave Vasilevsky <dave@vasilevsky.ca>
@@ -10115,9 +10036,9 @@ diff -ruN ruby-2.4.1/squash_stack.c ruby/squash_stack.c
 +	
 +	return sqfs_stack_at(s, s->size - 1, vout);
 +}
-diff -ruN ruby-2.4.1/squash_stat.c ruby/squash_stat.c
---- ruby-2.4.1/squash_stat.c	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/squash_stat.c	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/squash_stat.c ruby/squash_stat.c
+--- ruby-2.5.1/squash_stat.c	1969-12-31 16:00:00.000000000 -0800
++++ ruby/squash_stat.c	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,82 @@
 +/*
 + * Copyright (c) 2017 Minqi Pan <pmq2001@gmail.com>
@@ -10201,9 +10122,9 @@ diff -ruN ruby-2.4.1/squash_stat.c ruby/squash_stat.c
 +	*buf = SQUASH_VFD_FILE(vfd)->st;
 +	return 0;
 +}
-diff -ruN ruby-2.4.1/squash_table.c ruby/squash_table.c
---- ruby-2.4.1/squash_table.c	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/squash_table.c	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/squash_table.c ruby/squash_table.c
+--- ruby-2.5.1/squash_table.c	1969-12-31 16:00:00.000000000 -0800
++++ ruby/squash_table.c	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,66 @@
 +/*
 + * Copyright (c) 2012 Dave Vasilevsky <dave@vasilevsky.ca>
@@ -10271,9 +10192,9 @@ diff -ruN ruby-2.4.1/squash_table.c ruby/squash_table.c
 +	/* BLOCK CACHED, DON'T DISPOSE */
 +	return SQFS_OK;
 +}
-diff -ruN ruby-2.4.1/squash_traverse.c ruby/squash_traverse.c
---- ruby-2.4.1/squash_traverse.c	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/squash_traverse.c	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/squash_traverse.c ruby/squash_traverse.c
+--- ruby-2.5.1/squash_traverse.c	1969-12-31 16:00:00.000000000 -0800
++++ ruby/squash_traverse.c	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,322 @@
 +/*
 + * Copyright (c) 2014 Dave Vasilevsky <dave@vasilevsky.ca>
@@ -10597,9 +10518,9 @@ diff -ruN ruby-2.4.1/squash_traverse.c ruby/squash_traverse.c
 +	sqfs_stack_pop(&trv->stack);
 +	return SQFS_OK;
 +}
-diff -ruN ruby-2.4.1/squash_util.c ruby/squash_util.c
---- ruby-2.4.1/squash_util.c	1970-01-01 02:00:00.000000000 +0200
-+++ ruby/squash_util.c	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/squash_util.c ruby/squash_util.c
+--- ruby-2.5.1/squash_util.c	1969-12-31 16:00:00.000000000 -0800
++++ ruby/squash_util.c	2018-05-01 18:33:44.000000000 -0700
 @@ -0,0 +1,84 @@
 +/*
 + * Copyright (c) 2014 Dave Vasilevsky <dave@vasilevsky.ca>
@@ -10685,10 +10606,10 @@ diff -ruN ruby-2.4.1/squash_util.c ruby/squash_util.c
 +	return err;
 +}
 +
-diff -ruN ruby-2.4.1/tool/mkconfig.rb ruby/tool/mkconfig.rb
---- ruby-2.4.1/tool/mkconfig.rb	2016-11-17 09:19:49.000000000 +0200
-+++ ruby/tool/mkconfig.rb	2018-03-16 15:30:56.000000000 +0200
-@@ -126,6 +126,22 @@
+diff -ruN ruby-2.5.1/tool/mkconfig.rb ruby/tool/mkconfig.rb
+--- ruby-2.5.1/tool/mkconfig.rb	2017-05-02 05:45:07.000000000 -0700
++++ ruby/tool/mkconfig.rb	2018-05-01 18:33:44.000000000 -0700
+@@ -124,6 +124,22 @@
        val = '"$(SDKROOT)"'+val if /darwin/ =~ arch
      end
      v = "  CONFIG[\"#{name}\"] #{eq} #{val}\n"
@@ -10711,9 +10632,9 @@ diff -ruN ruby-2.4.1/tool/mkconfig.rb ruby/tool/mkconfig.rb
      if fast[name]
        v_fast << v
      else
-diff -ruN ruby-2.4.1/util.c ruby/util.c
---- ruby-2.4.1/util.c	2017-03-12 18:22:05.000000000 +0200
-+++ ruby/util.c	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/util.c ruby/util.c
+--- ruby-2.5.1/util.c	2017-10-22 22:56:25.000000000 -0700
++++ ruby/util.c	2018-05-01 18:33:44.000000000 -0700
 @@ -30,6 +30,10 @@
  const char ruby_hexdigits[] = "0123456789abcdef0123456789ABCDEF";
  #define hexdigit ruby_hexdigits
@@ -10725,11 +10646,11 @@ diff -ruN ruby-2.4.1/util.c ruby/util.c
  unsigned long
  ruby_scan_oct(const char *start, size_t len, size_t *retlen)
  {
-Binary files ruby-2.4.1/vendor/bundler-1.15.3.gem and ruby/vendor/bundler-1.15.3.gem differ
-diff -ruN ruby-2.4.1/win32/Makefile.sub ruby/win32/Makefile.sub
---- ruby-2.4.1/win32/Makefile.sub	2016-09-16 13:47:54.000000000 +0300
-+++ ruby/win32/Makefile.sub	2018-03-16 15:30:56.000000000 +0200
-@@ -247,7 +247,7 @@
+Binary files ruby-2.5.1/vendor/bundler-1.16.1.gem and ruby/vendor/bundler-1.16.1.gem differ
+diff -ruN ruby-2.5.1/win32/Makefile.sub ruby/win32/Makefile.sub
+--- ruby-2.5.1/win32/Makefile.sub	2017-12-03 19:33:48.000000000 -0800
++++ ruby/win32/Makefile.sub	2018-05-01 18:33:44.000000000 -0700
+@@ -250,7 +250,7 @@
  EXTSOLIBS =
  !endif
  !if !defined(LIBS)
@@ -10738,7 +10659,7 @@ diff -ruN ruby-2.4.1/win32/Makefile.sub ruby/win32/Makefile.sub
  !if $(MSC_VER) >= 1400
  LIBS = $(LIBS) iphlpapi.lib
  !endif
-@@ -977,7 +977,9 @@
+@@ -981,7 +981,9 @@
  miniruby$(EXEEXT):
  		@echo $(LIBS)
  		$(ECHO) linking $(@:\=/)
@@ -10749,7 +10670,7 @@ diff -ruN ruby-2.4.1/win32/Makefile.sub ruby/win32/Makefile.sub
  		@$(RM) miniruby.lib miniruby.exp
  		$(Q) miniruby.exe -v
  		$(Q) $(LDSHARED_1)
-@@ -986,10 +988,42 @@
+@@ -990,10 +992,42 @@
  miniruby.rc:
  		@exit > $@
  
@@ -10793,7 +10714,7 @@ diff -ruN ruby-2.4.1/win32/Makefile.sub ruby/win32/Makefile.sub
  			$(OUTFLAG)$@ $(LIBRUBYARG) -link $(LDFLAGS) $(XLDFLAGS)
  		$(Q) $(LDSHARED_0)
  		$(Q) $(LDSHARED_1)
-@@ -999,7 +1033,7 @@
+@@ -1003,7 +1037,7 @@
  !if "$(WPROGRAM)" != ""
  $(WPROGRAM):	$(MAINOBJ) $(WINMAINOBJ) $(LIBRUBY_SO) $(RUBYW_INSTALL_NAME).res
  		$(ECHO) linking $(@:\=/)
@@ -10802,7 +10723,7 @@ diff -ruN ruby-2.4.1/win32/Makefile.sub ruby/win32/Makefile.sub
  			$(RUBYW_INSTALL_NAME).res $(OUTFLAG)$@ $(LIBRUBYARG) \
  			-link $(LDFLAGS) $(XLDFLAGS) -subsystem:Windows
  		$(Q) $(LDSHARED_0)
-@@ -1010,7 +1044,7 @@
+@@ -1014,7 +1048,7 @@
  !if "$(STUBPROGRAM)" != ""
  $(STUBPROGRAM):	rubystub.$(OBJEXT) $(LIBRUBY) $(LIBRUBY_SO) $(RUBY_INSTALL_NAME).res
  		$(ECHO) linking $(@:\=/)
@@ -10811,9 +10732,9 @@ diff -ruN ruby-2.4.1/win32/Makefile.sub ruby/win32/Makefile.sub
  			$(OUTFLAG)$@ $(LIBRUBYARG) -link $(LDFLAGS) $(XLDFLAGS)
  		$(Q) $(LDSHARED_0)
  		$(Q) $(LDSHARED_1)
-diff -ruN ruby-2.4.1/win32/file.c ruby/win32/file.c
---- ruby-2.4.1/win32/file.c	2016-12-07 04:03:40.000000000 +0200
-+++ ruby/win32/file.c	2018-03-16 15:30:56.000000000 +0200
+diff -ruN ruby-2.5.1/win32/file.c ruby/win32/file.c
+--- ruby-2.5.1/win32/file.c	2016-12-06 18:03:40.000000000 -0800
++++ ruby/win32/file.c	2018-05-01 18:33:44.000000000 -0700
 @@ -10,6 +10,10 @@
  #include <shlwapi.h>
  #include "win32/file.h"
@@ -10825,11 +10746,11 @@ diff -ruN ruby-2.4.1/win32/file.c ruby/win32/file.c
  #ifndef INVALID_FILE_ATTRIBUTES
  # define INVALID_FILE_ATTRIBUTES ((DWORD)-1)
  #endif
-diff -ruN ruby-2.4.1/win32/win32.c ruby/win32/win32.c
---- ruby-2.4.1/win32/win32.c	2017-03-12 19:23:03.000000000 +0200
-+++ ruby/win32/win32.c	2018-03-16 15:30:56.000000000 +0200
-@@ -53,6 +53,11 @@
- #include "win32/file.h"
+diff -ruN ruby-2.5.1/win32/win32.c ruby/win32/win32.c
+--- ruby-2.5.1/win32/win32.c	2017-12-12 07:02:51.000000000 -0800
++++ ruby/win32/win32.c	2018-05-01 18:33:44.000000000 -0700
+@@ -55,6 +55,11 @@
+ #include "id.h"
  #include "internal.h"
  #include "encindex.h"
 +
@@ -10840,7 +10761,7 @@ diff -ruN ruby-2.4.1/win32/win32.c ruby/win32/win32.c
  #define isdirsep(x) ((x) == '/' || (x) == '\\')
  
  #if defined _MSC_VER && _MSC_VER <= 1200
-@@ -830,6 +835,11 @@
+@@ -849,6 +854,11 @@
  void
  rb_w32_sysinit(int *argc, char ***argv)
  {
@@ -10852,7 +10773,7 @@ diff -ruN ruby-2.4.1/win32/win32.c ruby/win32/win32.c
  #if RUBY_MSVCRT_VERSION >= 80
      static void set_pioinfo_extra(void);
  
-@@ -847,6 +857,28 @@
+@@ -866,6 +876,28 @@
      //
      *argc = w32_cmdvector(GetCommandLineW(), argv, CP_UTF8, &OnigEncodingUTF_8);
  
@@ -10881,7 +10802,7 @@ diff -ruN ruby-2.4.1/win32/win32.c ruby/win32/win32.c
      //
      // Now set up the correct time stuff
      //
-@@ -1810,6 +1842,9 @@
+@@ -1827,6 +1859,9 @@
  	curr = (NtCmdLineElement *)calloc(sizeof(NtCmdLineElement), 1);
  	if (!curr) goto do_nothing;
  	curr->str = rb_w32_wstr_to_mbstr(cp, base, len, &curr->len);
@@ -10891,7 +10812,7 @@ diff -ruN ruby-2.4.1/win32/win32.c ruby/win32/win32.c
  	curr->flags |= NTMALLOC;
  
  	if (globbing && (tail = cmdglob(curr, cmdtail, cp, enc))) {
-@@ -6923,6 +6958,11 @@
+@@ -6980,6 +7015,11 @@
  	return -1;
      }
  

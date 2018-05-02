@@ -2,7 +2,7 @@
 #
 #   shell/filter.rb -
 #       $Release Version: 0.7 $
-#       $Revision: 56937 $
+#       $Revision: 58212 $
 #       by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
@@ -56,7 +56,7 @@ class Shell #:nodoc:
         self.input = src
         self
       else
-        Shell.Fail Error::CantApplyMethod, "<", to.class
+        Shell.Fail Error::CantApplyMethod, "<", src.class
       end
     end
 

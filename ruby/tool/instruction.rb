@@ -33,6 +33,7 @@ class RubyVM
       @optimized = []
       @is_sc  = false
       @sp_inc = sp_inc
+      @trace  = trace
     end
 
     def add_sc sci
@@ -49,6 +50,7 @@ class RubyVM
     attr_reader :is_sc
     attr_reader :tvars
     attr_reader :sp_inc
+    attr_accessor :trace
 
     def set_sc
       @is_sc = true
@@ -116,6 +118,7 @@ class RubyVM
       load_opt_operand_def opts[:"opope.def"] || 'defs/opt_operand.def'
       load_insn_unification_def opts[:"unif.def"] || 'defs/opt_insn_unif.def'
       make_stackcaching_insns if vm_opt?('STACK_CACHING')
+      make_trace_insns
     end
 
     attr_reader :vpath
@@ -533,6 +536,21 @@ class RubyVM
       }
     end
 
+    def make_trace_insns
+      @insns.dup.each{|insn|
+        body = <<-EOS
+        vm_trace(ec, GET_CFP(), GET_PC());
+        DISPATCH_ORIGINAL_INSN(#{insn.name});
+        EOS
+
+        trace_insn = Instruction.new(name = "trace_#{insn.name}",
+                                     insn.opes, insn.pops, insn.rets, insn.comm,
+                                     body, insn.tvars, insn.sp_inc)
+        trace_insn.trace = true
+        add_insn trace_insn
+      }
+    end
+
     def make_insn_sc orig_insn, name, opes, pops, rets, pushs, nextsc
       comm = orig_insn.comm.dup
       comm[:c] = 'optimize(sc)'
@@ -648,6 +666,10 @@ class RubyVM
       @insns.use_const?
     end
 
+    def template(name)
+      ERB.new(vpath.read("template/#{name}"), nil, '%-')
+    end
+
     def build_string
       @lines = []
       yield
@@ -676,13 +698,7 @@ class RubyVM
   class VmBodyGenerator < SourceCodeGenerator
     # vm.inc
     def generate
-      vm_body = ''
-      @insns.each{|insn|
-        vm_body << "\n"
-        vm_body << make_insn_def(insn)
-      }
-      src = vpath.read('template/vm.inc.tmpl')
-      ERB.new(src).result(binding)
+      template('vm.inc.tmpl').result(binding)
     end
 
     def generate_from_insnname insnname
@@ -700,7 +716,7 @@ class RubyVM
 
       n = 0
       push_ba.each {|pushs| n += pushs.length}
-      commit "  CHECK_VM_STACK_OVERFLOW_FOR_INSN(REG_CFP, #{n});" if n > 0
+      commit "  CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, #{n});" if n > 0
       push_ba.each{|pushs|
         pushs.each{|r|
           commit "  PUSH(SCREG(#{r}));"
@@ -850,7 +866,7 @@ class RubyVM
       each_footer_stack_val(insn){|v|
         n += 1 unless v[2]
       }
-      commit "  CHECK_VM_STACK_OVERFLOW_FOR_INSN(REG_CFP, #{n});" if n > 0
+      commit "  CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, #{n});" if n > 0
       each_footer_stack_val(insn){|v|
         if v[2]
           commit "  SCREG(#{v[2]}) = #{v[1]};"
@@ -868,27 +884,32 @@ class RubyVM
     end
 
     def make_header insn
-      commit "INSN_ENTRY(#{insn.name}){"
+      label = insn.trace ? '' : "START_OF_ORIGINAL_INSN(#{insn.name});"
+      commit "INSN_ENTRY(#{insn.name}){#{label}"
       make_header_prepare_stack insn
       commit "{"
-      make_header_stack_val  insn
-      make_header_default_operands insn
-      make_header_operands   insn
-      make_header_stack_pops insn
-      make_header_temporary_vars insn
-      #
-      make_header_debug insn
-      make_header_pc insn
-      make_header_popn insn
-      make_header_defines insn
-      make_header_analysis insn
+      unless insn.trace
+        make_header_stack_val  insn
+        make_header_default_operands insn
+        make_header_operands   insn
+        make_header_stack_pops insn
+        make_header_temporary_vars insn
+        #
+        make_header_debug insn
+        make_header_pc insn
+        make_header_popn insn
+        make_header_defines insn
+        make_header_analysis insn
+      end
       commit  "{"
     end
 
     def make_footer insn
-      make_footer_stack_val insn
-      make_footer_default_operands insn
-      make_footer_undefs insn
+      unless insn.trace
+        make_footer_stack_val insn
+        make_footer_default_operands insn
+        make_footer_undefs insn
+      end
       commit "  END_INSN(#{insn.name});}}}"
     end
 
@@ -912,20 +933,7 @@ class RubyVM
   # vmtc.inc
   class VmTCIncGenerator < SourceCodeGenerator
     def generate
-
-      insns_table = build_string do
-        @insns.each{|insn|
-          commit "  LABEL_PTR(#{insn.name}),"
-        }
-      end
-
-      insn_end_table = build_string do
-        @insns.each{|insn|
-          commit "  ELABEL_PTR(#{insn.name}),\n"
-        }
-      end
-
-      ERB.new(vpath.read('template/vmtc.inc.tmpl')).result(binding)
+      template('vmtc.inc.tmpl').result(binding)
     end
   end
 
@@ -933,7 +941,7 @@ class RubyVM
   # insns_info.inc
   class InsnsInfoIncGenerator < SourceCodeGenerator
     def generate
-      insns_info_inc
+      template('insns_info.inc.tmpl').result(binding)
     end
 
     ###
@@ -988,52 +996,14 @@ class RubyVM
       'TS_FUNCPTR'   => 'F',
     }
 
-    # insns_info.inc
-    def insns_info_inc
-      # insn_type_chars
-      insn_type_chars = TYPE_CHARS.map{|t, c|
-        "#define #{t} '#{c}'"
-      }.join("\n")
-
-      # insn_names
-      insn_names = ''
-      @insns.each{|insn|
-        insn_names << "  \"#{insn.name}\",\n"
-      }
-
-      # operands info
-      operands_info = ''
-      operands_num_info = ''
-
-      @insns.each{|insn|
-        opes = insn.opes
-        operands_info << '  '
-        ot = opes.map{|type, var|
-          TYPE_CHARS.fetch(op2typesig(type))
-        }
-        operands_info << "\"#{ot.join}\"" << ",\n"
-
-        num = opes.size + 1
-        operands_num_info << "  #{num},\n"
-      }
-
-      # stack num
-      stack_num_info = ''
-      @insns.each{|insn|
-        num = insn.rets.size
-        stack_num_info << "  #{num},\n"
-      }
-
-      # stack increase
-      stack_increase = ''
-      @insns.each{|insn|
-        stack_increase << <<-EOS
-        case BIN(#{insn.name}):{
-          #{insn.sp_increase_c_expr}
-        }
-        EOS
-      }
-      ERB.new(vpath.read('template/insns_info.inc.tmpl')).result(binding)
+    def max_length(array)
+      max = 0
+      array.each do |i|
+        if (n = i.length) > max
+          max = n
+        end
+      end
+      max
     end
   end
 
@@ -1041,15 +1011,7 @@ class RubyVM
   # insns.inc
   class InsnsIncGenerator < SourceCodeGenerator
     def generate
-      i=0
-      insns = build_string do
-        @insns.each{|insn|
-          commit "  %-30s = %d," % ["BIN(#{insn.name})", i]
-          i+=1
-        }
-      end
-
-      ERB.new(vpath.read('template/insns.inc.tmpl')).result(binding)
+      template('insns.inc.tmpl').result(binding)
     end
   end
 
@@ -1057,15 +1019,7 @@ class RubyVM
   # minsns.inc
   class MInsnsIncGenerator < SourceCodeGenerator
     def generate
-      i=0
-      defs = build_string do
-        @insns.each{|insn|
-          commit "  rb_define_const(mYarvInsns, %-30s, INT2FIX(%d));" %
-                 ["\"I#{insn.name}\"", i]
-          i+=1
-        }
-      end
-      ERB.new(vpath.read('template/minsns.inc.tmpl')).result(binding)
+      template('minsns.inc.tmpl').result(binding)
     end
   end
 
@@ -1103,8 +1057,7 @@ class RubyVM
 
     # optinsn.inc
     def optinsn_inc
-      rule = ''
-      opt_insns_map = Hash.new{|h, k| h[k] = []}
+      opt_insns_map = Hash.new{[]}
 
       @insns.each{|insn|
         next if insn.defopes.size == 0
@@ -1112,46 +1065,17 @@ class RubyVM
         next if /^UNIFIED/ =~ insn.name.to_s
 
         originsn = insn.orig
-        opt_insns_map[originsn] << insn
+        opt_insns_map[originsn] <<= insn
       }
 
-      rule = build_string do
-        opt_insns_map.each{|originsn, optinsns|
-          commit "case BIN(#{originsn.name}):"
-
-          optinsns.sort_by{|opti|
-            opti.defopes.find_all{|e| e[1] == '*'}.size
-          }.each{|opti|
-            commit "  if("
-            i = 0
-            commit "    " + opti.defopes.map{|opinfo|
-              i += 1
-              next if opinfo[1] == '*'
-              "insnobj->operands[#{i-1}] == #{val_as_type(opinfo)}"
-            }.compact.join('&&  ')
-            commit "  ){"
-            idx = 0
-            n = 0
-            opti.defopes.each{|opinfo|
-              if opinfo[1] == '*'
-                if idx != n
-                  commit "    insnobj->operands[#{idx}] = insnobj->operands[#{n}];"
-                end
-                idx += 1
-              else
-                # skip
-              end
-              n += 1
-            }
-            commit "    insnobj->insn_id = BIN(#{opti.name});"
-            commit "    insnobj->operand_size = #{idx};"
-            commit "    break;\n  }\n"
-          }
-          commit "  break;";
+      opt_insns_map.each_value do |optinsns|
+        sorted = optinsns.sort_by {|opti|
+          opti.defopes.find_all{|e| e[1] == '*'}.size
         }
+        optinsns.replace(sorted)
       end
 
-      ERB.new(vpath.read('template/optinsn.inc.tmpl')).result(binding)
+      template('optinsn.inc.tmpl').result(binding)
     end
   end
 
@@ -1159,36 +1083,7 @@ class RubyVM
   # optunifs.inc
   class OptUnifsIncGenerator < SourceCodeGenerator
     def generate
-      unif_insns_each = ''
-      unif_insns      = ''
-      unif_insns_data = []
-
-      insns = @insns.find_all{|insn| !insn.is_sc}
-      insns.each{|insn|
-        size = insn.unifs.size
-        if size > 0
-          insn.unifs.sort_by{|unif| -unif[1].size}.each_with_index{|unif, i|
-
-          uni_insn, uni_insns = *unif
-          uni_insns = uni_insns[1..-1]
-          unif_insns_each << "static const int UNIFIED_#{insn.name}_#{i}[] = {" +
-                             "  BIN(#{uni_insn.name}), #{uni_insns.size + 2},\n  " +
-                             uni_insns.map{|e| "BIN(#{e.name})"}.join(", ") + "};\n"
-          }
-        else
-
-        end
-        if size > 0
-          unif_insns << "static const int *const UNIFIED_#{insn.name}[] = {(int *)#{size+1},\n"
-          unif_insns << (0...size).map{|e| "  UNIFIED_#{insn.name}_#{e}"}.join(",\n") + "};\n"
-          unif_insns_data << "  UNIFIED_#{insn.name}"
-        else
-          unif_insns_data << "  0"
-        end
-      }
-      unif_insns_data = "static const int *const *const unified_insns_data[] = {\n" +
-                        unif_insns_data.join(",\n") + "};\n"
-      ERB.new(vpath.read('template/optunifs.inc.tmpl')).result(binding)
+      template('optunifs.inc.tmpl').result(binding)
     end
   end
 
@@ -1212,7 +1107,7 @@ class RubyVM
         "  SCS_#{InstructionsLoader.complement_name(insn.nextsc).upcase}" +
         (verbose? ? " /* #{insn.name} */" : '')
       }.join(",\n")
-      ERB.new(vpath.read('template/opt_sc.inc.tmpl')).result(binding)
+      template('opt_sc.inc.tmpl').result(binding)
     end
   end
 
@@ -1224,7 +1119,7 @@ class RubyVM
       @insns.each_with_index{|insn, i|
         insn_id2no << "        :#{insn.name} => #{i},\n"
       }
-      ERB.new(vpath.read('template/yasmdata.rb.tmpl')).result(binding)
+      template('yasmdata.rb').result(binding)
     end
   end
 
@@ -1251,8 +1146,8 @@ class RubyVM
 
         d << "*** #{insn.name}\n"
         d << "\n"
-        d << insn.comm[lang] + "\n\n"
-        d << ":instruction sequence: 0x%02x #{seq}\n" % i
+        d << insn.comm[lang] << "\n\n"
+        d << ":instruction sequence: 0x%02x " % i << seq << "\n"
         d << ":stack: #{before} => #{after}\n\n"
         i+=1
       }
@@ -1261,12 +1156,12 @@ class RubyVM
 
     def desc_ja
       d = desc :j
-      ERB.new(vpath.read('template/yarvarch.ja')).result(binding)
+      template('yarvarch.ja').result(binding)
     end
 
     def desc_en
       d = desc :e
-      ERB.new(vpath.read('template/yarvarch.en')).result(binding)
+      template('yarvarch.en').result(binding)
     end
   end
 

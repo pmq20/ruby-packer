@@ -2,7 +2,7 @@
 
   fcntl.c -
 
-  $Author: nobu $
+  $Author: hsbt $
   created at: Mon Apr  7 18:53:05 JST 1997
 
   Copyright (C) 1997-2001 Yukihiro Matsumoto
@@ -68,7 +68,7 @@ Init_fcntl(void)
 #ifdef F_DUPFD
     /* Document-const: F_DUPFD
      *
-     * Duplicate a file descriptor to the mimimum unused file descriptor
+     * Duplicate a file descriptor to the minimum unused file descriptor
      * greater than or equal to the argument.
      *
      * The close-on-exec flag of the duplicated file descriptor is set.

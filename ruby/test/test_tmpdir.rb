@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'test/unit'
 require 'tmpdir'
 
@@ -55,5 +55,21 @@ class TestTmpdir < Test::Unit::TestCase
     Dir.mktmpdir(nil) {|d|
       assert_kind_of(String, d)
     }
+  end
+
+  TRAVERSAL_PATH = Array.new(Dir.pwd.split('/').count, '..').join('/') + Dir.pwd + '/'
+
+  def test_mktmpdir_traversal
+    expect = Dir.glob(TRAVERSAL_PATH + '*').count
+    Dir.mktmpdir(TRAVERSAL_PATH + 'foo')
+    actual = Dir.glob(TRAVERSAL_PATH + '*').count
+    assert_equal expect, actual
+  end
+
+  def test_mktmpdir_traversal_array
+    expect = Dir.glob(TRAVERSAL_PATH + '*').count
+    Dir.mktmpdir([TRAVERSAL_PATH, 'foo'])
+    actual = Dir.glob(TRAVERSAL_PATH + '*').count
+    assert_equal expect, actual
   end
 end

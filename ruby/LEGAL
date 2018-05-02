@@ -36,6 +36,7 @@ ccan/list/list.h
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
     THE SOFTWARE.
 
+include/ruby/onigmo.h:
 include/ruby/oniguruma.h:
 regcomp.c:
 regenc.[ch]:
@@ -81,53 +82,84 @@ enc/utf_32le.c
 enc/utf_8.c
 enc/windows_1251.c
 
-Oniguruma  ----   (C) K.Kosako <sndgk393 AT ybb DOT ne DOT jp>
+Onigmo (Oniguruma-mod) LICENSE
+------------------------------
 
-http://www.geocities.jp/kosako3/oniguruma/
-http://www.ruby-lang.org/cgi-bin/cvsweb.cgi/oniguruma/
-http://www.freebsd.org/cgi/cvsweb.cgi/ports/devel/oniguruma/
+/*-
+ * Copyright (c) 2002-2009  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
+ * Copyright (c) 2011-2014  K.Takata  <kentkt AT csc DOT jp>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+
+Oniguruma LICENSE
+-----------------
+
+/*-
+ * Copyright (c) 2002-2009  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+https://github.com/k-takata/Onigmo/
+https://github.com/kkos/oniguruma
+https://svnweb.freebsd.org/ports/head/devel/oniguruma/
 
    When this software is partly used or it is distributed with Ruby,
    this of Ruby follows the license of Ruby.
 
 enc/trans/GB/GB12345%UCS.src:
 enc/trans/GB/UCS%GB12345.src:
-
-    Copyright (c) 1991-1994 Unicode, Inc.  All Rights reserved.
-
-    This file is provided as-is by Unicode, Inc. (The Unicode Consortium).
-    No claims are made as to fitness for any particular purpose.  No
-    warranties of any kind are expressed or implied.  The recipient
-    agrees to determine applicability of information provided.  If this
-    file has been provided on magnetic media by Unicode, Inc., the sole
-    remedy for any claim will be exchange of defective media within 90
-    days of receipt.
-
-    Recipient is granted the right to make copies in any form for
-    internal distribution and to freely use the information supplied
-    in the creation of products supporting Unicode.  Unicode, Inc.
-    specifically excludes the right to re-distribute this file directly
-    to third parties or other organizations whether for profit or not.
-
-
 enc/trans/GB/GB2312%UCS.src:
 enc/trans/GB/UCS%GB2312.src:
 
-    Copyright (c) 1991-1999 Unicode, Inc.  All Rights reserved.
-
-    This file is provided as-is by Unicode, Inc. (The Unicode Consortium).
-    No claims are made as to fitness for any particular purpose.  No
-    warranties of any kind are expressed or implied.  The recipient
-    agrees to determine applicability of information provided.  If this
-    file has been provided on optical media by Unicode, Inc., the sole
-    remedy for any claim will be exchange of defective media within 90
-    days of receipt.
-
-    Unicode, Inc. hereby grants the right to freely use the information
-    supplied in this file in the creation of products supporting the
-    Unicode Standard, and to make copies of this file in any form for
-    internal or external distribution as long as this notice remains
-    attached.
+    This mapping data was created from files provided by Unicode, Inc.
+    (The Unicode Consortium). The files were used to create a product supporting
+    Unicode, as explicitly permitted in the files' copyright notices.
+    Please note that Unicode, Inc. never made any claims as to fitness of these
+    files for any particular purpose, and has ceased to publish the files many
+    years ago.
 
 enc/trans/JIS/JISX0201-KANA%UCS.src:
 enc/trans/JIS/JISX0208@1990%UCS.src:
@@ -330,6 +362,8 @@ random.c
     http://www.math.keio.ac.jp/matumoto/emt.html
     email: matumoto@math.keio.ac.jp
 
+  The Wayback Machine url: http://web.archive.org/web/19990429082237/http://www.math.keio.ac.jp/matumoto/emt.html
+
 vm_dump.c:procstat_vm
 
   This file is under the new-style BSD license.
@@ -417,7 +451,6 @@ missing/memmove.c:
 missing/strchr.c:
 missing/strerror.c:
 missing/strstr.c:
-missing/strtol.c:
 missing/tgamma.c:
 ext/date/date_strftime.c:
 ext/digest/sha1/sha1.[ch]:
@@ -631,6 +664,51 @@ ext/nkf/nkf-utf8/utf8tbl.c:
        You don't have to ask before copying, redistribution or publishing.
        THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE.
 
+ext/psych:
+test/psych:
+
+  Copyright 2009 Aaron Patterson, et al.
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy of
+  this software and associated documentation files (the 'Software'), to deal in
+  the Software without restriction, including without limitation the rights to
+  use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+  of the Software, and to permit persons to whom the Software is furnished to do
+  so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+
+ext/psych/yaml:
+
+  Copyright (c) 2006 Kirill Simonov
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy of
+  this software and associated documentation files (the "Software"), to deal in
+  the Software without restriction, including without limitation the rights to
+  use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+  of the Software, and to permit persons to whom the Software is furnished to do
+  so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+
 ext/socket/addrinfo.h:
 ext/socket/getaddrinfo.c:
 ext/socket/getnameinfo.c:
@@ -679,8 +757,94 @@ ext/win32ole/win32ole.c:
     License or the Artistic License, as specified in the README file
     of the Perl distribution.
 
+  The Wayback Machine url: http://web.archive.org/web/19970607104352/http://www.activeware.com:80/
+
 lib/rdoc/generator/template/darkfish/css/fonts.css:
 
   This file is licensed under the SIL Open Font License.
 
     http://scripts.sil.org/OFL
+
+spec/mspec:
+spec/ruby:
+
+    Copyright (c) 2008 Engine Yard, Inc. All rights reserved.
+
+    Permission is hereby granted, free of charge, to any person
+    obtaining a copy of this software and associated documentation
+    files (the "Software"), to deal in the Software without
+    restriction, including without limitation the rights to use,
+    copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the
+    Software is furnished to do so, subject to the following
+    conditions:
+
+    The above copyright notice and this permission notice shall be
+    included in all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+    OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+    NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+    HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+    WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+    OTHER DEALINGS IN THE SOFTWARE.
+
+lib/rubygems.rb:
+lib/rubygems:
+test/rubygems:
+
+  RubyGems is copyrighted free software by Chad Fowler, Rich Kilmer, Jim
+  Weirich and others.  You can redistribute it and/or modify it under
+  either the terms of the MIT license (see the file MIT.txt), or the
+  conditions below:
+
+  1. You may make and give away verbatim copies of the source form of the
+     software without restriction, provided that you duplicate all of the
+     original copyright notices and associated disclaimers.
+
+  2. You may modify your copy of the software in any way, provided that
+     you do at least ONE of the following:
+
+     a. place your modifications in the Public Domain or otherwise
+        make them Freely Available, such as by posting said
+        modifications to Usenet or an equivalent medium, or by allowing
+        the author to include your modifications in the software.
+
+     b. use the modified software only within your corporation or
+        organization.
+
+     c. give non-standard executables non-standard names, with
+        instructions on where to get the original software distribution.
+
+     d. make other distribution arrangements with the author.
+
+  3. You may distribute the software in object code or executable
+     form, provided that you do at least ONE of the following:
+
+     a. distribute the executables and library files of the software,
+        together with instructions (in the manual page or equivalent)
+        on where to get the original distribution.
+
+     b. accompany the distribution with the machine-readable source of
+        the software.
+
+     c. give non-standard executables non-standard names, with
+        instructions on where to get the original software distribution.
+
+     d . make other distribution arrangements with the author.
+
+  4. You may modify and include the part of the software into any other
+     software (possibly commercial).
+
+  5. The scripts and library files supplied as input to or produced as
+     output from the software do not automatically fall under the
+     copyright of the software, but belong to whomever generated them,
+     and may be sold commercially, and may be aggregated with this
+     software.
+
+  6. THIS SOFTWARE IS PROVIDED "AS IS" AND WITHOUT ANY EXPRESS OR
+     IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
+     WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+     PURPOSE.

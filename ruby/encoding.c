@@ -2,7 +2,7 @@
 
   encoding.c -
 
-  $Author: rhe $
+  $Author: nobu $
   created at: Thu May 24 17:23:27 JST 2007
 
   Copyright (C) 2007 Yukihiro Matsumoto
@@ -722,6 +722,17 @@ rb_enc_find_index(const char *name)
 	}
     }
     return i;
+}
+
+int
+rb_enc_find_index2(const char *name, long len)
+{
+    char buf[ENCODING_NAMELEN_MAX+1];
+
+    if (len > ENCODING_NAMELEN_MAX) return -1;
+    memcpy(buf, name, len);
+    buf[len] = '\0';
+    return rb_enc_find_index(buf);
 }
 
 rb_encoding *

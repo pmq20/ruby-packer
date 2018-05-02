@@ -2,7 +2,7 @@
 
   class.c -
 
-  $Author: nagachika $
+  $Author: nobu $
   created at: Tue Aug 10 15:05:44 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -1773,31 +1773,23 @@ rb_define_attr(VALUE klass, const char *name, int read, int write)
     rb_attr(klass, rb_intern(name), read, write, FALSE);
 }
 
-int
-rb_obj_basic_to_s_p(VALUE obj)
-{
-    const rb_method_entry_t *me = rb_method_entry(CLASS_OF(obj), rb_intern("to_s"));
-    if (me && me->def && me->def->type == VM_METHOD_TYPE_CFUNC &&
-	me->def->body.cfunc.func == rb_any_to_s)
-	return 1;
-    return 0;
-}
-
 VALUE
 rb_keyword_error_new(const char *error, VALUE keys)
 {
-    const char *msg = "";
-    VALUE error_message;
+    const VALUE *ptr = RARRAY_CONST_PTR(keys);
+    long i = 0, len = RARRAY_LEN(keys);
+    VALUE error_message = rb_sprintf("%s keyword%.*s", error, len > 1, "s");
 
-    if (RARRAY_LEN(keys) == 1) {
-	keys = RARRAY_AREF(keys, 0);
+    if (len > 0) {
+	rb_str_cat_cstr(error_message, ": ");
+	while (1) {
+	    const VALUE k = ptr[i];
+	    Check_Type(k, T_SYMBOL); /* wrong hash is given to rb_get_kwargs */
+	    rb_str_append(error_message, rb_sym2str(k));
+	    if (++i >= len) break;
+	    rb_str_cat_cstr(error_message, ", ");
+	}
     }
-    else {
-	keys = rb_ary_join(keys, rb_usascii_str_new2(", "));
-	msg = "s";
-    }
-
-    error_message = rb_sprintf("%s keyword%s: %"PRIsVALUE, error, msg, keys);
 
     return rb_exc_new_str(rb_eArgError, error_message);
 }
@@ -1814,15 +1806,12 @@ static void
 unknown_keyword_error(VALUE hash, const ID *table, int keywords)
 {
     st_table *tbl = rb_hash_tbl_raw(hash);
-    VALUE keys;
     int i;
     for (i = 0; i < keywords; i++) {
 	st_data_t key = ID2SYM(table[i]);
 	st_delete(tbl, &key, NULL);
     }
-    keys = rb_funcallv(hash, rb_intern("keys"), 0, 0);
-    if (!RB_TYPE_P(keys, T_ARRAY)) rb_raise(rb_eArgError, "unknown keyword");
-    rb_keyword_error("unknown", keys);
+    rb_keyword_error("unknown", rb_hash_keys(hash));
 }
 
 static int

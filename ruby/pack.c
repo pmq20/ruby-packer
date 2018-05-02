@@ -126,18 +126,6 @@ str_associated(VALUE str)
     return rb_ivar_lookup(str, id_associated, Qfalse);
 }
 
-void
-rb_str_associate(VALUE str, VALUE add)
-{
-    ONLY_FOR_INTERNAL_USE("rb_str_associate()");
-}
-
-VALUE
-rb_str_associated(VALUE str)
-{
-    ONLY_FOR_INTERNAL_USE("rb_str_associated()");
-}
-
 /*
  *  call-seq:
  *     arr.pack( aTemplateString ) -> aBinaryString
@@ -1023,10 +1011,11 @@ hex2num(char c)
 	rb_ary_store(ary, RARRAY_LEN(ary)+tmp_len-1, Qnil); \
 } while (0)
 
-/* Workaround for Oracle Solaris Studio 12.4 C compiler optimization bug
+/* Workaround for Oracle Developer Studio (Oracle Solaris Studio)
+ * 12.4/12.5/12.6 C compiler optimization bug
  * with "-xO4" optimization option.
  */
-#if defined(__SUNPRO_C) && __SUNPRO_C == 0x5130
+#if defined(__SUNPRO_C) && 0x5130 <= __SUNPRO_C && __SUNPRO_C <= 0x5150
 # define AVOID_CC_BUG volatile
 #else
 # define AVOID_CC_BUG
@@ -1138,7 +1127,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, int mode)
 	else if (ISDIGIT(*p)) {
 	    errno = 0;
 	    len = STRTOUL(p, (char**)&p, 10);
-	    if (errno) {
+	    if (len < 0 || errno) {
 		rb_raise(rb_eRangeError, "pack length too big");
 	    }
 	}
@@ -1609,6 +1598,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, int mode)
 	    {
 		VALUE buf = infected_str_new(0, send - s, str);
 		char *ptr = RSTRING_PTR(buf), *ss = s;
+		int csum = 0;
 		int c1, c2;
 
 		while (s < send) {
@@ -1620,18 +1610,19 @@ pack_unpack_internal(VALUE str, VALUE fmt, int mode)
 			    if ((c1 = hex2num(*s)) == -1) break;
 			    if (++s == send) break;
 			    if ((c2 = hex2num(*s)) == -1) break;
-			    *ptr++ = castchar(c1 << 4 | c2);
+			    csum |= *ptr++ = castchar(c1 << 4 | c2);
 			}
 		    }
 		    else {
-			*ptr++ = *s;
+			csum |= *ptr++ = *s;
 		    }
 		    s++;
 		    ss = s;
 		}
 		rb_str_set_len(buf, ptr - RSTRING_PTR(buf));
 		rb_str_buf_cat(buf, ss, send-ss);
-		ENCODING_CODERANGE_SET(buf, rb_ascii8bit_encindex(), ENC_CODERANGE_VALID);
+		csum = ISASCII(csum) ? ENC_CODERANGE_7BIT : ENC_CODERANGE_VALID;
+		ENCODING_CODERANGE_SET(buf, rb_ascii8bit_encindex(), csum);
 		UNPACK_PUSH(buf);
 	    }
 	    break;

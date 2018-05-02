@@ -63,9 +63,10 @@ The following are <i>metacharacters</i> <tt>(</tt>, <tt>)</tt>,
 <tt>[</tt>, <tt>]</tt>, <tt>{</tt>, <tt>}</tt>, <tt>.</tt>, <tt>?</tt>,
 <tt>+</tt>, <tt>*</tt>. They have a specific meaning when appearing in a
 pattern. To match them literally they must be backslash-escaped. To match
-a backslash literally backslash-escape that: <tt>\\\\\\</tt>.
+a backslash literally, backslash-escape it: <tt>\\\\</tt>.
 
     /1 \+ 2 = 3\?/.match('Does 1 + 2 = 3?') #=> #<MatchData "1 + 2 = 3?">
+    /a\\\\b/.match('a\\\\b')                    #=> #<MatchData "a\\b">
 
 Patterns behave like double-quoted strings so can contain the same
 backslash escapes.
@@ -227,7 +228,7 @@ Capture groups can be referred to by name when defined with the
 constructs.
 
     /\$(?<dollars>\d+)\.(?<cents>\d+)/.match("$3.67")
-        => #<MatchData "$3.67" dollars:"3" cents:"67">
+        #=> #<MatchData "$3.67" dollars:"3" cents:"67">
     /\$(?<dollars>\d+)\.(?<cents>\d+)/.match("$3.67")[:dollars] #=> "3"
 
 Named groups can be backreferenced with <tt>\k<</tt><i>name</i><tt>></tt>,
@@ -607,9 +608,9 @@ regexp's encoding can be explicitly fixed by supplying
 <tt>Regexp.new</tt>:
 
     r = Regexp.new("a".force_encoding("iso-8859-1"),Regexp::FIXEDENCODING)
-    r =~"a\u3042"
-       #=> Encoding::CompatibilityError: incompatible encoding regexp match
-            (ISO-8859-1 regexp with UTF-8 string)
+    r =~ "a\u3042"
+       # raises Encoding::CompatibilityError: incompatible encoding regexp match
+       #         (ISO-8859-1 regexp with UTF-8 string)
 
 == Special global variables
 

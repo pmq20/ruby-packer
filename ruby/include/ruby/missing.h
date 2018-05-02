@@ -3,7 +3,7 @@
   missing.h - prototype for *.c in ./missing, and
   	      for missing timeval struct
 
-  $Author: nobu $
+  $Author: rhe $
   created at: Sat May 11 23:46:03 JST 2002
 
 ************************************************/
@@ -213,12 +213,6 @@ RUBY_EXTERN char *strerror(int);
 #ifndef HAVE_STRSTR
 RUBY_EXTERN char *strstr(const char *, const char *);
 #endif
-
-/*
-#ifndef HAVE_STRTOL
-RUBY_EXTERN long strtol(const char *, char **, int);
-#endif
-*/
 
 #ifndef HAVE_STRLCPY
 RUBY_EXTERN size_t strlcpy(char *, const char*, size_t);

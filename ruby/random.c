@@ -2,7 +2,7 @@
 
   random.c -
 
-  $Author: nagachika $
+  $Author: mame $
   created at: Fri Dec 24 16:39:21 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -447,14 +447,21 @@ fill_random_bytes_urandom(void *seed, size_t size)
 			     O_RDONLY, 0);
     struct stat statbuf;
     ssize_t ret = 0;
+    size_t offset = 0;
 
     if (fd < 0) return -1;
     rb_update_max_fd(fd);
     if (fstat(fd, &statbuf) == 0 && S_ISCHR(statbuf.st_mode)) {
-	ret = read(fd, seed, size);
+	do {
+	    ret = read(fd, ((char*)seed) + offset, size - offset);
+	    if (ret < 0) {
+		close(fd);
+		return -1;
+	    }
+	    offset += (size_t)ret;
+	} while(offset < size);
     }
     close(fd);
-    if (ret < 0 || (size_t)ret < size) return -1;
     return 0;
 }
 #else
@@ -505,7 +512,7 @@ fill_random_bytes_syscall(void *seed, size_t size, int unused)
     CryptGenRandom(prov, size, seed);
     return 0;
 }
-#elif defined __linux__ && defined SYS_getrandom
+#elif defined __linux__ && defined __NR_getrandom
 #include <linux/random.h>
 
 # ifndef GRND_NONBLOCK
@@ -518,16 +525,20 @@ fill_random_bytes_syscall(void *seed, size_t size, int need_secure)
     static rb_atomic_t try_syscall = 1;
     if (try_syscall) {
 	long ret;
+	size_t offset = 0;
 	int flags = 0;
 	if (!need_secure)
 	    flags = GRND_NONBLOCK;
-	errno = 0;
-	ret = syscall(SYS_getrandom, seed, size, flags);
-	if (errno == ENOSYS) {
-	    ATOMIC_SET(try_syscall, 0);
-	    return -1;
-	}
-	if ((size_t)ret == size) return 0;
+	do {
+	    errno = 0;
+	    ret = syscall(__NR_getrandom, ((char*)seed) + offset, size - offset, flags);
+	    if (ret == -1) {
+		ATOMIC_SET(try_syscall, 0);
+		return -1;
+	    }
+	    offset += (size_t)ret;
+	} while(offset < size);
+	return 0;
     }
     return -1;
 }
@@ -603,11 +614,20 @@ random_seed(void)
 }
 
 /*
- * call-seq: Random.raw_seed(size) -> string
+ * call-seq: Random.urandom(size) -> string
  *
- * Returns a raw seed string, using platform providing features.
+ * Returns a string, using platform providing features.
+ * Returned value is expected to be a cryptographically secure
+ * pseudo-random number in binary form.
+ * This method raises a RuntimeError if the feature provided by platform
+ * failed to prepare the result.
  *
- *   Random.raw_seed(8)  #=> "\x78\x41\xBA\xAF\x7D\xEA\xD8\xEA"
+ * In 2017, Linux manpage random(7) writes that "no cryptographic
+ * primitive available today can hope to promise more than 256 bits of
+ * security".  So it might be questionable to pass size > 32 to this
+ * method.
+ *
+ *   Random.urandom(8)  #=> "\x78\x41\xBA\xAF\x7D\xEA\xD8\xEA"
  */
 static VALUE
 random_raw_seed(VALUE self, VALUE size)
@@ -615,7 +635,8 @@ random_raw_seed(VALUE self, VALUE size)
     long n = NUM2ULONG(size);
     VALUE buf = rb_str_new(0, n);
     if (n == 0) return buf;
-    if (fill_random_bytes(RSTRING_PTR(buf), n, FALSE)) return Qnil;
+    if (fill_random_bytes(RSTRING_PTR(buf), n, FALSE))
+	rb_raise(rb_eRuntimeError, "failed to get urandom");
     return buf;
 }
 
@@ -1457,7 +1478,7 @@ random_s_rand(int argc, VALUE *argv, VALUE obj)
 }
 
 #define SIP_HASH_STREAMING 0
-#define sip_hash24 ruby_sip_hash24
+#define sip_hash13 ruby_sip_hash13
 #if !defined _WIN32 && !defined BYTE_ORDER
 # ifdef WORDS_BIGENDIAN
 #   define BYTE_ORDER BIG_ENDIAN
@@ -1501,7 +1522,7 @@ rb_hash_start(st_index_t h)
 st_index_t
 rb_memhash(const void *ptr, long len)
 {
-    sip_uint64_t h = sip_hash24(seed.key.sip, ptr, len);
+    sip_uint64_t h = sip_hash13(seed.key.sip, ptr, len);
 #ifdef HAVE_UINT64_T
     return (st_index_t)h;
 #else
@@ -1616,7 +1637,7 @@ InitVM_Random(void)
     rb_define_singleton_method(rb_cRandom, "srand", rb_f_srand, -1);
     rb_define_singleton_method(rb_cRandom, "rand", random_s_rand, -1);
     rb_define_singleton_method(rb_cRandom, "new_seed", random_seed, 0);
-    rb_define_singleton_method(rb_cRandom, "raw_seed", random_raw_seed, 1);
+    rb_define_singleton_method(rb_cRandom, "urandom", random_raw_seed, 1);
     rb_define_private_method(CLASS_OF(rb_cRandom), "state", random_s_state, 0);
     rb_define_private_method(CLASS_OF(rb_cRandom), "left", random_s_left, 0);
 

@@ -4,12 +4,14 @@
 	return "NODE_BLOCK";
       case NODE_IF:
 	return "NODE_IF";
+      case NODE_UNLESS:
+	return "NODE_UNLESS";
       case NODE_CASE:
 	return "NODE_CASE";
+      case NODE_CASE2:
+	return "NODE_CASE2";
       case NODE_WHEN:
 	return "NODE_WHEN";
-      case NODE_OPT_N:
-	return "NODE_OPT_N";
       case NODE_WHILE:
 	return "NODE_WHILE";
       case NODE_UNTIL:
@@ -50,14 +52,10 @@
 	return "NODE_GASGN";
       case NODE_IASGN:
 	return "NODE_IASGN";
-      case NODE_IASGN2:
-	return "NODE_IASGN2";
       case NODE_CDECL:
 	return "NODE_CDECL";
       case NODE_CVASGN:
 	return "NODE_CVASGN";
-      case NODE_CVDECL:
-	return "NODE_CVDECL";
       case NODE_OP_ASGN1:
 	return "NODE_OP_ASGN1";
       case NODE_OP_ASGN2:
@@ -70,6 +68,8 @@
 	return "NODE_OP_CDECL";
       case NODE_CALL:
 	return "NODE_CALL";
+      case NODE_OPCALL:
+	return "NODE_OPCALL";
       case NODE_FCALL:
 	return "NODE_FCALL";
       case NODE_VCALL:
@@ -128,8 +128,6 @@
 	return "NODE_EVSTR";
       case NODE_DREGX:
 	return "NODE_DREGX";
-      case NODE_DREGX_ONCE:
-	return "NODE_DREGX_ONCE";
       case NODE_ARGS:
 	return "NODE_ARGS";
       case NODE_ARGS_AUX:
@@ -146,10 +144,6 @@
 	return "NODE_ARGSPUSH";
       case NODE_SPLAT:
 	return "NODE_SPLAT";
-      case NODE_TO_ARY:
-	return "NODE_TO_ARY";
-      case NODE_BLOCK_ARG:
-	return "NODE_BLOCK_ARG";
       case NODE_BLOCK_PASS:
 	return "NODE_BLOCK_PASS";
       case NODE_DEFN:
@@ -194,10 +188,6 @@
 	return "NODE_DEFINED";
       case NODE_POSTEXE:
 	return "NODE_POSTEXE";
-      case NODE_ALLOCA:
-	return "NODE_ALLOCA";
-      case NODE_BMETHOD:
-	return "NODE_BMETHOD";
       case NODE_DSYM:
 	return "NODE_DSYM";
       case NODE_ATTRASGN:

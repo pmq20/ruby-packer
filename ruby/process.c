@@ -2,7 +2,7 @@
 
   process.c -
 
-  $Author: nagachika $
+  $Author: stomar $
   created at: Tue Aug 10 14:30:50 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -61,13 +61,6 @@
 #include "ruby/st.h"
 
 #include <sys/stat.h>
-#if defined(__native_client__) && defined(NACL_NEWLIB)
-# include <sys/unistd.h>
-# include "nacl/stat.h"
-# include "nacl/unistd.h"
-# include "nacl/resource.h"
-# undef HAVE_ISSETUGID
-#endif
 
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
@@ -150,11 +143,9 @@ int setregid(rb_gid_t rgid, rb_gid_t egid);
 #endif
 #endif
 
-#define preserving_errno(stmts) \
-	do {int saved_errno = errno; stmts; errno = saved_errno;} while (0)
-
 static void check_uid_switch(void);
 static void check_gid_switch(void);
+static int exec_async_signal_safe(const struct rb_execarg *, char *, size_t);
 
 #if 1
 #define p_uid_from_name p_uid_from_name
@@ -479,6 +470,27 @@ VALUE
 rb_last_status_get(void)
 {
     return GET_THREAD()->last_status;
+}
+
+/*
+ *  call-seq:
+ *     Process.last_status   -> Process::Status or nil
+ *
+ *  Returns the status of the last executed child process in the
+ *  current thread.
+ *
+ *     Process.wait Process.spawn("ruby", "-e", "exit 13")
+ *     Process.last_status   #=> #<Process::Status: pid 4825 exit 13>
+ *
+ *  If no child process has ever been executed in the current
+ *  thread, this returns +nil+.
+ *
+ *     Process.last_status   #=> nil
+ */
+static VALUE
+proc_s_last_status(VALUE mod)
+{
+    return rb_last_status_get();
 }
 
 void
@@ -909,8 +921,7 @@ rb_waitpid(rb_pid_t pid, int *st, int flags)
     else {
 	while ((result = do_waitpid_nonblocking(pid, st, flags)) < 0 &&
 	       (errno == EINTR)) {
-	    rb_thread_t *th = GET_THREAD();
-	    RUBY_VM_CHECK_INTS(th);
+	    RUBY_VM_CHECK_INTS(GET_EC());
 	}
     }
     if (result > 0) {
@@ -1219,10 +1230,10 @@ security(const char *str)
     }
 }
 
-#if defined(HAVE_WORKING_FORK) && !defined(__native_client__)
+#if defined(HAVE_WORKING_FORK)
 
 /* try_with_sh and exec_with_sh should be async-signal-safe. Actually it is.*/
-#define try_with_sh(prog, argv, envp) ((saved_errno == ENOEXEC) ? exec_with_sh((prog), (argv), (envp)) : (void)0)
+#define try_with_sh(err, prog, argv, envp) ((err == ENOEXEC) ? exec_with_sh((prog), (argv), (envp)) : (void)0)
 static void
 exec_with_sh(const char *prog, char **argv, char **envp)
 {
@@ -1242,33 +1253,30 @@ exec_with_sh(const char *prog, char **argv, char **envp)
 static int
 proc_exec_cmd(const char *prog, VALUE argv_str, VALUE envp_str)
 {
-#ifdef __native_client__
-    rb_notimplement();
-    UNREACHABLE;
-#else
     char **argv;
 #ifndef _WIN32
     char **envp;
+    int err;
 #endif
 
     argv = ARGVSTR2ARGV(argv_str);
 
     if (!prog) {
-	errno = ENOENT;
-	return -1;
+	return ENOENT;
     }
 
 #ifdef _WIN32
     rb_w32_uaspawn(P_OVERLAY, prog, argv);
+    return errno;
 #else
     envp = envp_str ? (char **)RSTRING_PTR(envp_str) : NULL;
     if (envp_str)
         execve(prog, argv, envp); /* async-signal-safe */
     else
         execv(prog, argv); /* async-signal-safe (since SUSv4) */
-    preserving_errno(try_with_sh(prog, argv, envp)); /* try_with_sh() is async-signal-safe. */
-#endif
-    return -1;
+    err = errno;
+    try_with_sh(err, prog, argv, envp); /* try_with_sh() is async-signal-safe. */
+    return err;
 #endif
 }
 
@@ -1276,10 +1284,6 @@ proc_exec_cmd(const char *prog, VALUE argv_str, VALUE envp_str)
 static int
 proc_exec_sh(const char *str, VALUE envp_str)
 {
-#ifdef __native_client__
-    rb_notimplement();
-    UNREACHABLE;
-#else
     const char *s;
 
     s = str;
@@ -1287,15 +1291,12 @@ proc_exec_sh(const char *str, VALUE envp_str)
 	s++;
 
     if (!*s) {
-        errno = ENOENT;
-        return -1;
+        return ENOENT;
     }
 
 #ifdef _WIN32
     rb_w32_uspawn(P_OVERLAY, (char *)str, 0);
-    return -1;
-#else
-#if defined(__CYGWIN32__)
+#elif defined(__CYGWIN32__)
     {
         char fbuf[MAXPATHLEN];
         char *shell = dln_find_exe_r("sh", 0, fbuf, sizeof(fbuf));
@@ -1312,10 +1313,8 @@ proc_exec_sh(const char *str, VALUE envp_str)
         execle("/bin/sh", "sh", "-c", str, (char *)NULL, (char **)RSTRING_PTR(envp_str)); /* async-signal-safe */
     else
         execl("/bin/sh", "sh", "-c", str, (char *)NULL); /* async-signal-safe (since SUSv4) */
-#endif
-    return -1;
 #endif	/* _WIN32 */
-#endif
+    return errno;
 }
 
 int
@@ -1324,8 +1323,9 @@ rb_proc_exec(const char *str)
     int ret;
     before_exec();
     ret = proc_exec_sh(str, Qfalse);
-    preserving_errno(after_exec());
-    return ret;
+    after_exec();
+    errno = ret;
+    return -1;
 }
 
 static void
@@ -1486,7 +1486,7 @@ check_exec_redirect_fd(VALUE v, int iskey)
         else
             goto wrong;
     }
-    else if (!NIL_P(tmp = rb_check_convert_type(v, T_FILE, "IO", "to_io"))) {
+    else if (!NIL_P(tmp = rb_check_convert_type_with_id(v, T_FILE, "IO", idTo_io))) {
         rb_io_t *fptr;
         GetOpenFile(tmp, fptr);
         if (fptr->tied_io_for_writing)
@@ -2258,8 +2258,7 @@ rb_execarg_new(int argc, const VALUE *argv, int accept_shell)
 {
     VALUE execarg_obj;
     struct rb_execarg *eargp;
-    execarg_obj = TypedData_Make_Struct(rb_cData, struct rb_execarg, &exec_arg_data_type, eargp);
-    hide_obj(execarg_obj);
+    execarg_obj = TypedData_Make_Struct(0, struct rb_execarg, &exec_arg_data_type, eargp);
     rb_execarg_init(argc, argv, accept_shell, execarg_obj);
     return execarg_obj;
 }
@@ -2403,7 +2402,7 @@ rb_execarg_parent_start1(VALUE execarg_obj)
         }
         else {
             envtbl = rb_const_get(rb_cObject, id_ENV);
-            envtbl = rb_convert_type(envtbl, T_HASH, "Hash", "to_hash");
+            envtbl = rb_to_hash_type(envtbl);
         }
         hide_obj(envtbl);
         if (envopts != Qfalse) {
@@ -2607,9 +2606,7 @@ rb_f_exec(int argc, const VALUE *argv)
     rb_execarg_parent_start(execarg_obj);
     fail_str = eargp->use_shell ? eargp->invoke.sh.shell_script : eargp->invoke.cmd.command_name;
 
-    rb_exec_async_signal_safe(eargp, errmsg, sizeof(errmsg));
-
-    err = errno;
+    err = exec_async_signal_safe(eargp, errmsg, sizeof(errmsg));
     after_exec(); /* restart timer thread */
 
     rb_exec_fail(eargp, err, errmsg);
@@ -3104,7 +3101,7 @@ rb_execarg_run_options(const struct rb_execarg *eargp, struct rb_execarg *sargp,
 
     if (eargp->chdir_given) {
         if (sargp) {
-            char *cwd = my_getcwd();
+            char *cwd = ruby_getcwd();
             sargp->chdir_given = 1;
             sargp->chdir_dir = hide_obj(rb_str_new2(cwd));
             xfree(cwd);
@@ -3149,31 +3146,38 @@ rb_execarg_run_options(const struct rb_execarg *eargp, struct rb_execarg *sargp,
 int
 rb_exec_async_signal_safe(const struct rb_execarg *eargp, char *errmsg, size_t errmsg_buflen)
 {
+    errno = exec_async_signal_safe(eargp, errmsg, errmsg_buflen);
+    return -1;
+}
+
+static int
+exec_async_signal_safe(const struct rb_execarg *eargp, char *errmsg, size_t errmsg_buflen)
+{
 #if !defined(HAVE_WORKING_FORK)
     struct rb_execarg sarg, *const sargp = &sarg;
 #else
     struct rb_execarg *const sargp = NULL;
 #endif
+    int err;
 
     if (rb_execarg_run_options(eargp, sargp, errmsg, errmsg_buflen) < 0) { /* hopefully async-signal-safe */
-        goto failure;
+	return errno;
     }
 
     if (eargp->use_shell) {
-	proc_exec_sh(RSTRING_PTR(eargp->invoke.sh.shell_script), eargp->envp_str); /* async-signal-safe */
+	err = proc_exec_sh(RSTRING_PTR(eargp->invoke.sh.shell_script), eargp->envp_str); /* async-signal-safe */
     }
     else {
 	char *abspath = NULL;
 	if (!NIL_P(eargp->invoke.cmd.command_abspath))
 	    abspath = RSTRING_PTR(eargp->invoke.cmd.command_abspath);
-	proc_exec_cmd(abspath, eargp->invoke.cmd.argv_str, eargp->envp_str); /* async-signal-safe */
+	err = proc_exec_cmd(abspath, eargp->invoke.cmd.argv_str, eargp->envp_str); /* async-signal-safe */
     }
 #if !defined(HAVE_WORKING_FORK)
-    preserving_errno(rb_execarg_run_options(sargp, NULL, errmsg, errmsg_buflen));
+    rb_execarg_run_options(sargp, NULL, errmsg, errmsg_buflen);
 #endif
 
-failure:
-    return -1;
+    return err;
 }
 
 #ifdef HAVE_WORKING_FORK
@@ -3244,11 +3248,11 @@ pipe_nocrash(int filedes[2], VALUE fds)
 #endif
 
 static int
-handle_fork_error(int *status, int *ep, volatile int *try_gc_p)
+handle_fork_error(int err, int *status, int *ep, volatile int *try_gc_p)
 {
     int state = 0;
 
-    switch (errno) {
+    switch (err) {
       case ENOMEM:
         if ((*try_gc_p)-- > 0 && !rb_during_gc()) {
             rb_gc();
@@ -3271,7 +3275,9 @@ handle_fork_error(int *status, int *ep, volatile int *try_gc_p)
         break;
     }
     if (ep) {
-        preserving_errno((close(ep[0]), close(ep[1])));
+	close(ep[0]);
+	close(ep[1]);
+	errno = err;
     }
     if (state && !status) rb_jump_tag(state);
     return -1;
@@ -3530,24 +3536,24 @@ disable_child_handler_fork_child(struct child_handler_disabler_state *old, char 
     int ret;
 
     for (sig = 1; sig < NSIG; sig++) {
-            sig_t handler = signal(sig, SIG_DFL);
+	sig_t handler = signal(sig, SIG_DFL);
 
-            if (handler == SIG_ERR && errno == EINVAL) {
-                continue; /* Ignore invalid signal number */
-            }
-            if (handler == SIG_ERR) {
-                ERRMSG("signal to obtain old action");
-                return -1;
-            }
+	if (handler == SIG_ERR && errno == EINVAL) {
+	    continue; /* Ignore invalid signal number */
+	}
+	if (handler == SIG_ERR) {
+	    ERRMSG("signal to obtain old action");
+	    return -1;
+	}
 #ifdef SIGPIPE
-            if (sig == SIGPIPE) {
-                continue;
-            }
+	if (sig == SIGPIPE) {
+	    continue;
+	}
 #endif
-            /* it will be reset to SIG_DFL at execve time, instead */
-            if (handler == SIG_IGN) {
-                signal(sig, SIG_IGN);
-            }
+	/* it will be reset to SIG_DFL at execve time, instead */
+	if (handler == SIG_IGN) {
+	    signal(sig, SIG_IGN);
+	}
     }
 
     ret = sigprocmask(SIG_SETMASK, &old->sigmask, NULL); /* async-signal-safe */
@@ -3566,6 +3572,7 @@ retry_fork_async_signal_safe(int *status, int *ep,
     rb_pid_t pid;
     volatile int try_gc = 1;
     struct child_handler_disabler_state old;
+    int err;
 
     while (1) {
         prefork();
@@ -3593,11 +3600,12 @@ retry_fork_async_signal_safe(int *status, int *ep,
             _exit(127);
 #endif
         }
-        preserving_errno(disable_child_handler_fork_parent(&old));
+	err = errno;
+	disable_child_handler_fork_parent(&old);
         if (0 < pid) /* fork succeed, parent process */
             return pid;
         /* fork failed */
-        if (handle_fork_error(status, ep, &try_gc))
+	if (handle_fork_error(err, status, ep, &try_gc))
             return -1;
     }
 }
@@ -3632,41 +3640,29 @@ rb_fork_async_signal_safe(int *status, int (*chfunc)(void*, char *, size_t), voi
     return pid;
 }
 
-static rb_pid_t
-retry_fork_ruby(int *status)
-{
-    rb_pid_t pid;
-    int try_gc = 1;
-
-    while (1) {
-        prefork();
-        before_fork_ruby();
-        pid = fork();
-        if (pid == 0) /* fork succeed, child process */
-            return pid;
-        preserving_errno(after_fork_ruby());
-        if (0 < pid) /* fork succeed, parent process */
-            return pid;
-        /* fork failed */
-        if (handle_fork_error(status, NULL, &try_gc))
-            return -1;
-    }
-}
-
 rb_pid_t
 rb_fork_ruby(int *status)
 {
     rb_pid_t pid;
+    int try_gc = 1, err;
+    struct child_handler_disabler_state old;
 
     if (status) *status = 0;
 
-    pid = retry_fork_ruby(status);
-    if (pid < 0)
-        return pid;
-    if (!pid) {
-        after_fork_ruby();
+    while (1) {
+	prefork();
+	before_fork_ruby();
+	disable_child_handler_before_fork(&old);
+	pid = fork();
+	err = errno;
+	after_fork_ruby();
+	disable_child_handler_fork_parent(&old); /* yes, bad name */
+	if (pid >= 0) /* fork succeed */
+	    return pid;
+	/* fork failed */
+	if (handle_fork_error(err, status, NULL, &try_gc))
+	    return -1;
     }
-    return pid;
 }
 
 #endif
@@ -3778,7 +3774,7 @@ rb_f_exit_bang(int argc, VALUE *argv, VALUE obj)
 void
 rb_exit(int status)
 {
-    if (GET_THREAD()->tag) {
+    if (GET_EC()->tag) {
 	VALUE args[2];
 
 	args[0] = INT2NUM(status);
@@ -3863,8 +3859,10 @@ rb_f_abort(int argc, const VALUE *argv)
 {
     rb_check_arity(argc, 0, 1);
     if (argc == 0) {
-	if (!NIL_P(GET_THREAD()->errinfo)) {
-	    ruby_error_print();
+	rb_execution_context_t *ec = GET_EC();
+	VALUE errinfo = ec->errinfo;
+	if (!NIL_P(errinfo)) {
+	    rb_ec_error_print(ec, errinfo);
 	}
 	rb_exit(EXIT_FAILURE);
     }
@@ -5057,6 +5055,7 @@ obj2uid(VALUE id
 	struct passwd pwbuf;
 	char *getpw_buf;
 	long getpw_buf_len;
+	int e;
 	if (!*getpw_tmp) {
 	    getpw_buf_len = GETPW_R_SIZE_INIT;
 	    if (getpw_buf_len < 0) getpw_buf_len = GETPW_R_SIZE_DEFAULT;
@@ -5065,10 +5064,8 @@ obj2uid(VALUE id
 	getpw_buf = RSTRING_PTR(*getpw_tmp);
 	getpw_buf_len = rb_str_capacity(*getpw_tmp);
 	rb_str_set_len(*getpw_tmp, getpw_buf_len);
-	errno = ERANGE;
-	/* gepwnam_r() on MacOS X doesn't set errno if buffer size is insufficient */
-	while (getpwnam_r(usrname, &pwbuf, getpw_buf, getpw_buf_len, &pwptr)) {
-	    int e = errno;
+	errno = 0;
+	while ((e = getpwnam_r(usrname, &pwbuf, getpw_buf, getpw_buf_len, &pwptr)) != 0) {
 	    if (e != ERANGE || getpw_buf_len >= GETPW_R_SIZE_LIMIT) {
 		rb_str_resize(*getpw_tmp, 0);
 		rb_syserr_fail(e, "getpwnam_r");
@@ -5135,6 +5132,7 @@ obj2gid(VALUE id
 	struct group grbuf;
 	char *getgr_buf;
 	long getgr_buf_len;
+	int e;
 	if (!*getgr_tmp) {
 	    getgr_buf_len = GETGR_R_SIZE_INIT;
 	    if (getgr_buf_len < 0) getgr_buf_len = GETGR_R_SIZE_DEFAULT;
@@ -5143,10 +5141,8 @@ obj2gid(VALUE id
 	getgr_buf = RSTRING_PTR(*getgr_tmp);
 	getgr_buf_len = rb_str_capacity(*getgr_tmp);
 	rb_str_set_len(*getgr_tmp, getgr_buf_len);
-	errno = ERANGE;
-	/* gegrnam_r() on MacOS X doesn't set errno if buffer size is insufficient */
-	while (getgrnam_r(grpname, &grbuf, getgr_buf, getgr_buf_len, &grptr)) {
-	    int e = errno;
+	errno = 0;
+	while ((e = getgrnam_r(grpname, &grbuf, getgr_buf, getgr_buf_len, &grptr)) != 0) {
 	    if (e != ERANGE || getgr_buf_len >= GETGR_R_SIZE_LIMIT) {
 		rb_str_resize(*getgr_tmp, 0);
 		rb_syserr_fail(e, "getgrnam_r");
@@ -5944,7 +5940,7 @@ proc_setgroups(VALUE obj, VALUE ary)
 static VALUE
 proc_initgroups(VALUE obj, VALUE uname, VALUE base_grp)
 {
-    if (initgroups(StringValuePtr(uname), OBJ2GID(base_grp)) != 0) {
+    if (initgroups(StringValueCStr(uname), OBJ2GID(base_grp)) != 0) {
 	rb_sys_fail(0);
     }
     return proc_getgroups(obj);
@@ -6916,15 +6912,26 @@ get_clk_tck(void)
 VALUE
 rb_proc_times(VALUE obj)
 {
+    VALUE utime, stime, cutime, cstime, ret;
+#if defined(RUSAGE_SELF) && defined(RUSAGE_CHILDREN)
+    struct rusage usage_s, usage_c;
+
+    if (getrusage(RUSAGE_SELF, &usage_s) != 0 || getrusage(RUSAGE_CHILDREN, &usage_c) != 0)
+	rb_sys_fail("getrusage");
+    utime = DBL2NUM((double)usage_s.ru_utime.tv_sec + (double)usage_s.ru_utime.tv_usec/1e6);
+    stime = DBL2NUM((double)usage_s.ru_stime.tv_sec + (double)usage_s.ru_stime.tv_usec/1e6);
+    cutime = DBL2NUM((double)usage_c.ru_utime.tv_sec + (double)usage_c.ru_utime.tv_usec/1e6);
+    cstime = DBL2NUM((double)usage_c.ru_stime.tv_sec + (double)usage_c.ru_stime.tv_usec/1e6);
+#else
     const double hertz = get_clk_tck();
     struct tms buf;
-    VALUE utime, stime, cutime, cstime, ret;
 
     times(&buf);
     utime = DBL2NUM(buf.tms_utime / hertz);
     stime = DBL2NUM(buf.tms_stime / hertz);
     cutime = DBL2NUM(buf.tms_cutime / hertz);
     cstime = DBL2NUM(buf.tms_cstime / hertz);
+#endif
     ret = rb_struct_new(rb_cProcessTms, utime, stime, cutime, cstime);
     RB_GC_GUARD(utime);
     RB_GC_GUARD(stime);
@@ -6941,11 +6948,13 @@ typedef LONG_LONG timetick_int_t;
 #define TIMETICK_INT_MIN LLONG_MIN
 #define TIMETICK_INT_MAX LLONG_MAX
 #define TIMETICK_INT2NUM(v) LL2NUM(v)
+#define MUL_OVERFLOW_TIMETICK_P(a, b) MUL_OVERFLOW_LONG_LONG_P(a, b)
 #else
 typedef long timetick_int_t;
 #define TIMETICK_INT_MIN LONG_MIN
 #define TIMETICK_INT_MAX LONG_MAX
 #define TIMETICK_INT2NUM(v) LONG2NUM(v)
+#define MUL_OVERFLOW_TIMETICK_P(a, b) MUL_OVERFLOW_LONG_P(a, b)
 #endif
 
 CONSTFUNC(static timetick_int_t gcd_timetick_int(timetick_int_t, timetick_int_t));
@@ -7061,8 +7070,7 @@ timetick2integer(struct timetick *ttp,
         timetick_int_t t = ttp->giga_count * 1000000000 + ttp->count;
         for (i = 0; i < num_numerators; i++) {
             timetick_int_t factor = numerators[i];
-            if (MUL_OVERFLOW_SIGNED_INTEGER_P(factor, t,
-                        TIMETICK_INT_MIN, TIMETICK_INT_MAX))
+            if (MUL_OVERFLOW_TIMETICK_P(factor, t))
                 goto generic;
             t *= factor;
         }
@@ -7619,6 +7627,7 @@ InitVM_process(void)
     rb_define_singleton_method(rb_mProcess, "exit!", rb_f_exit_bang, -1);
     rb_define_singleton_method(rb_mProcess, "exit", rb_f_exit, -1);
     rb_define_singleton_method(rb_mProcess, "abort", rb_f_abort, -1);
+    rb_define_singleton_method(rb_mProcess, "last_status", proc_s_last_status, 0);
 
     rb_define_module_function(rb_mProcess, "kill", rb_f_kill, -1); /* in signal.c */
     rb_define_module_function(rb_mProcess, "wait", proc_wait, -1);
@@ -7835,78 +7844,104 @@ InitVM_process(void)
     rb_define_module_function(rb_mProcess, "times", rb_proc_times, 0);
 
 #ifdef CLOCK_REALTIME
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_REALTIME", CLOCKID2NUM(CLOCK_REALTIME));
 #elif defined(RUBY_GETTIMEOFDAY_BASED_CLOCK_REALTIME)
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_REALTIME", RUBY_GETTIMEOFDAY_BASED_CLOCK_REALTIME);
 #endif
 #ifdef CLOCK_MONOTONIC
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_MONOTONIC", CLOCKID2NUM(CLOCK_MONOTONIC));
 #elif defined(RUBY_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC)
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_MONOTONIC", RUBY_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC);
 #endif
 #ifdef CLOCK_PROCESS_CPUTIME_ID
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_PROCESS_CPUTIME_ID", CLOCKID2NUM(CLOCK_PROCESS_CPUTIME_ID));
 #elif defined(RUBY_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID)
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_PROCESS_CPUTIME_ID", RUBY_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID);
 #endif
 #ifdef CLOCK_THREAD_CPUTIME_ID
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_THREAD_CPUTIME_ID", CLOCKID2NUM(CLOCK_THREAD_CPUTIME_ID));
 #endif
 #ifdef CLOCK_VIRTUAL
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_VIRTUAL", CLOCKID2NUM(CLOCK_VIRTUAL));
 #endif
 #ifdef CLOCK_PROF
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_PROF", CLOCKID2NUM(CLOCK_PROF));
 #endif
 #ifdef CLOCK_REALTIME_FAST
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_REALTIME_FAST", CLOCKID2NUM(CLOCK_REALTIME_FAST));
 #endif
 #ifdef CLOCK_REALTIME_PRECISE
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_REALTIME_PRECISE", CLOCKID2NUM(CLOCK_REALTIME_PRECISE));
 #endif
 #ifdef CLOCK_REALTIME_COARSE
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_REALTIME_COARSE", CLOCKID2NUM(CLOCK_REALTIME_COARSE));
 #endif
 #ifdef CLOCK_REALTIME_ALARM
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_REALTIME_ALARM", CLOCKID2NUM(CLOCK_REALTIME_ALARM));
 #endif
 #ifdef CLOCK_MONOTONIC_FAST
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_MONOTONIC_FAST", CLOCKID2NUM(CLOCK_MONOTONIC_FAST));
 #endif
 #ifdef CLOCK_MONOTONIC_PRECISE
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_MONOTONIC_PRECISE", CLOCKID2NUM(CLOCK_MONOTONIC_PRECISE));
 #endif
 #ifdef CLOCK_MONOTONIC_RAW
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_MONOTONIC_RAW", CLOCKID2NUM(CLOCK_MONOTONIC_RAW));
 #endif
 #ifdef CLOCK_MONOTONIC_RAW_APPROX
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_MONOTONIC_RAW_APPROX", CLOCKID2NUM(CLOCK_MONOTONIC_RAW_APPROX));
 #endif
 #ifdef CLOCK_MONOTONIC_COARSE
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_MONOTONIC_COARSE", CLOCKID2NUM(CLOCK_MONOTONIC_COARSE));
 #endif
 #ifdef CLOCK_BOOTTIME
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_BOOTTIME", CLOCKID2NUM(CLOCK_BOOTTIME));
 #endif
 #ifdef CLOCK_BOOTTIME_ALARM
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_BOOTTIME_ALARM", CLOCKID2NUM(CLOCK_BOOTTIME_ALARM));
 #endif
 #ifdef CLOCK_UPTIME
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_UPTIME", CLOCKID2NUM(CLOCK_UPTIME));
 #endif
 #ifdef CLOCK_UPTIME_FAST
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_UPTIME_FAST", CLOCKID2NUM(CLOCK_UPTIME_FAST));
 #endif
 #ifdef CLOCK_UPTIME_PRECISE
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_UPTIME_PRECISE", CLOCKID2NUM(CLOCK_UPTIME_PRECISE));
 #endif
 #ifdef CLOCK_UPTIME_RAW
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_UPTIME_RAW", CLOCKID2NUM(CLOCK_UPTIME_RAW));
 #endif
 #ifdef CLOCK_UPTIME_RAW_APPROX
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_UPTIME_RAW_APPROX", CLOCKID2NUM(CLOCK_UPTIME_RAW_APPROX));
 #endif
 #ifdef CLOCK_SECOND
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_SECOND", CLOCKID2NUM(CLOCK_SECOND));
 #endif
     rb_define_module_function(rb_mProcess, "clock_gettime", rb_clock_gettime, -1);

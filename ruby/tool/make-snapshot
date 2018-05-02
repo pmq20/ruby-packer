@@ -7,6 +7,7 @@ require 'fileutils'
 require 'shellwords'
 require 'tmpdir'
 require File.expand_path("../vcs", __FILE__)
+require File.expand_path("../colorize", __FILE__)
 STDOUT.sync = true
 
 $srcdir ||= nil
@@ -18,6 +19,7 @@ $packages ||= nil
 $digests ||= nil
 $tooldir = File.expand_path("..", __FILE__)
 $unicode_version = nil if ($unicode_version ||= nil) == ""
+$colorize = Colorize.new
 
 def usage
   <<USAGE
@@ -46,7 +48,7 @@ PACKAGES = {
 
 if system("7z", out: IO::NULL)
   PACKAGES["gzip"] = %w".tar.gz 7z a dummy -tgzip -mx -so"
-  PACKAGES["zip"]  = %w".zip    7z a -tzip  -mx"
+  PACKAGES["zip"]  = %w".zip    7z a -tzip  -mx" << {out: IO::NULL}
 end
 if gzip = ENV.delete("GZIP")
   PACKAGES["gzip"].concat(gzip.shellsplit)
@@ -87,6 +89,9 @@ class Dir
 end
 
 $packages &&= $packages.split(/[, ]+/).tap {|pkg|
+  if all = pkg.index("all")
+    pkg[all, 1] = PACKAGES.keys - pkg
+  end
   pkg -= PACKAGES.keys
   pkg.empty? or abort "#{File.basename $0}: unknown packages - #{pkg.join(", ")}"
 }
@@ -203,13 +208,19 @@ def package(vcs, rev, destdir, tmp = nil)
         FileUtils.mkpath(File.dirname(dest))
         begin
           FileUtils.ln(file, dest, force: true)
+          next unless File.symlink?(dest)
+          File.unlink(dest)
         rescue SystemCallError
-          FileUtils.cp(file, dest, preserve: true)
+        end
+        begin
+          FileUtils.cp_r(file, dest, preserve: true)
+        rescue SystemCallError
         end
       end
     end
   end
 
+  status = IO.read(File.dirname(__FILE__) + "/prereq.status")
   Dir.chdir(tmp) if tmp
 
   if !File.directory?(v)
@@ -218,14 +229,16 @@ def package(vcs, rev, destdir, tmp = nil)
     v = v[0]
   end
 
-  # get last revision from previous ChangeLog archive
-  last_ChangeLog = Dir["#{v}/doc/ChangeLog-*"].grep(/-(\d+)\z/) {|n| [$1.to_i, n]}.max[1]
-  open(last_ChangeLog) do |f|
-    f.readline
-    unless /\Ar(\d+) / =~ f.readline
-      abort "#{File.basename $0}: Cannot find revision from '#{last_ChangeLog}'"
+  unless File.exist?("#{v}/ChangeLog")
+    # get last revision from previous ChangeLog archive
+    last_ChangeLog = Dir["#{v}/doc/ChangeLog-*"].grep(/-(\d+)\z/) {|n| [$1.to_i, n]}.max[1]
+    open(last_ChangeLog) do |f|
+      f.readline
+      unless /\Ar(\d+) / =~ f.readline
+        abort "#{File.basename $0}: Cannot find revision from '#{last_ChangeLog}'"
+      end
+      vcs.export_changelog(url, $1.to_i, revision.to_i, "#{v}/ChangeLog")
     end
-    vcs.export_changelog(url, $1.to_i, revision.to_i, "#{v}/ChangeLog")
   end
 
   open("#{v}/revision.h", "wb") {|f| f.puts "#define RUBY_REVISION #{revision}"}
@@ -257,7 +270,17 @@ def package(vcs, rev, destdir, tmp = nil)
   end
   system(*%W"patch -d #{v} -p0 -i #{$patch_file}") if $patch_file
   if !$exported or $patch_file
-    "take a breath, and go ahead".scan(/./) {|c|print c; sleep(c == "," ? 0.7 : 0.05)}; puts
+    colors = %w[red yellow green cyan blue magenta]
+    "take a breath, and go ahead".scan(/./) do |c|
+      if c == ' '
+        print c
+      else
+        colors.push(color = colors.shift)
+        print $colorize.decorate(c, color)
+      end
+      sleep(c == "," ? 0.7 : 0.05)
+    end
+    puts
   end
   def (clean = []).add(n) push(n); n end
   Dir.chdir(v) do
@@ -272,10 +295,10 @@ def package(vcs, rev, destdir, tmp = nil)
     unless File.exist?("configure")
       print "creating configure..."
       unless system([ENV["AUTOCONF"]]*2)
-        puts " failed"
+        puts $colorize.fail(" failed")
         return
       end
-      puts " done"
+      puts $colorize.pass(" done")
     end
     clean.add("autom4te.cache")
     clean.add("enc/unicode/data")
@@ -283,27 +306,13 @@ def package(vcs, rev, destdir, tmp = nil)
     if File.file?("common.mk") && /^prereq/ =~ commonmk = IO.read("common.mk")
       puts
       extout = clean.add('tmp')
+      begin
+        status = IO.read("tool/prereq.status")
+      rescue Errno::ENOENT
+        # use fallback file
+      end
       File.open(clean.add("config.status"), "w") {|f|
-        f.puts "s,@configure_args@,|#_!!_#|,g"
-        f.puts "s,@EXTOUT@,|#_!!_#|#{extout},g"
-        f.puts "s,@bindir@,|#_!!_#|,g"
-        f.puts "s,@ruby_install_name@,|#_!!_#|,g"
-        f.puts "s,@ARCH_FLAG@,|#_!!_#|,g"
-        f.puts "s,@CFLAGS@,|#_!!_#|,g"
-        f.puts "s,@CPPFLAGS@,|#_!!_#|,g"
-        f.puts "s,@CXXFLAGS@,|#_!!_#|,g"
-        f.puts "s,@LDFLAGS@,|#_!!_#|,g"
-        f.puts "s,@DLDFLAGS@,|#_!!_#|,g"
-        f.puts "s,@LIBEXT@,|#_!!_#|a,g"
-        f.puts "s,@OBJEXT@,|#_!!_#|o,g"
-        f.puts "s,@EXEEXT@,|#_!!_#|,g"
-        f.puts "s,@LIBRUBY@,|#_!!_#|libruby.a,g"
-        f.puts "s,@LIBRUBY_A@,|#_!!_#|libruby.a,g"
-        f.puts "s,@RM@,|#_!!_#|rm -f,g"
-        f.puts "s,@CP@,|#_!!_#|cp,g"
-        f.puts "s,@rubyarchdir@,|#_!!_#|,g"
-        f.puts "s,@rubylibprefix@,|#_!!_#|,g"
-        f.puts "s,@ruby_version@,|#_!!_#|#{version},g"
+        f.print status
       }
       FileUtils.mkpath(hdrdir = "#{extout}/include/ruby")
       File.open("#{hdrdir}/config.h", "w") {}
@@ -314,23 +323,17 @@ def package(vcs, rev, destdir, tmp = nil)
       baseruby = ENV["BASERUBY"]
       mk = IO.read("Makefile.in").gsub(/^@.*\n/, '')
       vars = {
-        "srcdir"=>".",
-        "CHDIR"=>"cd",
-        "NULLCMD"=>":",
+        "EXTOUT"=>extout,
         "PATH_SEPARATOR"=>File::PATH_SEPARATOR,
-        "IFCHANGE"=>"tool/ifchange",
-        "MKDIR_P"=>"mkdir -p",
-        "RMALL"=>"rm -fr",
         "MINIRUBY"=>miniruby,
-        "RUNRUBY"=>miniruby,
         "RUBY"=>ENV["RUBY"],
-        "HAVE_BASERUBY"=>"yes",
         "BASERUBY"=>baseruby,
-        "BOOTSTRAPRUBY"=>baseruby,
         "PWD"=>Dir.pwd,
-        "CONFIGURE"=>"configure",
-        "arch"=>"noarch",
+        "ruby_version"=>version,
       }
+      status.scan(/^s([%,])@([A-Za-z_][A-Za-z_0-9]*)@\1(.*?)\1g$/) do
+        vars[$2] ||= $3
+      end
       vars["UNICODE_VERSION"] = $unicode_version if $unicode_version
       args = vars.dup
       mk.gsub!(/@([A-Za-z_]\w*)@/) {args.delete($1); vars[$1] || ENV[$1]}
@@ -339,16 +342,22 @@ def package(vcs, rev, destdir, tmp = nil)
 
 prereq: clean-cache $(CLEAN_CACHE)
 clean-cache $(CLEAN_CACHE): after-update
+touch-unicode-files: _touch-unicode-files
+update-download:: touch-unicode-files
 update-download:: update-gems
 after-update:: extract-gems
 extract-gems: update-gems
 update-gems:
+_touch-unicode-files:
+	$(MAKEDIRS) $(UNICODE_SRC_DATA_DIR)
+	touch $(UNICODE_SRC_DATA_DIR)/.unicode-tables.time $(UNICODE_DATA_HEADERS)
       APPEND
       open(clean.add("Makefile"), "w") do |f|
         f.puts "prereq: update-download"
         f.puts mk
       end
-      system("make", "prereq", *args.map {|arg| arg.join("=")})
+      ENV["CACHE_SAVE"] = "no"
+      system(ENV["MAKE"] || ENV["make"] || "make", "prereq", *args.map {|arg| arg.join("=")})
       clean.push("rbconfig.rb", ".rbconfig.time", "enc.mk")
       print "prerequisites"
     else
@@ -360,17 +369,18 @@ update-gems:
     if File.exist?("gems/bundled_gems")
       gems = Dir.glob("gems/*.gem")
       gems -= File.readlines("gems/bundled_gems").map {|line|
-        'gems/'+line.split(' ').join('-')+'.gem'
+        name, version, _ = line.split(' ')
+        "gems/#{name}-#{version}.gem"
       }
       FileUtils.rm_f(gems)
     else
       FileUtils.rm_rf("gems")
     end
     unless $?.success?
-      puts " failed"
+      puts $colorize.fail(" failed")
       return
     end
-    puts " done"
+    puts $colorize.pass(" done")
   end
 
   if v == "."
@@ -394,9 +404,9 @@ update-gems:
         tarball = "#{$archname||v}.tar"
         print "creating tarball... #{tarball}"
         if system("tar", "cf", tarball, v)
-          puts " done"
+          puts $colorize.pass(" done")
         else
-          puts " failed"
+          puts $colorize.fail(" failed")
           tarball = ""
           next
         end
@@ -405,13 +415,19 @@ update-gems:
       done = system(*cmd, tarball, out: file)
     else
       print "creating #{mesg} archive... #{file}"
-      done = system(*cmd, file, v)
+      if Hash === cmd.last
+        *cmd, opt = *cmd
+        cmd << file << v << opt
+      else
+        (cmd = cmd.dup) << file << v
+      end
+      done = system(*cmd)
     end
     if done
-      puts " done"
+      puts $colorize.pass(" done")
       file
     else
-      puts " failed"
+      puts $colorize.fail(" failed")
       nil
     end
   end.compact
@@ -439,7 +455,7 @@ revisions.collect {|rev| package(vcs, rev, destdir, tmp)}.flatten.each do |name|
     next
   end
   str = open(name, "rb") {|f| f.read}
-  puts "* #{name}"
+  puts "* #{$colorize.pass(name)}"
   puts "  SIZE:   #{str.bytesize} bytes"
   $digests.each do |alg|
     printf "  %-8s%s\n", "#{alg}:", Digest.const_get(alg).hexdigest(str)

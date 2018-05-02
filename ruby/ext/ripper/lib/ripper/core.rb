@@ -1,6 +1,6 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
-# $Id: core.rb 53143 2015-12-16 05:31:54Z naruse $
+# $Id: core.rb 57538 2017-02-05 07:54:32Z kazu $
 #
 # Copyright (c) 2003-2005 Minero Aoki
 #

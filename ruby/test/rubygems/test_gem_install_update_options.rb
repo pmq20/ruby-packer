@@ -121,9 +121,10 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
   def test_security_policy_unknown
     @cmd.add_install_update_options
 
-    assert_raises OptionParser::InvalidArgument do
+    e = assert_raises OptionParser::InvalidArgument do
       @cmd.handle_options %w[-P UnknownSecurity]
     end
+    assert_includes e.message, "UnknownSecurity"
   end
 
   def test_user_install_enabled
@@ -140,6 +141,8 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
   def test_user_install_disabled_read_only
     if win_platform?
       skip('test_user_install_disabled_read_only test skipped on MS Windows')
+    elsif Process.uid.zero?
+      skip('test_user_install_disabled_read_only test skipped in root privilege')
     else
       @cmd.handle_options %w[--no-user-install]
 

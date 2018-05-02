@@ -113,6 +113,9 @@ ARCH = $(MACHINE)
 !if !defined(DEBUGFLAGS)
 DEBUGFLAGS = -Zi
 !endif
+!if "$(RUBY_DEVEL)" == "yes"
+XCFLAGS = $(XCFLAGS) -DRUBY_DEVEL=1
+!endif
 !if !defined(OPTFLAGS)
 !if $(MSC_VER) < 1400
 OPTFLAGS = -O2b2xg-
@@ -284,6 +287,7 @@ RCFLAGS=-nologo
 !endif
 !endif
 
+ENABLE_SHARED = yes
 LIBRUBY_LDSHARED = $(LDSHARED)
 LIBRUBY_DLDFLAGS = $(EXTLDFLAGS) -implib:dummy.lib -def:$(RUBYDEF)
 
@@ -335,6 +339,7 @@ ORGLIBPATH = $(LIB)
 
 LIBRUBY_A     = $(RUBY_SO_NAME)-static.lib
 LIBRUBY_SO    = $(RUBY_SO_NAME).dll
+LIBRUBY_SONAME= $(RUBY_SO_NAME).dll
 LIBRUBY       = $(RUBY_SO_NAME).lib
 LIBRUBYARG    = $(LIBRUBY)
 LIBRUBY_RELATIVE = yes
@@ -364,6 +369,7 @@ OS_DEST_FILE = $(@:/=\)
 !if !defined(WINMAINOBJ)
 WINMAINOBJ    = winmain.$(OBJEXT)
 !endif
+MAINSRC       = $(MAINOBJ:.obj=.c)
 ARCHMINIOBJS  = dmydln.$(OBJEXT) miniruby.res
 LIBOBJS       = $(MISSING) $(LIBOBJS)
 
@@ -393,14 +399,34 @@ top_srcdir = $(srcdir)
 hdrdir = $(srcdir)/include
 VPATH = $(arch_hdrdir)/ruby;$(hdrdir)/ruby;$(srcdir);$(srcdir)/missing;$(win_srcdir)
 
+!ifndef GIT
+GIT = git
+!endif
+!if "$(HAVE_GIT)" == "yes" || "$(HAVE_GIT)" == "no"
+!else if "$(GIT)" == ""
+HAVE_GIT = no
+!else if [for %I in ($(GIT)) do @if not "%~xI" == "" exit 1]
+! if [for %I in ($(GIT)) do @if not "%~$$PATH:I" == "" exit 1]
+HAVE_GIT = yes
+! else
+HAVE_GIT = no
+! endif
+!else
+! if [for %x in (%PATHEXT:;= %) do @for %I in ($(GIT)%x) do @if not "%~$$PATH:I" == "" exit 1]
+HAVE_GIT = yes
+! else
+HAVE_GIT = no
+! endif
+!endif
+
 !if exist($(srcdir)/.svn)
 VCS = svn
 VCSUP = $(VCS) up $(SVNUPOPTIONS)
 !else if exist($(srcdir)/.git/svn)
-VCS = git svn
+VCS = $(GIT) svn
 VCSUP = $(VCS) rebase $(GITSVNREBASEOPTIONS)
 !else if exist($(srcdir)/.git)
-VCS = git
+VCS = $(GIT)
 VCSUP = $(VCS) pull $(GITPULLOPTIONS)
 !else
 VCSUP = rem
@@ -467,32 +493,6 @@ $(SCRIPTPROGRAMS): $(STUBPROGRAM)
 update-src::
 	@cd "$(srcdir:/=\)" && set LC_TIME=C && $(VCSUP)
 
-update-mspec:
-!if exist($(srcdir)/spec/mspec)
-	@echo updating mspec ...
-	@cd $(srcdir:/=\)\spec\mspec && git pull
-!else
-	@echo retrieving mspec ...
-	@cd $(srcdir:/=\) && git clone $(MSPEC_GIT_URL) spec/mspec
-!endif
-	@cd $(srcdir:/=\)\spec\mspec && git --no-pager log -1 --oneline
-
-update-rubyspec: update-mspec
-!if exist($(srcdir)/spec/rubyspec)
-	@echo updating rubyspec ...
-	@cd $(srcdir:/=\)\spec\rubyspec && git pull
-!else
-	@echo retrieving rubyspec ...
-	@cd $(srcdir:/=\) && git clone $(RUBYSPEC_GIT_URL) spec/rubyspec
-!endif
-	@cd $(srcdir:/=\)\spec\rubyspec && git --no-pager log -1 --oneline
-
-test-rubyspec-precheck:
-!if !exist($(srcdir)/spec/rubyspec/.)
-	@echo No rubyspec here.  make update-rubyspec first.
-	@exit 1
-!endif
-
 $(MKFILES): $(srcdir)/common.mk $(srcdir)/version.h \
 	    $(win_srcdir)/Makefile.sub $(win_srcdir)/configure.bat \
 	    $(win_srcdir)/setup.mak $(win_srcdir)/enc-setup.mak \
@@ -510,8 +510,15 @@ config.status: $(CONFIG_H)
 
 BANG = !
 
-!if exist($(RUBY_CONFIG_H))
-!include $(RUBY_CONFIG_H)
+!if !exist(config.status)
+!else if [for /f "skip=1 delims=, tokens=2-3" %I in (config.status) do @ \
+    if "%I" == "@RUBY_SO_NAME@" ( \
+	if not "%J" == "$(RUBY_SO_NAME)" exit 1 \
+    ) else if "%I" == "@target_alias@" ( \
+	if not "%J" == "$(ARCH)-$(PLATFORM)" exit 1 \
+    ) \
+]
+config.status: nul
 !endif
 
 guard = INCLUDE_RUBY_CONFIG_H
@@ -534,12 +541,17 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define STDC_HEADERS 1
 #define HAVE_SYS_TYPES_H 1
 #define HAVE_SYS_STAT_H 1
+!if $(MSC_VER) >= 1800
+#define HAVE_STDBOOL_H 1
+!endif
 #define HAVE_STDLIB_H 1
 #define HAVE_STDDEF_H 1
 #define HAVE_STRING_H 1
 #define HAVE_MEMORY_H 1
 !if $(MSC_VER) >= 1400
 #define HAVE_LONG_LONG 1
+!else
+#define ULL_TO_DOUBLE(n) ((double)(unsigned long)((n)>>32) * (1I64 << 32) + (unsigned long)(n))
 !endif
 #define HAVE_OFF_T 1
 #define SIZEOF_INT 4
@@ -565,6 +577,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define SIZEOF_FLOAT 4
 #define SIZEOF_DOUBLE 8
 #define SIGNEDNESS_OF_TIME_T -1
+#define NEGATIVE_TIME_T 1
 !if $(RT_VER) >= 80
 #define SIZEOF_TIME_T 8
 #define TIMET2NUM(v) LL2NUM(v)
@@ -718,9 +731,6 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define HAVE_STRFTIME 1
 #define HAVE_STRCHR 1
 #define HAVE_STRSTR 1
-#define HAVE_STRTOD 1
-#define HAVE_STRTOL 1
-#define HAVE_STRTOUL 1
 #define HAVE_FLOCK 1
 #define HAVE_ISNAN 1
 #define HAVE_FINITE 1
@@ -768,9 +778,6 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !endif
 #define CANONICALIZATION_FOR_MATHN 1
 #define DEFAULT_KCODE KCODE_NONE
-!if "$(ENABLE_DEBUG_ENV)" == "yes"
-#define RUBY_DEBUG_ENV 1
-!endif
 #define LOAD_RELATIVE 1
 #define DLEXT ".so"
 !if "$(EXTSTATIC)" == "static"
@@ -778,14 +785,8 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !endif
 #define EXECUTABLE_EXTS $(EXECUTABLE_EXTS)
 #define RUBY_COREDLL "$(RT)"
-#define LIBRUBY_SO "$(LIBRUBY_SO)"
 #define RUBY_PLATFORM "$(arch)"
 #define RUBY_SITEARCH "$(sitearch)"
-#if 0
-$(BANG)if "$(RUBY_SO_NAME)"!="$$(RUBY_SO_NAME)" || "$(ARCH)-$(PLATFORM)"!="$$(ARCH)-$$(PLATFORM)"
-config.h: nul
-$(BANG)endif
-#endif
 #endif /* $(guard) */
 <<
 
@@ -828,9 +829,9 @@ s,@bindir@,$${exec_prefix}/bin,;t t
 s,@sbindir@,$${exec_prefix}/sbin,;t t
 s,@libexecdir@,$${exec_prefix}/libexec,;t t
 s,@datadir@,$${prefix}/share,;t t
-s,@sysconfdir@,$${prefix}/etc,;t t
-s,@sharedstatedir@,/etc,;t t
-s,@localstatedir@,/var,;t t
+s,@sysconfdir@,,;t t
+s,@sharedstatedir@,$${prefix}/com,;t t
+s,@localstatedir@,$${prefix}/var,;t t
 s,@libdir@,$${exec_prefix}/$(libdir_basename),;t t
 s,@includedir@,$${prefix}/include,;t t
 s,@oldincludedir@,/usr/include,;t t
@@ -884,6 +885,7 @@ s,@ARCH_FLAG@,$(ARCH_FLAG),;t t
 s,@STATIC@,$(STATIC),;t t
 s,@CCDLFLAGS@,,;t t
 s,@LDSHARED@,$(LDSHARED),;t t
+s,@SOEXT@,dll,;t t
 s,@DLEXT@,so,;t t
 s,@LIBEXT@,lib,;t t
 s,@STRIP@,$(STRIP),;t t
@@ -917,6 +919,8 @@ s,@OUTFLAG@,$(OUTFLAG),;t t
 s,@COUTFLAG@,$(COUTFLAG),;t t
 s,@CSRCFLAG@,$(CSRCFLAG),;t t
 s,@CPPOUTFILE@,-P,;t t
+s,@PRELOADENV@,,;t t
+s,@LIBPATHENV@,PATH,;t t
 s,@LIBPATHFLAG@, -libpath:%s,;t t
 s,@RPATHFLAG@,,;t t
 s,@LIBARG@,%s.lib,;t t
@@ -1072,7 +1076,7 @@ $(LIBRUBY_SO):	$(LIBRUBY_A) $(DLDOBJS) $(RUBYDEF) $(RUBY_SO_NAME).res
 		$(Q) $(LDSHARED_2)
 # | findstr -v -c:LNK4049 -c:LNK4217
 
-$(RUBYDEF):	$(LIBRUBY_A) $(PREP)
+$(RUBYDEF):	$(LIBRUBY_A) $(RBCONFIG)
 		$(ECHO) generating $(@:\=/)
 		$(Q) $(MINIRUBY) $(srcdir)/win32/mkexports.rb \
 		  -output=$@ -arch=$(ARCH) $(LIBRUBY_A)
@@ -1091,28 +1095,31 @@ distclean-local::
 		-$(Q)$(RM) $(INSTALLED_LIST:/=\) $(arch_hdrdir:/=\)\ruby\config.h verconf.h
 		-$(Q)$(RMDIRS) $(arch_hdrdir:/=\)\ruby
 
-clean-ext distclean-ext realclean-ext::
-		@cd ext && for /R $(EXTS) %I in (.) \
-		do @if exist %I\Makefile ( \
+ext/clean.mk ext/distclean.mk ext/realclean.mk::
+	$(Q)if exist $(EXTS_MK) $(MAKE) -k -f $(EXTS_MK) top_srcdir=$(srcdir) $(*F)
+
+ext/clean gems/clean ext/distclean gems/distclean ext/realclean gems/realclean::
+		$(Q)cd $(@D) && for /R $(EXTS) %I in (.) \
+		do $(Q)if exist %I\Makefile ( \
 		    cd %I && ( \
 		    call set n=%I && \
-		    call set n=%n:%CD%\ext\=% && \
+		    call set n=%n:%CD%\$(@D)\=% && \
 		    call set n=%n:\.=% && \
-		    call echo $(@:-ext=)ing %n:\=/% & \
-		    $(MAKE) $(MFLAGS) $(@:-ext=) & \
+		    call echo $(@F)ing %n:\=/% & \
+		    $(MAKE) $(MFLAGS) $(@F) & \
 		    cd %CD% & \
 		    $(RMDIRS) %I \
 		) )
 
-distclean-ext realclean-ext::
-		-$(Q)rmdir ext
-
-clean-extout:
+ext/distclean gems/distclean ext/realclean gems/realclean::
+		$(Q)cd $(@D) && for /R $(EXTS) %I in (exts.mk*) \
+		do $(Q)(del %I & rmdir %~dpI)
+		-$(Q)rmdir $(@D) 2> nul || @
 
 clean-enc distclean-enc realclean-enc:
 !if exist($(ENC_MK))
-	@echo $(@:-enc=ing) encodings
-	@-$(MAKE) $(MAKE_ENC) $(@:-enc=)
+	$(ECHO) $(@:-enc=ing) encodings
+	-$(Q)$(MAKE) $(MAKE_ENC) $(@:-enc=)
 !endif
 
 $(RBCONFIG): $(PREP)
@@ -1123,6 +1130,13 @@ $(RCFILES): $(RBCONFIG) $(srcdir)/revision.h $(srcdir)/win32/resource.rb
 			-rubyw_name=$(RUBYW_INSTALL_NAME) \
 			-so_name=$(RUBY_SO_NAME) \
 			. $(icondirs) $(win_srcdir)
+
+test-bundled-gems-run:
+	$(Q) for /f %G in ($(srcdir)/gems/bundled_gems) do @( \
+	  echo testing %G gem & \
+	  $(XRUBY) -C $(srcdir)/gems/src/%G -Ilib ../../../.bundle/bin/rake || \
+	  exit /b %STATUS% \
+	)
 
 $(ruby_pc): $(RBCONFIG)
 	@$(BOOTSTRAPRUBY) $(srcdir)/tool/expand-config.rb \
@@ -1181,13 +1195,14 @@ $(ruby_pc): $(RBCONFIG)
 lex.c: {$(srcdir)}lex.c.blt
 	copy $(?:/=\) $@
 
-enc/jis/props.h: {$(srcdir)}enc/jis/props.h.blt
+$(srcdir)/enc/jis/props.h: {$(srcdir)}enc/jis/props.h.blt
 	@if not exist $(@D:/=\) md $(@D:/=\)
 	$(ECHO) copying $@
 	$(Q) copy $(?:/=\) $(@:/=\) > nul
 
 $(OBJS): {$(hdrdir)/ruby}win32.h
 
+win32/win32.$(OBJEXT): {$(VPATH)}id.h
 dir.$(OBJEXT) win32/win32.$(OBJEXT): {$(srcdir)}win32/dir.h
 file.$(OBJEXT) win32/win32.$(OBJEXT): {$(VPATH)}win32/file.h
 

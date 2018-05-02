@@ -2,7 +2,7 @@
 #
 # tmpdir - retrieve temporary directory path
 #
-# $Id: tmpdir.rb 53945 2016-02-26 02:11:14Z hsbt $
+# $Id: tmpdir.rb 63007 2018-03-28 12:54:26Z naruse $
 #
 
 require 'fileutils'
@@ -106,18 +106,6 @@ class Dir
       Dir.tmpdir
     end
 
-    def make_tmpname((prefix, suffix), n)
-      prefix = (String.try_convert(prefix) or
-                raise ArgumentError, "unexpected prefix: #{prefix.inspect}")
-      suffix &&= (String.try_convert(suffix) or
-                  raise ArgumentError, "unexpected suffix: #{suffix.inspect}")
-      t = Time.now.strftime("%Y%m%d")
-      path = "#{prefix}#{t}-#{$$}-#{rand(0x100000000).to_s(36)}".dup
-      path << "-#{n}" if n
-      path << suffix if suffix
-      path
-    end
-
     def create(basename, tmpdir=nil, max_try: nil, **opts)
       if $SAFE > 0 and tmpdir.tainted?
         tmpdir = '/tmp'
@@ -125,8 +113,18 @@ class Dir
         tmpdir ||= tmpdir()
       end
       n = nil
+      prefix, suffix = basename
+      prefix = (String.try_convert(prefix) or
+                raise ArgumentError, "unexpected prefix: #{prefix.inspect}")
+      prefix = prefix.delete("#{File::SEPARATOR}#{File::ALT_SEPARATOR}")
+      suffix &&= (String.try_convert(suffix) or
+                  raise ArgumentError, "unexpected suffix: #{suffix.inspect}")
+      suffix &&= suffix.delete("#{File::SEPARATOR}#{File::ALT_SEPARATOR}")
       begin
-        path = File.join(tmpdir, make_tmpname(basename, n))
+        t = Time.now.strftime("%Y%m%d")
+        path = "#{prefix}#{t}-#{$$}-#{rand(0x100000000).to_s(36)}"\
+               "#{n ? %[-#{n}] : ''}#{suffix||''}"
+        path = File.join(tmpdir, path)
         yield(path, n, opts)
       rescue Errno::EEXIST
         n ||= 0

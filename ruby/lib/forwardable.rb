@@ -2,7 +2,7 @@
 #
 #   forwardable.rb -
 #       $Release Version: 1.1$
-#       $Revision: 57913 $
+#       $Revision: 61155 $
 #       by Keiju ISHITSUKA(keiju@ishitsuka.com)
 #       original definition by delegator.rb
 #       Revised by Daniel J. Berger with suggestions from Florian Gross.
@@ -206,7 +206,7 @@ module Forwardable
       method_call = "#{<<-"begin;"}\n#{<<-"end;".chomp}"
         begin;
           unless defined? _.#{method}
-            ::Kernel.warn "\#{caller_locations(1)[0]}: "#{mesg.dump}"\#{_.class}"'##{method}'
+            ::Kernel.warn #{mesg.dump}"\#{_.class}"'##{method}', uplevel: 1
             _#{method_call}
           else
             _.#{method}(*args, &block)

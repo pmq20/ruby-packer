@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'test/unit'
 require 'date'
 
@@ -262,4 +262,17 @@ class TestDateArith < Test::Unit::TestCase
     assert_equal(8, e.to_a.size)
   end
 
+  def test_step__compare
+    o = Object.new
+    def o.<=>(*);end
+    assert_raise(ArgumentError) {
+      Date.new(2000, 1, 1).step(3, o).to_a
+    }
+
+    o = Object.new
+    def o.<=>(*);2;end
+    a = []
+    Date.new(2000, 1, 1).step(3, o) {|d| a << d}
+    assert_empty(a)
+  end
 end

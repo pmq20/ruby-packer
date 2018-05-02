@@ -110,7 +110,7 @@ class TestGemSource < Gem::TestCase
 
     cache_file = File.join cache_dir, a1.spec_name
 
-    open cache_file, 'wb' do |io|
+    File.open cache_file, 'wb' do |io|
       Marshal.dump a1, io
     end
 
@@ -163,7 +163,7 @@ class TestGemSource < Gem::TestCase
 
     cache_file = File.join cache_dir, "latest_specs.#{Gem.marshal_version}"
 
-    open cache_file, 'wb' do |io|
+    File.open cache_file, 'wb' do |io|
       Marshal.dump latest_specs, io
     end
 
@@ -187,7 +187,7 @@ class TestGemSource < Gem::TestCase
 
     cache_file = File.join cache_dir, "latest_specs.#{Gem.marshal_version}"
 
-    open cache_file, 'wb' do |io|
+    File.open cache_file, 'wb' do |io|
       # Setup invalid data in the cache:
       io.write Marshal.dump(latest_specs)[0, 10]
     end
@@ -226,6 +226,15 @@ class TestGemSource < Gem::TestCase
     no_uri.instance_variable_set :@uri, nil
 
     assert_equal(-1, remote.   <=>(no_uri),    'remote <=> no_uri')
+  end
+
+  def test_spaceship_order_is_preserved_when_uri_differs
+    sourceA = Gem::Source.new "http://example.com/a"
+    sourceB = Gem::Source.new "http://example.com/b"
+
+    assert_equal( 0, sourceA. <=>(sourceA), 'sourceA <=> sourceA')
+    assert_equal( 1, sourceA. <=>(sourceB), 'sourceA <=> sourceB')
+    assert_equal( 1, sourceB. <=>(sourceA), 'sourceB <=> sourceA')
   end
 
   def test_update_cache_eh

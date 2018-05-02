@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'rdoc'
 require 'time'
 require 'json'
@@ -111,7 +111,7 @@ class RDoc::Servlet < WEBrick::HTTPServlet::AbstractServlet
   # GET request entry point.  Fills in +res+ for the path, etc. in +req+.
 
   def do_GET req, res
-    req.path.sub!(/^#{Regexp.escape @mount_path}/o, '') if @mount_path
+    req.path = req.path.sub(/^#{Regexp.escape @mount_path}/o, '') if @mount_path
 
     case req.path
     when '/' then
@@ -217,7 +217,7 @@ exception:
 <pre>#{ERB::Util.html_escape exception.message}</pre>
 
 <p>Please report this to the
-<a href="https://github.com/rdoc/rdoc/issues">RDoc issues tracker</a>.  Please
+<a href="https://github.com/ruby/rdoc/issues">RDoc issues tracker</a>.  Please
 include the RDoc version, the URI above and exception class, message and
 backtrace.  If you're viewing a gem's documentation, include the gem name and
 version.  If you're viewing Ruby's documentation, include the version of ruby.

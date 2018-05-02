@@ -262,13 +262,7 @@ module Net
       @ssl_handshake_timeout = options[:ssl_handshake_timeout]
       @read_timeout = options[:read_timeout] || 60
       if host
-        if options[:port]
-          connect(host, options[:port] || FTP_PORT)
-        else
-          # spec/rubyspec/library/net/ftp/initialize_spec.rb depends on
-          # the number of arguments passed to connect....
-          connect(host)
-        end
+        connect(host, options[:port] || FTP_PORT)
         if options[:username]
           login(options[:username], options[:password], options[:account])
         end
@@ -316,13 +310,13 @@ module Net
 
     # Obsolete
     def return_code # :nodoc:
-      $stderr.puts("warning: Net::FTP#return_code is obsolete and do nothing")
+      warn("Net::FTP#return_code is obsolete and do nothing", uplevel: 1)
       return "\n"
     end
 
     # Obsolete
     def return_code=(s) # :nodoc:
-      $stderr.puts("warning: Net::FTP#return_code= is obsolete and do nothing")
+      warn("Net::FTP#return_code= is obsolete and do nothing", uplevel: 1)
     end
 
     # Constructs a socket with +host+ and +port+.
@@ -334,9 +328,9 @@ module Net
       return Timeout.timeout(@open_timeout, OpenTimeout) {
         if defined? SOCKSSocket and ENV["SOCKS_SERVER"]
           @passive = true
-          sock = SOCKSSocket.open(host, port)
+          SOCKSSocket.open(host, port)
         else
-          sock = Socket.tcp(host, port)
+          Socket.tcp(host, port)
         end
       }
     end
@@ -1434,7 +1428,7 @@ module Net
           s = super(len, String.new, true)
           return s.empty? ? nil : s
         else
-          result = ""
+          result = String.new
           while s = super(DEFAULT_BLOCKSIZE, String.new, true)
             break if s.empty?
             result << s

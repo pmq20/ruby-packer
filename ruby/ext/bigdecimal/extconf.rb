@@ -1,6 +1,22 @@
 # frozen_string_literal: false
 require 'mkmf'
 
+gemspec_name = gemspec_path = nil
+unless ['', '../../'].any? {|dir|
+         gemspec_name = "#{dir}bigdecimal.gemspec"
+         gemspec_path = File.expand_path("../#{gemspec_name}", __FILE__)
+         File.file?(gemspec_path)
+       }
+  $stderr.puts "Unable to find bigdecimal.gemspec"
+  abort
+end
+
+bigdecimal_version =
+  IO.readlines(gemspec_path)
+    .grep(/\Abigdecimal_version\s+=\s+/)[0][/\'([\d\.]+)\'/, 1]
+
+$defs << %Q[-DRUBY_BIGDECIMAL_VERSION=\\"#{bigdecimal_version}\\"]
+
 alias __have_macro__ have_macro
 
 have_func("labs", "stdlib.h")
@@ -14,17 +30,6 @@ have_func("rb_rational_den", "ruby.h")
 have_func("rb_array_const_ptr", "ruby.h")
 have_func("rb_sym2str", "ruby.h")
 
-have_macro("FIX_CONST_VALUE_PTR", "ruby.h")
-have_macro("RARRAY_CONST_PTR", "ruby.h")
-have_macro("RARRAY_AREF", "ruby.h")
-
-create_makefile('bigdecimal')
-
-# Add additional dependencies
-open('Makefile', 'a') do |io|
-  if RUBY_VERSION >= '2.4'
-    io.puts <<-MAKEFILE
-bigdecimal.o: $(hdrdir)/ruby/backward.h
-    MAKEFILE
-  end
-end
+create_makefile('bigdecimal') {|mf|
+  mf << "\nall:\n\nextconf.h: $(srcdir)/#{gemspec_name}\n"
+}

@@ -72,6 +72,17 @@ extern "C" {
 #  define GCC_VERSION_SINCE(major, minor, patchlevel) 0
 # endif
 #endif
+#ifndef GCC_VERSION_BEFORE
+# if defined(__GNUC__) && !defined(__INTEL_COMPILER) && !defined(__clang__)
+#  define GCC_VERSION_BEFORE(major, minor, patchlevel) \
+    ((__GNUC__ < (major)) ||  \
+     ((__GNUC__ == (major) && \
+       ((__GNUC_MINOR__ < (minor)) || \
+        (__GNUC_MINOR__ == (minor) && __GNUC_PATCHLEVEL__ <= (patchlevel))))))
+# else
+#  define GCC_VERSION_BEFORE(major, minor, patchlevel) 0
+# endif
+#endif
 
 /* likely */
 #if __GNUC__ >= 3
@@ -268,7 +279,16 @@ void xfree(void*);
 #endif
 
 #ifndef EXTERN
-#define EXTERN RUBY_EXTERN	/* deprecated */
+# if defined __GNUC__
+#   define EXTERN _Pragma("message \"EXTERN is deprecated, use RUBY_EXTERN instead\""); \
+    RUBY_EXTERN
+# elif defined _MSC_VER
+#   define EXTERN __pragma(message(__FILE__"("STRINGIZE(__LINE__)"): warning: "\
+				   "EXTERN is deprecated, use RUBY_EXTERN instead")); \
+    RUBY_EXTERN
+# else
+#   define EXTERN <-<-"EXTERN is deprecated, use RUBY_EXTERN instead"->->
+# endif
 #endif
 
 #ifndef RUBY_MBCHAR_MAXSIZE

@@ -6,7 +6,7 @@
 # License::
 #   You can redistribute it and/or modify it under the same terms of Ruby's
 #   license; either the dual license version in 2003, or any later version.
-# Revision:: $Id: logger.rb 56815 2016-11-16 06:59:42Z nobu $
+# Revision:: $Id: logger.rb 61378 2017-12-21 05:07:43Z sonots $
 #
 # A simple system for logging messages.  See Logger for more documentation.
 
@@ -225,7 +225,7 @@ require 'monitor'
 #
 class Logger
   VERSION = "1.2.7"
-  _, name, rev = %w$Id: logger.rb 56815 2016-11-16 06:59:42Z nobu $
+  _, name, rev = %w$Id: logger.rb 61378 2017-12-21 05:07:43Z sonots $
   if name
     name = name.chomp(",v")
   else
@@ -268,17 +268,17 @@ class Logger
       @level = severity
     else
       case severity.to_s.downcase
-      when 'debug'.freeze
+      when 'debug'
         @level = DEBUG
-      when 'info'.freeze
+      when 'info'
         @level = INFO
-      when 'warn'.freeze
+      when 'warn'
         @level = WARN
-      when 'error'.freeze
+      when 'error'
         @level = ERROR
-      when 'fatal'.freeze
+      when 'fatal'
         @level = FATAL
-      when 'unknown'.freeze
+      when 'unknown'
         @level = UNKNOWN
       else
         raise ArgumentError, "invalid log level: #{severity}"
@@ -457,7 +457,9 @@ class Logger
     if @logdev.nil? or severity < @level
       return true
     end
-    progname ||= @progname
+    if progname.nil?
+      progname = @progname
+    end
     if message.nil?
       if block_given?
         message = yield
@@ -741,7 +743,7 @@ private
 
     def open_logfile(filename)
       begin
-        open(filename, (File::WRONLY | File::APPEND))
+        File.open(filename, (File::WRONLY | File::APPEND))
       rescue Errno::ENOENT
         create_logfile(filename)
       end
@@ -749,7 +751,7 @@ private
 
     def create_logfile(filename)
       begin
-        logdev = open(filename, (File::WRONLY | File::APPEND | File::CREAT | File::EXCL))
+        logdev = File.open(filename, (File::WRONLY | File::APPEND | File::CREAT | File::EXCL))
         logdev.flock(File::LOCK_EX)
         logdev.sync = true
         add_log_header(logdev)

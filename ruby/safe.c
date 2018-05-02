@@ -2,7 +2,7 @@
 
   safe.c -
 
-  $Author: kazu $
+  $Author: ko1 $
   created at: Tue Sep 23 09:44:32 JST 2008
 
   Copyright (C) 2008 Yukihiro Matsumoto
@@ -34,25 +34,28 @@ ruby_safe_level_2_warning(void)
 int
 rb_safe_level(void)
 {
-    return GET_THREAD()->safe_level;
+    return GET_EC()->safe_level;
 }
 
 void
 rb_set_safe_level_force(int safe)
 {
-    GET_THREAD()->safe_level = safe;
+    GET_EC()->safe_level = safe;
 }
 
 void
 rb_set_safe_level(int level)
 {
-    rb_thread_t *th = GET_THREAD();
+    rb_execution_context_t *ec = GET_EC();
 
-    if (level > th->safe_level) {
+    if (level > ec->safe_level) {
 	if (level > SAFE_LEVEL_MAX) {
 	    rb_raise(rb_eArgError, "$SAFE=2 to 4 are obsolete");
 	}
-	th->safe_level = level;
+	/* block parameters */
+	rb_vm_stack_to_heap(ec);
+
+	ec->safe_level = level;
     }
 }
 
@@ -65,18 +68,26 @@ safe_getter(void)
 static void
 safe_setter(VALUE val)
 {
+    rb_execution_context_t *ec = GET_EC();
+    int current_level = ec->safe_level;
     int level = NUM2INT(val);
-    rb_thread_t *th = GET_THREAD();
 
-    if (level < th->safe_level) {
+    if (level == current_level) {
+	return;
+    }
+    else if (level < current_level) {
 	rb_raise(rb_eSecurityError,
 		 "tried to downgrade safe level from %d to %d",
-		 th->safe_level, level);
+		 current_level, level);
     }
-    if (level > SAFE_LEVEL_MAX) {
+    else if (level > SAFE_LEVEL_MAX) {
 	rb_raise(rb_eArgError, "$SAFE=2 to 4 are obsolete");
     }
-    th->safe_level = level;
+
+    /* block parameters */
+    rb_vm_stack_to_heap(ec);
+
+    ec->safe_level = level;
 }
 
 void

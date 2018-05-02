@@ -2,7 +2,7 @@
 
   gdbm.c -
 
-  $Author: nobu $
+  $Author: rhe $
   modified at: Mon Jan 24 15:59:52 JST 1994
 
   Documentation by Peter Adolphs < futzilogik at users dot sourceforge dot net >
@@ -102,7 +102,6 @@ closed_dbm(void)
 
 #define GetDBM(obj, dbmp) do {\
     TypedData_Get_Struct((obj), struct dbmdata, &dbm_type, (dbmp));\
-    if ((dbmp) == 0) closed_dbm();\
     if ((dbmp)->di_dbm == 0) closed_dbm();\
 } while (0)
 
@@ -115,21 +114,18 @@ static void
 free_dbm(void *ptr)
 {
     struct dbmdata *dbmp = ptr;
-    if (dbmp) {
-        if (dbmp->di_dbm) gdbm_close(dbmp->di_dbm);
-        xfree(dbmp);
-    }
+    if (dbmp->di_dbm)
+	gdbm_close(dbmp->di_dbm);
+    xfree(dbmp);
 }
 
 static size_t
 memsize_dbm(const void *ptr)
 {
-    size_t size = 0;
     const struct dbmdata *dbmp = ptr;
-    if (dbmp) {
-	size += sizeof(*dbmp);
-	if (dbmp->di_dbm) size += DBM_SIZEOF_DBM;
-    }
+    size_t size = sizeof(*dbmp);
+    if (dbmp->di_dbm)
+	size += DBM_SIZEOF_DBM;
     return size;
 }
 
@@ -170,8 +166,6 @@ fgdbm_closed(VALUE obj)
     struct dbmdata *dbmp;
 
     TypedData_Get_Struct(obj, struct dbmdata, &dbm_type, dbmp);
-    if (dbmp == 0)
-        return Qtrue;
     if (dbmp->di_dbm == 0)
         return Qtrue;
 
@@ -181,7 +175,9 @@ fgdbm_closed(VALUE obj)
 static VALUE
 fgdbm_s_alloc(VALUE klass)
 {
-    return TypedData_Wrap_Struct(klass, &dbm_type, 0);
+    struct dbmdata *dbmp;
+
+    return TypedData_Make_Struct(klass, struct dbmdata, &dbm_type, dbmp);
 }
 
 /*
@@ -215,6 +211,7 @@ fgdbm_initialize(int argc, VALUE *argv, VALUE obj)
     struct dbmdata *dbmp;
     int mode, flags = 0;
 
+    TypedData_Get_Struct(obj, struct dbmdata, &dbm_type, dbmp);
     if (rb_scan_args(argc, argv, "12", &file, &vmode, &vflags) == 1) {
         mode = 0666;            /* default value */
     }
@@ -228,7 +225,7 @@ fgdbm_initialize(int argc, VALUE *argv, VALUE obj)
     if (!NIL_P(vflags))
         flags = NUM2INT(vflags);
 
-    SafeStringValue(file);
+    FilePathValue(file);
 
 #ifdef GDBM_CLOEXEC
     /* GDBM_CLOEXEC is available since gdbm 1.10. */
@@ -268,9 +265,8 @@ fgdbm_initialize(int argc, VALUE *argv, VALUE obj)
             rb_raise(rb_eGDBMError, "%s", gdbm_strerror(gdbm_errno));
     }
 
-    dbmp = ALLOC(struct dbmdata);
-    free_dbm(DATA_PTR(obj));
-    DATA_PTR(obj) = dbmp;
+    if (dbmp->di_dbm)
+	gdbm_close(dbmp->di_dbm);
     dbmp->di_dbm = dbm;
     dbmp->di_size = -1;
 
@@ -334,7 +330,7 @@ rb_gdbm_fetch2(GDBM_FILE dbm, VALUE keystr)
     datum key;
     long len;
 
-    StringValue(keystr);
+    ExportStringValue(keystr);
     len = RSTRING_LEN(keystr);
     if (TOO_LONG(len)) return Qnil;
     key.dptr = RSTRING_PTR(keystr);
@@ -450,7 +446,7 @@ fgdbm_key(VALUE obj, VALUE valstr)
     GDBM_FILE dbm;
     VALUE keystr, valstr2;
 
-    StringValue(valstr);
+    ExportStringValue(valstr);
     GetDBM2(obj, dbmp, dbm);
     for (keystr = rb_gdbm_firstkey(dbm); RTEST(keystr);
          keystr = rb_gdbm_nextkey(dbm, keystr)) {
@@ -538,7 +534,7 @@ rb_gdbm_delete(VALUE obj, VALUE keystr)
     long len;
 
     rb_gdbm_modify(obj);
-    StringValue(keystr);
+    ExportStringValue(keystr);
     len = RSTRING_LEN(keystr);
     if (TOO_LONG(len)) return Qnil;
     key.dptr = RSTRING_PTR(keystr);
@@ -725,8 +721,8 @@ fgdbm_store(VALUE obj, VALUE keystr, VALUE valstr)
     GDBM_FILE dbm;
 
     rb_gdbm_modify(obj);
-    StringValue(keystr);
-    StringValue(valstr);
+    ExportStringValue(keystr);
+    ExportStringValue(valstr);
 
     key.dptr = RSTRING_PTR(keystr);
     key.dsize = RSTRING_LENINT(keystr);
@@ -991,7 +987,7 @@ fgdbm_has_key(VALUE obj, VALUE keystr)
     GDBM_FILE dbm;
     long len;
 
-    StringValue(keystr);
+    ExportStringValue(keystr);
     len = RSTRING_LENINT(keystr);
     if (TOO_LONG(len)) return Qfalse;
     key.dptr = RSTRING_PTR(keystr);
@@ -1018,7 +1014,7 @@ fgdbm_has_value(VALUE obj, VALUE valstr)
     GDBM_FILE dbm;
     VALUE keystr, valstr2;
 
-    StringValue(valstr);
+    ExportStringValue(valstr);
     GetDBM2(obj, dbmp, dbm);
     for (keystr = rb_gdbm_firstkey(dbm); RTEST(keystr);
          keystr = rb_gdbm_nextkey(dbm, keystr)) {

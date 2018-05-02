@@ -21,8 +21,6 @@ static struct {
     ID id_begin;
     ID id_binary;
     ID id_block_var;
-    ID id_block_var_add_block;
-    ID id_block_var_add_star;
     ID id_blockarg;
     ID id_bodystmt;
     ID id_brace_block;
@@ -55,12 +53,14 @@ static struct {
     ID id_if;
     ID id_if_mod;
     ID id_ifop;
+    ID id_kwrest_param;
     ID id_lambda;
     ID id_magic_comment;
     ID id_massign;
     ID id_method_add_arg;
     ID id_method_add_block;
     ID id_mlhs_add;
+    ID id_mlhs_add_post;
     ID id_mlhs_add_star;
     ID id_mlhs_new;
     ID id_mlhs_paren;
@@ -155,8 +155,6 @@ static struct {
 #define ripper_id_begin ripper_parser_ids.id_begin
 #define ripper_id_binary ripper_parser_ids.id_binary
 #define ripper_id_block_var ripper_parser_ids.id_block_var
-#define ripper_id_block_var_add_block ripper_parser_ids.id_block_var_add_block
-#define ripper_id_block_var_add_star ripper_parser_ids.id_block_var_add_star
 #define ripper_id_blockarg ripper_parser_ids.id_blockarg
 #define ripper_id_bodystmt ripper_parser_ids.id_bodystmt
 #define ripper_id_brace_block ripper_parser_ids.id_brace_block
@@ -189,12 +187,14 @@ static struct {
 #define ripper_id_if ripper_parser_ids.id_if
 #define ripper_id_if_mod ripper_parser_ids.id_if_mod
 #define ripper_id_ifop ripper_parser_ids.id_ifop
+#define ripper_id_kwrest_param ripper_parser_ids.id_kwrest_param
 #define ripper_id_lambda ripper_parser_ids.id_lambda
 #define ripper_id_magic_comment ripper_parser_ids.id_magic_comment
 #define ripper_id_massign ripper_parser_ids.id_massign
 #define ripper_id_method_add_arg ripper_parser_ids.id_method_add_arg
 #define ripper_id_method_add_block ripper_parser_ids.id_method_add_block
 #define ripper_id_mlhs_add ripper_parser_ids.id_mlhs_add
+#define ripper_id_mlhs_add_post ripper_parser_ids.id_mlhs_add_post
 #define ripper_id_mlhs_add_star ripper_parser_ids.id_mlhs_add_star
 #define ripper_id_mlhs_new ripper_parser_ids.id_mlhs_new
 #define ripper_id_mlhs_paren ripper_parser_ids.id_mlhs_paren
@@ -292,8 +292,6 @@ ripper_init_eventids1(void)
     set_id1(begin);
     set_id1(binary);
     set_id1(block_var);
-    set_id1(block_var_add_block);
-    set_id1(block_var_add_star);
     set_id1(blockarg);
     set_id1(bodystmt);
     set_id1(brace_block);
@@ -326,12 +324,14 @@ ripper_init_eventids1(void)
     set_id1(if);
     set_id1(if_mod);
     set_id1(ifop);
+    set_id1(kwrest_param);
     set_id1(lambda);
     set_id1(magic_comment);
     set_id1(massign);
     set_id1(method_add_arg);
     set_id1(method_add_block);
     set_id1(mlhs_add);
+    set_id1(mlhs_add_post);
     set_id1(mlhs_add_star);
     set_id1(mlhs_new);
     set_id1(mlhs_paren);
@@ -431,8 +431,6 @@ ripper_init_eventids1_table(VALUE self)
     rb_hash_aset(h, intern_sym("begin"), INT2FIX(1));
     rb_hash_aset(h, intern_sym("binary"), INT2FIX(3));
     rb_hash_aset(h, intern_sym("block_var"), INT2FIX(2));
-    rb_hash_aset(h, intern_sym("block_var_add_block"), INT2FIX(2));
-    rb_hash_aset(h, intern_sym("block_var_add_star"), INT2FIX(2));
     rb_hash_aset(h, intern_sym("blockarg"), INT2FIX(1));
     rb_hash_aset(h, intern_sym("bodystmt"), INT2FIX(4));
     rb_hash_aset(h, intern_sym("brace_block"), INT2FIX(2));
@@ -465,12 +463,14 @@ ripper_init_eventids1_table(VALUE self)
     rb_hash_aset(h, intern_sym("if"), INT2FIX(3));
     rb_hash_aset(h, intern_sym("if_mod"), INT2FIX(2));
     rb_hash_aset(h, intern_sym("ifop"), INT2FIX(3));
+    rb_hash_aset(h, intern_sym("kwrest_param"), INT2FIX(1));
     rb_hash_aset(h, intern_sym("lambda"), INT2FIX(2));
     rb_hash_aset(h, intern_sym("magic_comment"), INT2FIX(2));
     rb_hash_aset(h, intern_sym("massign"), INT2FIX(2));
     rb_hash_aset(h, intern_sym("method_add_arg"), INT2FIX(2));
     rb_hash_aset(h, intern_sym("method_add_block"), INT2FIX(2));
     rb_hash_aset(h, intern_sym("mlhs_add"), INT2FIX(2));
+    rb_hash_aset(h, intern_sym("mlhs_add_post"), INT2FIX(2));
     rb_hash_aset(h, intern_sym("mlhs_add_star"), INT2FIX(2));
     rb_hash_aset(h, intern_sym("mlhs_new"), INT2FIX(0));
     rb_hash_aset(h, intern_sym("mlhs_paren"), INT2FIX(1));

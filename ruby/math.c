@@ -2,7 +2,7 @@
 
   math.c -
 
-  $Author: naruse $
+  $Author: nobu $
   created at: Tue Jan 25 14:12:56 JST 1994
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -590,6 +590,13 @@ math_log10(VALUE unused_obj, VALUE x)
  *    #   [8, 2.82842712474619, 8.0]
  *    #   [9, 3.0, 9.0]
  *    #   [10, 3.16227766016838, 10.0]
+ *
+ *  Note that the limited precision of floating point arithmetic
+ *  might lead to surprising results:
+ *
+ *    Math.sqrt(10**46).to_i  #=> 99999999999999991611392 (!)
+ *
+ *  See also BigDecimal#sqrt and Integer.sqrt.
  */
 
 static VALUE
@@ -771,41 +778,6 @@ math_erfc(VALUE unused_obj, VALUE x)
     return DBL2NUM(erfc(Get_Double(x)));
 }
 
-#if defined __MINGW32__
-static inline double
-ruby_tgamma(const double d)
-{
-    const double g = tgamma(d);
-    if (isinf(g)) {
-	if (d == 0.0 && signbit(d)) return -INFINITY;
-    }
-    if (isnan(g)) {
-	if (!signbit(d)) return INFINITY;
-    }
-    return g;
-}
-#define tgamma(d) ruby_tgamma(d)
-#endif
-
-#if defined LGAMMA_R_PM0_FIX
-static inline double
-ruby_lgamma_r(const double d, int *sign)
-{
-    const double g = lgamma_r(d, sign);
-    if (isinf(g)) {
-	if (d == 0.0 && signbit(d)) {
-	    *sign = -1;
-	    return INFINITY;
-	} else if (d == 0.0 && !signbit(d)) {
-	    *sign = 1;
-	    return INFINITY;
-	}
-    }
-    return g;
-}
-#define lgamma_r(d, sign) ruby_lgamma_r(d, sign)
-#endif
-
 /*
  * call-seq:
  *    Math.gamma(x)  -> Float
@@ -881,7 +853,13 @@ math_gamma(VALUE unused_obj, VALUE x)
     double d;
     d = Get_Double(x);
     /* check for domain error */
-    if (isinf(d) && signbit(d)) domain_error("gamma");
+    if (isinf(d)) {
+	if (signbit(d)) domain_error("gamma");
+	return DBL2NUM(INFINITY);
+    }
+    if (d == 0.0) {
+	return signbit(d) ? DBL2NUM(-INFINITY) : DBL2NUM(INFINITY);
+    }
     if (d == floor(d)) {
 	if (d < 0.0) domain_error("gamma");
 	if (1.0 <= d && d <= (double)NFACT_TABLE) {
@@ -916,6 +894,10 @@ math_lgamma(VALUE unused_obj, VALUE x)
     if (isinf(d)) {
 	if (signbit(d)) domain_error("lgamma");
 	return rb_assoc_new(DBL2NUM(INFINITY), INT2FIX(1));
+    }
+    if (d == 0.0) {
+	VALUE vsign = signbit(d) ? INT2FIX(-1) : INT2FIX(+1);
+	return rb_assoc_new(DBL2NUM(INFINITY), vsign);
     }
     v = DBL2NUM(lgamma_r(d, &sign));
     return rb_assoc_new(v, INT2FIX(sign));

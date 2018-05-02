@@ -2,7 +2,7 @@
 
   etc.c -
 
-  $Author: nobu $
+  $Author: stomar $
   created at: Tue Mar 22 18:39:19 JST 1994
 
 ************************************************/
@@ -215,9 +215,10 @@ etc_getpwnam(VALUE obj, VALUE nam)
 {
 #ifdef HAVE_GETPWENT
     struct passwd *pwd;
+    const char *p = StringValueCStr(nam);
 
-    SafeStringValue(nam);
-    pwd = getpwnam(RSTRING_PTR(nam));
+    rb_check_safe_obj(nam);
+    pwd = getpwnam(p);
     if (pwd == 0) rb_raise(rb_eArgError, "can't find user for %"PRIsVALUE, nam);
     return setup_passwd(pwd);
 #else
@@ -458,9 +459,10 @@ etc_getgrnam(VALUE obj, VALUE nam)
 {
 #ifdef HAVE_GETGRENT
     struct group *grp;
+    const char *p = StringValueCStr(nam);
 
-    SafeStringValue(nam);
-    grp = getgrnam(RSTRING_PTR(nam));
+    rb_check_safe_obj(nam);
+    grp = getgrnam(p);
     if (grp == 0) rb_raise(rb_eArgError, "can't find group for %"PRIsVALUE, nam);
     return setup_group(grp);
 #else
@@ -625,8 +627,9 @@ VALUE rb_w32_conv_from_wchar(const WCHAR *wstr, rb_encoding *enc);
  * Returns system configuration directory.
  *
  * This is typically "/etc", but is modified by the prefix used when Ruby was
- * compiled. For example, if Ruby is built and installed in /usr/local, returns
- * "/usr/local/etc".
+ * compiled. For example, if Ruby is built and installed in /usr/local,
+ * returns "/usr/local/etc" on other platforms than Windows.
+ * On Windows, this always returns the directory provided by the system.
  */
 static VALUE
 etc_sysconfdir(VALUE obj)
@@ -1012,7 +1015,7 @@ etc_nprocessors(VALUE obj)
 
     ncpus = etc_nprocessors_affin();
     if (ncpus != -1) {
-       return INT2NUM(ncpus);
+	return INT2NUM(ncpus);
     }
     /* fallback to _SC_NPROCESSORS_ONLN */
 #endif

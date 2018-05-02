@@ -1,8 +1,8 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #--
 # benchmark.rb - a performance benchmarking library
 #
-# $Id: benchmark.rb 53261 2015-12-23 03:43:23Z a_matsuda $
+# $Id: benchmark.rb 57253 2017-01-03 02:00:01Z kazu $
 #
 # Created by Gotoken (gotoken@notwork.org).
 #

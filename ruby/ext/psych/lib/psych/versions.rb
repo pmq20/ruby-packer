@@ -1,9 +1,9 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 module Psych
   # The version is Psych you're using
-  VERSION = '2.2.2'
+  VERSION = '3.0.2'
 
   if RUBY_ENGINE == 'jruby'
-    DEFAULT_SNAKEYAML_VERSION = '1.17'.freeze
+    DEFAULT_SNAKEYAML_VERSION = '1.18'.freeze
   end
 end

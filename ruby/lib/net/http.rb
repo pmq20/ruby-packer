@@ -20,7 +20,7 @@
 # See Net::HTTP for an overview and examples.
 #
 
-require 'net/protocol'
+require_relative 'protocol'
 require 'uri'
 
 module Net   #:nodoc:
@@ -392,7 +392,7 @@ module Net   #:nodoc:
   class HTTP < Protocol
 
     # :stopdoc:
-    Revision = %q$Revision: 56865 $.split[1]
+    Revision = %q$Revision: 61155 $.split[1]
     HTTPVersion = '1.1'
     begin
       require 'zlib'
@@ -503,7 +503,7 @@ module Net   #:nodoc:
     def HTTP.post(url, data, header = nil)
       start(url.hostname, url.port,
             :use_ssl => url.scheme == 'https' ) {|http|
-        http.post(url.path, data, header)
+        http.post(url, data, header)
       }
     end
 
@@ -560,7 +560,7 @@ module Net   #:nodoc:
 
     # :call-seq:
     #   HTTP.start(address, port, p_addr, p_port, p_user, p_pass, &block)
-    #   HTTP.start(address, port=nil, p_addr=nil, p_port=nil, p_user=nil, p_pass=nil, opt, &block)
+    #   HTTP.start(address, port=nil, p_addr=:ENV, p_port=nil, p_user=nil, p_pass=nil, opt, &block)
     #
     # Creates a new Net::HTTP object, then additionally opens the TCP
     # connection and HTTP session.
@@ -591,6 +591,7 @@ module Net   #:nodoc:
     def HTTP.start(address, *arg, &block) # :yield: +http+
       arg.pop if opt = Hash.try_convert(arg[-1])
       port, p_addr, p_port, p_user, p_pass = *arg
+      p_addr = :ENV if arg.size < 2
       port = https_default_port if !port && opt && opt[:use_ssl]
       http = new(address, port, p_addr, p_port, p_user, p_pass)
 
@@ -626,12 +627,13 @@ module Net   #:nodoc:
     # detection from the environment.  To disable proxy detection set +p_addr+
     # to nil.
     #
-    # If you are connecting to a custom proxy, +p_addr+ the DNS name or IP
-    # address of the proxy host, +p_port+ the port to use to access the proxy,
-    # and +p_user+ and +p_pass+ the username and password if authorization is
-    # required to use the proxy.
+    # If you are connecting to a custom proxy, +p_addr+ specifies the DNS name
+    # or IP address of the proxy host, +p_port+ the port to use to access the
+    # proxy, +p_user+ and +p_pass+ the username and password if authorization
+    # is required to use the proxy, and p_no_proxy hosts which do not
+    # use the proxy.
     #
-    def HTTP.new(address, port = nil, p_addr = :ENV, p_port = nil, p_user = nil, p_pass = nil)
+    def HTTP.new(address, port = nil, p_addr = :ENV, p_port = nil, p_user = nil, p_pass = nil, p_no_proxy = nil)
       http = super address, port
 
       if proxy_class? then # from Net::HTTP::Proxy()
@@ -643,6 +645,10 @@ module Net   #:nodoc:
       elsif p_addr == :ENV then
         http.proxy_from_env = true
       else
+        if p_addr && p_no_proxy && !URI::Generic.use_proxy?(p_addr, p_addr, p_port, p_no_proxy)
+          p_addr = nil
+          p_port = nil
+        end
         http.proxy_address = p_addr
         http.proxy_port    = p_port || default_port
         http.proxy_user    = p_user
@@ -669,6 +675,7 @@ module Net   #:nodoc:
       @open_timeout = 60
       @read_timeout = 60
       @continue_timeout = nil
+      @max_retries = 1
       @debug_output = nil
 
       @proxy_from_env = false
@@ -701,7 +708,7 @@ module Net   #:nodoc:
     #   http.start { .... }
     #
     def set_debug_output(output)
-      warn 'Net::HTTP#set_debug_output called after HTTP started' if started?
+      warn 'Net::HTTP#set_debug_output called after HTTP started', uplevel: 1 if started?
       @debug_output = output
     end
 
@@ -734,6 +741,22 @@ module Net   #:nodoc:
     # seconds. If the HTTP object cannot read data in this many seconds,
     # it raises a Net::ReadTimeout exception. The default value is 60 seconds.
     attr_reader :read_timeout
+
+    # Maximum number of times to retry an idempotent request in case of
+    # Net::ReadTimeout, IOError, EOFError, Errno::ECONNRESET,
+    # Errno::ECONNABORTED, Errno::EPIPE, OpenSSL::SSL::SSLError,
+    # Timeout::Error.
+    # Should be a non-negative integer number. Zero means no retries.
+    # The default value is 1.
+    def max_retries=(retries)
+      retries = retries.to_int
+      if retries < 0
+        raise ArgumentError, 'max_retries should be non-negative integer number'
+      end
+      @max_retries = retries
+    end
+
+    attr_reader :max_retries
 
     # Setter for the read_timeout attribute.
     def read_timeout=(sec)
@@ -793,6 +816,8 @@ module Net   #:nodoc:
       :@key,
       :@ssl_timeout,
       :@ssl_version,
+      :@min_version,
+      :@max_version,
       :@verify_callback,
       :@verify_depth,
       :@verify_mode,
@@ -806,6 +831,8 @@ module Net   #:nodoc:
       :key,
       :ssl_timeout,
       :ssl_version,
+      :min_version,
+      :max_version,
       :verify_callback,
       :verify_depth,
       :verify_mode,
@@ -839,6 +866,12 @@ module Net   #:nodoc:
 
     # Sets the SSL version.  See OpenSSL::SSL::SSLContext#ssl_version=
     attr_accessor :ssl_version
+
+    # Sets the minimum SSL version.  See OpenSSL::SSL::SSLContext#min_version=
+    attr_accessor :min_version
+
+    # Sets the maximum SSL version.  See OpenSSL::SSL::SSLContext#max_version=
+    attr_accessor :max_version
 
     # Sets the verify callback for the server certification verification.
     attr_accessor :verify_callback
@@ -1080,14 +1113,29 @@ module Net   #:nodoc:
       end
     end
 
-    # The proxy username, if one is configured
-    def proxy_user
-      @proxy_user
+    # [Bug #12921]
+    if /linux|freebsd|darwin/ =~ RUBY_PLATFORM
+      ENVIRONMENT_VARIABLE_IS_MULTIUSER_SAFE = true
+    else
+      ENVIRONMENT_VARIABLE_IS_MULTIUSER_SAFE = false
     end
 
-    # The proxy password, if one is configured
+    # The username of the proxy server, if one is configured.
+    def proxy_user
+      if ENVIRONMENT_VARIABLE_IS_MULTIUSER_SAFE && @proxy_from_env
+        proxy_uri&.user
+      else
+        @proxy_user
+      end
+    end
+
+    # The password of the proxy server, if one is configured.
     def proxy_pass
-      @proxy_pass
+      if ENVIRONMENT_VARIABLE_IS_MULTIUSER_SAFE && @proxy_from_env
+        proxy_uri&.password
+      else
+        @proxy_pass
+      end
     end
 
     alias proxyaddr proxy_address   #:nodoc: obsolete
@@ -1461,7 +1509,7 @@ module Net   #:nodoc:
              # avoid a dependency on OpenSSL
              defined?(OpenSSL::SSL) ? OpenSSL::SSL::SSLError : IOError,
              Timeout::Error => exception
-        if count == 0 && IDEMPOTENT_METHODS_.include?(req.method)
+        if count < max_retries && IDEMPOTENT_METHODS_.include?(req.method)
           count += 1
           @socket.close if @socket
           D "Conn close because of error #{exception}, and retry"
@@ -1564,11 +1612,10 @@ module Net   #:nodoc:
     private
 
     def addr_port
-      if use_ssl?
-        address() + (port == HTTP.https_default_port ? '' : ":#{port()}")
-      else
-        address() + (port == HTTP.http_default_port ? '' : ":#{port()}")
-      end
+      addr = address
+      addr = "[#{addr}]" if addr.include?(":")
+      default_port = use_ssl? ? HTTP.https_default_port : HTTP.http_default_port
+      default_port == port ? addr : "#{addr}:#{port}"
     end
 
     def D(msg)
@@ -1580,17 +1627,17 @@ module Net   #:nodoc:
 
 end
 
-require 'net/http/exceptions'
+require_relative 'http/exceptions'
 
-require 'net/http/header'
+require_relative 'http/header'
 
-require 'net/http/generic_request'
-require 'net/http/request'
-require 'net/http/requests'
+require_relative 'http/generic_request'
+require_relative 'http/request'
+require_relative 'http/requests'
 
-require 'net/http/response'
-require 'net/http/responses'
+require_relative 'http/response'
+require_relative 'http/responses'
 
-require 'net/http/proxy_delta'
+require_relative 'http/proxy_delta'
 
-require 'net/http/backward'
+require_relative 'http/backward'

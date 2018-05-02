@@ -2,7 +2,7 @@
 
   objspace.c - ObjectSpace extender for MRI.
 
-  $Author: yui-knk $
+  $Author: mame $
   created at: Wed Jun 17 07:39:17 2009
 
   NOTE: This extension library is only expected to exist with C Ruby.
@@ -203,7 +203,7 @@ type2sym(enum ruby_value_type i)
  *
  *  Note that this information is incomplete.  You need to deal with
  *  this information as only a *HINT*.  Especially, total size of
- *  T_DATA may not right size.
+ *  T_DATA may be wrong.
  *
  *  It returns a hash as:
  *    {:TOTAL=>1461154, :T_CLASS=>158280, :T_MODULE=>20672, :T_STRING=>527249, ...}
@@ -231,13 +231,6 @@ count_objects_size(int argc, VALUE *argv, VALUE os)
     }
 
     rb_objspace_each_objects(cos_i, &counts[0]);
-
-    if (hash == Qnil) {
-        hash = rb_hash_new();
-    }
-    else if (!RHASH_EMPTY_P(hash)) {
-        st_foreach(RHASH_TBL(hash), set_zero_i, hash);
-    }
 
     for (i = 0; i <= T_MASK; i++) {
 	if (counts[i]) {
@@ -313,13 +306,6 @@ count_symbols(int argc, VALUE *argv, VALUE os)
     size_t immortal_symbols = rb_sym_immortal_count();
     rb_objspace_each_objects(cs_i, &dynamic_counts);
 
-    if (hash == Qnil) {
-        hash = rb_hash_new();
-    }
-    else if (!RHASH_EMPTY_P(hash)) {
-        st_foreach(RHASH_TBL(hash), set_zero_i, hash);
-    }
-
     rb_hash_aset(hash, ID2SYM(rb_intern("mortal_dynamic_symbol")),   SIZET2NUM(dynamic_counts.mortal));
     rb_hash_aset(hash, ID2SYM(rb_intern("immortal_dynamic_symbol")), SIZET2NUM(dynamic_counts.immortal));
     rb_hash_aset(hash, ID2SYM(rb_intern("immortal_static_symbol")),  SIZET2NUM(immortal_symbols - dynamic_counts.immortal));
@@ -371,7 +357,7 @@ static VALUE
 count_nodes(int argc, VALUE *argv, VALUE os)
 {
     size_t nodes[NODE_LAST+1];
-    size_t i;
+    enum node_type i;
     VALUE hash = setup_hash(argc, argv);
 
     for (i = 0; i <= NODE_LAST; i++) {
@@ -380,24 +366,18 @@ count_nodes(int argc, VALUE *argv, VALUE os)
 
     rb_objspace_each_objects(cn_i, &nodes[0]);
 
-    if (hash == Qnil) {
-        hash = rb_hash_new();
-    }
-    else if (!RHASH_EMPTY_P(hash)) {
-        st_foreach(RHASH_TBL(hash), set_zero_i, hash);
-    }
-
     for (i=0; i<NODE_LAST; i++) {
 	if (nodes[i] != 0) {
 	    VALUE node;
 	    switch (i) {
-#define COUNT_NODE(n) case n: node = ID2SYM(rb_intern(#n)); break;
+#define COUNT_NODE(n) case n: node = ID2SYM(rb_intern(#n)); goto set
 		COUNT_NODE(NODE_SCOPE);
 		COUNT_NODE(NODE_BLOCK);
 		COUNT_NODE(NODE_IF);
+		COUNT_NODE(NODE_UNLESS);
 		COUNT_NODE(NODE_CASE);
+		COUNT_NODE(NODE_CASE2);
 		COUNT_NODE(NODE_WHEN);
-		COUNT_NODE(NODE_OPT_N);
 		COUNT_NODE(NODE_WHILE);
 		COUNT_NODE(NODE_UNTIL);
 		COUNT_NODE(NODE_ITER);
@@ -418,18 +398,18 @@ count_nodes(int argc, VALUE *argv, VALUE os)
 		COUNT_NODE(NODE_DASGN_CURR);
 		COUNT_NODE(NODE_GASGN);
 		COUNT_NODE(NODE_IASGN);
-		COUNT_NODE(NODE_IASGN2);
 		COUNT_NODE(NODE_CDECL);
 		COUNT_NODE(NODE_CVASGN);
-		COUNT_NODE(NODE_CVDECL);
 		COUNT_NODE(NODE_OP_ASGN1);
 		COUNT_NODE(NODE_OP_ASGN2);
 		COUNT_NODE(NODE_OP_ASGN_AND);
 		COUNT_NODE(NODE_OP_ASGN_OR);
 		COUNT_NODE(NODE_OP_CDECL);
 		COUNT_NODE(NODE_CALL);
+		COUNT_NODE(NODE_OPCALL);
 		COUNT_NODE(NODE_FCALL);
 		COUNT_NODE(NODE_VCALL);
+		COUNT_NODE(NODE_QCALL);
 		COUNT_NODE(NODE_SUPER);
 		COUNT_NODE(NODE_ZSUPER);
 		COUNT_NODE(NODE_ARRAY);
@@ -456,7 +436,6 @@ count_nodes(int argc, VALUE *argv, VALUE os)
 		COUNT_NODE(NODE_DXSTR);
 		COUNT_NODE(NODE_EVSTR);
 		COUNT_NODE(NODE_DREGX);
-		COUNT_NODE(NODE_DREGX_ONCE);
 		COUNT_NODE(NODE_ARGS);
 		COUNT_NODE(NODE_ARGS_AUX);
 		COUNT_NODE(NODE_OPT_ARG);
@@ -465,8 +444,6 @@ count_nodes(int argc, VALUE *argv, VALUE os)
 		COUNT_NODE(NODE_ARGSCAT);
 		COUNT_NODE(NODE_ARGSPUSH);
 		COUNT_NODE(NODE_SPLAT);
-		COUNT_NODE(NODE_TO_ARY);
-		COUNT_NODE(NODE_BLOCK_ARG);
 		COUNT_NODE(NODE_BLOCK_PASS);
 		COUNT_NODE(NODE_DEFN);
 		COUNT_NODE(NODE_DEFS);
@@ -489,15 +466,15 @@ count_nodes(int argc, VALUE *argv, VALUE os)
 		COUNT_NODE(NODE_ERRINFO);
 		COUNT_NODE(NODE_DEFINED);
 		COUNT_NODE(NODE_POSTEXE);
-		COUNT_NODE(NODE_ALLOCA);
-		COUNT_NODE(NODE_BMETHOD);
 		COUNT_NODE(NODE_DSYM);
 		COUNT_NODE(NODE_ATTRASGN);
 		COUNT_NODE(NODE_PRELUDE);
 		COUNT_NODE(NODE_LAMBDA);
 #undef COUNT_NODE
-	      default: node = INT2FIX(i);
+	      case NODE_LAST: break;
 	    }
+	    UNREACHABLE;
+	  set:
 	    rb_hash_aset(hash, node, SIZET2NUM(nodes[i]));
 	}
     }
@@ -576,7 +553,7 @@ count_tdata_objects(int argc, VALUE *argv, VALUE self)
     return hash;
 }
 
-static ID imemo_type_ids[imemo_mask+1];
+static ID imemo_type_ids[IMEMO_MASK+1];
 
 static int
 count_imemo_objects_i(void *vstart, void *vend, size_t stride, void *data)
@@ -647,6 +624,8 @@ count_imemo_objects(int argc, VALUE *argv, VALUE self)
 	imemo_type_ids[5] = rb_intern("imemo_memo");
 	imemo_type_ids[6] = rb_intern("imemo_ment");
 	imemo_type_ids[7] = rb_intern("imemo_iseq");
+	imemo_type_ids[8] = rb_intern("imemo_alloc");
+	imemo_type_ids[9] = rb_intern("imemo_parser_strterm");
     }
 
     rb_objspace_each_objects(count_imemo_objects_i, (void *)hash);

@@ -13,71 +13,91 @@
  */
 
 static INSN *
-insn_operands_unification(INSN *insnobj){
+insn_operands_unification(INSN *insnobj)
+{
 #ifdef OPT_OPERANDS_UNIFICATION
-  /* optimize rule */
-  switch(insnobj->insn_id){
+    /* optimize rule */
+    switch(insnobj->insn_id){
+      case BIN(getlocal):
+	if (
+	    insnobj->operands[1] == INT2FIX(0) &&
+	    1) {
+	    insnobj->insn_id = BIN(getlocal_OP__WC__0);
+	    insnobj->operand_size = 1;
+	    break;
+	}
+	if (
+	    insnobj->operands[1] == INT2FIX(1) &&
+	    1) {
+	    insnobj->insn_id = BIN(getlocal_OP__WC__1);
+	    insnobj->operand_size = 1;
+	    break;
+	}
+	break;
+      case BIN(setlocal):
+	if (
+	    insnobj->operands[1] == INT2FIX(0) &&
+	    1) {
+	    insnobj->insn_id = BIN(setlocal_OP__WC__0);
+	    insnobj->operand_size = 1;
+	    break;
+	}
+	if (
+	    insnobj->operands[1] == INT2FIX(1) &&
+	    1) {
+	    insnobj->insn_id = BIN(setlocal_OP__WC__1);
+	    insnobj->operand_size = 1;
+	    break;
+	}
+	break;
+      case BIN(putobject):
+	if (
+	    insnobj->operands[0] == INT2FIX(0) &&
+	    1) {
+	    insnobj->insn_id = BIN(putobject_OP_INT2FIX_O_0_C_);
+	    insnobj->operand_size = 0;
+	    break;
+	}
+	if (
+	    insnobj->operands[0] == INT2FIX(1) &&
+	    1) {
+	    insnobj->insn_id = BIN(putobject_OP_INT2FIX_O_1_C_);
+	    insnobj->operand_size = 0;
+	    break;
+	}
+	break;
 
-case BIN(getlocal):
-  if(
-    insnobj->operands[1] == INT2FIX(0)
-  ){
-    insnobj->insn_id = BIN(getlocal_OP__WC__0);
-    insnobj->operand_size = 1;
-    break;
-  }
-
-  if(
-    insnobj->operands[1] == INT2FIX(1)
-  ){
-    insnobj->insn_id = BIN(getlocal_OP__WC__1);
-    insnobj->operand_size = 1;
-    break;
-  }
-
-  break;
-case BIN(setlocal):
-  if(
-    insnobj->operands[1] == INT2FIX(0)
-  ){
-    insnobj->insn_id = BIN(setlocal_OP__WC__0);
-    insnobj->operand_size = 1;
-    break;
-  }
-
-  if(
-    insnobj->operands[1] == INT2FIX(1)
-  ){
-    insnobj->insn_id = BIN(setlocal_OP__WC__1);
-    insnobj->operand_size = 1;
-    break;
-  }
-
-  break;
-case BIN(putobject):
-  if(
-    insnobj->operands[0] == INT2FIX(0)
-  ){
-    insnobj->insn_id = BIN(putobject_OP_INT2FIX_O_0_C_);
-    insnobj->operand_size = 0;
-    break;
-  }
-
-  if(
-    insnobj->operands[0] == INT2FIX(1)
-  ){
-    insnobj->insn_id = BIN(putobject_OP_INT2FIX_O_1_C_);
-    insnobj->operand_size = 0;
-    break;
-  }
-
-  break;
-
-  default:
-    /* do nothing */;
-    break;
-  }
+      default:
+	/* do nothing */;
+	break;
+    }
 #endif
-  return insnobj;
+    return insnobj;
 }
 
+int
+rb_insn_unified_local_var_level(VALUE insn)
+{
+#ifdef OPT_OPERANDS_UNIFICATION
+    /* optimize rule */
+    switch (insn) {
+      case BIN(getlocal_OP__WC__0):
+	return 0;
+      case BIN(getlocal_OP__WC__1):
+	return 1;
+      case BIN(setlocal_OP__WC__0):
+	return 0;
+      case BIN(setlocal_OP__WC__1):
+	return 1;
+      case BIN(putobject_OP_INT2FIX_O_0_C_):
+	return INT2FIX(0);
+      case BIN(putobject_OP_INT2FIX_O_1_C_):
+	return INT2FIX(1);
+
+      default:
+	/* do nothing */;
+	break;
+    }
+#endif
+    return -1;
+}

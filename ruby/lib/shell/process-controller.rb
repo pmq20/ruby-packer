@@ -2,7 +2,7 @@
 #
 #   shell/process-controller.rb -
 #       $Release Version: 0.7 $
-#       $Revision: 56865 $
+#       $Revision: 60139 $
 #       by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
@@ -10,8 +10,6 @@
 #
 #
 require "forwardable"
-
-require "thread"
 require "sync"
 
 class Shell

@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 # = net/smtp.rb
 #
 # Copyright (c) 1999-2007 Yukihiro Matsumoto.
@@ -12,7 +12,7 @@
 # This program is free software. You can re-distribute and/or
 # modify this program under the same terms as Ruby itself.
 #
-# $Id: smtp.rb 56865 2016-11-21 23:05:41Z normal $
+# $Id: smtp.rb 59381 2017-07-20 23:34:03Z kazu $
 #
 # See Net::SMTP for documentation.
 #
@@ -169,7 +169,7 @@ module Net
   #
   class SMTP < Protocol
 
-    Revision = %q$Revision: 56865 $.split[1]
+    Revision = %q$Revision: 59381 $.split[1]
 
     # The default SMTP port number, 25.
     def SMTP.default_port
@@ -945,7 +945,7 @@ module Net
     end
 
     def recv_response
-      buf = ''
+      buf = ''.dup
       while true
         line = @socket.readline
         buf << line << "\n"
@@ -1035,9 +1035,9 @@ module Net
       end
 
       # Creates a CRAM-MD5 challenge. You can view more information on CRAM-MD5
-      # on Wikipedia: http://en.wikipedia.org/wiki/CRAM-MD5
+      # on Wikipedia: https://en.wikipedia.org/wiki/CRAM-MD5
       def cram_md5_challenge
-        @string.split(/ /)[1].unpack('m')[0]
+        @string.split(/ /)[1].unpack1('m')
       end
 
       # Returns a hash of the human readable reply text in the response if it

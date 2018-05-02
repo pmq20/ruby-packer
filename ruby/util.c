@@ -2,7 +2,7 @@
 
   util.c -
 
-  $Author: nagachika $
+  $Author: hsbt $
   created at: Fri Mar 10 17:22:34 JST 1995
 
   Copyright (C) 1993-2008 Yukihiro Matsumoto
@@ -511,11 +511,11 @@ ruby_strdup(const char *str)
 char *
 ruby_getcwd(void)
 {
-#if defined __native_client__
-    char *buf = xmalloc(2);
-    strcpy(buf, ".");
-#elif defined HAVE_GETCWD
+#if defined HAVE_GETCWD
+# undef RUBY_UNTYPED_DATA_WARNING
+# define RUBY_UNTYPED_DATA_WARNING 0
 # if defined NO_GETCWD_MALLOC
+    VALUE guard = Data_Wrap_Struct((VALUE)0, NULL, RUBY_DEFAULT_FREE, NULL);
     int size = 200;
     char *buf = xmalloc(size);
 
@@ -523,17 +523,22 @@ ruby_getcwd(void)
 	int e = errno;
 	if (e != ERANGE) {
 	    xfree(buf);
+	    DATA_PTR(guard) = NULL;
 	    rb_syserr_fail(e, "getcwd");
 	}
 	size *= 2;
+	DATA_PTR(guard) = buf;
 	buf = xrealloc(buf, size);
     }
 # else
+    VALUE guard = Data_Wrap_Struct((VALUE)0, NULL, free, NULL);
     char *buf, *cwd = getcwd(NULL, 0);
+    DATA_PTR(guard) = cwd;
     if (!cwd) rb_sys_fail("getcwd");
     buf = ruby_strdup(cwd);	/* allocate by xmalloc */
     free(cwd);
 # endif
+    DATA_PTR(RB_GC_GUARD(guard)) = NULL;
 #else
 # ifndef PATH_MAX
 #  define PATH_MAX 8192

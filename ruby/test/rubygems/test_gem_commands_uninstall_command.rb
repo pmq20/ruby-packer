@@ -92,7 +92,7 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
     # Evil hack to prevent false removal success
     FileUtils.rm_f @executable
 
-    open @executable, "wb+" do |f| f.puts "binary" end
+    File.open @executable, "wb+" do |f| f.puts "binary" end
 
     @cmd.options[:executables] = true
     @cmd.options[:args] = [@spec.name]
@@ -204,7 +204,7 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
     end
 
     assert Gem::Specification.find_all_by_name('dep_x').length > 0
-    assert Gem::Specification.find_all_by_name('x').length == 0
+    assert Gem::Specification.find_all_by_name('x').length.zero?
   end
 
   def test_execute_all
@@ -277,6 +277,18 @@ WARNING:  Use your OS package manager to uninstall vendor gems
 
   ensure
     RbConfig::CONFIG['vendordir'] = orig_vendordir
+  end
+
+  def test_execute_with_gem_not_installed
+    @cmd.options[:args] = ['d']
+
+    use_ui ui do
+      @cmd.execute
+    end
+
+    output = ui.output.split "\n"
+
+    assert_equal output.first, "Gem 'd' is not installed"
   end
 
 end

@@ -1,7 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
 require 'tempfile'
-require 'thread'
 
 class TestAutoload < Test::Unit::TestCase
   def test_autoload_so
@@ -244,6 +243,46 @@ p Foo::Bar
   def test_bug_13526
     script = File.join(__dir__, 'bug-13526.rb')
     assert_ruby_status([script], '', '[ruby-core:81016] [Bug #13526]')
+  end
+
+  def test_autoload_private_constant
+    Dir.mktmpdir('autoload') do |tmpdir|
+      File.write(tmpdir+"/zzz.rb", "#{<<~"begin;"}\n#{<<~'end;'}")
+      begin;
+        class AutoloadTest
+          ZZZ = :ZZZ
+          private_constant :ZZZ
+        end
+      end;
+      assert_separately(%W[-I #{tmpdir}], "#{<<-"begin;"}\n#{<<-'end;'}")
+      bug = '[ruby-core:85516] [Bug #14469]'
+      begin;
+        class AutoloadTest
+          autoload :ZZZ, "zzz.rb"
+        end
+        assert_raise(NameError, bug) {AutoloadTest::ZZZ}
+      end;
+    end
+  end
+
+  def test_autoload_deprecate_constant
+    Dir.mktmpdir('autoload') do |tmpdir|
+      File.write(tmpdir+"/zzz.rb", "#{<<~"begin;"}\n#{<<~'end;'}")
+      begin;
+        class AutoloadTest
+          ZZZ = :ZZZ
+          deprecate_constant :ZZZ
+        end
+      end;
+      assert_separately(%W[-I #{tmpdir}], "#{<<-"begin;"}\n#{<<-'end;'}")
+      bug = '[ruby-core:85516] [Bug #14469]'
+      begin;
+        class AutoloadTest
+          autoload :ZZZ, "zzz.rb"
+        end
+        assert_warning(/ZZZ is deprecated/, bug) {AutoloadTest::ZZZ}
+      end;
+    end
   end
 
   def add_autoload(path)
