@@ -4,6 +4,7 @@
 
 /.vs/
 /.vscode/
-/ruby-compiler/
 /a.exe
 /a.out
+/ruby-compiler/
+/rubyc
