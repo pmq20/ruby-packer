@@ -16,7 +16,7 @@ addons:
       - texinfo
 
 before_install:
-  - ./travis/osx_deps.sh
+  - ./.travis/osx_deps.sh
 
 before_script:
   - mksquashfs -version
