@@ -21,7 +21,7 @@ def escape(arg)
 end
 
 tmpdir = File.expand_path("rubyc", Dir.tmpdir)
-tmpdir_ruby = File.join(tmpdir, 'ruby')
+tmpdir_ruby = File.join(tmpdir, 'build_pass_2')
 
 Dir.chdir(File.expand_path('../..', __FILE__))
 

@@ -27,7 +27,20 @@ class Compiler
     end
     
     def run(*args)
-      STDERR.puts "-> Running #{args}" unless @options[:quiet]
+      unless @options[:quiet]
+        message =
+          if Hash === args.first
+            env = args.first
+            env = env.map { |name, value|
+              value = escape(value)
+              [name, value].join("=")
+            }.join(" ")
+            "#{env} #{args[1..-1].join(" ")}"
+          else
+            args
+          end
+        STDERR.puts "-> #{message}"
+      end
       pid = spawn(*args)
       pid, status = Process.wait2(pid)
       raise Error, "Failed running #{args}" unless status.success?
