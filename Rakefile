@@ -1,5 +1,5 @@
-require 'rake/testtask'
+require "rake/testtask"
 
-Rake::TestTask.new 'test:unit' do |task|
+Rake::TestTask.new "test:unit" do |task|
   task.warning = true
 end
