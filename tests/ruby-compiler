@@ -1,74 +1,80 @@
 #!/usr/bin/env ruby
 
 # Copyright (c) 2017 Minqi Pan <pmq2001@gmail.com>
-# 
+#
 # This file is part of Ruby Compiler, distributed under the MIT License
 # For full terms see the included LICENSE file
 
-require 'shellwords'
 require 'fileutils'
+require 'open3'
 require 'tmpdir'
 
-def escape(arg)
-  if Gem.win_platform?
-    if arg.include?('"')
-      raise NotImplementedError
-    end
-    %Q{"#{arg}"}
-  else
-    Shellwords.escape(arg)
-  end
-end
+include FileUtils::Verbose
 
 tmpdir = File.expand_path("rubyc", Dir.tmpdir)
 
-Dir.chdir(File.expand_path('../..', __FILE__))
+cd File.expand_path('../..', __FILE__)
 
-outpath = File.expand_path((Gem.win_platform? ? 'a.exe' : 'a.out'), Dir.pwd)
-unless File.exist?(outpath)
-  pid = spawn("ruby bin/rubyc --tmpdir=#{escape tmpdir} bin/rubyc")
-  pid, status = Process.wait2(pid)
-  raise "Failed running rubyc for ruby-compiler" unless status.success?
-
-  raise unless File.exist?(outpath)
-  raise unless File.size(outpath) >= 10_000_000
-
+name =
   if Gem.win_platform?
-    outpath = %Q{"#{outpath}"}
+    'a.exe'
   else
-    File.chmod(0777, outpath)
-    outpath = Shellwords.escape(outpath)
+    'a.out'
+  end
+
+rubyc = File.expand_path(name, Dir.pwd)
+
+unless File.exist?(rubyc)
+  success = system("ruby", "bin/rubyc", "--tmpdir", tmpdir, "bin/rubyc")
+  raise "Failed running rubyc for ruby-compiler" unless success
+
+  raise unless File.exist?(rubyc)
+  raise unless File.size(rubyc) >= 10_000_000
+
+  chmod "u+x", rubyc unless Gem.win_platform?
+end
+
+def check(*command)
+  Open3.popen2(*command) do |stdin, stdout, wait_thr|
+    status = wait_thr.value
+    abort "running #{command.join " "} failed" unless status.success?
+
+    yield stdout.read
   end
 end
 
 # PART 1
-raise unless `#{outpath} --help`.include?(%q{Compiling your Ruby application into a single executable.})
-raise unless $?.success?
-raise unless `#{outpath} --ruby-version`.to_i >= 2
-raise unless $?.success?
+check rubyc, "--help" do |stdout|
+  abort "missing help string" unless
+    stdout.include?(%q{Compiling your Ruby application into a single executable.})
+end
+
+check rubyc, "--ruby-version" do |stdout|
+  abort "invalid ruby version" unless stdout.to_i >= 2
+end
+
 puts "Congratulations! PART 1 passed."
 
 # PART 2
-ruby_folder = 'build_pass_1'
-Dir.chdir(File.join(tmpdir, ruby_folder))
+cd File.join(tmpdir, "build_pass_1")
 
-ENV['ENCLOSE_IO_USE_ORIGINAL_RUBY'] = '1'
-ENV['ENCLOSE_IO_ALWAYS_USE_ORIGINAL_RUBY'] = '1'
+env = {
+  'ENCLOSE_IO_ALWAYS_USE_ORIGINAL_RUBY' => '1',
+  'ENCLOSE_IO_USE_ORIGINAL_RUBY'        => '1',
+}
+
+cmds = []
 if Gem.win_platform?
-  cmds = [
-    'nmake btest',
-    'nmake test-basic',
-  ]
+  cmds << %w[nmake btest]
+  cmds << %w[nmake test-basic]
 else
-  cmds = [
-    "make test",
-  ]
+  cmds << %w[make test]
 end
 
 cmds.each do |cmd|
-  pid = spawn(cmd)
-  pid, status = Process.wait2(pid)
-  raise "Failed running #{cmd}" unless status.success?
+  success = system(env, *cmd)
+  raise "Failed running #{cmd}" unless success
 end
+
 puts "Congratulations! PART 2 passed."
 puts "All passed."
