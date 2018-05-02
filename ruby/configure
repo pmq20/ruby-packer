@@ -7625,6 +7625,89 @@ fi
 
 
 : ${DLDFLAGS="$LDFLAGS"}
+: ${RPATHFLAG=''}
+rpathflag=''
+if test x"${RPATHFLAG}" = x; then :
+
+    case "$target_os" in #(
+  hpux*) :
+    if test "$rb_cv_prog_gnu_ld" = no; then :
+  rpathflag='+b '
+fi ;; #(
+  aix*) :
+    rpathflag='-blibpath:' ;; #(
+  *) :
+    for rpathflag in -R "-rpath "; do
+	    case "$rpathflag" in #(
+  *" ") :
+    case "${linker_flag}" in #(
+  *,) :
+    rpathflag=`echo "$rpathflag" | tr ' ' ,` ;; #(
+  *) :
+     ;;
+esac ;; #(
+  *) :
+     ;;
+esac
+	    rpathflag="${linker_flag}${rpathflag}"
+
+    save_LDFLAGS="$LDFLAGS"
+    LDFLAGS="$LDFLAGS ${rpathflag}."
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${rpathflag}. is accepted as LDFLAGS" >&5
+$as_echo_n "checking whether ${rpathflag}. is accepted as LDFLAGS... " >&6; }
+    save_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS $rb_cv_warnflags"
+if test "${ac_c_werror_flag+set}"; then
+  rb_c_werror_flag="$ac_c_werror_flag"
+else
+  unset rb_c_werror_flag
+fi
+ac_c_werror_flag=yes
+
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+    $as_echo "${msg_result_yes}yes${msg_reset}" ; }
+else
+  rpathflag=
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+    $as_echo "${msg_result_no}no${msg_reset}" ; }
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+CFLAGS="$save_CFLAGS"
+save_CFLAGS=
+if test "${rb_c_werror_flag+set}"; then
+  ac_c_werror_flag="$rb_c_werror_flag"
+else
+  unset ac_c_werror_flag
+fi
+    LDFLAGS="$save_LDFLAGS"
+    save_LDFLAGS=
+
+	    if test "x${rpathflag}" != x; then :
+
+fi
+        done ;;
+esac
+
+else
+
+    rpathflag=`echo "$RPATHFLAG" | sed 's/%.*//'`
+
+fi
 
 case $RUBY_PATCHLEVEL in #(
   -*) :
@@ -8887,7 +8970,7 @@ if test "${with_opt_dir+set}" = set; then :
   withval=$with_opt_dir;
 		val=`echo "$PATH_SEPARATOR$withval" | sed "s|$PATH_SEPARATOR\([^$PATH_SEPARATOR]*\)| -I\1/include|g;s/^ //"`
 		CPPFLAGS="$CPPFLAGS $val"
-		val=`echo "$PATH_SEPARATOR$withval" | sed "s|$PATH_SEPARATOR\([^$PATH_SEPARATOR]*\)| -L\1/lib|g;s/^ //"`
+		val=`echo "$PATH_SEPARATOR$withval" | sed "s|$PATH_SEPARATOR\([^$PATH_SEPARATOR]*\)| -L\1/lib${rpathflag:+ $rpathflag\\\\1/lib}|g;s/^ //"`
 		LDFLAGS="$LDFLAGS $val"
 		LDFLAGS_OPTDIR="$val"
 		OPT_DIR="$withval"
@@ -9037,6 +9120,14 @@ fi
 rm -f conftest.err conftest.i conftest.$ac_ext
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $macosx_10_5" >&5
     colorize_result "$macosx_10_5" ; }
+		if test "${target_os#darwin}" -ge 16; then :
+
+		    ac_cv_func___syscall=no
+		    ac_cv_func_syscall=no
+		    ac_cv_header_sys_syscall_h=no
+		    ac_cv_header_syscall_h=no
+
+fi
 		if test $macosx_10_5 = yes; then
 		    ac_cv_func_getcontext=no
 		    ac_cv_func_setcontext=no
@@ -10470,13 +10561,12 @@ fi
 done
 
    if test "x$ac_cv_header_gmp_h" != xno; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for __gmpz_init in -lgmp" >&5
-$as_echo_n "checking for __gmpz_init in -lgmp... " >&6; }
-if ${ac_cv_lib_gmp___gmpz_init+:} false; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing __gmpz_init" >&5
+$as_echo_n "checking for library containing __gmpz_init... " >&6; }
+if ${ac_cv_search___gmpz_init+:} false; then :
   $as_echo_n "(cached) " >&6
 else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lgmp  $LIBS"
+  ac_func_search_save_LIBS=$LIBS
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -10495,30 +10585,39 @@ return __gmpz_init ();
   return 0;
 }
 _ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_gmp___gmpz_init=yes
-else
-  ac_cv_lib_gmp___gmpz_init=no
+for ac_lib in '' gmp; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_search___gmpz_init=$ac_res
 fi
 rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
+    conftest$ac_exeext
+  if ${ac_cv_search___gmpz_init+:} false; then :
+  break
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_gmp___gmpz_init" >&5
-    colorize_result "$ac_cv_lib_gmp___gmpz_init" ; }
-if test "x$ac_cv_lib_gmp___gmpz_init" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_LIBGMP 1
-_ACEOF
+done
+if ${ac_cv_search___gmpz_init+:} false; then :
 
-  LIBS="-lgmp $LIBS"
+else
+  ac_cv_search___gmpz_init=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search___gmpz_init" >&5
+    colorize_result "$ac_cv_search___gmpz_init" ; }
+ac_res=$ac_cv_search___gmpz_init
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+  $as_echo "#define HAVE_LIBGMP 1" >>confdefs.h
 
 fi
 
-fi
-   with_gmp="$ac_cv_lib_gmp___gmpz_init"
-   if test -z "$with_gmp"; then :
-  with_gmp=no
 fi
 fi
 
@@ -10532,13 +10631,12 @@ fi
 
 if test "x$with_jemalloc" = xyes; then :
 
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for malloc_conf in -ljemalloc" >&5
-$as_echo_n "checking for malloc_conf in -ljemalloc... " >&6; }
-if ${ac_cv_lib_jemalloc_malloc_conf+:} false; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing malloc_conf" >&5
+$as_echo_n "checking for library containing malloc_conf... " >&6; }
+if ${ac_cv_search_malloc_conf+:} false; then :
   $as_echo_n "(cached) " >&6
 else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-ljemalloc  $LIBS"
+  ac_func_search_save_LIBS=$LIBS
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -10557,23 +10655,36 @@ return malloc_conf ();
   return 0;
 }
 _ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_jemalloc_malloc_conf=yes
-else
-  ac_cv_lib_jemalloc_malloc_conf=no
+for ac_lib in '' jemalloc; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_search_malloc_conf=$ac_res
 fi
 rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
+    conftest$ac_exeext
+  if ${ac_cv_search_malloc_conf+:} false; then :
+  break
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_jemalloc_malloc_conf" >&5
-    colorize_result "$ac_cv_lib_jemalloc_malloc_conf" ; }
-if test "x$ac_cv_lib_jemalloc_malloc_conf" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_LIBJEMALLOC 1
-_ACEOF
+done
+if ${ac_cv_search_malloc_conf+:} false; then :
 
-  LIBS="-ljemalloc $LIBS"
+else
+  ac_cv_search_malloc_conf=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_malloc_conf" >&5
+    colorize_result "$ac_cv_search_malloc_conf" ; }
+ac_res=$ac_cv_search_malloc_conf
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+  $as_echo "#define HAVE_LIBJEMALLOC 1" >>confdefs.h
 
 else
   with_jemalloc=no
@@ -24256,7 +24367,6 @@ LIBEXT=a
 ASMEXT=S
 
 STATIC=
-: ${PATHFLAG=''}
 
 if test "$with_dln_a_out" != yes; then
   rb_cv_dlopen=unknown
@@ -24326,9 +24436,6 @@ fi
 			: ${LDSHARED='$(LD) -b'}
 			XLDFLAGS="$XLDFLAGS -Wl,-E"
 			: ${LIBPATHENV=SHLIB_PATH}
-			if test "$rb_cv_prog_gnu_ld" = no; then
-			    RPATHFLAG=' +b %1$-s'
-			fi
 			rb_cv_dlopen=yes ;; #(
   solaris*) :
     	if test "$GCC" = yes; then
@@ -24417,7 +24524,6 @@ esac ;; #(
                         TRY_LINK='$(CC) $(LDFLAGS) -oconftest $(INCFLAGS) -I$(hdrdir) $(CPPFLAGS)'
                         TRY_LINK="$TRY_LINK"' $(CFLAGS) $(src) $(LIBPATH) $(LOCAL_LIBS) $(LIBS)'
 			: ${LIBPATHENV=LIBPATH}
-			RPATHFLAG=" ${linker_flag}-blibpath:%1\$-s:${prefix}/lib:${LIBPATH:-/usr/lib:/lib}"
 			rb_cv_dlopen=yes ;; #(
   nto-qnx*) :
     	DLDFLAGS="$DLDFLAGS -L/lib -L/usr/lib -L/usr/local/lib"
@@ -24521,75 +24627,15 @@ esac
 esac
   fi
 
-  if test "$enable_rpath" = yes; then
-    if test x"${RPATHFLAG}" = x; then
-      for rpathflag in -R "-rpath "; do
-	case "$rpathflag" in #(
-  *" ") :
-    case "${linker_flag}" in #(
-  *,) :
-    rpathflag=`echo "$rpathflag" | tr ' ' ,` ;; #(
-  *) :
-     ;;
-esac ;; #(
-  *) :
-     ;;
-esac
-	rpathflag="${linker_flag}${rpathflag}"
+  if test "$enable_rpath:${RPATHFLAG}" = yes:; then :
 
-    save_LDFLAGS="$LDFLAGS"
-    LDFLAGS="$LDFLAGS ${rpathflag}."
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${rpathflag}. is accepted as LDFLAGS" >&5
-$as_echo_n "checking whether ${rpathflag}. is accepted as LDFLAGS... " >&6; }
-    save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS $rb_cv_warnflags"
-if test "${ac_c_werror_flag+set}"; then
-  rb_c_werror_flag="$ac_c_werror_flag"
-else
-  unset rb_c_werror_flag
-fi
-ac_c_werror_flag=yes
+      if test "x$rpathflag" != x; then :
 
-    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-    $as_echo "${msg_result_yes}yes${msg_reset}" ; }
-else
-  rpathflag=
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-    $as_echo "${msg_result_no}no${msg_reset}" ; }
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-
-CFLAGS="$save_CFLAGS"
-save_CFLAGS=
-if test "${rb_c_werror_flag+set}"; then
-  ac_c_werror_flag="$rb_c_werror_flag"
-else
-  unset ac_c_werror_flag
-fi
-    LDFLAGS="$save_LDFLAGS"
-    save_LDFLAGS=
-
-	if test "x${rpathflag}" != x; then
 	  RPATHFLAG=" ${rpathflag}%1\$-s"
-	  break
-	fi
-      done
-    fi
-  fi
+
+fi
+
+fi
 fi
 if test "${LDSHAREDXX}" = ""; then
     case "${LDSHARED}" in #(
@@ -26541,20 +26587,6 @@ esac ;; #(
 	 ;; #(
   *) :
      ;;
-esac
-
-case "$with_gmp: $SOLIBS " in #(
-  no:* | *' -lgmp '*|*' $(LIBS) '*) :
-     ;; #(
-  *) :
-    SOLIBS="-lgmp $SOLIBS" ;;
-esac
-
-case "$with_jemalloc: $LIBS " in #(
-  no:* | *' -ljemalloc '*) :
-     ;; #(
-  *) :
-    LIBS="-ljemalloc $LIBS" ;;
 esac
 
 MINIOBJS="$MINIDLNOBJ"

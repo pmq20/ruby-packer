@@ -1,5 +1,5 @@
 /*
-    $Id: strscan.c 56282 2016-09-28 05:11:22Z nobu $
+    $Id: strscan.c 59506 2017-08-04 15:55:45Z nagachika $
 
     Copyright (c) 1999-2006 Minero Aoki
 
@@ -1034,6 +1034,7 @@ strscan_aref(VALUE self, VALUE idx)
             idx = rb_sym2str(idx);
             /* fall through */
         case T_STRING:
+            if (!p->regex) return Qnil;
             RSTRING_GETMEM(idx, name, i);
             i = name_to_backref_number(&(p->regs), p->regex, name, name + i, rb_enc_get(idx));
             break;
@@ -1338,7 +1339,7 @@ Init_strscan(void)
     tmp = rb_str_new2(STRSCAN_VERSION);
     rb_obj_freeze(tmp);
     rb_const_set(StringScanner, rb_intern("Version"), tmp);
-    tmp = rb_str_new2("$Id: strscan.c 56282 2016-09-28 05:11:22Z nobu $");
+    tmp = rb_str_new2("$Id: strscan.c 59506 2017-08-04 15:55:45Z nagachika $");
     rb_obj_freeze(tmp);
     rb_const_set(StringScanner, rb_intern("Id"), tmp);
 

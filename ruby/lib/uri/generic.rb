@@ -4,7 +4,7 @@
 #
 # Author:: Akira Yamada <akira@ruby-lang.org>
 # License:: You can redistribute it and/or modify it under the same term as Ruby.
-# Revision:: $Id: generic.rb 56878 2016-11-22 23:44:51Z kazu $
+# Revision:: $Id: generic.rb 58624 2017-05-09 14:28:21Z nagachika $
 #
 # See URI for general documentation
 #
@@ -1531,14 +1531,14 @@ module URI
           if (!port || self.port == port.to_i)
             if /(\A|\.)#{Regexp.quote host}\z/i =~ self.host
               return nil
-            else
+            elsif addr
               require 'ipaddr'
               return nil if
                 begin
                   IPAddr.new(host)
                 rescue IPAddr::InvalidAddressError
                   next
-                end.include?(self.host)
+                end.include?(addr)
             end
           end
         }

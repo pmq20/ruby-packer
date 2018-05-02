@@ -1,8 +1,12 @@
 language: ruby
 
-sudo: enabled
+rvm: 2.4.3
 
-rvm: 2.4.1
+os:
+  - linux
+  - osx
+
+sudo: enabled
 
 before_install:
   - sudo apt-get update -qq

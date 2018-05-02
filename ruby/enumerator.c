@@ -2,13 +2,13 @@
 
   enumerator.c - provides Enumerator class
 
-  $Author: akr $
+  $Author: nagachika $
 
   Copyright (C) 2001-2003 Akinori MUSHA
 
   $Idaemons: /home/cvs/rb/enumerator/enumerator.c,v 1.1.1.1 2001/07/15 10:12:48 knu Exp $
   $RoughId: enumerator.c,v 1.6 2003/07/27 11:03:24 nobu Exp $
-  $Id: enumerator.c 56607 2016-11-05 15:46:48Z akr $
+  $Id: enumerator.c 59363 2017-07-18 12:42:38Z nagachika $
 
 ************************************************/
 
@@ -1448,6 +1448,8 @@ lazy_init_block_i(RB_BLOCK_CALL_FUNC_ARGLIST(val, m))
 #define LAZY_MEMO_PACKED_P(memo) ((memo)->memo_flags & LAZY_MEMO_PACKED)
 #define LAZY_MEMO_SET_BREAK(memo) ((memo)->memo_flags |= LAZY_MEMO_BREAK)
 #define LAZY_MEMO_SET_VALUE(memo, value) MEMO_V2_SET(memo, value)
+#define LAZY_MEMO_SET_PACKED(memo) ((memo)->memo_flags |= LAZY_MEMO_PACKED)
+#define LAZY_MEMO_RESET_PACKED(memo) ((memo)->memo_flags &= ~LAZY_MEMO_PACKED)
 
 static VALUE
 lazy_init_yielder(VALUE val, VALUE m, int argc, VALUE *argv)
@@ -1743,6 +1745,7 @@ lazy_map_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_inde
 {
     VALUE value = lazyenum_yield_values(proc_entry, result);
     LAZY_MEMO_SET_VALUE(result, value);
+    LAZY_MEMO_RESET_PACKED(result);
     return result;
 }
 
@@ -1913,6 +1916,7 @@ lazy_grep_iter_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long mem
     if (!RTEST(chain)) return 0;
     value = rb_proc_call_with_block(entry->proc, 1, &(result->memo_value), Qnil);
     LAZY_MEMO_SET_VALUE(result, value);
+    LAZY_MEMO_RESET_PACKED(result);
 
     return result;
 }

@@ -2,7 +2,7 @@
 
   parse.y -
 
-  $Author: naruse $
+  $Author: nagachika $
   created at: Fri May 28 18:02:42 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -397,6 +397,17 @@ static int parser_yyerror(struct parser_params*, const char*);
 static int yylex(YYSTYPE*, struct parser_params*);
 
 #ifndef RIPPER
+static inline void
+set_line_body(NODE *body, int line)
+{
+    if (!body) return;
+    switch (nd_type(body)) {
+      case NODE_RESCUE:
+      case NODE_ENSURE:
+	nd_set_line(body, line);
+    }
+}
+
 #define yyparse ruby_yyparse
 
 static NODE* node_newnode(struct parser_params *, enum node_type, VALUE, VALUE, VALUE);
@@ -2462,7 +2473,7 @@ call_args	: command
 		| assocs opt_block_arg
 		    {
 		    /*%%%*/
-			$$ = NEW_LIST($1 ? new_hash($1) : 0);
+			$$ = $1 ? NEW_LIST(new_hash($1)) : 0;
 			$$ = arg_blk_pass($$, $2);
 		    /*%
 			$$ = arg_add_assocs(arg_new(), $1);
@@ -2644,9 +2655,7 @@ primary		: literal
 			    $$ = NEW_NIL();
 			}
 			else {
-			    if (nd_type($3) == NODE_RESCUE ||
-				nd_type($3) == NODE_ENSURE)
-				nd_set_line($3, $<num>2);
+			    set_line_body($3, $<num>2);
 			    $$ = NEW_BEGIN($3);
 			}
 			nd_set_line($$, $<num>2);
@@ -2657,7 +2666,7 @@ primary		: literal
 		| tLPAREN_ARG {SET_LEX_STATE(EXPR_ENDARG);} rparen
 		    {
 		    /*%%%*/
-			$$ = 0;
+			$$ = NEW_BEGIN(0);
 		    /*%
 			$$ = dispatch1(paren, 0);
 		    %*/
@@ -2931,6 +2940,7 @@ primary		: literal
 		    {
 		    /*%%%*/
 			$$ = NEW_CLASS($2, $5, $3);
+			set_line_body($5, $<num>4);
 			nd_set_line($$, $<num>4);
 		    /*%
 			$$ = dispatch3(class, $2, $3, $5);
@@ -2950,6 +2960,7 @@ primary		: literal
 		    {
 		    /*%%%*/
 			$$ = NEW_SCLASS($3, $6);
+			set_line_body($6, nd_line($3));
 			fixpos($$, $3);
 		    /*%
 			$$ = dispatch2(sclass, $3, $6);
@@ -2973,6 +2984,7 @@ primary		: literal
 		    {
 		    /*%%%*/
 			$$ = NEW_MODULE($2, $4);
+			set_line_body($4, $<num>3);
 			nd_set_line($$, $<num>3);
 		    /*%
 			$$ = dispatch2(module, $2, $4);
@@ -2997,6 +3009,7 @@ primary		: literal
 			NODE *body = remove_begin($6);
 			reduce_nodes(&body);
 			$$ = NEW_DEFN($2, $5, body, METHOD_VISI_PRIVATE);
+			set_line_body(body, $<num>1);
 			nd_set_line($$, $<num>1);
 		    /*%
 			$$ = dispatch3(def, $2, $5, $6);
@@ -3022,6 +3035,7 @@ primary		: literal
 			NODE *body = remove_begin($8);
 			reduce_nodes(&body);
 			$$ = NEW_DEFS($2, $5, $7, body);
+			set_line_body(body, $<num>1);
 			nd_set_line($$, $<num>1);
 		    /*%
 			$$ = dispatch5(defs, $2, $3, $5, $7, $8);
@@ -4254,7 +4268,7 @@ string_dvar	: tGVAR
 
 symbol		: tSYMBEG sym
 		    {
-			SET_LEX_STATE(EXPR_ENDARG);
+			SET_LEX_STATE(EXPR_END|EXPR_ENDARG);
 		    /*%%%*/
 			$$ = $2;
 		    /*%
@@ -4271,7 +4285,7 @@ sym		: fname
 
 dsym		: tSYMBEG xstring_contents tSTRING_END
 		    {
-			SET_LEX_STATE(EXPR_ENDARG);
+			SET_LEX_STATE(EXPR_END|EXPR_ENDARG);
 		    /*%%%*/
 			$$ = dsym_node($2);
 		    /*%
@@ -5176,7 +5190,6 @@ ripper_dispatch_delayed_token(struct parser_params *parser, int t)
 
 #define parser_encoding_name()  (current_enc->name)
 #define parser_mbclen()  mbclen((lex_p-1),lex_pend,current_enc)
-#define parser_precise_mbclen()  rb_enc_precise_mbclen((lex_p-1),lex_pend,current_enc)
 #define is_identchar(p,e,enc) (rb_enc_isalnum((unsigned char)(*(p)),(enc)) || (*(p)) == '_' || !ISASCII(*(p)))
 #define parser_is_identchar() (!parser->eofp && is_identchar((lex_p-1),lex_pend,current_enc))
 
@@ -5245,6 +5258,17 @@ token_info_pop_gen(struct parser_params *parser, const char *token, size_t len)
     }
 
     xfree(ptinfo);
+}
+
+static int
+parser_precise_mbclen(struct parser_params *parser, const char *p)
+{
+    int len = rb_enc_precise_mbclen(p, lex_pend, current_enc);
+    if (!MBCLEN_CHARFOUND_P(len)) {
+	compile_error(PARSER_ARG "invalid multibyte char (%s)", parser_encoding_name());
+	return -1;
+    }
+    return len;
 }
 
 static int
@@ -6058,11 +6082,8 @@ dispose_string(VALUE str)
 static int
 parser_tokadd_mbchar(struct parser_params *parser, int c)
 {
-    int len = parser_precise_mbclen();
-    if (!MBCLEN_CHARFOUND_P(len)) {
-	compile_error(PARSER_ARG "invalid multibyte char (%s)", parser_encoding_name());
-	return -1;
-    }
+    int len = parser_precise_mbclen(parser, lex_p-1);
+    if (len < 0) return -1;
     tokadd(c);
     lex_p += --len;
     if (len > 0) tokcopy(len);
@@ -6522,6 +6543,11 @@ dedent_string(VALUE string, int width)
 	    break;
 	}
     }
+    if (!i) return 0;
+    rb_str_modify(string);
+    str = RSTRING_PTR(string);
+    if (RSTRING_LEN(string) != len)
+	rb_fatal("literal string changed: %+"PRIsVALUE, string);
     MEMMOVE(str, str + i, char, len - i);
     rb_str_set_len(string, len - i);
     return i;
@@ -6578,7 +6604,6 @@ parser_dedent_string(VALUE self, VALUE input, VALUE width)
 
     StringValue(input);
     wid = NUM2UINT(width);
-    rb_str_modify(input);
     col = dedent_string(input, wid);
     return INT2NUM(col);
 }
@@ -6652,7 +6677,7 @@ parser_set_number_literal(struct parser_params *parser, VALUE v, int type, int s
 	type = tIMAGINARY;
     }
     set_yylval_literal(v);
-    SET_LEX_STATE(EXPR_ENDARG);
+    SET_LEX_STATE(EXPR_END|EXPR_ENDARG);
     return type;
 }
 
@@ -7550,7 +7575,8 @@ parse_qmark(struct parser_params *parser, int space_seen)
 	if (space_seen) {
 	    const char *start = lex_p - 1, *p = start;
 	    do {
-		int n = rb_enc_precise_mbclen(p, lex_pend, current_enc);
+		int n = parser_precise_mbclen(parser, p);
+		if (n < 0) return -1;
 		p += n;
 	    } while (p < lex_pend && is_identchar(p, lex_pend, current_enc));
 	    rb_warn2("`?' just followed by `%.*s' is interpreted as" \
@@ -8009,9 +8035,11 @@ parser_yylex(struct parser_params *parser)
 		}
 	    }
 	    if (token == tSTRING_END || token == tREGEXP_END || token == tLABEL_END) {
+		const enum lex_state_e next_state =
+		    token == tLABEL_END ? EXPR_BEG|EXPR_LABEL : EXPR_END|EXPR_ENDARG;
 		rb_gc_force_recycle((VALUE)lex_strterm);
 		lex_strterm = 0;
-		SET_LEX_STATE(token == tLABEL_END ? EXPR_BEG|EXPR_LABEL : EXPR_END);
+		SET_LEX_STATE(next_state);
 	    }
 	}
 	return token;
