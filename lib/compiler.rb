@@ -80,6 +80,8 @@ class Compiler
     init_entrance if entrance
     init_tmpdir
 
+    @gem_package = GemPackage.new(@entrance, @options, @utils) if @options[:gem]
+
     log "Ruby Compiler (rubyc) v#{::Compiler::VERSION}"
     if entrance
       log "- entrance: #{@entrance}"
@@ -99,7 +101,7 @@ class Compiler
     @options[:output] = File.expand_path(@options[:output])
     @options[:tmpdir] ||= File.expand_path("rubyc", Dir.tmpdir)
     @options[:tmpdir] = File.expand_path(@options[:tmpdir])
-    @gem_package = GemPackage.new(@entrance, @options, @utils) if @options[:gem]
+
     if @options[:auto_update_url] || @options[:auto_update_base]
       unless @options[:auto_update_url].length > 0 && @options[:auto_update_base].length > 0
         raise Error, "Please provide both --auto-update-url and --auto-update-base"
