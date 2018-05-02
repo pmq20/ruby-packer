@@ -3,7 +3,15 @@ require "rake/testtask"
 task default: %w[test]
 task test:    %w[test:unit]
 
-file 'rubyc' do
+rubyc_deps = FileList[
+  __FILE__,
+  "bin/rubyc",
+  "lib/**/*.rb",
+  "ruby/**/*",
+  "vendor/**/*",
+]
+
+file 'rubyc' => rubyc_deps do
   ruby "bin/rubyc", "bin/rubyc", "-o", "rubyc"
 end
 
