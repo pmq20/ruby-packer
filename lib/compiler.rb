@@ -15,6 +15,16 @@ require 'pathname'
 require 'uri'
 
 class Compiler
+  attr_reader :entrance
+  attr_reader :options
+
+  DEFAULT_NAME =
+    if Gem.win_platform?
+      'a.exe'
+    else
+      'a.out'
+    end
+
   def self.ruby_api_version
     @ruby_api_version ||= peek_ruby_api_version
   end
@@ -55,14 +65,16 @@ class Compiler
   
   def initialize(entrance, options = {})
     if entrance
-      if File.exists?(File.expand_path(entrance))
+      if File.exist?(File.expand_path(entrance))
         @entrance = File.expand_path(entrance)
       else
         @entrance = entrance
       end
     end
-    @options = options
-    @utils = Utils.new(options)
+
+    @gem_package = nil
+    @options     = options
+    @utils       = Utils.new(options)
 
     init_options
     init_entrance if entrance
@@ -79,16 +91,11 @@ class Compiler
     STDERR.puts unless @options[:quiet]
 
     prepare_flags1
-    stuff_tmpdir
   end
 
   def init_options
     @options[:make_args] ||= '-j4'
-    if Gem.win_platform?
-      @options[:output] ||= 'a.exe'
-    else
-      @options[:output] ||= 'a.out'
-    end
+    @options[:output] ||= DEFAULT_NAME
     @options[:output] = File.expand_path(@options[:output])
     @options[:tmpdir] ||= File.expand_path("rubyc", Dir.tmpdir)
     @options[:tmpdir] = File.expand_path(@options[:tmpdir])
@@ -366,13 +373,14 @@ class Compiler
   end
 
   def run!
+    stuff_tmpdir
+
     pass_1 = File.join(@options[:tmpdir], 'build_pass_1')
     @utils.mkdir_p(pass_1)
     pass_2 = File.join(@options[:tmpdir], 'build_pass_2')
     @utils.mkdir_p(pass_2)
 
     @utils.chdir(@vendor_ruby) do
-      sep = Gem.win_platform? ? ';' : ':'
       if Gem.win_platform?
         unless File.exist?(@ruby_build_1)
           @compile_env['ENCLOSE_IO_RUBYC_1ST_PASS'] = '1'
