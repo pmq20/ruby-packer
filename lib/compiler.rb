@@ -201,30 +201,35 @@ class Compiler
       end
     end
   end
-  
+
   def stuff_gdbm
     return if Gem.win_platform? # TODO
+
     target = File.join(@options[:tmpdir], 'gdbm')
-    unless Dir.exist?(target)
-      @utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'gdbm'), target, preserve: true)
-      @utils.chdir(target) do
-        Dir['**/configure.ac'].each do |x|
-          File.utime(Time.at(0), Time.at(0), x)
-        end
-        Dir['**/*.m4'].each do |x|
-          File.utime(Time.at(0), Time.at(0), x)
-        end
-        if Gem.win_platform?
-          # TODO
-        else
-          @utils.run(@compile_env, "./configure --with-pic --enable-libgdbm-compat --disable-shared --enable-static --without-readline --prefix=#{@utils.escape File.join(@options[:tmpdir], 'gdbm', 'build')}")
-          @utils.run(@compile_env, "make #{@options[:make_args]}")
-          @utils.run(@compile_env, "make install")
-        end
+    return if Dir.exist?(target)
+
+    @utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'gdbm'), target, preserve: true)
+    @utils.chdir(target) do
+      Dir['**/configure.ac'].each do |x|
+        File.utime(Time.at(0), Time.at(0), x)
       end
+      Dir['**/*.m4'].each do |x|
+        File.utime(Time.at(0), Time.at(0), x)
+      end
+
+      @utils.run(@compile_env,
+                 "./configure",
+                 "--with-pic",
+                 "--enable-libgdbm-compat",
+                 "--disable-shared",
+                 "--enable-static",
+                 "--without-readline",
+                 "--prefix=#{@local_build}")
+      @utils.run(@compile_env, "make #{@options[:make_args]}")
+      @utils.run(@compile_env, "make install")
     end
   end
-  
+
   def stuff_yaml
     return if Gem.win_platform? # TODO
 
@@ -846,8 +851,6 @@ class Compiler
       @cflags += " -I#{@utils.escape File.join(@options[:tmpdir], 'zlib')} "
       @ldflags += " -L#{@utils.escape File.join(@options[:tmpdir], 'openssl')} "
       @cflags += " -I#{@utils.escape File.join(@options[:tmpdir], 'openssl', 'include')} "
-      @ldflags += " -L#{@utils.escape File.join(@options[:tmpdir], 'gdbm', 'build', 'lib')} "
-      @cflags += " -I#{@utils.escape File.join(@options[:tmpdir], 'gdbm', 'build', 'include')} "
     end
 
     if Gem.win_platform?
