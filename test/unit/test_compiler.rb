@@ -3,7 +3,7 @@ require "compiler"
 
 class TestCompiler < Minitest::Test
   def setup
-    @source_root = File.expand_path "../..", __FILE__
+    @source_root = File.expand_path "../../..", __FILE__
 
     capture_io do
       @compiler = Compiler.new "bogus"

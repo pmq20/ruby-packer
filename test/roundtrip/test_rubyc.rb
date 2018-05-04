@@ -55,7 +55,7 @@ class TestRoundTrip < Minitest::Test
   def test_unit_tests
     out, err = ruby "/__enclose_io_memfs__/bin/rake", "test:unit"
 
-  #rescue
+  rescue
     $stderr.puts "rake test stdout:"
     $stderr.puts out
     $stderr.puts "rake test stderr:"
