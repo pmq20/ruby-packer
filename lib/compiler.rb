@@ -306,27 +306,29 @@ class Compiler
 
   def stuff_readline
     return if Gem.win_platform? # TODO
+
     target = File.join(@options[:tmpdir], 'readline')
-    unless Dir.exist?(target)
-      @utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'readline'), target, preserve: true)
-      @utils.chdir(target) do
-        Dir['**/configure.ac'].each do |x|
-          File.utime(Time.at(0), Time.at(0), x)
-        end
-        Dir['**/*.m4'].each do |x|
-          File.utime(Time.at(0), Time.at(0), x)
-        end
-        if Gem.win_platform?
-          # TODO
-        else
-          @utils.run(@compile_env, "./configure --with-pic --disable-shared --enable-static --prefix=#{@utils.escape File.join(@options[:tmpdir], 'readline', 'build')}")
-          @utils.run(@compile_env, "make #{@options[:make_args]}")
-          @utils.run(@compile_env, "make install")
-        end
+    return if Dir.exist?(target)
+
+    @utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'readline'), target, preserve: true)
+    @utils.chdir(target) do
+      Dir['**/configure.ac'].each do |x|
+        File.utime(Time.at(0), Time.at(0), x)
       end
+      Dir['**/*.m4'].each do |x|
+        File.utime(Time.at(0), Time.at(0), x)
+      end
+
+      @utils.run(@compile_env,
+                 "./configure",
+                 "--disable-shared",
+                 "--enable-static",
+                 "--prefix=#{@local_build}")
+      @utils.run(@compile_env, "make #{@options[:make_args]}")
+      @utils.run(@compile_env, "make install-shared")
     end
   end
-  
+
   def stuff_tmpdir
     @utils.rm_rf(@options[:tmpdir]) if @options[:clean_tmpdir]
     @utils.mkdir_p(@options[:tmpdir])
@@ -846,8 +848,6 @@ class Compiler
       @cflags += " -I#{@utils.escape File.join(@options[:tmpdir], 'openssl', 'include')} "
       @ldflags += " -L#{@utils.escape File.join(@options[:tmpdir], 'gdbm', 'build', 'lib')} "
       @cflags += " -I#{@utils.escape File.join(@options[:tmpdir], 'gdbm', 'build', 'include')} "
-      @ldflags += " -L#{@utils.escape File.join(@options[:tmpdir], 'readline', 'build', 'lib')} "
-      @cflags += " -I#{@utils.escape File.join(@options[:tmpdir], 'readline', 'build', 'include')} "
     end
 
     if Gem.win_platform?
