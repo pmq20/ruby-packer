@@ -93,6 +93,13 @@ class Compiler
     log
 
     prepare_flags1
+
+    @ruby_build_1 = File.join(@options[:tmpdir], 'ruby_build_1')
+    @ruby_build_1_bin = File.join(@ruby_build_1, 'bin')
+    @ruby_build_2 = File.join(@options[:tmpdir], 'ruby_build_2')
+
+    # prefix for stuffed libraries
+    @local_build = File.join(@options[:tmpdir], 'local')
   end
 
   def init_options
@@ -243,24 +250,28 @@ class Compiler
 
   def stuff_libffi
     return if Gem.win_platform? # TODO
+
     target = File.join(@options[:tmpdir], 'libffi')
-    unless Dir.exist?(target)
-      @utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'libffi'), target, preserve: true)
-      @utils.chdir(target) do
-        Dir['**/configure.ac'].each do |x|
-          File.utime(Time.at(0), Time.at(0), x)
-        end
-        Dir['**/*.m4'].each do |x|
-          File.utime(Time.at(0), Time.at(0), x)
-        end
-        if Gem.win_platform?
-          # TODO
-        else
-          @utils.run(@compile_env, "./configure --with-pic --disable-shared --enable-static --prefix=#{@utils.escape File.join(@options[:tmpdir], 'libffi', 'build')}")
-          @utils.run(@compile_env, "make #{@options[:make_args]}")
-          @utils.run(@compile_env, "make install")
-        end
+    return if Dir.exist?(target)
+
+    @utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'libffi'), target, preserve: true)
+
+    @utils.chdir(target) do
+      Dir['**/configure.ac'].each do |x|
+        File.utime(Time.at(0), Time.at(0), x)
       end
+      Dir['**/*.m4'].each do |x|
+        File.utime(Time.at(0), Time.at(0), x)
+      end
+
+      @utils.run(@compile_env,
+                 "./configure",
+                 "--with-pic",
+                 "--disable-shared",
+                 "--enable-static",
+                 "--prefix=#{@local_build}")
+      @utils.run(@compile_env, "make #{@options[:make_args]}")
+      @utils.run(@compile_env, "make install")
     end
   end
 
@@ -326,9 +337,6 @@ class Compiler
     prepare_flags2
 
     target = @ruby_dir
-    @ruby_build_1 = File.join(@options[:tmpdir], 'ruby_build_1')
-    @ruby_build_1_bin = File.join(@ruby_build_1, 'bin')
-    @ruby_build_2 = File.join(@options[:tmpdir], 'ruby_build_2')
 
     unless Dir.exist?(target)
       @utils.cp_r(File.join(PRJ_ROOT, 'ruby'), target, preserve: true)
@@ -819,6 +827,15 @@ class Compiler
       @ldflags += " -libpath:#{@utils.escape File.join(@options[:tmpdir], 'zlib').gsub('/', '\\')} #{@utils.escape File.join(@options[:tmpdir], 'zlib', 'zlib.lib')} "
       @cflags += " -I#{@utils.escape File.join(@options[:tmpdir], 'zlib')} "
     else
+      lib   = File.join @local_build, 'lib'
+      lib64 = File.join @local_build, 'lib64'
+
+      @ldflags += " -L#{@utils.escape lib} "   if Dir.exist? lib
+      @ldflags += " -L#{@utils.escape lib64} " if Dir.exist? lib64
+
+      @cflags += " -I#{@utils.escape File.join(@local_build, 'include')} "
+      @cflags += " -I#{@utils.escape File.join(lib, 'libffi-3.2.1', 'include')} "
+
       @ldflags += " -L#{@utils.escape File.join(@options[:tmpdir], 'zlib')} #{@utils.escape File.join(@options[:tmpdir], 'zlib', 'libz.a')} "
       @cflags += " -I#{@utils.escape File.join(@options[:tmpdir], 'zlib')} "
       @ldflags += " -L#{@utils.escape File.join(@options[:tmpdir], 'openssl')} "
@@ -827,11 +844,6 @@ class Compiler
       @cflags += " -I#{@utils.escape File.join(@options[:tmpdir], 'gdbm', 'build', 'include')} "
       @ldflags += " -L#{@utils.escape File.join(@options[:tmpdir], 'yaml', 'build', 'lib')} "
       @cflags += " -I#{@utils.escape File.join(@options[:tmpdir], 'yaml', 'build', 'include')} "
-      lib64 = File.join(@options[:tmpdir], 'libffi', 'build', 'lib64')
-      lib = File.join(@options[:tmpdir], 'libffi', 'build', 'lib')
-      @ldflags += " -L#{@utils.escape lib} " if Dir.exist?(lib)
-      @ldflags += " -L#{@utils.escape lib64} " if Dir.exist?(lib64)
-      @cflags += " -I#{@utils.escape File.join(@options[:tmpdir], 'libffi', 'build', 'lib', 'libffi-3.2.1', 'include')} "
       @ldflags += " -L#{@utils.escape File.join(@options[:tmpdir], 'ncurses', 'build', 'lib')} "
       @cflags += " -I#{@utils.escape File.join(@options[:tmpdir], 'ncurses', 'build', 'include')} "
       @ldflags += " -L#{@utils.escape File.join(@options[:tmpdir], 'readline', 'build', 'lib')} "
