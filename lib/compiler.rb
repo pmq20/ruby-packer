@@ -298,7 +298,7 @@ class Compiler
                  "./configure",
                  "--without-shared",
                  "--without-cxx-shared",
-                 "--prefix=#{File.join(@options[:tmpdir], 'ncurses', 'build')}")
+                 "--prefix=#{@local_build}")
       @utils.run(@compile_env, "make #{@options[:make_args]}")
       @utils.run(@compile_env, "make install.libs")
     end
@@ -846,8 +846,6 @@ class Compiler
       @cflags += " -I#{@utils.escape File.join(@options[:tmpdir], 'openssl', 'include')} "
       @ldflags += " -L#{@utils.escape File.join(@options[:tmpdir], 'gdbm', 'build', 'lib')} "
       @cflags += " -I#{@utils.escape File.join(@options[:tmpdir], 'gdbm', 'build', 'include')} "
-      @ldflags += " -L#{@utils.escape File.join(@options[:tmpdir], 'ncurses', 'build', 'lib')} "
-      @cflags += " -I#{@utils.escape File.join(@options[:tmpdir], 'ncurses', 'build', 'include')} "
       @ldflags += " -L#{@utils.escape File.join(@options[:tmpdir], 'readline', 'build', 'lib')} "
       @cflags += " -I#{@utils.escape File.join(@options[:tmpdir], 'readline', 'build', 'include')} "
     end
