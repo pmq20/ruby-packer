@@ -263,30 +263,32 @@ class Compiler
       end
     end
   end
-  
+
   def stuff_ncurses
     return if Gem.win_platform? # TODO
+
     target = File.join(@options[:tmpdir], 'ncurses')
-    unless Dir.exist?(target)
-      @utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'ncurses'), target, preserve: true)
-      @utils.chdir(target) do
-        Dir['**/configure.ac'].each do |x|
-          File.utime(Time.at(0), Time.at(0), x)
-        end
-        Dir['**/*.m4'].each do |x|
-          File.utime(Time.at(0), Time.at(0), x)
-        end
-        if Gem.win_platform?
-          # TODO
-        else
-          @utils.run(@compile_env, "./configure --without-shared --without-cxx-shared --prefix=#{@utils.escape File.join(@options[:tmpdir], 'ncurses', 'build')}")
-          @utils.run(@compile_env, "make #{@options[:make_args]}")
-          @utils.run(@compile_env, "make install")
-        end
+    return if Dir.exist? target
+
+    @utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'ncurses'), target, preserve: true)
+
+    @utils.chdir(target) do
+      Dir['**/configure.ac'].each do |x|
+        File.utime(Time.at(0), Time.at(0), x)
       end
+      Dir['**/*.m4'].each do |x|
+        File.utime(Time.at(0), Time.at(0), x)
+      end
+      @utils.run(@compile_env,
+                 "./configure",
+                 "--without-shared",
+                 "--without-cxx-shared",
+                 "--prefix=#{File.join(@options[:tmpdir], 'ncurses', 'build')}")
+      @utils.run(@compile_env, "make #{@options[:make_args]}")
+      @utils.run(@compile_env, "make install.libs")
     end
   end
-  
+
   def stuff_readline
     return if Gem.win_platform? # TODO
     target = File.join(@options[:tmpdir], 'readline')
