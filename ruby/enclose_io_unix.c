@@ -351,6 +351,76 @@ DIR * enclose_io_opendir(const char *filename)
 	}
 }
 
+DIR * enclose_io_fdopendir(int fd)
+{
+	sqfs_err error;
+	short found;
+	SQUASH_DIR *dir;
+	int *handle;
+	struct squash_file *file;
+	sqfs *fs;
+
+	if (!SQUASH_VALID_VFD(fd))
+	{
+		return fdopendir(fd);
+	}
+
+	file = squash_global_fdtable.fds[fd];
+
+	dir = calloc(1, sizeof(SQUASH_DIR));
+
+	if (NULL == dir)
+	{
+		errno = ENOMEM;
+		return NULL;
+	}
+
+	fs = file->fs;
+
+	dir->fs = fs;
+	dir->entries = NULL;
+	dir->nr = 0;
+	dir->filename = strdup(file->filename);
+	dir->fd = fd;
+
+	handle = (int *)(squash_global_fdtable.fds[dir->fd]->payload);
+
+	MUTEX_LOCK(&squash_global_mutex);
+	free(handle);
+	squash_global_fdtable.fds[dir->fd]->payload = (void *)dir;
+	MUTEX_UNLOCK(&squash_global_mutex);
+
+	dir->actual_nr = 0;
+	dir->loc = 0;
+	error = sqfs_inode_get(fs, &dir->node, sqfs_inode_root(fs));
+	if (SQFS_OK != error)
+	{
+		goto failure;
+	}
+	error = sqfs_lookup_path_inner(fs, &dir->node, dir->filename, &found, 1);
+	if (SQFS_OK != error)
+	{
+		goto failure;
+	}
+	if (!found)
+	{
+		errno = ENOENT;
+		goto failure;
+	}
+	error = sqfs_dir_open(fs, &dir->node, &dir->dir, 0);
+	if (SQFS_OK != error)
+	{
+		goto failure;
+	}
+	return dir;
+failure:
+	if (!errno) {
+		errno = ENOENT;
+	}
+	free(dir);
+	return NULL;
+}
+
 int enclose_io_closedir(DIR *dirp)
 {
 	if (squash_find_entry(dirp)) {
@@ -912,6 +982,15 @@ int enclose_io_open(int nargs, const char *pathname, int flags, ...)
 			return open(pathname, flags, mode);
 		}
 	}
+}
+
+int enclose_io_openat(int nargs, int fd, const char *pathname, int flags, ...)
+{
+	if (fd == AT_FDCWD && enclose_io_if(pathname)) {
+		return enclose_io_open(nargs, pathname, flags);
+	}
+
+	return openat(fd, pathname, flags);
 }
 
 int enclose_io_close(int fildes)

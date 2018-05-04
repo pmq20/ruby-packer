@@ -1,5 +1,5 @@
 diff -ruN ruby-2.5.1/Makefile.in ruby/Makefile.in
---- ruby-2.5.1/Makefile.in	2017-12-07 21:51:19.000000000 -0800
+--- ruby-2.5.1/Makefile.in	2018-05-04 10:55:18.000000000 -0700
 +++ ruby/Makefile.in	2018-05-01 18:37:56.000000000 -0700
 @@ -227,13 +227,13 @@
  miniruby$(EXEEXT):
@@ -1759,7 +1759,7 @@ diff -ruN ruby-2.5.1/autoupdate_utils.c ruby/autoupdate_utils.c
 +	return 1;
 +}
 diff -ruN ruby-2.5.1/common.mk ruby/common.mk
---- ruby-2.5.1/common.mk	2018-02-18 22:36:03.000000000 -0800
+--- ruby-2.5.1/common.mk	2018-05-04 10:55:15.000000000 -0700
 +++ ruby/common.mk	2018-05-01 18:33:38.000000000 -0700
 @@ -70,7 +70,35 @@
  MAKE_ENC      = -f $(ENC_MK) V="$(V)" UNICODE_HDR_DIR="$(UNICODE_HDR_DIR)" \
@@ -1799,8 +1799,8 @@ diff -ruN ruby-2.5.1/common.mk ruby/common.mk
  		class.$(OBJEXT) \
  		compar.$(OBJEXT) \
 diff -ruN ruby-2.5.1/dir.c ruby/dir.c
---- ruby-2.5.1/dir.c	2018-03-28 02:26:04.000000000 -0700
-+++ ruby/dir.c	2018-05-01 18:41:44.000000000 -0700
+--- ruby-2.5.1/dir.c	2018-05-04 10:55:17.000000000 -0700
++++ ruby/dir.c	2018-05-04 10:51:43.000000000 -0700
 @@ -121,6 +121,10 @@
  # define NORMALIZE_UTF8PATH 0
  #endif
@@ -1831,7 +1831,7 @@ diff -ruN ruby-2.5.1/dir.c ruby/dir.c
 + 	    if (enclose_io_is_path(path)) {
 + 		struct stat buf;
 + 		if (0 == squash_lstat(enclose_io_fs, path, &buf)) {
-+ 			dp->dir = opendir(path);
++ 			dp->dir = opendir_without_gvl(path);
 + 		}
 +	    } else if (getattrlist(path, &al, attrbuf, sizeof(attrbuf), FSOPT_NOFOLLOW) == 0) {
  		dp->dir = opendir_without_gvl(path);
@@ -1865,7 +1865,7 @@ diff -ruN ruby-2.5.1/dir.c ruby/dir.c
  	struct attrlist al = {ATTR_BIT_MAP_COUNT, 0, ATTR_CMN_OBJTAG,};
  	if (getattrlist(path, &al, attrbuf, sizeof(attrbuf), 0) != 0)
 diff -ruN ruby-2.5.1/dln.c ruby/dln.c
---- ruby-2.5.1/dln.c	2016-12-26 01:28:46.000000000 -0800
+--- ruby-2.5.1/dln.c	2018-05-04 10:55:17.000000000 -0700
 +++ ruby/dln.c	2018-05-01 18:33:38.000000000 -0700
 @@ -115,6 +115,10 @@
  #define isdirsep(x) ((x) == '/')
@@ -1939,8 +1939,8 @@ diff -ruN ruby-2.5.1/enclose_io_memfs.c ruby/enclose_io_memfs.c
 +
 diff -ruN ruby-2.5.1/enclose_io_unix.c ruby/enclose_io_unix.c
 --- ruby-2.5.1/enclose_io_unix.c	1969-12-31 16:00:00.000000000 -0800
-+++ ruby/enclose_io_unix.c	2018-05-01 18:33:38.000000000 -0700
-@@ -0,0 +1,1045 @@
++++ ruby/enclose_io_unix.c	2018-05-04 10:54:05.000000000 -0700
+@@ -0,0 +1,1124 @@
 +/*
 + * Copyright (c) 2017 Minqi Pan <pmq2001@gmail.com>
 + *                    Shengyuan Liu <sounder.liu@gmail.com>
@@ -2292,6 +2292,76 @@ diff -ruN ruby-2.5.1/enclose_io_unix.c ruby/enclose_io_unix.c
 +	else {
 +		return opendir(filename);
 +	}
++}
++
++DIR * enclose_io_fdopendir(int fd)
++{
++	sqfs_err error;
++	short found;
++	SQUASH_DIR *dir;
++	int *handle;
++	struct squash_file *file;
++	sqfs *fs;
++
++	if (!SQUASH_VALID_VFD(fd))
++	{
++		return fdopendir(fd);
++	}
++
++	file = squash_global_fdtable.fds[fd];
++
++	dir = calloc(1, sizeof(SQUASH_DIR));
++
++	if (NULL == dir)
++	{
++		errno = ENOMEM;
++		return NULL;
++	}
++
++	fs = file->fs;
++
++	dir->fs = fs;
++	dir->entries = NULL;
++	dir->nr = 0;
++	dir->filename = strdup(file->filename);
++	dir->fd = fd;
++
++	handle = (int *)(squash_global_fdtable.fds[dir->fd]->payload);
++
++	MUTEX_LOCK(&squash_global_mutex);
++	free(handle);
++	squash_global_fdtable.fds[dir->fd]->payload = (void *)dir;
++	MUTEX_UNLOCK(&squash_global_mutex);
++
++	dir->actual_nr = 0;
++	dir->loc = 0;
++	error = sqfs_inode_get(fs, &dir->node, sqfs_inode_root(fs));
++	if (SQFS_OK != error)
++	{
++		goto failure;
++	}
++	error = sqfs_lookup_path_inner(fs, &dir->node, dir->filename, &found, 1);
++	if (SQFS_OK != error)
++	{
++		goto failure;
++	}
++	if (!found)
++	{
++		errno = ENOENT;
++		goto failure;
++	}
++	error = sqfs_dir_open(fs, &dir->node, &dir->dir, 0);
++	if (SQFS_OK != error)
++	{
++		goto failure;
++	}
++	return dir;
++failure:
++	if (!errno) {
++		errno = ENOENT;
++	}
++	free(dir);
++	return NULL;
 +}
 +
 +int enclose_io_closedir(DIR *dirp)
@@ -2855,6 +2925,15 @@ diff -ruN ruby-2.5.1/enclose_io_unix.c ruby/enclose_io_unix.c
 +			return open(pathname, flags, mode);
 +		}
 +	}
++}
++
++int enclose_io_openat(int nargs, int fd, const char *pathname, int flags, ...)
++{
++	if (fd == AT_FDCWD && enclose_io_if(pathname)) {
++		return enclose_io_open(nargs, pathname, flags);
++	}
++
++	return openat(fd, pathname, flags);
 +}
 +
 +int enclose_io_close(int fildes)
@@ -4267,7 +4346,7 @@ diff -ruN ruby-2.5.1/enclose_io_win32.c ruby/enclose_io_win32.c
 +#endif // !RUBY_EXPORT
 +#endif
 diff -ruN ruby-2.5.1/ext/dbm/extconf.rb ruby/ext/dbm/extconf.rb
---- ruby-2.5.1/ext/dbm/extconf.rb	2017-01-27 20:36:08.000000000 -0800
+--- ruby-2.5.1/ext/dbm/extconf.rb	2018-05-04 10:55:16.000000000 -0700
 +++ ruby/ext/dbm/extconf.rb	2018-05-01 18:33:38.000000000 -0700
 @@ -25,6 +25,9 @@
  else
@@ -4280,7 +4359,7 @@ diff -ruN ruby-2.5.1/ext/dbm/extconf.rb ruby/ext/dbm/extconf.rb
  headers = {
    "libc" => ["ndbm.h"], # 4.3BSD original ndbm, Berkeley DB 1 in 4.4BSD libc.
 diff -ruN ruby-2.5.1/ext/openssl/ossl_x509store.c ruby/ext/openssl/ossl_x509store.c
---- ruby-2.5.1/ext/openssl/ossl_x509store.c	2017-09-03 05:35:27.000000000 -0700
+--- ruby-2.5.1/ext/openssl/ossl_x509store.c	2018-05-04 10:55:16.000000000 -0700
 +++ ruby/ext/openssl/ossl_x509store.c	2018-05-01 18:43:29.000000000 -0700
 @@ -332,6 +332,10 @@
   *
@@ -4306,7 +4385,7 @@ diff -ruN ruby-2.5.1/ext/openssl/ossl_x509store.c ruby/ext/openssl/ossl_x509stor
          ossl_raise(eX509StoreError, NULL);
      }
 diff -ruN ruby-2.5.1/ext/psych/.gitignore ruby/ext/psych/.gitignore
---- ruby-2.5.1/ext/psych/.gitignore	2012-11-27 20:34:41.000000000 -0800
+--- ruby-2.5.1/ext/psych/.gitignore	2018-05-04 10:55:16.000000000 -0700
 +++ ruby/ext/psych/.gitignore	1969-12-31 16:00:00.000000000 -0800
 @@ -1,11 +0,0 @@
 -/api.c
@@ -4321,7 +4400,7 @@ diff -ruN ruby-2.5.1/ext/psych/.gitignore ruby/ext/psych/.gitignore
 -/yaml.h
 -/yaml_private.h
 diff -ruN ruby-2.5.1/file.c ruby/file.c
---- ruby-2.5.1/file.c	2018-03-02 00:25:51.000000000 -0800
+--- ruby-2.5.1/file.c	2018-05-04 10:55:18.000000000 -0700
 +++ ruby/file.c	2018-05-01 18:33:38.000000000 -0700
 @@ -88,6 +88,10 @@
  #define lstat stat
@@ -4453,8 +4532,8 @@ diff -ruN ruby-2.5.1/include/enclose_io.h ruby/include/enclose_io.h
 +#endif
 diff -ruN ruby-2.5.1/include/enclose_io_common.h ruby/include/enclose_io_common.h
 --- ruby-2.5.1/include/enclose_io_common.h	1969-12-31 16:00:00.000000000 -0800
-+++ ruby/include/enclose_io_common.h	2018-05-01 18:33:44.000000000 -0700
-@@ -0,0 +1,350 @@
++++ ruby/include/enclose_io_common.h	2018-05-03 16:41:30.000000000 -0700
+@@ -0,0 +1,352 @@
 +/*
 + * Copyright (c) 2017 Minqi Pan <pmq2001@gmail.com>
 + *                    Shengyuan Liu <sounder.liu@gmail.com>
@@ -4604,6 +4683,7 @@ diff -ruN ruby-2.5.1/include/enclose_io_common.h ruby/include/enclose_io_common.
 +int enclose_io_stat(const char *path, struct stat *buf);
 +int enclose_io_fstat(int fildes, struct stat *buf);
 +int enclose_io_open(int nargs, const char *pathname, int flags, ...);
++int enclose_io_openat(int fd, int nargs, const char *pathname, int flags, ...);
 +int enclose_io_close(int fildes);
 +ssize_t enclose_io_read(int fildes, void *buf, size_t nbyte);
 +off_t enclose_io_lseek(int fildes, off_t offset, int whence);
@@ -4787,6 +4867,7 @@ diff -ruN ruby-2.5.1/include/enclose_io_common.h ruby/include/enclose_io_common.
 +int enclose_io_lstat(const char *path, struct stat *buf);
 +ssize_t enclose_io_readlink(const char *path, char *buf, size_t bufsize);
 +DIR * enclose_io_opendir(const char *filename);
++DIR * enclose_io_fdopendir(int fd);
 +int enclose_io_closedir(DIR *dirp);
 +struct SQUASH_DIRENT * enclose_io_readdir(DIR *dirp);
 +long enclose_io_telldir(DIR *dirp);
@@ -4830,8 +4911,8 @@ diff -ruN ruby-2.5.1/include/enclose_io_prelude.h ruby/include/enclose_io_prelud
 +#endif /* end of include guard: ENCLOSE_IO_PRELUDE_H_E46A560C */
 diff -ruN ruby-2.5.1/include/enclose_io_unix.h ruby/include/enclose_io_unix.h
 --- ruby-2.5.1/include/enclose_io_unix.h	1969-12-31 16:00:00.000000000 -0800
-+++ ruby/include/enclose_io_unix.h	2018-05-01 18:33:44.000000000 -0700
-@@ -0,0 +1,45 @@
++++ ruby/include/enclose_io_unix.h	2018-05-03 15:37:04.000000000 -0700
+@@ -0,0 +1,47 @@
 +/*
 + * Copyright (c) 2017 Minqi Pan <pmq2001@gmail.com>
 + *                    Shengyuan Liu <sounder.liu@gmail.com>
@@ -4856,11 +4937,13 @@ diff -ruN ruby-2.5.1/include/enclose_io_unix.h ruby/include/enclose_io_unix.h
 +	#define fstat(...)	enclose_io_fstat(__VA_ARGS__)
 +	#define lstat(...)	enclose_io_lstat(__VA_ARGS__)
 +	#define open(...)	enclose_io_open(ENCLOSE_IO_PP_NARG(__VA_ARGS__), __VA_ARGS__)
++	#define openat(...)	enclose_io_openat(ENCLOSE_IO_PP_NARG(__VA_ARGS__), __VA_ARGS__)
 +	#define close(...)	enclose_io_close(__VA_ARGS__)
 +	#define read(...)	enclose_io_read(__VA_ARGS__)
 +	#define lseek(...)	enclose_io_lseek(__VA_ARGS__)
 +	#define readlink(...)	enclose_io_readlink(__VA_ARGS__)
 +	#define opendir(...)	enclose_io_opendir(__VA_ARGS__)
++	#define fdopendir(...)	enclose_io_fdopendir(__VA_ARGS__)
 +	#define closedir(...)	enclose_io_closedir(__VA_ARGS__)
 +	#define readdir(...)	enclose_io_readdir(__VA_ARGS__)
 +	#define telldir(...)	enclose_io_telldir(__VA_ARGS__)
@@ -5545,8 +5628,8 @@ diff -ruN ruby-2.5.1/include/squash/dirent.h ruby/include/squash/dirent.h
 +#endif /* end of include guard: DIRENT_H_245C4278 */
 diff -ruN ruby-2.5.1/include/squash/fdtable.h ruby/include/squash/fdtable.h
 --- ruby-2.5.1/include/squash/fdtable.h	1969-12-31 16:00:00.000000000 -0800
-+++ ruby/include/squash/fdtable.h	2018-05-01 18:33:44.000000000 -0700
-@@ -0,0 +1,31 @@
++++ ruby/include/squash/fdtable.h	2018-05-03 20:31:16.000000000 -0700
+@@ -0,0 +1,32 @@
 +/*
 + * Copyright (c) 2017 Minqi Pan <pmq2001@gmail.com>
 + *                    Shengyuan Liu <sounder.liu@gmail.com>
@@ -5566,6 +5649,7 @@ diff -ruN ruby-2.5.1/include/squash/fdtable.h ruby/include/squash/fdtable.h
 +	sqfs_inode node;
 +	struct stat st;
 +	uint64_t pos;
++	char *filename;
 +	void *payload;
 +};
 +
@@ -6879,7 +6963,7 @@ diff -ruN ruby-2.5.1/include/squash.h ruby/include/squash.h
 +
 +#endif
 diff -ruN ruby-2.5.1/io.c ruby/io.c
---- ruby-2.5.1/io.c	2017-12-23 18:41:00.000000000 -0800
+--- ruby-2.5.1/io.c	2018-05-04 10:55:15.000000000 -0700
 +++ ruby/io.c	2018-05-01 18:33:44.000000000 -0700
 @@ -133,6 +133,10 @@
  #define rename(f, t)	rb_w32_urename((f), (t))
@@ -6893,7 +6977,7 @@ diff -ruN ruby-2.5.1/io.c ruby/io.c
  VALUE rb_eEOFError;
  VALUE rb_eIOError;
 diff -ruN ruby-2.5.1/lib/mkmf.rb ruby/lib/mkmf.rb
---- ruby-2.5.1/lib/mkmf.rb	2017-12-10 18:30:42.000000000 -0800
+--- ruby-2.5.1/lib/mkmf.rb	2018-05-04 10:55:18.000000000 -0700
 +++ ruby/lib/mkmf.rb	2018-05-01 18:33:44.000000000 -0700
 @@ -2680,17 +2680,17 @@
  
@@ -6917,7 +7001,7 @@ diff -ruN ruby-2.5.1/lib/mkmf.rb ruby/lib/mkmf.rb
    end
  
 diff -ruN ruby-2.5.1/lib/rubygems/path_support.rb ruby/lib/rubygems/path_support.rb
---- ruby-2.5.1/lib/rubygems/path_support.rb	2016-03-03 16:29:40.000000000 -0800
+--- ruby-2.5.1/lib/rubygems/path_support.rb	2018-05-04 10:55:17.000000000 -0700
 +++ ruby/lib/rubygems/path_support.rb	2018-05-01 18:33:44.000000000 -0700
 @@ -25,12 +25,28 @@
    def initialize(env)
@@ -6949,7 +7033,7 @@ diff -ruN ruby-2.5.1/lib/rubygems/path_support.rb ruby/lib/rubygems/path_support
  
      @spec_cache_dir = @spec_cache_dir.dup.untaint
 diff -ruN ruby-2.5.1/main.c ruby/main.c
---- ruby-2.5.1/main.c	2017-06-29 21:19:12.000000000 -0700
+--- ruby-2.5.1/main.c	2018-05-04 10:55:17.000000000 -0700
 +++ ruby/main.c	2018-05-01 18:33:44.000000000 -0700
 @@ -25,9 +25,112 @@
  #include <stdlib.h>
@@ -7065,7 +7149,7 @@ diff -ruN ruby-2.5.1/main.c ruby/main.c
      ruby_set_debug_option(getenv("RUBY_DEBUG"));
  #endif
 diff -ruN ruby-2.5.1/prelude.c ruby/prelude.c
---- ruby-2.5.1/prelude.c	2018-03-28 09:47:13.000000000 -0700
+--- ruby-2.5.1/prelude.c	2018-05-04 10:55:17.000000000 -0700
 +++ ruby/prelude.c	2018-05-01 18:33:44.000000000 -0700
 @@ -195,6 +195,55 @@
  #line 196 "prelude.c"
@@ -7138,7 +7222,7 @@ diff -ruN ruby-2.5.1/prelude.c ruby/prelude.c
      printf("%.*s", (int)sizeof(prelude_code0), prelude_code0.L0);
      printf("%.*s", (int)sizeof(prelude_code1), prelude_code1.L0);
 diff -ruN ruby-2.5.1/process.c ruby/process.c
---- ruby-2.5.1/process.c	2017-12-14 02:24:38.000000000 -0800
+--- ruby-2.5.1/process.c	2018-05-04 10:55:15.000000000 -0700
 +++ ruby/process.c	2018-05-01 18:33:44.000000000 -0700
 @@ -7594,6 +7594,12 @@
      rb_define_global_function("exit!", rb_f_exit_bang, -1);
@@ -7220,7 +7304,7 @@ diff -ruN ruby-2.5.1/process.c ruby/process.c
 +}
 +// --------- [Enclose.IO Hack end] ---------
 diff -ruN ruby-2.5.1/ruby.c ruby/ruby.c
---- ruby-2.5.1/ruby.c	2017-12-16 05:25:11.000000000 -0800
+--- ruby-2.5.1/ruby.c	2018-05-04 10:55:15.000000000 -0700
 +++ ruby/ruby.c	2018-05-01 18:33:44.000000000 -0700
 @@ -2208,6 +2208,10 @@
      rb_define_hooked_variable("$PROGRAM_NAME", &rb_progname, 0, set_arg0);
@@ -7418,8 +7502,8 @@ diff -ruN ruby-2.5.1/squash_decompress.c ruby/squash_decompress.c
 +}
 diff -ruN ruby-2.5.1/squash_dir.c ruby/squash_dir.c
 --- ruby-2.5.1/squash_dir.c	1969-12-31 16:00:00.000000000 -0800
-+++ ruby/squash_dir.c	2018-05-01 18:33:44.000000000 -0700
-@@ -0,0 +1,486 @@
++++ ruby/squash_dir.c	2018-05-03 20:50:50.000000000 -0700
+@@ -0,0 +1,487 @@
 +/*
 + * Copyright (c) 2012 Dave Vasilevsky <dave@vasilevsky.ca>
 + * All rights reserved.
@@ -7451,6 +7535,7 @@ diff -ruN ruby-2.5.1/squash_dir.c ruby/squash_dir.c
 +#include "squash/fs.h"
 +
 +#include <string.h>
++#include <stdlib.h>
 +
 +/* Read some directory metadata, updating the dir structure as necessary */
 +static sqfs_err sqfs_dir_md_read(sqfs *fs, sqfs_dir *dir, void *buf,
@@ -8396,8 +8481,8 @@ diff -ruN ruby-2.5.1/squash_extract.c ruby/squash_extract.c
 +}
 diff -ruN ruby-2.5.1/squash_fd.c ruby/squash_fd.c
 --- ruby-2.5.1/squash_fd.c	1969-12-31 16:00:00.000000000 -0800
-+++ ruby/squash_fd.c	2018-05-01 18:33:44.000000000 -0700
-@@ -0,0 +1,233 @@
++++ ruby/squash_fd.c	2018-05-04 10:53:31.000000000 -0700
+@@ -0,0 +1,241 @@
 +/*
 + * Copyright (c) 2017 Minqi Pan <pmq2001@gmail.com>
 + *                    Shengyuan Liu <sounder.liu@gmail.com>
@@ -8437,6 +8522,8 @@ diff -ruN ruby-2.5.1/squash_fd.c ruby/squash_fd.c
 +	{
 +		goto failure;
 +	}
++	file->filename = strdup(path);
++
 +	if (!found)
 +	{
 +		errno = ENOENT;
@@ -8513,6 +8600,8 @@ diff -ruN ruby-2.5.1/squash_fd.c ruby/squash_fd.c
 +int squash_close(int vfd)
 +{
 +	int ret;
++	struct squash_file *file;
++
 +        if (!SQUASH_VALID_VFD(vfd)) {
 +                errno = EBADF;
 +                return -1;
@@ -8529,7 +8618,11 @@ diff -ruN ruby-2.5.1/squash_fd.c ruby/squash_fd.c
 +                int *handle = (int *) (squash_global_fdtable.fds[vfd]->payload);
 +                free(handle);
 +        }
-+        free(squash_global_fdtable.fds[vfd]);
++
++        file = squash_global_fdtable.fds[vfd];
++        free(file->filename);
++        free(file);
++
 +        squash_global_fdtable.fds[vfd] = NULL;
 +        if (vfd + 1 == squash_global_fdtable.end) {
 +                while (vfd >= 0 && NULL == squash_global_fdtable.fds[vfd]) {
@@ -10607,7 +10700,7 @@ diff -ruN ruby-2.5.1/squash_util.c ruby/squash_util.c
 +}
 +
 diff -ruN ruby-2.5.1/tool/mkconfig.rb ruby/tool/mkconfig.rb
---- ruby-2.5.1/tool/mkconfig.rb	2017-05-02 05:45:07.000000000 -0700
+--- ruby-2.5.1/tool/mkconfig.rb	2018-05-04 10:55:18.000000000 -0700
 +++ ruby/tool/mkconfig.rb	2018-05-01 18:33:44.000000000 -0700
 @@ -124,6 +124,22 @@
        val = '"$(SDKROOT)"'+val if /darwin/ =~ arch
@@ -10633,7 +10726,7 @@ diff -ruN ruby-2.5.1/tool/mkconfig.rb ruby/tool/mkconfig.rb
        v_fast << v
      else
 diff -ruN ruby-2.5.1/util.c ruby/util.c
---- ruby-2.5.1/util.c	2017-10-22 22:56:25.000000000 -0700
+--- ruby-2.5.1/util.c	2018-05-04 10:55:15.000000000 -0700
 +++ ruby/util.c	2018-05-01 18:33:44.000000000 -0700
 @@ -30,6 +30,10 @@
  const char ruby_hexdigits[] = "0123456789abcdef0123456789ABCDEF";
@@ -10648,7 +10741,7 @@ diff -ruN ruby-2.5.1/util.c ruby/util.c
  {
 Binary files ruby-2.5.1/vendor/bundler-1.16.1.gem and ruby/vendor/bundler-1.16.1.gem differ
 diff -ruN ruby-2.5.1/win32/Makefile.sub ruby/win32/Makefile.sub
---- ruby-2.5.1/win32/Makefile.sub	2017-12-03 19:33:48.000000000 -0800
+--- ruby-2.5.1/win32/Makefile.sub	2018-05-04 10:55:18.000000000 -0700
 +++ ruby/win32/Makefile.sub	2018-05-01 18:33:44.000000000 -0700
 @@ -250,7 +250,7 @@
  EXTSOLIBS =
@@ -10733,7 +10826,7 @@ diff -ruN ruby-2.5.1/win32/Makefile.sub ruby/win32/Makefile.sub
  		$(Q) $(LDSHARED_0)
  		$(Q) $(LDSHARED_1)
 diff -ruN ruby-2.5.1/win32/file.c ruby/win32/file.c
---- ruby-2.5.1/win32/file.c	2016-12-06 18:03:40.000000000 -0800
+--- ruby-2.5.1/win32/file.c	2018-05-04 10:55:18.000000000 -0700
 +++ ruby/win32/file.c	2018-05-01 18:33:44.000000000 -0700
 @@ -10,6 +10,10 @@
  #include <shlwapi.h>
@@ -10747,7 +10840,7 @@ diff -ruN ruby-2.5.1/win32/file.c ruby/win32/file.c
  # define INVALID_FILE_ATTRIBUTES ((DWORD)-1)
  #endif
 diff -ruN ruby-2.5.1/win32/win32.c ruby/win32/win32.c
---- ruby-2.5.1/win32/win32.c	2017-12-12 07:02:51.000000000 -0800
+--- ruby-2.5.1/win32/win32.c	2018-05-04 10:55:18.000000000 -0700
 +++ ruby/win32/win32.c	2018-05-01 18:33:44.000000000 -0700
 @@ -55,6 +55,11 @@
  #include "id.h"

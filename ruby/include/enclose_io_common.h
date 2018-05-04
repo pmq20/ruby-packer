@@ -147,6 +147,7 @@ char *enclose_io_getwd(char *buf);
 int enclose_io_stat(const char *path, struct stat *buf);
 int enclose_io_fstat(int fildes, struct stat *buf);
 int enclose_io_open(int nargs, const char *pathname, int flags, ...);
+int enclose_io_openat(int fd, int nargs, const char *pathname, int flags, ...);
 int enclose_io_close(int fildes);
 ssize_t enclose_io_read(int fildes, void *buf, size_t nbyte);
 off_t enclose_io_lseek(int fildes, off_t offset, int whence);
@@ -330,6 +331,7 @@ EncloseIOGetCurrentDirectoryW(
 int enclose_io_lstat(const char *path, struct stat *buf);
 ssize_t enclose_io_readlink(const char *path, char *buf, size_t bufsize);
 DIR * enclose_io_opendir(const char *filename);
+DIR * enclose_io_fdopendir(int fd);
 int enclose_io_closedir(DIR *dirp);
 struct SQUASH_DIRENT * enclose_io_readdir(DIR *dirp);
 long enclose_io_telldir(DIR *dirp);
