@@ -155,24 +155,26 @@ class Compiler
 
   def stuff_zlib
     target = File.join(@options[:tmpdir], 'zlib')
-    unless Dir.exist?(target)
-      @utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'zlib'), target, preserve: true)
-      @utils.chdir(target) do
-        Dir['**/configure.ac'].each do |x|
-          File.utime(Time.at(0), Time.at(0), x)
-        end
-        Dir['**/*.m4'].each do |x|
-          File.utime(Time.at(0), Time.at(0), x)
-        end
-        if Gem.win_platform?
-          @utils.run(@compile_env, 'nmake /f win32\\Makefile.msc')
-        else
-          @utils.run(@compile_env, './configure --static')
-          @utils.run(@compile_env, "make #{@options[:make_args]}")
-        end
-        Dir['*.{dylib,so,dll}'].each do |thisdl|
-          @utils.rm_f(thisdl)
-        end
+    return if Dir.exist?(target)
+
+    @utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'zlib'), target, preserve: true)
+    @utils.chdir(target) do
+      Dir['**/configure.ac'].each do |x|
+        File.utime(Time.at(0), Time.at(0), x)
+      end
+      Dir['**/*.m4'].each do |x|
+        File.utime(Time.at(0), Time.at(0), x)
+      end
+
+      if Gem.win_platform?
+        @utils.run(@compile_env, 'nmake /f win32\\Makefile.msc')
+      else
+        @utils.run(@compile_env,
+                   "./configure",
+                   "--static",
+                   "--prefix=#{@local_build}")
+        @utils.run(@compile_env, "make #{@options[:make_args]}")
+        @utils.run(@compile_env, "make install")
       end
     end
   end
@@ -844,11 +846,14 @@ class Compiler
       @ldflags += " -L#{@utils.escape lib} "   if Dir.exist? lib
       @ldflags += " -L#{@utils.escape lib64} " if Dir.exist? lib64
 
+      libz = File.join lib, 'libz.a'
+      lib64z = File.join lib64, 'libz.a'
+
+      @ldflags += " #{@utils.escape libz} "   if File.exist? libz
+      @ldflags += " #{@utils.escape lib64z} " if File.exist? lib64z
+
       @cflags += " -I#{@utils.escape File.join(@local_build, 'include')} "
       @cflags += " -I#{@utils.escape File.join(lib, 'libffi-3.2.1', 'include')} "
-
-      @ldflags += " -L#{@utils.escape File.join(@options[:tmpdir], 'zlib')} #{@utils.escape File.join(@options[:tmpdir], 'zlib', 'libz.a')} "
-      @cflags += " -I#{@utils.escape File.join(@options[:tmpdir], 'zlib')} "
     end
 
     if Gem.win_platform?
