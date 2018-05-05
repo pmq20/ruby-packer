@@ -20,7 +20,17 @@ class TestRoundTrip < Minitest::Test
 
       status = wait_thr.value
 
-      flunk "failed to run ruby #{args.join " "}" unless status.success?
+      flunk <<-MESSAGE unless status.success?
+failed to run ruby #{args.join " "}
+
+-------- <stdout> ----------
+#{stdout.read}
+-------- <stdout> ----------
+
+-------- <stderr> ----------
+#{stderr.read}
+-------- <stderr> ----------
+      MESSAGE
 
       return [stdout.read, stderr.read]
     end
@@ -32,7 +42,17 @@ class TestRoundTrip < Minitest::Test
 
       status = wait_thr.value
 
-      flunk "failed to run rubyc #{args.join " "}" unless status.success?
+      flunk <<-MESSAGE unless status.success?
+failed to run rubyc #{args.join " "}
+
+-------- <stdout> ----------
+#{stdout.read}
+-------- <stdout> ----------
+
+-------- <stderr> ----------
+#{stderr.read}
+-------- <stderr> ----------
+      MESSAGE
 
       return [stdout.read, stderr.read]
     end
@@ -53,12 +73,6 @@ class TestRoundTrip < Minitest::Test
   end
 
   def test_unit_tests
-    out, err = ruby "/__enclose_io_memfs__/bin/rake", "test:unit"
-
-  rescue
-    $stderr.puts "rake test stdout:"
-    $stderr.puts out
-    $stderr.puts "rake test stderr:"
-    $stderr.puts err
+    ruby "/__enclose_io_memfs__/bin/rake", "test:unit"
   end
 end
