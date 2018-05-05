@@ -14,6 +14,9 @@ class TestRoundTrip < Minitest::Test
     }
   end
 
+  ##
+  # Run original ruby inside rubyc
+
   def ruby(*args)
     Open3.popen3(@env, @rubyc, *args) do |stdin, stdout, stderr, wait_thr|
       stdin.close
@@ -35,6 +38,9 @@ failed to run ruby #{args.join " "}
       return [stdout.read, stderr.read]
     end
   end
+
+  ##
+  # Run rubyc
 
   def rubyc(*args)
     Open3.popen3(@rubyc, *args) do |stdin, stdout, stderr, wait_thr|
@@ -73,6 +79,6 @@ failed to run rubyc #{args.join " "}
   end
 
   def test_unit_tests
-    ruby "/__enclose_io_memfs__/bin/rake", "test:unit"
+    ruby "-e", "ARGV.replace %w[test:unit]; load '/__enclose_io_memfs__/bin/rake'"
   end
 end
