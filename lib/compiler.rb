@@ -330,7 +330,7 @@ class Compiler
                  "--enable-static",
                  "--prefix=#{@local_build}")
       @utils.run(@compile_env, "make #{@options[:make_args]}")
-      @utils.run(@compile_env, "make install-shared")
+      @utils.run(@compile_env, "make install")
     end
   end
 
