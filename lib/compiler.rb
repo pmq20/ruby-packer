@@ -153,12 +153,21 @@ class Compiler
     $stderr.puts message
   end
 
-  def stuff_zlib
-    target = File.join(@options[:tmpdir], 'zlib')
-    return if Dir.exist?(target)
+  def stuff(library)
+    source = File.join PRJ_ROOT, 'vendor', library
+    target = File.join @options[:tmpdir], library
 
-    @utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'zlib'), target, preserve: true)
+    return if Dir.exist? target
+
+    @utils.cp_r source, target, preserve: true
+
     @utils.chdir(target) do
+      yield
+    end
+  end
+
+  def stuff_zlib
+    stuff 'zlib' do
       Dir['**/configure.ac'].each do |x|
         File.utime(Time.at(0), Time.at(0), x)
       end
@@ -182,12 +191,7 @@ class Compiler
   def stuff_openssl
     return if Gem.win_platform? # TODO
 
-    target = File.join(@options[:tmpdir], 'openssl')
-    return if Dir.exist?(target)
-
-    @utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'openssl'), target, preserve: true)
-
-    @utils.chdir(target) do
+    stuff 'openssl' do
       Dir['**/configure.ac'].each do |x|
         File.utime(Time.at(0), Time.at(0), x)
       end
@@ -207,11 +211,7 @@ class Compiler
   def stuff_gdbm
     return if Gem.win_platform? # TODO
 
-    target = File.join(@options[:tmpdir], 'gdbm')
-    return if Dir.exist?(target)
-
-    @utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'gdbm'), target, preserve: true)
-    @utils.chdir(target) do
+    stuff 'gdbm' do
       Dir['**/configure.ac'].each do |x|
         File.utime(Time.at(0), Time.at(0), x)
       end
@@ -235,12 +235,7 @@ class Compiler
   def stuff_yaml
     return if Gem.win_platform? # TODO
 
-    target = File.join(@options[:tmpdir], 'yaml')
-    return if Dir.exist?(target)
-
-    @utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'yaml'), target, preserve: true)
-
-    @utils.chdir(target) do
+    stuff 'yaml' do
       Dir['**/configure.ac'].each do |x|
         File.utime(Time.at(0), Time.at(0), x)
       end
@@ -262,12 +257,7 @@ class Compiler
   def stuff_libffi
     return if Gem.win_platform? # TODO
 
-    target = File.join(@options[:tmpdir], 'libffi')
-    return if Dir.exist?(target)
-
-    @utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'libffi'), target, preserve: true)
-
-    @utils.chdir(target) do
+    stuff 'libffi' do
       Dir['**/configure.ac'].each do |x|
         File.utime(Time.at(0), Time.at(0), x)
       end
@@ -289,12 +279,7 @@ class Compiler
   def stuff_ncurses
     return if Gem.win_platform? # TODO
 
-    target = File.join(@options[:tmpdir], 'ncurses')
-    return if Dir.exist? target
-
-    @utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'ncurses'), target, preserve: true)
-
-    @utils.chdir(target) do
+    stuff 'ncurses' do
       Dir['**/configure.ac'].each do |x|
         File.utime(Time.at(0), Time.at(0), x)
       end
@@ -314,11 +299,7 @@ class Compiler
   def stuff_readline
     return if Gem.win_platform? # TODO
 
-    target = File.join(@options[:tmpdir], 'readline')
-    return if Dir.exist?(target)
-
-    @utils.cp_r(File.join(PRJ_ROOT, 'vendor', 'readline'), target, preserve: true)
-    @utils.chdir(target) do
+    stuff 'readline' do
       Dir['**/configure.ac'].each do |x|
         File.utime(Time.at(0), Time.at(0), x)
       end
