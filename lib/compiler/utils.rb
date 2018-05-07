@@ -13,6 +13,24 @@ class Compiler
   class Utils
     def initialize(options = {})
       @options = options
+
+      @capture_io = nil
+    end
+
+    def capture_run_io(log_name)
+      log_file = File.join @options[:tmpdir], "#{log_name}.log"
+
+      puts "=> Saving output to #{log_file}"
+
+      open log_file, 'w' do |io|
+        @capture_io = io
+
+        yield
+      end
+    rescue Error
+      IO.copy_stream log_file, $stdout
+    ensure
+      @capture_io = nil
     end
 
     def escape(arg)
@@ -25,7 +43,7 @@ class Compiler
         Shellwords.escape(arg)
       end
     end
-    
+
     def run(*args)
       unless @options[:quiet]
         message =
@@ -41,9 +59,19 @@ class Compiler
           end
         STDERR.puts "-> #{message}"
       end
-      pid = spawn(*args)
-      pid, status = Process.wait2(pid)
-      raise Error, "Failed running #{args}" unless status.success?
+
+      options = {}
+
+      if @capture_io
+        options[:out] = @capture_io
+        options[:err] = @capture_io
+      end
+
+      success = system(*args, **options)
+
+      return if success
+
+      raise Error, "Failed running #{args}"
     end
 
     def run_allow_failures(*args)
