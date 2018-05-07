@@ -10,6 +10,7 @@ require "compiler/gem_package"
 require 'shellwords'
 require 'tmpdir'
 require 'fileutils'
+require 'find'
 require 'open3'
 require 'pathname'
 require 'uri'
@@ -577,7 +578,7 @@ class Compiler
           log "-> Detected a gemspec, trying to build the gem"
           @utils.rm_f('./*.gem')
           if gemfiles.size > 0
-            @utils.run(@local_toolchain, gem, "install", the_bundler_gem, '--verbose', '--no-document', '--bindir', @ruby_build_1_bin)
+            @utils.run(@local_toolchain, gem, "install", the_bundler_gem, '--no-document', '--bindir', @ruby_build_1_bin)
 
             @utils.run(@local_toolchain, bundle, "install")
             @utils.run(@local_toolchain, bundle, "exec", gem, "build", gemspecs.first)
@@ -587,7 +588,7 @@ class Compiler
           gems = Dir['./*.gem']
           raise 'gem building failed' unless 1 == gems.size
           the_gem = gems.first
-          @utils.run(@local_toolchain, gem, "install", the_gem, "--verbose", '--no-document', '--bindir', @ruby_build_1_bin)
+          @utils.run(@local_toolchain, gem, "install", the_gem, '--no-document', '--bindir', @ruby_build_1_bin)
           if File.exist?(File.join(@gems_dir, "bin/#{@entrance}"))
             @memfs_entrance = "#{MEMFS}/lib/ruby/gems/#{self.class.ruby_api_version}/bin/#{@entrance}"
           else
@@ -605,7 +606,7 @@ class Compiler
       elsif gemfiles.size > 0
         raise 'Multiple Gemfiles detected' unless 1 == gemfiles.size
         # gem install bundler
-        @utils.run(@local_toolchain, gem, "install", the_bundler_gem, '--verbose', '--no-document', '--bindir', @ruby_build_1_bin)
+        @utils.run(@local_toolchain, gem, "install", the_bundler_gem, '--no-document', '--bindir', @ruby_build_1_bin)
         # bundle install
         @work_dir_local = File.join(@work_dir_inner, 'local')
         the_gemfile = File.basename(gemfiles.first)
@@ -653,7 +654,7 @@ class Compiler
         @utils.chdir(@pre_prepare_dir) do
           log "-> Detected a gem file, trying to locally install the gem"
           the_gem = gems.first
-          @utils.run(@local_toolchain, gem, "install", the_gem, '--verbose',  '--no-rdoc', '--no-ri', '--install-dir', @gems_dir)
+          @utils.run(@local_toolchain, gem, "install", the_gem, '--no-document', '--install-dir', @gems_dir)
           if File.exist?(File.join(@gems_dir, "bin/#{@entrance}"))
             @memfs_entrance = "#{MEMFS}/lib/ruby/gems/#{self.class.ruby_api_version}/bin/#{@entrance}"
           else
@@ -710,10 +711,19 @@ class Compiler
 
   def make_enclose_io_memfs
     @utils.chdir(@vendor_ruby) do
+      log "=> making squashfs"
+      log "=> squashfs contents"
+
+      prefix = @work_dir.size
+      Find.find @work_dir do |path|
+        path[0, prefix] = ''
+        log path
+      end
+
       @utils.rm_f('enclose_io_memfs.squashfs')
       @utils.rm_f('enclose_io_memfs.c')
-      @utils.run("mksquashfs -version")
-      @utils.run("mksquashfs #{@utils.escape @work_dir} enclose_io_memfs.squashfs")
+      @utils.run("mksquashfs", "-version")
+      @utils.run("mksquashfs", @work_dir, "enclose_io_memfs.squashfs")
       bytes = IO.binread('enclose_io_memfs.squashfs').bytes
       # TODO slow operation
       # remember to change libsquash's sample/enclose_io_memfs.c as well
@@ -731,6 +741,7 @@ class Compiler
         f.puts '};'
         f.puts ''
       end
+      log "=> squashfs complete"
     end
   end
 
