@@ -780,7 +780,7 @@ class Compiler
       prefix = @work_dir.size
       Find.find @work_dir do |path|
         path[0, prefix] = ''
-        path
+        log path
       end
 
       @utils.rm_f('enclose_io_memfs.squashfs')
