@@ -20,7 +20,7 @@ class Compiler
     def capture_run_io(log_name)
       log_file = File.join @options[:tmpdir], "#{log_name}.log"
 
-      puts "=> Saving output to #{log_file}"
+      STDERR.puts "=> Saving output to #{log_file}"
 
       open log_file, 'w' do |io|
         @capture_io = io

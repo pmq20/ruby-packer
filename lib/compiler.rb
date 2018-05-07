@@ -161,7 +161,7 @@ class Compiler
 
     @utils.cp_r source, target, preserve: true
 
-    puts "=> Stuffing #{library}…"
+    log "=> Stuffing #{library}…"
 
     @utils.chdir(target) do
       @utils.capture_run_io "stuff_#{library}" do
@@ -169,7 +169,7 @@ class Compiler
       end
     end
 
-    puts "=> Stuffed #{library}"
+    log "=> Stuffed #{library}"
   end
 
   def stuff_zlib
