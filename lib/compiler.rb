@@ -148,6 +148,172 @@ class Compiler
     end
   end
 
+  def install_from_gem(gem)
+    log "=> Installing source from gem #{File.expand_path gem}"
+
+    @pre_prepare_dir = File.join(@options[:tmpdir], "__pre_prepare__")
+
+    @utils.rm_rf(@pre_prepare_dir)
+    @utils.cp_r(@root, @pre_prepare_dir)
+
+    @utils.chdir(@pre_prepare_dir) do
+      @utils.run(@local_toolchain,
+                 @gem, "install", gem,
+                       "--no-document",
+                       "--install-dir", @gems_dir)
+
+      if File.exist?(File.join(@gems_dir, "bin/#{@entrance}"))
+        @memfs_entrance = "#{MEMFS}/lib/ruby/gems/#{self.class.ruby_api_version}/bin/#{@entrance}"
+      else
+        if File.exist?(File.join(@gems_dir, "bin/#{File.basename(@entrance)}"))
+          @entrance = File.basename(@entrance)
+          @memfs_entrance = "#{MEMFS}/lib/ruby/gems/#{self.class.ruby_api_version}/bin/#{@entrance}"
+        else
+          @utils.chdir(File.join(@gems_dir, "bin")) do
+            raise Error, "Cannot find entrance #{@entrance}, available entrances are #{ Dir["*"].join(", ") }."
+          end
+        end
+      end
+    end
+
+    @utils.rm_rf(@pre_prepare_dir)
+  end
+
+  def install_from_gemfile(gemfile)
+    log "=> Installing source gemfile #{File.expand_path gemfile}"
+
+    @utils.run(@local_toolchain,
+               @gem, "install", @the_bundler_gem,
+                     "--no-document",
+                     "--bindir", @ruby_build_1_bin)
+
+    @work_dir_local = File.join(@work_dir_inner, "local")
+
+    @env_bundle_gemfile = "/__enclose_io_memfs__/local/#{gemfile}"
+
+    unless @options[:keep_tmpdir]
+      @utils.cp_r(@root, @work_dir_local)
+    end
+
+    @utils.chdir(@work_dir_local) do
+      @utils.run(@local_toolchain,
+                 @bundle, "install",
+                          "--deployment",
+                          "--binstubs")
+
+      if 0 == @utils.run_allow_failures(@local_toolchain, @bundle, "show", "rails")
+        log "=> Detected a Rails project"
+        @enclose_io_rails = true
+        @utils.rm_rf("tmp")
+        @utils.rm_rf("log")
+        @utils.mkdir("tmp")
+        @utils.mkdir("log")
+      else
+        log "=> Not a Rails project"
+      end
+
+      if File.exist?(@entrance)
+        @memfs_entrance = mempath(@entrance)
+      else
+        if File.exist?("bin/#{@entrance}")
+          @memfs_entrance = "#{MEMFS}/local/bin/#{@entrance}"
+        else
+          @utils.run(@local_toolchain,
+                     @bundle, "install",
+                              "--deployment",
+                              "--binstubs")
+
+          if File.exist?("bin/#{@entrance}")
+            @memfs_entrance = "#{MEMFS}/local/bin/#{@entrance}"
+          else
+            if File.exist?("bin/#{File.basename(@entrance)}")
+              @entrance = File.basename(@entrance)
+              @memfs_entrance = "#{MEMFS}/local/bin/#{@entrance}"
+            else
+              @utils.chdir("bin") do
+                raise Error, "Cannot find entrance #{@entrance}, available entrances are #{ Dir["*"].join(", ") }."
+              end
+            end
+          end
+        end
+      end
+    end
+  end
+
+  def install_from_gemspec(gemspec, gemfiles)
+    log "=> Installing source from gemspec #{File.expand_path gemspec}"
+
+    @pre_prepare_dir = File.join(@options[:tmpdir], "__pre_prepare__")
+    @utils.rm_rf(@pre_prepare_dir)
+    @utils.cp_r(@root, @pre_prepare_dir)
+
+    @utils.chdir(@pre_prepare_dir) do
+      log "-> Detected a gemspec, trying to build the gem"
+      @utils.rm_f("./*.gem")
+
+      if gemfiles.size > 0
+        @utils.run(@local_toolchain,
+                   @gem, "install", @the_bundler_gem,
+                         "--no-document",
+                         "--bindir", @ruby_build_1_bin)
+
+        @utils.run(@local_toolchain,
+                   @bundle, "install")
+        @utils.run(@local_toolchain,
+                   @bundle, "exec", @gem, "build", gemspec)
+      else
+        @utils.run(@local_toolchain, @gem, "build", gemspec)
+      end
+
+      gems = Dir["./*.gem"]
+      raise "failed to build gem #{gem}" unless 1 == gems.size
+
+      gem = gems.first
+
+      @utils.run(@local_toolchain,
+                 @gem, "install", gem,
+                      "--no-document",
+                      "--bindir", @ruby_build_1_bin)
+
+      if File.exist?(File.join(@gems_dir, "bin/#{@entrance}"))
+        @memfs_entrance = "#{MEMFS}/lib/ruby/gems/#{self.class.ruby_api_version}/bin/#{@entrance}"
+      else
+        if File.exist?(File.join(@gems_dir, "bin/#{File.basename(@entrance)}"))
+          @entrance = File.basename(@entrance)
+          @memfs_entrance = "#{MEMFS}/lib/ruby/gems/#{self.class.ruby_api_version}/bin/#{@entrance}"
+        else
+          @utils.chdir(File.join(@gems_dir, "bin")) do
+            raise Error, "Cannot find entrance #{@entrance}, available entrances are #{ Dir["*"].join(", ") }."
+          end
+        end
+      end
+    end
+    @utils.rm_rf(@pre_prepare_dir)
+  end
+
+  def install_from_local
+    log "=> Installing source from local files #{@root}"
+
+    @work_dir_local = File.join(@work_dir_inner, "local")
+    @utils.cp_r(@root, @work_dir_local)
+
+    @utils.chdir(@work_dir_local) do
+      x = Pathname @entrance
+      y = Pathname @root
+
+      if x.absolute?
+        raise "Entrance #{@entrance} is not in the project root #{@root}" unless @entrance.include?(@root)
+        @entrance = x.relative_path_from y
+      end
+
+      if File.exist?("#{@entrance}")
+        @memfs_entrance = "#{MEMFS}/local/#{@entrance}"
+      else
+        raise Error, "Cannot find entrance #{@entrance}"
+      end
+    end
+  end
+
   def log(message = nil)
     return if @options[:quiet]
 
@@ -451,7 +617,7 @@ class Compiler
         end
         # enclose_io_memfs.o - 2nd pass
         prepare_work_dir
-        prepare_local if @entrance
+        repare_local if @entrance
         @utils.rm_f('include/enclose_io.h')
         @utils.rm_f('enclose_io_memfs.c')
         @compile_env['ENCLOSE_IO_RUBYC_1ST_PASS'] = nil
@@ -564,131 +730,28 @@ class Compiler
       gemspecs = Dir['./*.gemspec']
       gemfiles = Dir['./gems.rb', './Gemfile']
       gems = Dir['./*.gem']
-      the_bundler_gem = Dir["#{@vendor_ruby}/vendor/bundler-*.gem"].first
 
-      gem = File.join(@ruby_build_1_bin, "gem")
-      bundle = File.join(@ruby_build_1_bin, "bundle")
+      @the_bundler_gem = Dir["#{@vendor_ruby}/vendor/bundler-*.gem"].first
+
+      @gem    = File.join(@ruby_build_1_bin, "gem")
+      @bundle = File.join(@ruby_build_1_bin, "bundle")
 
       if gemspecs.size > 0
-        raise 'Multiple gemspecs detected' unless 1 == gemspecs.size
-        @pre_prepare_dir = File.join(@options[:tmpdir], '__pre_prepare__')
-        @utils.rm_rf(@pre_prepare_dir)
-        @utils.cp_r(@root, @pre_prepare_dir)
-        @utils.chdir(@pre_prepare_dir) do
-          log "-> Detected a gemspec, trying to build the gem"
-          @utils.rm_f('./*.gem')
-          if gemfiles.size > 0
-            @utils.run(@local_toolchain, gem, "install", the_bundler_gem, '--no-document', '--bindir', @ruby_build_1_bin)
+        raise "Multiple gemspecs detected" unless 1 == gemspecs.size
 
-            @utils.run(@local_toolchain, bundle, "install")
-            @utils.run(@local_toolchain, bundle, "exec", gem, "build", gemspecs.first)
-          else
-            @utils.run(@local_toolchain, gem, "build", gemspecs.first)
-          end
-          gems = Dir['./*.gem']
-          raise 'gem building failed' unless 1 == gems.size
-          the_gem = gems.first
-          @utils.run(@local_toolchain, gem, "install", the_gem, '--no-document', '--bindir', @ruby_build_1_bin)
-          if File.exist?(File.join(@gems_dir, "bin/#{@entrance}"))
-            @memfs_entrance = "#{MEMFS}/lib/ruby/gems/#{self.class.ruby_api_version}/bin/#{@entrance}"
-          else
-            if File.exist?(File.join(@gems_dir, "bin/#{File.basename(@entrance)}"))
-              @entrance = File.basename(@entrance)
-              @memfs_entrance = "#{MEMFS}/lib/ruby/gems/#{self.class.ruby_api_version}/bin/#{@entrance}"
-            else
-              @utils.chdir(File.join(@gems_dir, "bin")) do
-                raise Error, "Cannot find entrance #{@entrance}, available entrances are #{ Dir['*'].join(', ') }."
-              end
-            end
-          end
-        end
-        @utils.rm_rf(@pre_prepare_dir)
+        install_from_gem gemspec.first, gemfiles
       elsif gemfiles.size > 0
         raise 'Multiple Gemfiles detected' unless 1 == gemfiles.size
-        # gem install bundler
-        @utils.run(@local_toolchain, gem, "install", the_bundler_gem, '--no-document', '--bindir', @ruby_build_1_bin)
-        # bundle install
-        @work_dir_local = File.join(@work_dir_inner, 'local')
-        the_gemfile = File.basename(gemfiles.first)
-        @env_bundle_gemfile = "/__enclose_io_memfs__/local/#{the_gemfile}"
-        unless @options[:keep_tmpdir]
-          @utils.cp_r(@root, @work_dir_local)
-        end
-        @utils.chdir(@work_dir_local) do
-          @utils.run(@local_toolchain, bundle, 'install', '--deployment')
-          if 0 == @utils.run_allow_failures(@local_toolchain, bundle, 'show', 'rails')
-            log "-> Detected a Rails project"
-            @enclose_io_rails = true
-            @utils.rm_rf('tmp')
-            @utils.rm_rf('log')
-            @utils.mkdir('tmp')
-            @utils.mkdir('log')
-          end
-          if File.exist?(@entrance)
-            @memfs_entrance = mempath(@entrance)
-          else
-            if File.exist?("bin/#{@entrance}")
-              @memfs_entrance = "#{MEMFS}/local/bin/#{@entrance}"
-            else
-              @utils.run(@local_toolchain, bundle, 'install', '--deployment', '--binstubs')
-              if File.exist?("bin/#{@entrance}")
-                @memfs_entrance = "#{MEMFS}/local/bin/#{@entrance}"
-              else
-                if File.exist?("bin/#{File.basename(@entrance)}")
-                  @entrance = File.basename(@entrance)
-                  @memfs_entrance = "#{MEMFS}/local/bin/#{@entrance}"
-                else
-                  @utils.chdir('bin') do
-                    raise Error, "Cannot find entrance #{@entrance}, available entrances are #{ Dir['*'].join(', ') }."
-                  end
-                end
-              end
-            end
-          end
-        end
+
+        install_from_gemfile gemfiles.first
       elsif gems.size > 0
         raise 'Multiple gem files detected' unless 1 == gems.size
-        @pre_prepare_dir = File.join(@options[:tmpdir], '__pre_prepare__')
-        @utils.rm_rf(@pre_prepare_dir)
-        @utils.cp_r(@root, @pre_prepare_dir)
-        @utils.chdir(@pre_prepare_dir) do
-          log "-> Detected a gem file, trying to locally install the gem"
-          the_gem = gems.first
-          @utils.run(@local_toolchain, gem, "install", the_gem, '--no-document', '--install-dir', @gems_dir)
-          if File.exist?(File.join(@gems_dir, "bin/#{@entrance}"))
-            @memfs_entrance = "#{MEMFS}/lib/ruby/gems/#{self.class.ruby_api_version}/bin/#{@entrance}"
-          else
-            if File.exist?(File.join(@gems_dir, "bin/#{File.basename(@entrance)}"))
-              @entrance = File.basename(@entrance)
-              @memfs_entrance = "#{MEMFS}/lib/ruby/gems/#{self.class.ruby_api_version}/bin/#{@entrance}"
-            else
-              @utils.chdir(File.join(@gems_dir, "bin")) do
-                raise Error, "Cannot find entrance #{@entrance}, available entrances are #{ Dir['*'].join(', ') }."
-              end
-            end
-          end
-        end
-        @utils.rm_rf(@pre_prepare_dir)
+
+        install_from_gem gems.first
       else
-        @work_dir_local = File.join(@work_dir_inner, 'local')
-        @utils.cp_r(@root, @work_dir_local)
-        @utils.chdir(@work_dir_local) do
-          x = Pathname.new @entrance
-          y = Pathname.new @root
-          if x.absolute?
-            raise "Entrance #{@entrance} is not in the project root #{@root}" unless @entrance.include?(@root)
-            @entrance = x.relative_path_from y
-          end
-          if File.exist?("#{@entrance}")
-            @memfs_entrance = "#{MEMFS}/local/#{@entrance}"
-          else
-            @utils.chdir('bin') do
-              raise Error, "Cannot find entrance #{@entrance}"
-            end
-          end
-        end
+        install_from_local
       end
-      
+
       if @work_dir_local
         @utils.chdir(@work_dir_local) do
           if Dir.exist?('.git')
@@ -717,7 +780,7 @@ class Compiler
       prefix = @work_dir.size
       Find.find @work_dir do |path|
         path[0, prefix] = ''
-        log path
+        path
       end
 
       @utils.rm_f('enclose_io_memfs.squashfs')
