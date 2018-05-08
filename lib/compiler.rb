@@ -332,8 +332,8 @@ class Compiler
 
     log "=> Stuffing #{library}…"
 
-    @utils.chdir(target) do
-      @utils.capture_run_io "stuff_#{library}" do
+    @utils.capture_run_io "stuff_#{library}" do
+      @utils.chdir(target) do
         yield
       end
     end
