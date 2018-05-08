@@ -196,6 +196,8 @@ class Compiler
     end
 
     @utils.chdir(@work_dir_local) do
+      # installing with --binstubs is duplicated below.  We should probably
+      # flatten the nested if below and always install with --binstubs.
       @utils.run(@local_toolchain,
                  @bundle, "install",
                           "--deployment",
