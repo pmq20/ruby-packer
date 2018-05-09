@@ -152,6 +152,8 @@ class Compiler
   def build_ruby_pass_1_unix
     return if Dir.exist? @ruby_install_1
 
+    log "=> Building ruby phase 1"
+
     @compile_env['ENCLOSE_IO_RUBYC_1ST_PASS'] = '1'
     @compile_env['ENCLOSE_IO_RUBYC_2ND_PASS'] = nil
 
@@ -173,6 +175,8 @@ class Compiler
   def build_ruby_pass_1_windows
     return if Dir.exist? @ruby_install_1
 
+    log "=> Building ruby phase 1"
+
     @compile_env['ENCLOSE_IO_RUBYC_1ST_PASS'] = '1'
     @compile_env['ENCLOSE_IO_RUBYC_2ND_PASS'] = nil
 
@@ -189,6 +193,8 @@ class Compiler
   def build_ruby_pass_2_unix
     @compile_env['ENCLOSE_IO_RUBYC_1ST_PASS'] = nil
     @compile_env['ENCLOSE_IO_RUBYC_2ND_PASS'] = '1'
+
+    log "=> Building ruby phase 2"
 
     Dir.chdir(@build_pass_2) do
       baseruby = File.join(@ruby_install_1_bin, "ruby")
@@ -215,6 +221,8 @@ class Compiler
   def build_ruby_pass_2_windows
     @compile_env['ENCLOSE_IO_RUBYC_1ST_PASS'] = nil
     @compile_env['ENCLOSE_IO_RUBYC_2ND_PASS'] = '1'
+
+    log "=> Building ruby phase 2"
 
     Dir.chdir(@build_pass_2) do
       @utils.run(@compile_env,
