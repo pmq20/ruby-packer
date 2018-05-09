@@ -12,6 +12,7 @@ rubyc_deps = FileList[
   "vendor/**/*",
 ]
 
+desc "build rubyc"
 file "rubyc" => rubyc_deps do
   # don't include rubyc in rubyc
   rm_f "rubyc"
@@ -27,10 +28,12 @@ namespace "rubyc" do
     "ENCLOSE_IO_USE_ORIGINAL_RUBY"        => "1",
   }
 
+  desc "run irb from inside rubyc"
   task irb: "rubyc" do
     sh rubyc_original_ruby_env, "./rubyc", "/__enclose_io_memfs__/bin/irb"
   end
 
+  desc "run ruby -e from inside rubyc"
   task :ruby, [:e] => "rubyc" do |_, args|
     sh rubyc_original_ruby_env, "./rubyc", "-e", args[:e]
   end

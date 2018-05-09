@@ -128,6 +128,38 @@ ENTRANCE can be either a file path, or a "x" string as in bundle exec "x".
 	rubyc --gem=bundler --gem-version=1.15.4 bundle
 	./a.out (or a.exe on Windows)
 
+## Building rubyc yourself
+
+To build `rubyc` you must have a C compiler and the necessary toolchain to
+build ruby and the libraries stuffed inside rubyc which include at least:
+* gdbm
+* libffi
+* ncurses
+* openssl
+* readline
+* yaml
+* zlib
+
+If you are unsure if your toolchain is complete then trying to build `rubyc`
+will let you know you are missing something.  Unfortunately it may tell you
+with some unfamiliar message.  Please file an issue here if this occurs.
+
+Once your toolchain is set up run `bundle`.  To compile your own `rubyc` run:
+
+	bundle exec rake rubyc
+
+Or:
+
+	rm rubyc; ruby -Ilib bin/rubyc bin/rubyc -o rubyc
+
+Remember that rubyc includes all the files from the current directory in the
+built executable.  You must *delete the prior rubyc* or your squashfs will
+*continually grow larger* and the embedded squashfs *compile time will be
+very, very long*.
+
+If you make changes to the stuffed libraries or the compiler you may need to
+add the `--clean-tmpdir` argument to `rubyc` for a clean rebuild.
+
 ## See Also
 
 - [Libsquash](https://github.com/pmq20/libsquash): portable, user-land SquashFS that can be easily linked and embedded within your application.
