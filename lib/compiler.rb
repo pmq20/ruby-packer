@@ -251,7 +251,7 @@ class Compiler
     ENV.delete 'RUBYOPT'          # disable outside changes to ruby options
 
     log "=> ENV"
-    ENV.each do |name, value|
+    ENV.sort_by(&:first).each do |name, value|
       log "\t#{@utils.escape name} => #{@utils.escape value}"
     end
   end
