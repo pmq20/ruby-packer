@@ -857,13 +857,6 @@ class Compiler
   def make_enclose_io_memfs
     @utils.chdir(@ruby_source_dir) do
       log "=> making squashfs"
-      log "=> squashfs contents"
-
-      prefix = @work_dir.size
-      Find.find @work_dir do |path|
-        path[0, prefix] = ''
-        log path
-      end
 
       @utils.rm_f('enclose_io_memfs.squashfs')
       @utils.rm_f('enclose_io_memfs.c')
