@@ -237,6 +237,25 @@ class Compiler
     end
   end
 
+  ##
+  # Remove ruby, bundler, and gem environment variables.  The ruby we build in
+  # the first pass will install files in the correct places.
+
+  def clean_env
+    ENV.delete 'BUNDLE_BIN_PATH'  # disable loading outside bundler
+    ENV.delete 'BUNDLE_GEMFILE'   # disable loading outside bundler
+    ENV.delete 'GEM_HOME'         # use default gem install location
+    ENV.delete 'GEM_PATH'         # use default installed gem locations
+    ENV.delete 'RUBYGEMS_GEMDEPS' # disable loading outside gems
+    ENV.delete 'RUBYLIB'          # disable outside changes to $LOAD_PATH
+    ENV.delete 'RUBYOPT'          # disable outside changes to ruby options
+
+    log "=> ENV"
+    ENV.each do |name, value|
+      log "\t#{@utils.escape name} => #{@utils.escape value}"
+    end
+  end
+
   def copy_ruby_source
     return if Dir.exist? @ruby_source_dir
 
@@ -268,8 +287,7 @@ class Compiler
     @utils.chdir(@pre_prepare_dir) do
       @utils.run(@local_toolchain,
                  @gem, "install", gem,
-                       "--no-document",
-                       "--install-dir", @gems_dir)
+                       "--no-document")
 
       if File.exist?(File.join(@gems_dir, "bin/#{@entrance}"))
         @memfs_entrance = "#{MEMFS}/lib/ruby/gems/#{self.class.ruby_api_version}/bin/#{@entrance}"
@@ -293,8 +311,7 @@ class Compiler
 
     @utils.run(@local_toolchain,
                @gem, "install", @the_bundler_gem,
-                     "--no-document",
-                     "--bindir", @ruby_install_1_bin)
+                     "--no-document")
 
     @work_dir_local = File.join(@work_dir_inner, "local")
 
@@ -365,8 +382,7 @@ class Compiler
       if gemfiles.size > 0
         @utils.run(@local_toolchain,
                    @gem, "install", @the_bundler_gem,
-                         "--no-document",
-                         "--bindir", @ruby_install_1_bin)
+                         "--no-document")
 
         @utils.run(@local_toolchain,
                    @bundle, "install")
@@ -383,8 +399,7 @@ class Compiler
 
       @utils.run(@local_toolchain,
                  @gem, "install", gem,
-                      "--no-document",
-                      "--bindir", @ruby_install_1_bin)
+                      "--no-document")
 
       if File.exist?(File.join(@gems_dir, "bin/#{@entrance}"))
         @memfs_entrance = "#{MEMFS}/lib/ruby/gems/#{self.class.ruby_api_version}/bin/#{@entrance}"
@@ -621,6 +636,8 @@ class Compiler
   end
 
   def run!
+    clean_env
+
     stuff_tmpdir
 
     @build_pass_1 = File.join(@options[:tmpdir], 'build_pass_1')
@@ -780,8 +797,6 @@ class Compiler
     @local_toolchain = {
       'CI' => 'true',
       'PATH' => @path_env,
-      'GEM_HOME' => @gems_dir,
-      'GEM_PATH' => @gems_dir,
       'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1',
       'ENCLOSE_IO_RUBYC_1ST_PASS' => '1',
       'ENCLOSE_IO_RUBYC_2ND_PASS' => nil
@@ -799,6 +814,9 @@ class Compiler
 
       @gem    = File.join(@ruby_install_1_bin, "gem")
       @bundle = File.join(@ruby_install_1_bin, "bundle")
+
+      log "=> gem env"
+      @utils.run @local_toolchain, @gem, "env"
 
       if gemspecs.size > 0
         raise "Multiple gemspecs detected" unless 1 == gemspecs.size
