@@ -992,23 +992,27 @@ class Compiler
     end
   end
 
+  ##
+  # When you change the output here remember to change libsquash's
+  # sample/enclose_io_memfs.c as well
+
   def squashfs_to_c(squashfs_file, c_file)
-    bytes = IO.binread(squashfs_file).bytes
-    # TODO slow operation
-    # remember to change libsquash's sample/enclose_io_memfs.c as well
-    File.open(c_file, "w") do |f|
-      f.puts '#include <stdint.h>'
-      f.puts '#include <stddef.h>'
-      f.puts ''
-      f.puts "const uint8_t enclose_io_memfs[#{bytes.size}] = { #{bytes[0]}"
-      i = 1
-      while i < bytes.size
-        f.print ','
-        f.puts bytes[(i)..(i + 100)].join(',')
-        i += 101
+    File.open squashfs_file, "rb" do |squashfs|
+      File.open(c_file, "w") do |c|
+        c.puts "#include <stdint.h>"
+        c.puts "#include <stddef.h>"
+        c.puts
+
+        byte = squashfs.read(1).bytes.first
+        c.puts "const uint8_t enclose_io_memfs[#{squashfs.size}] = { #{byte}"
+
+        while chunk = squashfs.read(101)
+          c.puts ",#{chunk.bytes.join ","}"
+        end
+
+        c.puts "};"
+        c.puts
       end
-      f.puts '};'
-      f.puts ''
     end
   end
 end
