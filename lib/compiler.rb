@@ -803,7 +803,7 @@ class Compiler
       if gemspecs.size > 0
         raise "Multiple gemspecs detected" unless 1 == gemspecs.size
 
-        install_from_gem gemspec.first, gemfiles
+        install_from_gemspec gemspec.first, gemfiles
       elsif gemfiles.size > 0
         raise 'Multiple Gemfiles detected' unless 1 == gemfiles.size
 
