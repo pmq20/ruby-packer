@@ -862,23 +862,8 @@ class Compiler
       @utils.rm_f('enclose_io_memfs.c')
       @utils.run("mksquashfs", "-version")
       @utils.run("mksquashfs", @work_dir, "enclose_io_memfs.squashfs")
-      bytes = IO.binread('enclose_io_memfs.squashfs').bytes
-      # TODO slow operation
-      # remember to change libsquash's sample/enclose_io_memfs.c as well
-      File.open("enclose_io_memfs.c", "w") do |f|
-        f.puts '#include <stdint.h>'
-        f.puts '#include <stddef.h>'
-        f.puts ''
-        f.puts "const uint8_t enclose_io_memfs[#{bytes.size}] = { #{bytes[0]}"
-        i = 1
-        while i < bytes.size
-          f.print ','
-          f.puts bytes[(i)..(i + 100)].join(',')
-          i += 101
-        end
-        f.puts '};'
-        f.puts ''
-      end
+
+      squashfs_to_c "enclose_io_memfs.squashfs", "enclose_io_memfs.c"
       log "=> squashfs complete"
     end
   end
@@ -1004,6 +989,26 @@ class Compiler
         'CFLAGS' => @cflags,
         'LDFLAGS' => @ldflags
       }
+    end
+  end
+
+  def squashfs_to_c(squashfs_file, c_file)
+    bytes = IO.binread(squashfs_file).bytes
+    # TODO slow operation
+    # remember to change libsquash's sample/enclose_io_memfs.c as well
+    File.open(c_file, "w") do |f|
+      f.puts '#include <stdint.h>'
+      f.puts '#include <stddef.h>'
+      f.puts ''
+      f.puts "const uint8_t enclose_io_memfs[#{bytes.size}] = { #{bytes[0]}"
+      i = 1
+      while i < bytes.size
+        f.print ','
+        f.puts bytes[(i)..(i + 100)].join(',')
+        i += 101
+      end
+      f.puts '};'
+      f.puts ''
     end
   end
 end
