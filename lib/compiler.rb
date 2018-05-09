@@ -776,22 +776,14 @@ class Compiler
   def prepare_work_dir
     # Prepare /__enclose_io_memfs__
     @work_dir = File.join(@options[:tmpdir], 'rubyc_work_dir')
-    unless @options[:keep_tmpdir]
-      @utils.rm_rf(@work_dir)
-      @utils.mkdir_p(@work_dir)
-    end
-    
+    @utils.rm_rf(@work_dir) unless @options[:keep_tmpdir]
+    @utils.mkdir_p(@work_dir)
+
     @work_dir_inner = File.join(@work_dir, '__enclose_io_memfs__')
-    
-    unless @options[:keep_tmpdir]
-      @utils.cp_r(@ruby_install_1, @work_dir_inner, preserve: true)
+    @utils.mkdir @work_dir_inner
 
-      Dir["#{@work_dir_inner}/**/*.{a,dylib,so,dll,lib,bundle}"].each do |thisdl|
-        @utils.rm_f(thisdl)
-      end
-    end
-
-    @gems_dir = File.join(@work_dir_inner, "lib/ruby/gems/#{self.class.ruby_api_version}")
+    @gems_dir =
+      File.join(@ruby_install_1, "lib", "ruby", "gems", self.class.ruby_api_version)
 
     @path_env = "#{File.join(@ruby_install_1, 'bin')}:#{ENV['PATH']}"
     @local_toolchain = {
@@ -850,7 +842,15 @@ class Compiler
           end
         end
       end
+
       @utils.rm_rf(File.join(@gems_dir, 'cache'))
+    end
+
+    sources = Dir[File.join(@ruby_install_1, '*')]
+    @utils.cp_r(sources, @work_dir_inner, preserve: true)
+
+    Dir["#{@work_dir_inner}/**/*.{a,dylib,so,dll,lib,bundle}"].each do |thisdl|
+      @utils.rm_f(thisdl)
     end
   end
 
