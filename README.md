@@ -123,6 +123,10 @@ ENTRANCE can be either a file path, or a "x" string as in bundle exec "x".
 	rubyc bin/rails
 	./a.out server (or a.exe server on Windows)
 
+Note that some gems that use C extensions that use libc IO to load files from
+your Rails application will not work with rubyc.  Notably, [bootsnap will not
+work with rubyc](https://github.com/pmq20/ruby-packer/issues/30#issuecomment-387893082).
+
 ### Compiling a Gem
 
 	rubyc --gem=bundler --gem-version=1.15.4 bundle
