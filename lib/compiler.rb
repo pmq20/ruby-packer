@@ -109,6 +109,7 @@ class Compiler
     @options[:output] = File.expand_path(@options[:output])
     @options[:tmpdir] ||= File.expand_path("rubyc", Dir.tmpdir)
     @options[:tmpdir] = File.expand_path(@options[:tmpdir])
+    @options[:ignore_file].concat(File.readlines('.rubycignore').map(&:strip)) if File.exists?('.rubycignore')
 
     if @options[:auto_update_url] || @options[:auto_update_base]
       unless @options[:auto_update_url].length > 0 && @options[:auto_update_base].length > 0
