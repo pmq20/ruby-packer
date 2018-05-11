@@ -96,6 +96,7 @@ ENTRANCE can be either a file path, or a "x" string as in bundle exec "x".
           --auto-update-url=URL        Enables auto-update and specifies the URL to get the latest version
           --auto-update-base=STRING    Enables auto-update and specifies the base version string
           --debug                      Enable debug mode
+      -i, --ignore-file                Ignore file(s) from build
       -v, --version                    Prints the version of rubyc and exit
           --ruby-version               Prints the version of the Ruby runtime and exit
           --ruby-api-version           Prints the version of the Ruby API and exit
