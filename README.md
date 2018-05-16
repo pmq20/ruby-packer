@@ -91,6 +91,7 @@ ENTRANCE can be either a file path, or a "x" string as in bundle exec "x".
       -d, --tmpdir=DIR                 The directory for temporary files
       -c, --clean-tmpdir               Cleans temporary files before compiling
           --keep-tmpdir                Keeps all temporary files that were generated last time
+          --openssl-dir                The path to openssl
           --make-args=ARGS             Extra arguments to be passed to make
           --nmake-args=ARGS            Extra arguments to be passed to nmake
           --auto-update-url=URL        Enables auto-update and specifies the URL to get the latest version
@@ -101,6 +102,15 @@ ENTRANCE can be either a file path, or a "x" string as in bundle exec "x".
           --ruby-api-version           Prints the version of the Ruby API and exit
       -h, --help                       Prints this help and exit
 
+### Openssl
+
+rubyc compiles its own version of openssl without any certifications.
+To be able to use ssl with rubyc it should know where to find the certifications.
+
+By default this path is set to `/usr/local/etc/openssl/` but can be overridden using the `--openssl-dir` argument.
+
+Keep in mind that users running your compiled package should have their certifications
+present in this directory as well.
 
 ## Examples
 

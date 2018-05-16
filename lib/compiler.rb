@@ -109,6 +109,7 @@ class Compiler
     @options[:output] = File.expand_path(@options[:output])
     @options[:tmpdir] ||= File.expand_path("rubyc", Dir.tmpdir)
     @options[:tmpdir] = File.expand_path(@options[:tmpdir])
+    @options[:openssl_dir] ||= '/usr/local/etc/openssl/'
 
     if @options[:auto_update_url] || @options[:auto_update_base]
       unless @options[:auto_update_url].length > 0 && @options[:auto_update_base].length > 0
@@ -508,7 +509,7 @@ class Compiler
       @utils.run(@compile_env,
                  "./config",
                  "no-shared",
-                 "--openssldir=/etc/ssl",
+                 "--openssldir=#{@options[:openssl_dir]}",
                  "--prefix=#{@local_build}")
       @utils.run(@compile_env, "make #{@options[:make_args]}")
       @utils.run(@compile_env, "make install_sw")
