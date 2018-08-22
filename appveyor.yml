@@ -1,5 +1,7 @@
 version: '{build}'
 
+image: Visual Studio 2015
+
 build_script:
 - ps: |
     $ErrorActionPreference="Stop"
@@ -16,7 +18,7 @@ test_script:
 - cmd: |
     dir C:\
 
-    set PATH=C:\Ruby241\bin;C:\projects\usr\bin;%PATH%
+    set PATH=C:\Ruby24-x64\bin;C:\projects\usr\bin;%PATH%
 
     call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" amd64_x86
 
@@ -32,10 +34,13 @@ test_script:
 
     gem --version
 
-    gem install C:\projects\ruby-compiler\ruby\gems\bundler-*.gem --force --local --no-rdoc --no-ri 
+    gem install bundler --no-rdoc --no-ri
 
     where bundle
 
     bundle --version
 
-    ruby tests\ruby-compiler
+    bundle
+
+    bundle exec rake test
+
