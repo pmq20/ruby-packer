@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2016 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2018 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the OpenSSL license (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -21,9 +21,7 @@
 #ifdef OPENSSL_SYS_VMS
 # include <unixio.h>
 #endif
-#ifndef NO_SYS_TYPES_H
-# include <sys/types.h>
-#endif
+#include <sys/types.h>
 #ifndef OPENSSL_NO_POSIX_IO
 # include <sys/stat.h>
 # include <fcntl.h>
@@ -316,14 +314,9 @@ const char *RAND_file_name(char *buf, size_t size)
         }
     }
 #else
-    if (OPENSSL_issetugid() != 0) {
+    if ((s = ossl_safe_getenv("RANDFILE")) == NULL || *s == '\0') {
         use_randfile = 0;
-    } else {
-        s = getenv("RANDFILE");
-        if (s == NULL || *s == '\0') {
-            use_randfile = 0;
-            s = getenv("HOME");
-        }
+        s = ossl_safe_getenv("HOME");
     }
 #endif
 #ifdef DEFAULT_HOME

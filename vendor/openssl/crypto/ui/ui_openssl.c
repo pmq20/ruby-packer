@@ -1,5 +1,5 @@
 /*
- * Copyright 2001-2016 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2001-2018 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the OpenSSL license (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -201,6 +201,18 @@ static UI_METHOD ui_openssl = {
     close_console,
     NULL
 };
+
+static const UI_METHOD *default_UI_meth = &ui_openssl;
+
+void UI_set_default_method(const UI_METHOD *meth)
+{
+    default_UI_meth = meth;
+}
+
+const UI_METHOD *UI_get_default_method(void)
+{
+    return default_UI_meth;
+}
 
 /* The method with all the built-in thingies */
 UI_METHOD *UI_OpenSSL(void)
@@ -424,6 +436,24 @@ static int open_console(UI *ui)
             is_a_tty = 0;
         else
 # endif
+# ifdef ENXIO
+            /*
+             * Solaris can return ENXIO.
+             * This should be ok
+             */
+        if (errno == ENXIO)
+            is_a_tty = 0;
+        else
+# endif
+# ifdef EIO
+            /*
+             * Linux can return EIO.
+             * This should be ok
+             */
+        if (errno == EIO)
+            is_a_tty = 0;
+        else
+# endif
 # ifdef ENODEV
             /*
              * MacOS X returns ENODEV (Operation not supported by device),
@@ -512,17 +542,13 @@ static int echo_console(UI *ui)
 {
 #if defined(TTY_set) && !defined(OPENSSL_SYS_VMS)
     memcpy(&(tty_new), &(tty_orig), sizeof(tty_orig));
-    tty_new.TTY_FLAGS |= ECHO;
-#endif
-
-#if defined(TTY_set) && !defined(OPENSSL_SYS_VMS)
     if (is_a_tty && (TTY_set(fileno(tty_in), &tty_new) == -1))
         return 0;
 #endif
 #ifdef OPENSSL_SYS_VMS
     if (is_a_tty) {
         tty_new[0] = tty_orig[0];
-        tty_new[1] = tty_orig[1] & ~TT$M_NOECHO;
+        tty_new[1] = tty_orig[1];
         tty_new[2] = tty_orig[2];
         status = sys$qiow(0, channel, IO$_SETMODE, &iosb, 0, 0, tty_new, 12,
                           0, 0, 0, 0);
@@ -543,7 +569,6 @@ static int echo_console(UI *ui)
 #if defined(_WIN32) && !defined(_WIN32_WCE)
     if (is_a_tty) {
         tty_new = tty_orig;
-        tty_new |= ENABLE_ECHO_INPUT;
         SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), tty_new);
     }
 #endif

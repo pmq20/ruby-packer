@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2016 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2018 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the OpenSSL license (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -265,6 +265,21 @@ int ossl_statem_client_read_transition(SSL *s, int mt)
 
  err:
     /* No valid transition found */
+    if (SSL_IS_DTLS(s) && mt == SSL3_MT_CHANGE_CIPHER_SPEC) {
+        BIO *rbio;
+
+        /*
+         * CCS messages don't have a message sequence number so this is probably
+         * because of an out-of-order CCS. We'll just drop it.
+         */
+        s->init_num = 0;
+        s->rwstate = SSL_READING;
+        rbio = SSL_get_rbio(s);
+        BIO_clear_retry_flags(rbio);
+        BIO_set_retry_read(rbio);
+        return 0;
+    }
+    ossl_statem_set_error(s);
     ssl3_send_alert(s, SSL3_AL_FATAL, SSL3_AD_UNEXPECTED_MESSAGE);
     SSLerr(SSL_F_OSSL_STATEM_CLIENT_READ_TRANSITION, SSL_R_UNEXPECTED_MESSAGE);
     return 0;
@@ -935,7 +950,7 @@ MSG_PROCESS_RETURN tls_process_server_hello(SSL *s, PACKET *pkt)
         goto f_err;
     }
     session_id_len = PACKET_remaining(&session_id);
-    if (session_id_len > sizeof s->session->session_id
+    if (session_id_len > sizeof(s->session->session_id)
         || session_id_len > SSL3_SESSION_ID_SIZE) {
         al = SSL_AD_ILLEGAL_PARAMETER;
         SSLerr(SSL_F_TLS_PROCESS_SERVER_HELLO, SSL_R_SSL3_SESSION_ID_TOO_LONG);
@@ -1038,7 +1053,7 @@ MSG_PROCESS_RETURN tls_process_server_hello(SSL *s, PACKET *pkt)
      * If it is a disabled cipher we either didn't send it in client hello,
      * or it's not allowed for the selected protocol. So we return an error.
      */
-    if (ssl_cipher_disabled(s, c, SSL_SECOP_CIPHER_CHECK)) {
+    if (ssl_cipher_disabled(s, c, SSL_SECOP_CIPHER_CHECK, 1)) {
         al = SSL_AD_ILLEGAL_PARAMETER;
         SSLerr(SSL_F_TLS_PROCESS_SERVER_HELLO, SSL_R_WRONG_CIPHER_RETURNED);
         goto f_err;
@@ -1244,9 +1259,6 @@ MSG_PROCESS_RETURN tls_process_server_certificate(SSL *s, PACKET *pkt)
      */
     x = sk_X509_value(sk, 0);
     sk = NULL;
-    /*
-     * VRS 19990621: possible memory leak; sk=null ==> !sk_pop_free() @end
-     */
 
     pkey = X509_get0_pubkey(x);
 
@@ -2919,7 +2931,7 @@ int ssl_cipher_list_to_bytes(SSL *s, STACK_OF(SSL_CIPHER) *sk, unsigned char *p)
     for (i = 0; i < sk_SSL_CIPHER_num(sk); i++) {
         c = sk_SSL_CIPHER_value(sk, i);
         /* Skip disabled ciphers */
-        if (ssl_cipher_disabled(s, c, SSL_SECOP_CIPHER_SUPPORTED))
+        if (ssl_cipher_disabled(s, c, SSL_SECOP_CIPHER_SUPPORTED, 0))
             continue;
         j = s->method->put_cipher_by_char(c, p);
         p += j;

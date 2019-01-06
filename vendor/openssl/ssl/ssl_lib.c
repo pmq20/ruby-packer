@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2016 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2018 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the OpenSSL license (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -54,28 +54,82 @@
 
 const char SSL_version_str[] = OPENSSL_VERSION_TEXT;
 
+static int ssl_undefined_function_1(SSL *ssl, SSL3_RECORD *r, unsigned int s,
+                                    int t)
+{
+    (void)r;
+    (void)s;
+    (void)t;
+    return ssl_undefined_function(ssl);
+}
+
+static int ssl_undefined_function_2(SSL *ssl, SSL3_RECORD *r, unsigned char *s,
+                                    int t)
+{
+    (void)r;
+    (void)s;
+    (void)t;
+    return ssl_undefined_function(ssl);
+}
+
+static int ssl_undefined_function_3(SSL *ssl, unsigned char *r,
+                                    unsigned char *s, int t)
+{
+    (void)r;
+    (void)s;
+    (void)t;
+    return ssl_undefined_function(ssl);
+}
+
+static int ssl_undefined_function_4(SSL *ssl, int r)
+{
+    (void)r;
+    return ssl_undefined_function(ssl);
+}
+
+static int ssl_undefined_function_5(SSL *ssl, const char *r, int s,
+                                    unsigned char *t)
+{
+    (void)r;
+    (void)s;
+    (void)t;
+    return ssl_undefined_function(ssl);
+}
+
+static int ssl_undefined_function_6(int r)
+{
+    (void)r;
+    return ssl_undefined_function(NULL);
+}
+
+static int ssl_undefined_function_7(SSL *ssl, unsigned char *r, size_t s,
+                                    const char *t, size_t u,
+                                    const unsigned char *v, size_t w, int x)
+{
+    (void)r;
+    (void)s;
+    (void)t;
+    (void)u;
+    (void)v;
+    (void)w;
+    (void)x;
+    return ssl_undefined_function(ssl);
+}
+
 SSL3_ENC_METHOD ssl3_undef_enc_method = {
-    /*
-     * evil casts, but these functions are only called if there's a library
-     * bug
-     */
-    (int (*)(SSL *, SSL3_RECORD *, unsigned int, int))ssl_undefined_function,
-    (int (*)(SSL *, SSL3_RECORD *, unsigned char *, int))ssl_undefined_function,
+    ssl_undefined_function_1,
+    ssl_undefined_function_2,
     ssl_undefined_function,
-    (int (*)(SSL *, unsigned char *, unsigned char *, int))
-        ssl_undefined_function,
-    (int (*)(SSL *, int))ssl_undefined_function,
-    (int (*)(SSL *, const char *, int, unsigned char *))
-        ssl_undefined_function,
+    ssl_undefined_function_3,
+    ssl_undefined_function_4,
+    ssl_undefined_function_5,
     0,                          /* finish_mac_length */
     NULL,                       /* client_finished_label */
     0,                          /* client_finished_label_len */
     NULL,                       /* server_finished_label */
     0,                          /* server_finished_label_len */
-    (int (*)(int))ssl_undefined_function,
-    (int (*)(SSL *, unsigned char *, size_t, const char *,
-             size_t, const unsigned char *, size_t,
-             int use_context))ssl_undefined_function,
+    ssl_undefined_function_6,
+    ssl_undefined_function_7,
 };
 
 struct ssl_async_args {
@@ -266,7 +320,7 @@ static const EVP_MD *tlsa_md_get(SSL_DANE *dane, uint8_t mtype)
 static int dane_tlsa_add(SSL_DANE *dane,
                          uint8_t usage,
                          uint8_t selector,
-                         uint8_t mtype, unsigned char *data, size_t dlen)
+                         uint8_t mtype, unsigned const char *data, size_t dlen)
 {
     danetls_record *t;
     const EVP_MD *md = NULL;
@@ -432,6 +486,105 @@ static int dane_tlsa_add(SSL_DANE *dane,
     return 1;
 }
 
+/*
+ * Return 0 if there is only one version configured and it was disabled
+ * at configure time.  Return 1 otherwise.
+ */
+static int ssl_check_allowed_versions(int min_version, int max_version)
+{
+    int minisdtls = 0, maxisdtls = 0;
+
+    /* Figure out if we're doing DTLS versions or TLS versions */
+    if (min_version == DTLS1_BAD_VER
+        || min_version >> 8 == DTLS1_VERSION_MAJOR)
+        minisdtls = 1;
+    if (max_version == DTLS1_BAD_VER
+        || max_version >> 8 == DTLS1_VERSION_MAJOR)
+        maxisdtls = 1;
+    /* A wildcard version of 0 could be DTLS or TLS. */
+    if ((minisdtls && !maxisdtls && max_version != 0)
+        || (maxisdtls && !minisdtls && min_version != 0)) {
+        /* Mixing DTLS and TLS versions will lead to sadness; deny it. */
+        return 0;
+    }
+
+    if (minisdtls || maxisdtls) {
+        /* Do DTLS version checks. */
+        if (min_version == 0)
+            /* Ignore DTLS1_BAD_VER */
+            min_version = DTLS1_VERSION;
+        if (max_version == 0)
+            max_version = DTLS1_2_VERSION;
+#ifdef OPENSSL_NO_DTLS1_2
+        if (max_version == DTLS1_2_VERSION)
+            max_version = DTLS1_VERSION;
+#endif
+#ifdef OPENSSL_NO_DTLS1
+        if (min_version == DTLS1_VERSION)
+            min_version = DTLS1_2_VERSION;
+#endif
+	/* Done massaging versions; do the check. */
+	if (0
+#ifdef OPENSSL_NO_DTLS1
+            || (DTLS_VERSION_GE(min_version, DTLS1_VERSION)
+                && DTLS_VERSION_GE(DTLS1_VERSION, max_version))
+#endif
+#ifdef OPENSSL_NO_DTLS1_2
+            || (DTLS_VERSION_GE(min_version, DTLS1_2_VERSION)
+                && DTLS_VERSION_GE(DTLS1_2_VERSION, max_version))
+#endif
+            )
+            return 0;
+    } else {
+        /* Regular TLS version checks. */
+	if (min_version == 0)
+	    min_version = SSL3_VERSION;
+	if (max_version == 0)
+	    max_version = TLS1_2_VERSION;
+#ifdef OPENSSL_NO_TLS1_2
+	if (max_version == TLS1_2_VERSION)
+	    max_version = TLS1_1_VERSION;
+#endif
+#ifdef OPENSSL_NO_TLS1_1
+	if (max_version == TLS1_1_VERSION)
+	    max_version = TLS1_VERSION;
+#endif
+#ifdef OPENSSL_NO_TLS1
+	if (max_version == TLS1_VERSION)
+	    max_version = SSL3_VERSION;
+#endif
+#ifdef OPENSSL_NO_SSL3
+	if (min_version == SSL3_VERSION)
+	    min_version = TLS1_VERSION;
+#endif
+#ifdef OPENSSL_NO_TLS1
+	if (min_version == TLS1_VERSION)
+	    min_version = TLS1_1_VERSION;
+#endif
+#ifdef OPENSSL_NO_TLS1_1
+	if (min_version == TLS1_1_VERSION)
+	    min_version = TLS1_2_VERSION;
+#endif
+	/* Done massaging versions; do the check. */
+	if (0
+#ifdef OPENSSL_NO_SSL3
+            || (min_version <= SSL3_VERSION && SSL3_VERSION <= max_version)
+#endif
+#ifdef OPENSSL_NO_TLS1
+            || (min_version <= TLS1_VERSION && TLS1_VERSION <= max_version)
+#endif
+#ifdef OPENSSL_NO_TLS1_1
+            || (min_version <= TLS1_1_VERSION && TLS1_1_VERSION <= max_version)
+#endif
+#ifdef OPENSSL_NO_TLS1_2
+            || (min_version <= TLS1_2_VERSION && TLS1_2_VERSION <= max_version)
+#endif
+            )
+            return 0;
+    }
+    return 1;
+}
+
 static void clear_ciphers(SSL *s)
 {
     /* clear the current cipher */
@@ -570,7 +723,7 @@ SSL *SSL_new(SSL_CTX *ctx)
     s->verify_mode = ctx->verify_mode;
     s->not_resumable_session_cb = ctx->not_resumable_session_cb;
     s->sid_ctx_length = ctx->sid_ctx_length;
-    OPENSSL_assert(s->sid_ctx_length <= sizeof s->sid_ctx);
+    OPENSSL_assert(s->sid_ctx_length <= sizeof(s->sid_ctx));
     memcpy(&s->sid_ctx, &ctx->sid_ctx, sizeof(s->sid_ctx));
     s->verify_callback = ctx->default_verify_callback;
     s->generate_session_id = ctx->generate_session_id;
@@ -694,7 +847,7 @@ int SSL_up_ref(SSL *s)
 int SSL_CTX_set_session_id_context(SSL_CTX *ctx, const unsigned char *sid_ctx,
                                    unsigned int sid_ctx_len)
 {
-    if (sid_ctx_len > sizeof ctx->sid_ctx) {
+    if (sid_ctx_len > sizeof(ctx->sid_ctx)) {
         SSLerr(SSL_F_SSL_CTX_SET_SESSION_ID_CONTEXT,
                SSL_R_SSL_SESSION_ID_CONTEXT_TOO_LONG);
         return 0;
@@ -747,7 +900,7 @@ int SSL_has_matching_session_id(const SSL *ssl, const unsigned char *id,
      */
     SSL_SESSION r, *p;
 
-    if (id_len > sizeof r.session_id)
+    if (id_len > sizeof(r.session_id))
         return 0;
 
     r.ssl_version = ssl->version;
@@ -923,7 +1076,7 @@ SSL_DANE *SSL_get0_dane(SSL *s)
 }
 
 int SSL_dane_tlsa_add(SSL *s, uint8_t usage, uint8_t selector,
-                      uint8_t mtype, unsigned char *data, size_t dlen)
+                      uint8_t mtype, unsigned const char *data, size_t dlen)
 {
     return dane_tlsa_add(&s->dane, usage, selector, mtype, data, dlen);
 }
@@ -1640,6 +1793,11 @@ int SSL_shutdown(SSL *s)
 
 int SSL_renegotiate(SSL *s)
 {
+    if ((s->options & SSL_OP_NO_RENEGOTIATION)) {
+        SSLerr(SSL_F_SSL_RENEGOTIATE, SSL_R_NO_RENEGOTIATION);
+        return 0;
+    }
+
     if (s->renegotiate == 0)
         s->renegotiate = 1;
 
@@ -1650,6 +1808,11 @@ int SSL_renegotiate(SSL *s)
 
 int SSL_renegotiate_abbreviated(SSL *s)
 {
+    if ((s->options & SSL_OP_NO_RENEGOTIATION)) {
+        SSLerr(SSL_F_SSL_RENEGOTIATE_ABBREVIATED, SSL_R_NO_RENEGOTIATION);
+        return 0;
+    }
+
     if (s->renegotiate == 0)
         s->renegotiate = 1;
 
@@ -1739,11 +1902,17 @@ long SSL_ctrl(SSL *s, int cmd, long larg, void *parg)
         else
             return 0;
     case SSL_CTRL_SET_MIN_PROTO_VERSION:
-        return ssl_set_version_bound(s->ctx->method->version, (int)larg,
-                                     &s->min_proto_version);
+        return ssl_check_allowed_versions(larg, s->max_proto_version)
+               && ssl_set_version_bound(s->ctx->method->version, (int)larg,
+                                        &s->min_proto_version);
+    case SSL_CTRL_GET_MIN_PROTO_VERSION:
+        return s->min_proto_version;
     case SSL_CTRL_SET_MAX_PROTO_VERSION:
-        return ssl_set_version_bound(s->ctx->method->version, (int)larg,
-                                     &s->max_proto_version);
+        return ssl_check_allowed_versions(s->min_proto_version, larg)
+               && ssl_set_version_bound(s->ctx->method->version, (int)larg,
+                                        &s->max_proto_version);
+    case SSL_CTRL_GET_MAX_PROTO_VERSION:
+        return s->max_proto_version;
     default:
         return (s->method->ssl_ctrl(s, cmd, larg, parg));
     }
@@ -1869,11 +2038,17 @@ long SSL_CTX_ctrl(SSL_CTX *ctx, int cmd, long larg, void *parg)
     case SSL_CTRL_CLEAR_CERT_FLAGS:
         return (ctx->cert->cert_flags &= ~larg);
     case SSL_CTRL_SET_MIN_PROTO_VERSION:
-        return ssl_set_version_bound(ctx->method->version, (int)larg,
-                                     &ctx->min_proto_version);
+        return ssl_check_allowed_versions(larg, ctx->max_proto_version)
+               && ssl_set_version_bound(ctx->method->version, (int)larg,
+                                        &ctx->min_proto_version);
+    case SSL_CTRL_GET_MIN_PROTO_VERSION:
+        return ctx->min_proto_version;
     case SSL_CTRL_SET_MAX_PROTO_VERSION:
-        return ssl_set_version_bound(ctx->method->version, (int)larg,
-                                     &ctx->max_proto_version);
+        return ssl_check_allowed_versions(ctx->min_proto_version, larg)
+               && ssl_set_version_bound(ctx->method->version, (int)larg,
+                                        &ctx->max_proto_version);
+    case SSL_CTRL_GET_MAX_PROTO_VERSION:
+        return ctx->max_proto_version;
     default:
         return (ctx->method->ssl_ctx_ctrl(ctx, cmd, larg, parg));
     }
@@ -1944,7 +2119,7 @@ STACK_OF(SSL_CIPHER) *SSL_get1_supported_ciphers(SSL *s)
     ssl_set_client_disabled(s);
     for (i = 0; i < sk_SSL_CIPHER_num(ciphers); i++) {
         const SSL_CIPHER *c = sk_SSL_CIPHER_value(ciphers, i);
-        if (!ssl_cipher_disabled(s, c, SSL_SECOP_CIPHER_SUPPORTED)) {
+        if (!ssl_cipher_disabled(s, c, SSL_SECOP_CIPHER_SUPPORTED, 0)) {
             if (!sk)
                 sk = sk_SSL_CIPHER_new_null();
             if (!sk)
@@ -2038,28 +2213,37 @@ int SSL_set_cipher_list(SSL *s, const char *str)
     return 1;
 }
 
-char *SSL_get_shared_ciphers(const SSL *s, char *buf, int len)
+char *SSL_get_shared_ciphers(const SSL *s, char *buf, int size)
 {
     char *p;
-    STACK_OF(SSL_CIPHER) *sk;
+    STACK_OF(SSL_CIPHER) *clntsk, *srvrsk;
     const SSL_CIPHER *c;
     int i;
 
-    if ((s->session == NULL) || (s->session->ciphers == NULL) || (len < 2))
-        return (NULL);
-
-    p = buf;
-    sk = s->session->ciphers;
-
-    if (sk_SSL_CIPHER_num(sk) == 0)
+    if (!s->server
+            || s->session == NULL
+            || s->session->ciphers == NULL
+            || size < 2)
         return NULL;
 
-    for (i = 0; i < sk_SSL_CIPHER_num(sk); i++) {
+    p = buf;
+    clntsk = s->session->ciphers;
+    srvrsk = SSL_get_ciphers(s);
+    if (clntsk == NULL || srvrsk == NULL)
+        return NULL;
+
+    if (sk_SSL_CIPHER_num(clntsk) == 0 || sk_SSL_CIPHER_num(srvrsk) == 0)
+        return NULL;
+
+    for (i = 0; i < sk_SSL_CIPHER_num(clntsk); i++) {
         int n;
 
-        c = sk_SSL_CIPHER_value(sk, i);
+        c = sk_SSL_CIPHER_value(clntsk, i);
+        if (sk_SSL_CIPHER_find(srvrsk, c) < 0)
+            continue;
+
         n = strlen(c->name);
-        if (n + 1 > len) {
+        if (n + 1 > size) {
             if (p != buf)
                 --p;
             *p = '\0';
@@ -2068,7 +2252,7 @@ char *SSL_get_shared_ciphers(const SSL *s, char *buf, int len)
         memcpy(p, c->name, n + 1);
         p += n;
         *(p++) = ':';
-        len -= n + 1;
+        size -= n + 1;
     }
     p[-1] = '\0';
     return (buf);
@@ -2292,15 +2476,15 @@ void SSL_get0_alpn_selected(const SSL *ssl, const unsigned char **data,
 
 int SSL_export_keying_material(SSL *s, unsigned char *out, size_t olen,
                                const char *label, size_t llen,
-                               const unsigned char *p, size_t plen,
+                               const unsigned char *context, size_t contextlen,
                                int use_context)
 {
     if (s->version < TLS1_VERSION && s->version != DTLS1_BAD_VER)
         return -1;
 
     return s->method->ssl3_enc->export_keying_material(s, out, olen, label,
-                                                       llen, p, plen,
-                                                       use_context);
+                                                       llen, context,
+                                                       contextlen, use_context);
 }
 
 static unsigned long ssl_session_hash(const SSL_SESSION *a)
@@ -2857,6 +3041,19 @@ void ssl_update_cache(SSL *s, int mode)
     if (s->session->session_id_length == 0)
         return;
 
+    /*
+     * If sid_ctx_length is 0 there is no specific application context
+     * associated with this session, so when we try to resume it and
+     * SSL_VERIFY_PEER is requested to verify the client identity, we have no
+     * indication that this is actually a session for the proper application
+     * context, and the *handshake* will fail, not just the resumption attempt.
+     * Do not cache (on the server) these sessions that are not resumable
+     * (clients can set SSL_VERIFY_PEER without needing a sid_ctx set).
+     */
+    if (s->server && s->session->sid_ctx_length == 0
+            && (s->verify_mode & SSL_VERIFY_PEER) != 0)
+        return;
+
     i = s->session_ctx->session_cache_mode;
     if ((i & mode) && (!s->hit)
         && ((i & SSL_SESS_CACHE_NO_INTERNAL_STORE)
@@ -3332,7 +3529,6 @@ void ssl_free_wbio_buffer(SSL *s)
         return;
 
     s->wbio = BIO_pop(s->wbio);
-    assert(s->wbio != NULL);
     BIO_free(s->bbio);
     s->bbio = NULL;
 }

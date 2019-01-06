@@ -16,21 +16,22 @@ BEGIN {
 
 use File::Spec::Functions qw/catdir catfile curdir abs2rel rel2abs/;
 use File::Basename;
-use if $^O ne "VMS", 'File::Glob' => qw/glob/;
+use FindBin;
+use lib "$FindBin::Bin/../util/perl";
+use OpenSSL::Glob;
 use Module::Load::Conditional qw(can_load);
 
-my $TAP_Harness = can_load({modules => [ 'TAP::Harness' ]})
+my $TAP_Harness = can_load(modules => { 'TAP::Harness' => undef }) 
     ? 'TAP::Harness' : 'OpenSSL::TAP::Harness';
 
 my $srctop = $ENV{SRCTOP} || $ENV{TOP};
 my $bldtop = $ENV{BLDTOP} || $ENV{TOP};
 my $recipesdir = catdir($srctop, "test", "recipes");
-my $testlib = catdir($srctop, "test", "testlib");
-my $utillib = catdir($srctop, "util");
+my $libdir = rel2abs(catdir($srctop, "util", "perl"));
 
 my %tapargs =
     ( verbosity => $ENV{VERBOSE} || $ENV{V} || $ENV{HARNESS_VERBOSE} ? 1 : 0,
-      lib       => [ $testlib, $utillib ],
+      lib       => [ $libdir ],
       switches  => '-w',
       merge     => 1
     );
@@ -64,7 +65,16 @@ if ($list_mode) {
     my $harness = $TAP_Harness->new(\%tapargs);
     my $ret = $harness->runtests(sort @tests);
 
-    exit $ret->has_errors if (ref($ret) eq "TAP::Parser::Aggregator");
+    # $ret->has_errors may be any number, not just 0 or 1.  On VMS, numbers
+    # from 2 and on are used as is as VMS statuses, which has severity encoded
+    # in the lower 3 bits.  0 and 1, on the other hand, generate SUCCESS and
+    # FAILURE, so for currect reporting on all platforms, we make sure the only
+    # exit codes are 0 and 1.  Double-bang is the trick to do so.
+    exit !!$ret->has_errors if (ref($ret) eq "TAP::Parser::Aggregator");
+
+    # If this isn't a TAP::Parser::Aggregator, it's the pre-TAP test harness,
+    # which simply dies at the end if any test failed, so we don't need to
+    # bother with any exit code in that case.
 }
 
 

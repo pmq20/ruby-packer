@@ -47,7 +47,7 @@ void BUF_MEM_free(BUF_MEM *a)
 
     if (a->data != NULL) {
         if (a->flags & BUF_MEM_FLAG_SECURE)
-            OPENSSL_secure_free(a->data);
+            OPENSSL_secure_clear_free(a->data, a->max);
         else
             OPENSSL_clear_free(a->data, a->max);
     }
@@ -62,9 +62,11 @@ static char *sec_alloc_realloc(BUF_MEM *str, size_t len)
 
     ret = OPENSSL_secure_malloc(len);
     if (str->data != NULL) {
-        if (ret != NULL)
+        if (ret != NULL) {
             memcpy(ret, str->data, str->length);
-        OPENSSL_secure_free(str->data);
+            OPENSSL_secure_clear_free(str->data, str->length);
+            str->data = NULL;
+        }
     }
     return (ret);
 }

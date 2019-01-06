@@ -1,5 +1,5 @@
 /*
- * Copyright 2001-2016 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2001-2018 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the OpenSSL license (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -20,7 +20,7 @@ struct tm *OPENSSL_gmtime(const time_t *timer, struct tm *result)
         /*
          * On VMS, gmtime_r() takes a 32-bit pointer as second argument.
          * Since we can't know that |result| is in a space that can easily
-         * translate to a 32-bit pointer, we must store temporarly on stack
+         * translate to a 32-bit pointer, we must store temporarily on stack
          * and copy the result.  The stack is always reachable with 32-bit
          * pointers.
          */
@@ -39,6 +39,10 @@ struct tm *OPENSSL_gmtime(const time_t *timer, struct tm *result)
     }
 #elif defined(OPENSSL_THREADS) && !defined(OPENSSL_SYS_WIN32) && !defined(OPENSSL_SYS_MACOSX)
     if (gmtime_r(timer, result) == NULL)
+        return NULL;
+    ts = result;
+#elif defined (OPENSSL_SYS_WINDOWS) && defined(_MSC_VER) && _MSC_VER >= 1400
+    if (gmtime_s(result, timer))
         return NULL;
     ts = result;
 #else
