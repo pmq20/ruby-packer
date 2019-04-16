@@ -1,5 +1,5 @@
 # Copyright (c) 2017 Minqi Pan <pmq2001@gmail.com>
-# 
+#
 # This file is part of Ruby Compiler, distributed under the MIT License
 # For full terms see the included LICENSE file
 
@@ -29,11 +29,11 @@ class Compiler
   def self.ruby_api_version
     @ruby_api_version ||= peek_ruby_api_version
   end
-  
+
   def self.ruby_version
     @ruby_version ||= peek_ruby_version
   end
-  
+
   def self.peek_ruby_version
     version_info = File.read(File.join(PRJ_ROOT, 'ruby/version.h'))
     if version_info =~ /RUBY_VERSION\s+"([^"]+)"\s*$/
@@ -42,7 +42,7 @@ class Compiler
       raise 'Cannot peek RUBY_VERSION'
     end
   end
-  
+
   def self.peek_ruby_api_version
     version_info = File.read(File.join(PRJ_ROOT, 'ruby/include/ruby/version.h'))
     versions = []
@@ -63,7 +63,7 @@ class Compiler
     end
     versions.join('.')
   end
-  
+
   def initialize(entrance, options = {})
     if entrance
       if File.exist?(File.expand_path(entrance))
@@ -77,11 +77,11 @@ class Compiler
     @options     = options
     @utils       = Utils.new(options)
 
+    @gem_package = GemPackage.new(@entrance, @options, @utils) if @options[:gem]
+
     init_options
     init_entrance if entrance
     init_tmpdir
-
-    @gem_package = GemPackage.new(@entrance, @options, @utils) if @options[:gem]
 
     log "Ruby Compiler (rubyc) v#{::Compiler::VERSION}"
     if entrance
@@ -136,7 +136,7 @@ class Compiler
           break
         end
         if File.exist?(File.join(@root, 'Gemfile')) || File.exist?(File.join(@root, 'gems.rb')) || Dir.exist?(File.join(@root, '.git'))
-          break 
+          break
         end
       end
       log "-> Project root not supplied, #{@root} assumed."
@@ -295,7 +295,8 @@ class Compiler
     @utils.chdir(@pre_prepare_dir) do
       @utils.run(@local_toolchain,
                  @gem, "install", gem,
-                       "--no-document")
+                 "--install-dir", @gems_dir,
+                 "--no-document")
 
       if File.exist?(File.join(@gems_dir, "bin/#{@entrance}"))
         @memfs_entrance = "#{MEMFS}/lib/ruby/gems/#{self.class.ruby_api_version}/bin/#{@entrance}"
@@ -407,7 +408,8 @@ class Compiler
 
       @utils.run(@local_toolchain,
                  @gem, "install", gem,
-                      "--no-document")
+                 "--install-dir", @gems_dir,
+                 "--no-document")
 
       if File.exist?(File.join(@gems_dir, "bin/#{@entrance}"))
         @memfs_entrance = "#{MEMFS}/lib/ruby/gems/#{self.class.ruby_api_version}/bin/#{@entrance}"
@@ -462,7 +464,7 @@ class Compiler
 
     @utils.cp_r source, target, preserve: true
 
-    log "=> Stuffing #{library}…"
+    log "=> Stuffing #{library}..."
 
     @utils.capture_run_io "stuff_#{library}" do
       @utils.chdir(target) do
@@ -880,7 +882,7 @@ class Compiler
     @utils.chdir(@ruby_source_dir) do
       File.open("include/enclose_io.h", "w") do |f|
         # remember to change libsquash's sample/enclose_io.h as well
-        # might need to remove some object files at the 2nd pass  
+        # might need to remove some object files at the 2nd pass
         f.puts '#ifndef ENCLOSE_IO_H_999BC1DA'
         f.puts '#define ENCLOSE_IO_H_999BC1DA'
         f.puts ''
@@ -930,7 +932,7 @@ class Compiler
     raise "path #{path} should start with #{@root}" unless @root == path[0...(@root.size)]
     "#{MEMFS}/local#{path[(@root.size)..-1]}"
   end
-  
+
   def prepare_flags1
     @ldflags = ''
     @cflags = ''
@@ -948,7 +950,7 @@ class Compiler
         @cflags += ' -fPIC -O3 -fno-fast-math -ggdb3 -Os -fdata-sections -ffunction-sections -pipe '
       end
     end
-    
+
     if Gem.win_platform?
       @compile_env = {
         'CI' => 'true',
