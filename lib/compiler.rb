@@ -109,6 +109,7 @@ class Compiler
     @options[:output] = File.expand_path(@options[:output])
     @options[:tmpdir] ||= File.expand_path("rubyc", Dir.tmpdir)
     @options[:tmpdir] = File.expand_path(@options[:tmpdir])
+    @options[:ignore_file].concat(File.readlines('.rubycignore').map(&:strip)) if File.exists?('.rubycignore')
 
     if @options[:auto_update_url] || @options[:auto_update_base]
       unless @options[:auto_update_url].length > 0 && @options[:auto_update_base].length > 0
@@ -861,6 +862,20 @@ class Compiler
 
     Dir["#{@work_dir_inner}/**/*.{a,dylib,so,dll,lib,bundle}"].each do |thisdl|
       @utils.rm_f(thisdl)
+    end
+
+    ignore_files_from_build
+  end
+
+  def ignore_files_from_build
+    return if !@work_dir_local || !@options[:ignore_file].is_a?(Array)
+
+    @utils.chdir(@work_dir_local) do
+      Dir["{#{@options[:ignore_file].join(',')}}"].each do |ignored_file|
+        next unless File.exist?(ignored_file)
+
+        @utils.rm_rf(ignored_file)
+      end
     end
   end
 

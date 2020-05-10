@@ -98,11 +98,19 @@ ENTRANCE can be either a file path, or a "x" string as in bundle exec "x".
           --auto-update-url=URL        Enables auto-update and specifies the URL to get the latest version
           --auto-update-base=STRING    Enables auto-update and specifies the base version string
           --debug                      Enable debug mode
+      -i, --ignore-file                Ignore file(s) from build
       -v, --version                    Prints the version of rubyc and exit
           --ruby-version               Prints the version of the Ruby runtime and exit
           --ruby-api-version           Prints the version of the Ruby API and exit
       -h, --help                       Prints this help and exit
 
+### Ignore files
+
+If you don't want certain files included in the build you can ignore them from the command line using -i.
+
+  rubyc -i ignore.file -i ignore-2.file -i "ignore*"
+
+Alternatively you can create a `.rubycignore` file in the root of your project to specify which files should be ignored.
 
 ## Examples
 
