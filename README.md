@@ -118,8 +118,8 @@ Or:
 
 	rm rubyc; ruby -Ilib bin/rubyc bin/rubyc -o rubyc
 
-This will produce a single `rubyc` executable, after which you can
-put it inside any of your `PATH` locations, so that it can be directly
+This will produce a single `rubyc` executable, which can
+be put inside any of your `PATH` locations, so that it can be directly
 called from the command prompt. For example:
 
 	mv rubyc /usr/local/bin
