@@ -200,7 +200,7 @@ MIT
 
 ## See Also
 
-- [RubyConf 2017 (New Orleans, LA): Packing your Ruby application into a single executable](https://www.youtube.com/watch?v=1mme7HiLqzA).
+- [RubyConf 2017 (New Orleans, LA) presentation video: Packing your Ruby application into a single executable](https://www.youtube.com/watch?v=1mme7HiLqzA).
 - [Libsquash](https://github.com/pmq20/libsquash): portable, user-land SquashFS that can be easily linked and embedded within your application.
 - [Libautoupdate](https://github.com/pmq20/libautoupdate): cross-platform C library to enable your application to auto-update itself in place.
 - [Squashfs Tools](https://github.com/plougher/squashfs-tools): tools to create and extract Squashfs filesystems.
