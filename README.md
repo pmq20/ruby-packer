@@ -128,7 +128,7 @@ add the `--clean-tmpdir` argument to `rubyc` for a clean rebuild.
 
 ### Prerequisites of macOS
 
-* [SquashFS Tools 4.3](http://squashfs.sourceforge.net/): `brew install squashfs`
+* [SquashFS Tools 4.4](http://squashfs.sourceforge.net/): `brew install squashfs`
 * [Xcode](https://developer.apple.com/xcode/download/)
   * You also need to install the `Command Line Tools` via Xcode. You can find
     this under the menu `Xcode -> Preferences -> Downloads`
@@ -137,7 +137,7 @@ add the `--clean-tmpdir` argument to `rubyc` for a clean rebuild.
 
 ### Prerequisites of Linux
 
-* [SquashFS Tools 4.3](http://squashfs.sourceforge.net/)
+* [SquashFS Tools 4.4](http://squashfs.sourceforge.net/)
   - `sudo yum install squashfs-tools`
   - `sudo apt install squashfs-tools`
 * `gcc` or `clang`
@@ -169,24 +169,15 @@ Ensure that bison and sed are in your path. If you installed to C:\Gnuwin32, the
 
 Authors ordered by first contribution.
 
-* [pmq20](https://github.com/pmq20) -
-**Minqi Pan** &lt;pmq2001@gmail.com&gt;
-* [dread-uo](https://github.com/dread-uo) -
-**Eduardo Silva**
-* [nilsding](https://github.com/nilsding) -
-**Georg Gadinger** &lt;nilsding@nilsding.org&gt;
-* [drbrain](https://github.com/drbrain) - 
-**Eric Hodel** &lt;drbrain@segment7.net&gt;
-* [jakolehm](https://github.com/jakolehm) - 
-**Jari Kolehmainen**
-* [yourivdlans](https://github.com/yourivdlans) -
-**Youri van der Lans** &lt;youri@itflows.nl&gt;
-* [SwagDevOps](https://github.com/SwagDevOps) -
-**Dimitri Arrigoni**
-* [monkeywithacupcake](https://github.com/monkeywithacupcake) -
-**Jess**
-* [bethesque](https://github.com/bethesque) -
-**Beth Skurrie**
+* [pmq20](https://github.com/pmq20) - **Minqi Pan** &lt;pmq2001@gmail.com&gt;
+* [dread-uo](https://github.com/dread-uo) - **Eduardo Silva**
+* [nilsding](https://github.com/nilsding) - **Georg Gadinger** &lt;nilsding@nilsding.org&gt;
+* [drbrain](https://github.com/drbrain) -  **Eric Hodel** &lt;drbrain@segment7.net&gt;
+* [jakolehm](https://github.com/jakolehm) - **Jari Kolehmainen**
+* [yourivdlans](https://github.com/yourivdlans) - **Youri van der Lans** &lt;youri@itflows.nl&gt;
+* [SwagDevOps](https://github.com/SwagDevOps) - **Dimitri Arrigoni**
+* [monkeywithacupcake](https://github.com/monkeywithacupcake) - **Jess**
+* [bethesque](https://github.com/bethesque) - **Beth Skurrie**
 * [chanmanx](https://github.com/chanmanx)
 
 ## License
