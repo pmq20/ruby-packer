@@ -30,10 +30,6 @@ class Compiler
     @ruby_api_version ||= peek_ruby_api_version
   end
 
-  def self.ruby_version
-    @ruby_version ||= peek_ruby_version
-  end
-
   def self.peek_ruby_version
     version_info = File.read(File.join(PRJ_ROOT, 'ruby/version.h'))
     if version_info =~ /RUBY_VERSION\s+"([^"]+)"\s*$/
@@ -119,7 +115,7 @@ class Compiler
     end
 
     @ruby_source_dir =
-      File.join(@options[:tmpdir], "ruby-#{::Compiler.ruby_version}-#{::Compiler::VERSION}")
+      File.join(@options[:tmpdir], "ruby-#{::Compiler::VERSION}")
   end
 
   def init_entrance
