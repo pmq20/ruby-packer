@@ -31,8 +31,8 @@ Examples
     ./a.out (or a.exe on Windows)
   
   Compiling a CLI tool:
-    git clone --depth 1 https://github.com/pmq20/ruby-compiler.git
-    cd ruby-compiler
+    git clone --depth 1 https://github.com/pmq20/ruby-packer.git
+    cd ruby-packer
     rubyc bin/rubyc
     ./a.out (or a.exe on Windows)
   

@@ -2,9 +2,9 @@
 
 *Packing your Ruby application into a single executable.*
 
-[![Status](https://ci.appveyor.com/api/projects/status/93i36eliiy6v3686/branch/master?svg=true)](https://ci.appveyor.com/project/pmq20/ruby-compiler/branch/master)
-[![Status](https://travis-ci.org/pmq20/ruby-compiler.svg?branch=master)](https://travis-ci.org/pmq20/ruby-compiler)
-[![GitHub version](https://badge.fury.io/gh/pmq20%2Fruby-compiler.svg)](https://badge.fury.io/gh/pmq20%2Fruby-compiler)
+[![Status](https://ci.appveyor.com/api/projects/status/93i36eliiy6v3686/branch/master?svg=true)](https://ci.appveyor.com/project/pmq20/ruby-packer/branch/master)
+[![Status](https://travis-ci.org/pmq20/ruby-packer.svg?branch=master)](https://travis-ci.org/pmq20/ruby-packer)
+[![GitHub version](https://badge.fury.io/gh/pmq20%2Fruby-packer.svg)](https://badge.fury.io/gh/pmq20%2Fruby-packer)
 [![Backers on Open Collective](https://opencollective.com/ruby-packer/backers/badge.svg)](#backers) 
 [![Sponsors on Open Collective](https://opencollective.com/ruby-packer/sponsors/badge.svg)](#sponsors) 
 
