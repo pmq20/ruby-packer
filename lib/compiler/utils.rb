@@ -1,5 +1,5 @@
 # Copyright (c) 2017 Minqi Pan <pmq2001@gmail.com>
-# 
+#
 # This file is part of Ruby Compiler, distributed under the MIT License
 # For full terms see the included LICENSE file
 
@@ -35,10 +35,13 @@ class Compiler
 
     def escape(arg)
       if Gem.win_platform?
-        if arg.include?('"')
-          raise NotImplementedError
+        if arg =~ /^"[^"]*"$/
+          return arg
+        elsif arg && arg.include?('"')
+          raise NotImplementedError, "Cannot escape #{arg} as it contains a double quote"
+        else
+          %Q{"#{arg}"}
         end
-        %Q{"#{arg}"}
       else
         Shellwords.escape(arg)
       end
@@ -86,12 +89,12 @@ class Compiler
       Dir.chdir(path) { yield }
       STDERR.puts "-> cd #{Dir.pwd}" unless @options[:quiet]
     end
-    
+
     def cp(x, y)
       STDERR.puts "-> cp #{x.inspect} #{y.inspect}" unless @options[:quiet]
       FileUtils.cp(x, y)
     end
-    
+
     def cp_r(x, y, options = {})
       STDERR.puts "-> cp -r #{x.inspect} #{y.inspect}" unless @options[:quiet]
       FileUtils.cp_r(x, y, options)
@@ -116,12 +119,12 @@ class Compiler
       STDERR.puts "-> mkdir #{x}" unless @options[:quiet]
       FileUtils.mkdir(x)
     end
-    
+
     def mkdir_p(x)
       STDERR.puts "-> mkdir -p #{x}" unless @options[:quiet]
       FileUtils.mkdir_p(x)
     end
-    
+
     def remove_dynamic_libs(path)
       ['dll', 'dylib', 'so'].each do |extname|
         Dir["#{path}/**/*.#{extname}"].each do |x|

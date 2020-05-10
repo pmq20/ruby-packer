@@ -10,10 +10,11 @@ namespace "test" do
   # This does not use Rake::TestTask because rake runs ruby via sh which
   # and can't determine the correct way to run ruby from inside rubyc
   task "unit" do
+    $LOAD_PATH.unshift '.'
     $LOAD_PATH.unshift 'lib'
 
     Rake::FileList["test/unit/test_*.rb"].each do |test|
-      require_relative test
+      require test
     end
 
     Minitest.autorun
