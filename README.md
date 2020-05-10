@@ -19,7 +19,7 @@ It takes less than 5 minutes to pack any project with Ruby Packer. You won't nee
 
 ## Usage
 
-If ENTRANCE was not provided, then a single raw Ruby interpreter executable will be produced.
+If ENTRANCE was not provided, then a single portable Ruby interpreter executable will be produced.
 ENTRANCE can be either a file path, or a "x" string as in bundle exec "x".
 
     rubyc [OPTION]... [ENTRANCE]
@@ -60,7 +60,7 @@ Alternatively you can create a `.rubycignore` file in the root of your project t
 
 ## Examples
 
-### Packing a Raw Ruby Interpreter Executable
+### Packing a Portable Ruby Interpreter Executable
 
 I.e. packing the raw Ruby interpreter without packing with your Project:
 
