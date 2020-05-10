@@ -92,45 +92,7 @@ work with rubyc](https://github.com/pmq20/ruby-packer/issues/30#issuecomment-387
 	rubyc bin/rails
 	./a.out server (or a.exe server on Windows)
 
-## Building `rubyc`
-
-To build `rubyc` you must have a C compiler and the necessary toolchain to
-build ruby and the libraries stuffed inside rubyc which include at least:
-* gdbm
-* libffi
-* ncurses
-* openssl
-* readline
-* yaml
-* zlib
-
-Also see the OS-specific prerequisites below.
-
-If you are unsure if your toolchain is complete then trying to build `rubyc`
-will let you know you are missing something.  Unfortunately it may tell you
-with some unfamiliar message.  Please file an issue here if this occurs.
-
-Once your toolchain is set up run `bundle`.  To compile your own `rubyc` run:
-
-	bundle exec rake rubyc
-
-Or:
-
-	rm rubyc; ruby -Ilib bin/rubyc bin/rubyc -o rubyc
-
-This will produce a single `rubyc` executable, which can
-be put inside any of your `PATH` locations, so that it can be directly
-called from the command prompt. For example:
-
-	mv rubyc /usr/local/bin
-
-Remember that rubyc includes all the files from the current directory in the
-built executable.  You must *delete the prior rubyc* or your squashfs will
-*continually grow larger* and the embedded squashfs *compile time will be
-very, very long*.
-
-If you make changes to the stuffed libraries or the compiler you may need to
-add the `--clean-tmpdir` argument to `rubyc` for a clean rebuild.
+## Building `rubyc` from Source
 
 ### Prerequisites of macOS
 
@@ -170,6 +132,46 @@ From a command prompt window, load the Visual Studio environment variables for 3
 this is located at c:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\vcvars32.bat.
 
 Ensure that bison and sed are in your path. If you installed to C:\Gnuwin32, they will be in C:\Gnuwin32\bin.
+
+### Building and Installing
+
+To build `rubyc` you must have a C compiler and the necessary toolchain to
+build ruby and the libraries stuffed inside rubyc which include at least:
+* gdbm
+* libffi
+* ncurses
+* openssl
+* readline
+* yaml
+* zlib
+
+Also see the OS-specific prerequisites below.
+
+If you are unsure if your toolchain is complete then trying to build `rubyc`
+will let you know you are missing something.  Unfortunately it may tell you
+with some unfamiliar message.  Please file an issue here if this occurs.
+
+Once your toolchain is set up run `bundle`.  To compile your own `rubyc` run:
+
+	bundle exec rake rubyc
+
+Or:
+
+	rm rubyc; ruby -Ilib bin/rubyc bin/rubyc -o rubyc
+
+This will produce a single `rubyc` executable, which can
+be put inside any of your `PATH` locations, so that it can be directly
+called from the command prompt. For example:
+
+	mv rubyc /usr/local/bin
+
+Remember that rubyc includes all the files from the current directory in the
+built executable.  You must *delete the prior rubyc* or your squashfs will
+*continually grow larger* and the embedded squashfs *compile time will be
+very, very long*.
+
+If you make changes to the stuffed libraries or the compiler you may need to
+add the `--clean-tmpdir` argument to `rubyc` for a clean rebuild.
 
 ## Authors
 
