@@ -60,6 +60,13 @@ Alternatively you can create a `.rubycignore` file in the root of your project t
 
 ## Examples
 
+### Packing a Raw Ruby Interpreter Executable
+
+I.e. packing the raw Ruby interpreter without packing with your Project:
+
+	rubyc
+	./a.out (or a.exe on Windows)
+
 ### Packing a CLI utility
 
 Taking Ruby Packer itself as an example of the CLI utility to pack:
@@ -71,9 +78,7 @@ Taking Ruby Packer itself as an example of the CLI utility to pack:
 
 ### Packing a Gem
 
-	git clone --depth 1 https://github.com/pmq20/ruby-packer
-	cd ruby-packer
-	bin/rubyc --gem=bundler --gem-version=1.15.4 bundle
+	rubyc --gem=bundler --gem-version=1.15.4 bundle
 	./a.out (or a.exe on Windows)
 
 Note that some gems that use C extensions that use libc IO to load files from
@@ -86,15 +91,6 @@ work with rubyc](https://github.com/pmq20/ruby-packer/issues/30#issuecomment-387
 	cd yours
 	rubyc bin/rails
 	./a.out server (or a.exe server on Windows)
-
-### Packing a Raw Ruby Interpreter Executable
-
-I.e. packing the raw Ruby interpreter without packing with your Project:
-
-	git clone --depth 1 https://github.com/pmq20/ruby-packer
-	cd ruby-packer
-	rubyc
-	./a.out (or a.exe on Windows)
 
 ## Building `rubyc`
 
