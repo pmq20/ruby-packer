@@ -60,9 +60,9 @@ Alternatively you can create a `.rubycignore` file in the root of your project t
 
 ## Examples
 
-### Packing a Portable Ruby Interpreter Executable
+### Producing a Portable Ruby Interpreter Executable
 
-I.e. packing the raw Ruby interpreter without packing with your Project:
+I.e. packing the raw Ruby interpreter without packing any projects:
 
 	rubyc
 	./a.out (or a.exe on Windows)
