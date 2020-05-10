@@ -17,7 +17,7 @@ It takes less than 5 minutes to pack any project with Ruby Packer. You won't nee
 - Rails applications are fully supported
 - Open Source, MIT Licensed
 
-## Get Started
+## Building `rubyc`
 
 To build `rubyc` you must have a C compiler and the necessary toolchain to
 build ruby and the libraries stuffed inside rubyc which include at least:
