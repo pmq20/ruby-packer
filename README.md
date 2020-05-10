@@ -94,47 +94,6 @@ work with rubyc](https://github.com/pmq20/ruby-packer/issues/30#issuecomment-387
 
 ## Building `rubyc` from Source
 
-### Prerequisites of macOS
-
-* [SquashFS Tools 4.4](http://squashfs.sourceforge.net/): `brew install squashfs`
-* [Xcode](https://developer.apple.com/xcode/download/)
-  * You also need to install the `Command Line Tools` via Xcode. You can find
-    this under the menu `Xcode -> Preferences -> Downloads`
-  * This step will install `gcc` and the related toolchain containing `make`
-* [Ruby](https://www.ruby-lang.org/)
-
-### Prerequisites of Linux
-
-* [SquashFS Tools 4.4](http://squashfs.sourceforge.net/)
-  - `sudo yum install squashfs-tools`
-  - `sudo apt install squashfs-tools`
-* `gcc` or `clang`
-* GNU Make
-* [Ruby](https://www.ruby-lang.org/)
-
-### Prerequisites of Windows
-
-* [SquashFS Tools 4.3](https://github.com/pmq20/squashfuse/files/691217/sqfs43-win32.zip)
-* [Visual Studio 2015 Update 3](https://visualstudio.microsoft.com/vs/older-downloads/), all editions
-  including the Community edition (remember to select
-  "Common Tools for Visual C++ 2015" feature during installation).
-* [Bison for Windows](http://gnuwin32.sourceforge.net/packages/bison.htm).  When installing, make sure
-  to select the binaries and developer files.  Do NOT install to the default C:\Program Files location.
-  Choose a location without spaces, such as C:\Gnuwin32.
-  If you encounter problems related to bison later in your installation, you may want to consider overwriting
-  bison.exe with this [patched Windows binary](http://marin.jb.free.fr/bison/).
-* [Sed for Windows](http://gnuwin32.sourceforge.net/packages/sed.htm).  When installing, make sure
-  to select the binaries and developer files.  Do NOT install to the default C:\Program Files location.
-  Choose a location without spaces, such as C:\Gnuwin32.
-* [Ruby](https://www.ruby-lang.org/)
-
-From a command prompt window, load the Visual Studio environment variables for 32-bit compilation.  By default,
-this is located at c:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\vcvars32.bat.
-
-Ensure that bison and sed are in your path. If you installed to C:\Gnuwin32, they will be in C:\Gnuwin32\bin.
-
-### Building and Installing
-
 To build `rubyc` you must have a C compiler and the necessary toolchain to
 build ruby and the libraries stuffed inside rubyc which include at least:
 * gdbm
