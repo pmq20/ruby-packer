@@ -175,7 +175,7 @@ Ensure that bison and sed are in your path. If you installed to C:\Gnuwin32, the
 Authors ordered by first contribution.
 
 * [pmq20](https://github.com/pmq20) -
-**Minqi Pan** &lt;pmq2001@gmail.com&gt; (he/him)
+**Minqi Pan** &lt;pmq2001@gmail.com&gt;
 * [dread-uo](https://github.com/dread-uo) -
 **Eduardo Silva**
 * [nilsding](https://github.com/nilsding) -
