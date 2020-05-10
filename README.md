@@ -174,4 +174,4 @@ Ensure that bison and sed are in your path. If you installed to C:\Gnuwin32, the
 
 - [Libsquash](https://github.com/pmq20/libsquash): portable, user-land SquashFS that can be easily linked and embedded within your application.
 - [Libautoupdate](https://github.com/pmq20/libautoupdate): cross-platform C library to enable your application to auto-update itself in place.
-- [squashfs-tools](https://github.com/plougher/squashfs-tools): tools to create and extract Squashfs filesystems.
+- [Squashfs-tools](https://github.com/plougher/squashfs-tools): tools to create and extract Squashfs filesystems.
