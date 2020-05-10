@@ -4,7 +4,9 @@
 
 - upgrade ruby to 2.7.1
 - use internal enclosed Ruby version as rubyc's version prefix
-- update license to 2020 and collective authorship
+- remove `ruby/vendor/bundler-1.16.1.gem` since it is nowadays part of ruby
+- update license year to 2020
+- change to collective authorship
 
 ## v0.4.0
 

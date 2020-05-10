@@ -320,10 +320,6 @@ class Compiler
   def install_from_gemfile(gemfile)
     log "=> Installing source from gemfile #{File.expand_path gemfile}"
 
-    @utils.run(@local_toolchain,
-               @gem, "install", @the_bundler_gem,
-                     "--no-document")
-
     @work_dir_local = File.join(@work_dir_inner, "local")
 
     @env_bundle_gemfile = "/__enclose_io_memfs__/local/#{gemfile}"
@@ -391,10 +387,6 @@ class Compiler
       @utils.rm_f("./*.gem")
 
       if gemfiles.size > 0
-        @utils.run(@local_toolchain,
-                   @gem, "install", @the_bundler_gem,
-                         "--no-document")
-
         @utils.run(@local_toolchain,
                    @bundle, "install")
         @utils.run(@local_toolchain,
@@ -813,8 +805,6 @@ class Compiler
       gemspecs = Dir['./*.gemspec']
       gemfiles = Dir['./gems.rb', './Gemfile']
       gems = Dir['./*.gem']
-
-      @the_bundler_gem = Dir["#{@ruby_source_dir}/vendor/bundler-*.gem"].first
 
       @gem    = File.join(@ruby_install_1_bin, "gem")
       @bundle = File.join(@ruby_install_1_bin, "bundle")
