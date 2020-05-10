@@ -72,6 +72,12 @@ failed to run rubyc #{args.join " "}
                  "missing --help string"
   end
 
+  def test_ruby_version
+    out, = rubyc "--ruby-version"
+
+    assert_match "2.5.1", out, "incorrect ruby version"
+  end
+
   def test_unit_tests
     ruby "-e", "ARGV.replace %w[test:unit]; load '/__enclose_io_memfs__/bin/rake'"
   end
