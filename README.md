@@ -202,4 +202,4 @@ MIT
 
 - [Libsquash](https://github.com/pmq20/libsquash): portable, user-land SquashFS that can be easily linked and embedded within your application.
 - [Libautoupdate](https://github.com/pmq20/libautoupdate): cross-platform C library to enable your application to auto-update itself in place.
-- [Squashfs-tools](https://github.com/plougher/squashfs-tools): tools to create and extract Squashfs filesystems.
+- [Squashfs Tools](https://github.com/plougher/squashfs-tools): tools to create and extract Squashfs filesystems.
