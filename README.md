@@ -170,6 +170,34 @@ this is located at c:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\vc
 
 Ensure that bison and sed are in your path. If you installed to C:\Gnuwin32, they will be in C:\Gnuwin32\bin.
 
+## Authors
+
+Authors ordered by first contribution.
+
+* [pmq20](https://github.com/pmq20) -
+**Minqi Pan** &lt;pmq2001@gmail.com&gt; (he/him)
+* [dread-uo](https://github.com/dread-uo) -
+**Eduardo Silva**
+* [nilsding](https://github.com/nilsding) -
+**Georg Gadinger** &lt;nilsding@nilsding.org&gt;
+* [drbrain](https://github.com/drbrain) - 
+**Eric Hodel** &lt;drbrain@segment7.net&gt;
+* [jakolehm](https://github.com/jakolehm) - 
+**Jari Kolehmainen**
+* [yourivdlans](https://github.com/yourivdlans) -
+**Youri van der Lans** &lt;youri@itflows.nl&gt;
+* [SwagDevOps](https://github.com/SwagDevOps) -
+**Dimitri Arrigoni**
+* [monkeywithacupcake](https://github.com/monkeywithacupcake) -
+**Jess**
+* [bethesque](https://github.com/bethesque) -
+**Beth Skurrie**
+* [chanmanx](https://github.com/chanmanx)
+
+## License
+
+MIT
+
 ## See Also
 
 - [Libsquash](https://github.com/pmq20/libsquash): portable, user-land SquashFS that can be easily linked and embedded within your application.
