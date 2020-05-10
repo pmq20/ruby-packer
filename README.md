@@ -9,7 +9,7 @@
 
 It takes less than 5 minutes to pack any project with Ruby Packer. You won't need to modify a single line of code in your application, no matter how you developed it as long as it works in plain Ruby!
 
-More details were explained in RubyConf 2017 (New Orleans, LA) - Packing your Ruby application into a single executable: [slides](https://speakerdeck.com/pmq20/rubyconf-2017-packing-your-ruby-application-into-a-single-executable) & [video](https://www.youtube.com/watch?v=1mme7HiLqzA).
+More details were explained in [RubyConf 2017 (New Orleans, LA) - Packing your Ruby application into a single executable](https://www.youtube.com/watch?v=1mme7HiLqzA).
 
 - Works on Linux, Mac and Windows
 - Creates a binary distribution of your application
