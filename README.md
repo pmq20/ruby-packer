@@ -17,102 +17,6 @@ It takes less than 5 minutes to pack any project with Ruby Packer. You won't nee
 - Rails applications are fully supported
 - Open Source, MIT Licensed
 
-## Building `rubyc`
-
-To build `rubyc` you must have a C compiler and the necessary toolchain to
-build ruby and the libraries stuffed inside rubyc which include at least:
-* gdbm
-* libffi
-* ncurses
-* openssl
-* readline
-* yaml
-* zlib
-
-If you are unsure if your toolchain is complete then trying to build `rubyc`
-will let you know you are missing something.  Unfortunately it may tell you
-with some unfamiliar message.  Please file an issue here if this occurs.
-
-Once your toolchain is set up run `bundle`.  To compile your own `rubyc` run:
-
-	bundle exec rake rubyc
-
-Or:
-
-	rm rubyc; ruby -Ilib bin/rubyc bin/rubyc -o rubyc
-
-Remember that rubyc includes all the files from the current directory in the
-built executable.  You must *delete the prior rubyc* or your squashfs will
-*continually grow larger* and the embedded squashfs *compile time will be
-very, very long*.
-
-If you make changes to the stuffed libraries or the compiler you may need to
-add the `--clean-tmpdir` argument to `rubyc` for a clean rebuild.
-
-### Building `rubyc` on macOS
-
-First install the prerequisites:
-
-* [SquashFS Tools 4.3](http://squashfs.sourceforge.net/): `brew install squashfs`
-* [Xcode](https://developer.apple.com/xcode/download/)
-  * You also need to install the `Command Line Tools` via Xcode. You can find
-    this under the menu `Xcode -> Preferences -> Downloads`
-  * This step will install `gcc` and the related toolchain containing `make`
-* [Ruby](https://www.ruby-lang.org/)
-
-Then,
-
-    curl -L http://enclose.io/rubyc/rubyc-darwin-x64.gz | gunzip > rubyc
-    chmod +x rubyc
-    ./rubyc
-
-### Building `rubyc` on Linux
-
-First install the prerequisites:
-
-* [SquashFS Tools 4.3](http://squashfs.sourceforge.net/)
-  - `sudo yum install squashfs-tools`
-  - `sudo apt install squashfs-tools`
-* `gcc` or `clang`
-* GNU Make
-* [Ruby](https://www.ruby-lang.org/)
-
-Then,
-
-    curl -L http://enclose.io/rubyc/rubyc-linux-x64.gz | gunzip > rubyc
-    chmod +x rubyc
-    bundle exec rake rubyc
-    ./rubyc --help
-
-### Building `rubyc` on Windows
-
-First install the prerequisites:
-
-* [SquashFS Tools 4.3](https://github.com/pmq20/squashfuse/files/691217/sqfs43-win32.zip)
-* [Visual Studio 2015 Update 3](https://visualstudio.microsoft.com/vs/older-downloads/), all editions
-  including the Community edition (remember to select
-  "Common Tools for Visual C++ 2015" feature during installation).
-* [Bison for Windows](http://gnuwin32.sourceforge.net/packages/bison.htm).  When installing, make sure
-  to select the binaries and developer files.  Do NOT install to the default C:\Program Files location.
-  Choose a location without spaces, such as C:\Gnuwin32.
-  If you encounter problems related to bison later in your installation, you may want to consider overwriting
-  bison.exe with this [patched Windows binary](http://marin.jb.free.fr/bison/).
-* [Sed for Windows](http://gnuwin32.sourceforge.net/packages/sed.htm).  When installing, make sure
-  to select the binaries and developer files.  Do NOT install to the default C:\Program Files location.
-  Choose a location without spaces, such as C:\Gnuwin32.
-* [Ruby](https://www.ruby-lang.org/)
-
-From a command prompt window, load the Visual Studio environment variables for 32-bit compilation.  By default,
-this is located at c:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\vcvars32.bat.
-
-Ensure that bison and sed are in your path.  If you installed to C:\Gnuwin32, they will be in C:\Gnuwin32\bin.
-
-Then download [rubyc-x64.zip](http://enclose.io/rubyc/rubyc-x64.zip),
-and this zip file contains only one executable.
-Unzip it. Optionally,
-rename it to `rubyc.exe` and put it under `C:\Windows` (or any other directory that is part of `PATH`).
-Execute `rubyc --help` from the command line.
-
 ## Usage
 
 If ENTRANCE was not provided, then a single Ruby interpreter executable will be produced.
@@ -156,38 +60,115 @@ Alternatively you can create a `.rubycignore` file in the root of your project t
 
 ## Examples
 
-### Producing a single Ruby interpreter executable
+### Packing a CLI tool (E.g. Ruby Packer itself)
 
 	git clone --depth 1 https://github.com/pmq20/ruby-packer
 	cd ruby-packer
-	bin/rubyc
+	rubyc bin/rubyc
 	./a.out (or a.exe on Windows)
 
-### Compiling a CLI tool (e.g. Ruby Packer itself)
-
-	git clone --depth 1 https://github.com/pmq20/ruby-packer
-	cd ruby-packer
-	bin/rubyc bin/rubyc
-	./a.out (or a.exe on Windows)
-
-### Compiling a Rails application
-
-	git clone --depth 1 https://github.com/pmq20/ruby-packer
-	rails new yours
-	cd yours
-	_YOUR_RUBY_PACKER_PATH_/rubyc bin/rails
-	./a.out server (or a.exe server on Windows)
-
-Note that some gems that use C extensions that use libc IO to load files from
-your Rails application will not work with rubyc.  Notably, [bootsnap will not
-work with rubyc](https://github.com/pmq20/ruby-packer/issues/30#issuecomment-387893082).
-
-### Compiling a Gem
+### Packing a Gem
 
 	git clone --depth 1 https://github.com/pmq20/ruby-packer
 	cd ruby-packer
 	bin/rubyc --gem=bundler --gem-version=1.15.4 bundle
 	./a.out (or a.exe on Windows)
+
+Note that some gems that use C extensions that use libc IO to load files from
+your Rails application will not work with rubyc.  Notably, [bootsnap will not
+work with rubyc](https://github.com/pmq20/ruby-packer/issues/30#issuecomment-387893082).
+
+### Packing a Rails Application
+
+	rails new yours
+	cd yours
+	rubyc bin/rails
+	./a.out server (or a.exe server on Windows)
+
+### Producing a Single Ruby interpreter Executable (I.e. Raw Ruby without your Project)
+
+	git clone --depth 1 https://github.com/pmq20/ruby-packer
+	cd ruby-packer
+	rubyc
+	./a.out (or a.exe on Windows)
+
+## Building `rubyc`
+
+To build `rubyc` you must have a C compiler and the necessary toolchain to
+build ruby and the libraries stuffed inside rubyc which include at least:
+* gdbm
+* libffi
+* ncurses
+* openssl
+* readline
+* yaml
+* zlib
+
+If you are unsure if your toolchain is complete then trying to build `rubyc`
+will let you know you are missing something.  Unfortunately it may tell you
+with some unfamiliar message.  Please file an issue here if this occurs.
+
+Once your toolchain is set up run `bundle`.  To compile your own `rubyc` run:
+
+	bundle exec rake rubyc
+
+Or:
+
+	rm rubyc; ruby -Ilib bin/rubyc bin/rubyc -o rubyc
+
+Remember that rubyc includes all the files from the current directory in the
+built executable.  You must *delete the prior rubyc* or your squashfs will
+*continually grow larger* and the embedded squashfs *compile time will be
+very, very long*.
+
+If you make changes to the stuffed libraries or the compiler you may need to
+add the `--clean-tmpdir` argument to `rubyc` for a clean rebuild.
+
+### Building `rubyc` on macOS
+
+First install the prerequisites:
+
+* [SquashFS Tools 4.3](http://squashfs.sourceforge.net/): `brew install squashfs`
+* [Xcode](https://developer.apple.com/xcode/download/)
+  * You also need to install the `Command Line Tools` via Xcode. You can find
+    this under the menu `Xcode -> Preferences -> Downloads`
+  * This step will install `gcc` and the related toolchain containing `make`
+* [Ruby](https://www.ruby-lang.org/)
+
+
+### Building `rubyc` on Linux
+
+First install the prerequisites:
+
+* [SquashFS Tools 4.3](http://squashfs.sourceforge.net/)
+  - `sudo yum install squashfs-tools`
+  - `sudo apt install squashfs-tools`
+* `gcc` or `clang`
+* GNU Make
+* [Ruby](https://www.ruby-lang.org/)
+
+### Building `rubyc` on Windows
+
+First install the prerequisites:
+
+* [SquashFS Tools 4.3](https://github.com/pmq20/squashfuse/files/691217/sqfs43-win32.zip)
+* [Visual Studio 2015 Update 3](https://visualstudio.microsoft.com/vs/older-downloads/), all editions
+  including the Community edition (remember to select
+  "Common Tools for Visual C++ 2015" feature during installation).
+* [Bison for Windows](http://gnuwin32.sourceforge.net/packages/bison.htm).  When installing, make sure
+  to select the binaries and developer files.  Do NOT install to the default C:\Program Files location.
+  Choose a location without spaces, such as C:\Gnuwin32.
+  If you encounter problems related to bison later in your installation, you may want to consider overwriting
+  bison.exe with this [patched Windows binary](http://marin.jb.free.fr/bison/).
+* [Sed for Windows](http://gnuwin32.sourceforge.net/packages/sed.htm).  When installing, make sure
+  to select the binaries and developer files.  Do NOT install to the default C:\Program Files location.
+  Choose a location without spaces, such as C:\Gnuwin32.
+* [Ruby](https://www.ruby-lang.org/)
+
+From a command prompt window, load the Visual Studio environment variables for 32-bit compilation.  By default,
+this is located at c:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\vcvars32.bat.
+
+Ensure that bison and sed are in your path. If you installed to C:\Gnuwin32, they will be in C:\Gnuwin32\bin.
 
 ## See Also
 
