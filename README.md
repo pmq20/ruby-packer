@@ -54,7 +54,7 @@ present in this directory as well.
 
 If you don't want certain files included in the build you can ignore them from the command line using -i.
 
-  rubyc -i ignore.file -i ignore-2.file -i "ignore*"
+	rubyc -i ignore.file -i ignore-2.file -i "ignore*"
 
 Alternatively you can create a `.rubycignore` file in the root of your project to specify which files should be ignored.
 
