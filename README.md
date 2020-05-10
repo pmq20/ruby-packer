@@ -40,7 +40,7 @@ ENTRANCE can be either a file path, or a "x" string as in bundle exec "x".
           --ruby-api-version           Prints the version of the Ruby API and exit
       -h, --help                       Prints this help and exit
 
-### Openssl
+### The `--openssl-dir` Option
 
 rubyc compiles its own version of openssl without any certifications.
 To be able to use ssl with rubyc it should know where to find the certifications.
@@ -50,7 +50,7 @@ By default this path is set to `/usr/local/etc/openssl/` but can be overridden u
 Keep in mind that users running your compiled package should have their certifications
 present in this directory as well.
 
-### Ignore files
+### The `--ignore-file` Option
 
 If you don't want certain files included in the build you can ignore them from the command line using -i.
 
