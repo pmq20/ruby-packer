@@ -26,44 +26,6 @@ class Compiler
       'a.out'
     end
 
-  def self.ruby_api_version
-    @ruby_api_version ||= peek_ruby_api_version
-  end
-
-  def self.ruby_version
-    @ruby_version ||= peek_ruby_version
-  end
-
-  def self.peek_ruby_version
-    version_info = File.read(File.join(PRJ_ROOT, 'ruby/version.h'))
-    if version_info =~ /RUBY_VERSION\s+"([^"]+)"\s*$/
-      return $1.dup
-    else
-      raise 'Cannot peek RUBY_VERSION'
-    end
-  end
-
-  def self.peek_ruby_api_version
-    version_info = File.read(File.join(PRJ_ROOT, 'ruby/include/ruby/version.h'))
-    versions = []
-    if version_info =~ /RUBY_API_VERSION_MAJOR\s+(\d+)/
-      versions << $1.dup
-    else
-      raise 'Cannot peek RUBY_API_VERSION_MAJOR'
-    end
-    if version_info =~ /RUBY_API_VERSION_MINOR\s+(\d+)/
-      versions << $1.dup
-    else
-      raise 'Cannot peek RUBY_API_VERSION_MINOR'
-    end
-    if version_info =~ /RUBY_API_VERSION_TEENY\s+(\d+)/
-      versions << $1.dup
-    else
-      raise 'Cannot peek RUBY_API_VERSION_TEENY'
-    end
-    versions.join('.')
-  end
-
   def initialize(entrance, options = {})
     if entrance
       if File.exist?(File.expand_path(entrance))
@@ -119,7 +81,7 @@ class Compiler
     end
 
     @ruby_source_dir =
-      File.join(@options[:tmpdir], "ruby-#{::Compiler.ruby_version}-#{::Compiler::VERSION}")
+      File.join(@options[:tmpdir], "rubyc-#{::Compiler::VERSION}")
   end
 
   def init_entrance
