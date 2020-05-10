@@ -1,4 +1,4 @@
-# Ruby Compiler Changelog
+# Ruby Packer Changelog
 
 ## v0.4.0
 
@@ -17,8 +17,8 @@
     - removes the temporary directory and files at exit
 - upgrade to bundler 1.15.3
 - fixing the problem of failing to locate bundler
-  - https://github.com/pmq20/ruby-compiler/issues/11
-  - https://github.com/pmq20/ruby-compiler/issues/12
+  - https://github.com/pmq20/ruby-packer/issues/11
+  - https://github.com/pmq20/ruby-packer/issues/12
 - add `--gem` and `--gem-version` to download and compile a gem
 - add option --quiet to enable quiet mode
 

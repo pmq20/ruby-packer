@@ -20,7 +20,7 @@
 
 ## Get Started
 
-It takes less than 5 minutes to compile any project with Ruby Compiler.
+It takes less than 5 minutes to pack any project with Ruby Packer.
 
 You won't need to modify a single line of code in your application, no matter how you developed it as long as it works in plain Ruby!
 
@@ -145,8 +145,8 @@ Alternatively you can create a `.rubycignore` file in the root of your project t
 
 ### Compiling a CLI tool
 
-	git clone --depth 1 https://github.com/pmq20/ruby-compiler
-	cd ruby-compiler
+	git clone --depth 1 https://github.com/pmq20/ruby-packer
+	cd ruby-packer
 	rubyc bin/rubyc
 	./a.out (or a.exe on Windows)
 
