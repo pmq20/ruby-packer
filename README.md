@@ -202,4 +202,4 @@ Authors ordered by first contribution.
 
 ## License
 
-[MIT](https://raw.githubusercontent.com/pmq20/ruby-packer/master/LICENSE)
+MIT
