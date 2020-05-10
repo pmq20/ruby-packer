@@ -170,6 +170,12 @@ this is located at c:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\vc
 
 Ensure that bison and sed are in your path. If you installed to C:\Gnuwin32, they will be in C:\Gnuwin32\bin.
 
+## See Also
+
+- [Libsquash](https://github.com/pmq20/libsquash): portable, user-land SquashFS that can be easily linked and embedded within your application.
+- [Libautoupdate](https://github.com/pmq20/libautoupdate): cross-platform C library to enable your application to auto-update itself in place.
+- [Squashfs Tools](https://github.com/plougher/squashfs-tools): tools to create and extract Squashfs filesystems.
+
 ## Authors
 
 Authors ordered by first contribution.
@@ -196,10 +202,4 @@ Authors ordered by first contribution.
 
 ## License
 
-MIT
-
-## See Also
-
-- [Libsquash](https://github.com/pmq20/libsquash): portable, user-land SquashFS that can be easily linked and embedded within your application.
-- [Libautoupdate](https://github.com/pmq20/libautoupdate): cross-platform C library to enable your application to auto-update itself in place.
-- [Squashfs Tools](https://github.com/plougher/squashfs-tools): tools to create and extract Squashfs filesystems.
+[MIT](https://raw.githubusercontent.com/pmq20/ruby-packer/master/LICENSE)
