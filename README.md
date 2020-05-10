@@ -60,7 +60,9 @@ Alternatively you can create a `.rubycignore` file in the root of your project t
 
 ## Examples
 
-### Packing a CLI tool (E.g. Ruby Packer itself)
+### Packing a CLI utility
+
+Taking Ruby Packer itself as an example of the CLI utility to pack:
 
 	git clone --depth 1 https://github.com/pmq20/ruby-packer
 	cd ruby-packer
@@ -85,7 +87,9 @@ work with rubyc](https://github.com/pmq20/ruby-packer/issues/30#issuecomment-387
 	rubyc bin/rails
 	./a.out server (or a.exe server on Windows)
 
-### Producing a Single Ruby interpreter Executable (I.e. Raw Ruby without your Project)
+### Packing a Raw Ruby Interpreter Executable
+
+I.e. packing the raw Ruby interpreter without packing with your Project:
 
 	git clone --depth 1 https://github.com/pmq20/ruby-packer
 	cd ruby-packer
