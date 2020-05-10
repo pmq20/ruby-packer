@@ -107,6 +107,14 @@ OptionParser.new do |opts|
     options[:auto_update_base] = string
   end
 
+  opts.on("-i", "--ignore-file=STRING", "Ignore file(s) from build") do |string|
+    if options[:ignore_file].is_a?(Array)
+      options[:ignore_file] << string
+    else
+      options[:ignore_file] = [string]
+    end
+  end
+
   opts.on("--debug", "Enable debug mode") do
     options[:debug] = true
   end

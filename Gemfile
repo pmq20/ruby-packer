@@ -1,4 +1,5 @@
 source "https://rubygems.org"
 
-gem "minitest", "~> 5.11", ">= 5.11.3"
-gem "rake",     "~> 12.3", ">= 12.3.1"
+gem 'minitest', '~> 5.14'
+gem 'rake', '~> 13.0', '>= 13.0.1'
+
