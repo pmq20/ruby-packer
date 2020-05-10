@@ -24,14 +24,6 @@ It takes less than 5 minutes to pack any project with Ruby Packer.
 
 You won't need to modify a single line of code in your application, no matter how you developed it as long as it works in plain Ruby!
 
-|                       | Architecture |           Latest&#160;Stable                 |
-|:---------------------:|:------------:|----------------------------------------------|
-|       **macOS**       |    x86-64    | http://enclose.io/rubyc/rubyc-darwin-x64.gz  |
-|       **Linux**       |    x86-64    | http://enclose.io/rubyc/rubyc-linux-x64.gz   |
-|      **Windows**      |    x86-64    | http://enclose.io/rubyc/rubyc-x64.zip        |
-
-For previous releases, cf. http://enclose.io/rubyc
-
 ### Install on macOS
 
 First install the prerequisites:
