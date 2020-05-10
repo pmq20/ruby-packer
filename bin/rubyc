@@ -79,6 +79,10 @@ OptionParser.new do |opts|
     options[:keep_tmpdir] = true
   end
 
+  opts.on("--openssl-dir", "The path to openssl") do |dir|
+    options[:openssl_dir] = dir
+  end
+
   opts.on("--make-args=ARGS", "Extra arguments to be passed to make") do |args|
     options[:make_args] = args
   end

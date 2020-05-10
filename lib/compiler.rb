@@ -109,6 +109,7 @@ class Compiler
     @options[:output] = File.expand_path(@options[:output])
     @options[:tmpdir] ||= File.expand_path("rubyc", Dir.tmpdir)
     @options[:tmpdir] = File.expand_path(@options[:tmpdir])
+    @options[:openssl_dir] ||= '/usr/local/etc/openssl/'
     @options[:ignore_file].concat(File.readlines('.rubycignore').map(&:strip)) if File.exists?('.rubycignore')
 
     if @options[:auto_update_url] || @options[:auto_update_base]
@@ -511,7 +512,7 @@ class Compiler
       @utils.run(@compile_env,
                  "./config",
                  "no-shared",
-                 "--openssldir=/etc/ssl",
+                 "--openssldir=#{@options[:openssl_dir]}",
                  "--prefix=#{@local_build}")
       @utils.run(@compile_env, "make #{@options[:make_args]}")
       @utils.run(@compile_env, "make install_sw")
