@@ -20,11 +20,39 @@
 
 ## Get Started
 
-It takes less than 5 minutes to pack any project with Ruby Packer.
+It takes less than 5 minutes to pack any project with Ruby Packer. You won't need to modify a single line of code in your application, no matter how you developed it as long as it works in plain Ruby!
 
-You won't need to modify a single line of code in your application, no matter how you developed it as long as it works in plain Ruby!
+To build `rubyc` you must have a C compiler and the necessary toolchain to
+build ruby and the libraries stuffed inside rubyc which include at least:
+* gdbm
+* libffi
+* ncurses
+* openssl
+* readline
+* yaml
+* zlib
 
-### Install on macOS
+If you are unsure if your toolchain is complete then trying to build `rubyc`
+will let you know you are missing something.  Unfortunately it may tell you
+with some unfamiliar message.  Please file an issue here if this occurs.
+
+Once your toolchain is set up run `bundle`.  To compile your own `rubyc` run:
+
+	bundle exec rake rubyc
+
+Or:
+
+	rm rubyc; ruby -Ilib bin/rubyc bin/rubyc -o rubyc
+
+Remember that rubyc includes all the files from the current directory in the
+built executable.  You must *delete the prior rubyc* or your squashfs will
+*continually grow larger* and the embedded squashfs *compile time will be
+very, very long*.
+
+If you make changes to the stuffed libraries or the compiler you may need to
+add the `--clean-tmpdir` argument to `rubyc` for a clean rebuild.
+
+### Get Started on macOS
 
 First install the prerequisites:
 
@@ -41,7 +69,7 @@ Then,
     chmod +x rubyc
     ./rubyc --help
 
-### Install on Linux
+### Get Started on Linux
 
 First install the prerequisites:
 
@@ -58,7 +86,7 @@ Then,
     chmod +x rubyc
     ./rubyc --help
 
-### Install on Windows
+### Get Started on Windows
 
 First install the prerequisites:
 
@@ -132,21 +160,24 @@ Alternatively you can create a `.rubycignore` file in the root of your project t
 
 ### Producing a single Ruby interpreter executable
 
-	rubyc
+	git clone --depth 1 https://github.com/pmq20/ruby-packer
+	cd ruby-packer
+	bin/rubyc
 	./a.out (or a.exe on Windows)
 
-### Compiling a CLI tool
+### Compiling a CLI tool (e.g. Ruby Packer itself)
 
 	git clone --depth 1 https://github.com/pmq20/ruby-packer
 	cd ruby-packer
-	rubyc bin/rubyc
+	bin/rubyc bin/rubyc
 	./a.out (or a.exe on Windows)
 
 ### Compiling a Rails application
 
+	git clone --depth 1 https://github.com/pmq20/ruby-packer
 	rails new yours
 	cd yours
-	rubyc bin/rails
+	_YOUR_RUBY_PACKER_PATH_/rubyc bin/rails
 	./a.out server (or a.exe server on Windows)
 
 Note that some gems that use C extensions that use libc IO to load files from
@@ -155,42 +186,13 @@ work with rubyc](https://github.com/pmq20/ruby-packer/issues/30#issuecomment-387
 
 ### Compiling a Gem
 
-	rubyc --gem=bundler --gem-version=1.15.4 bundle
+	git clone --depth 1 https://github.com/pmq20/ruby-packer
+	cd ruby-packer
+	bin/rubyc --gem=bundler --gem-version=1.15.4 bundle
 	./a.out (or a.exe on Windows)
-
-## Building rubyc yourself
-
-To build `rubyc` you must have a C compiler and the necessary toolchain to
-build ruby and the libraries stuffed inside rubyc which include at least:
-* gdbm
-* libffi
-* ncurses
-* openssl
-* readline
-* yaml
-* zlib
-
-If you are unsure if your toolchain is complete then trying to build `rubyc`
-will let you know you are missing something.  Unfortunately it may tell you
-with some unfamiliar message.  Please file an issue here if this occurs.
-
-Once your toolchain is set up run `bundle`.  To compile your own `rubyc` run:
-
-	bundle exec rake rubyc
-
-Or:
-
-	rm rubyc; ruby -Ilib bin/rubyc bin/rubyc -o rubyc
-
-Remember that rubyc includes all the files from the current directory in the
-built executable.  You must *delete the prior rubyc* or your squashfs will
-*continually grow larger* and the embedded squashfs *compile time will be
-very, very long*.
-
-If you make changes to the stuffed libraries or the compiler you may need to
-add the `--clean-tmpdir` argument to `rubyc` for a clean rebuild.
 
 ## See Also
 
 - [Libsquash](https://github.com/pmq20/libsquash): portable, user-land SquashFS that can be easily linked and embedded within your application.
 - [Libautoupdate](https://github.com/pmq20/libautoupdate): cross-platform C library to enable your application to auto-update itself in place.
+- [squashfs-tools](https://github.com/plougher/squashfs-tools): tools to create and extract Squashfs filesystems.
