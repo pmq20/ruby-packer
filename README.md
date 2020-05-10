@@ -118,6 +118,12 @@ Or:
 
 	rm rubyc; ruby -Ilib bin/rubyc bin/rubyc -o rubyc
 
+This will produce a single `rubyc` executable, after which you can
+put it inside any of your `PATH` locations, so that it can be directly
+called from the command prompt. For example:
+
+	mv rubyc /usr/local/bin
+
 Remember that rubyc includes all the files from the current directory in the
 built executable.  You must *delete the prior rubyc* or your squashfs will
 *continually grow larger* and the embedded squashfs *compile time will be
