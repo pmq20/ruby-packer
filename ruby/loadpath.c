@@ -2,7 +2,7 @@
 
   loadpath.c -
 
-  $Author: akr $
+  $Author$
   created at: Wed May 15 14:19:50 JST 2013
 
   Copyright (C) 2013 Yukihiro Matsumoto
@@ -89,4 +89,3 @@ const char ruby_initial_load_paths[] =
     RUBY_ARCH_LIB_FOR(RUBY_ARCH) "\0"
 #endif
     "";
-

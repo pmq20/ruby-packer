@@ -1,7 +1,7 @@
 #!/bin/sh
 #
 # $RoughId: test.sh,v 1.5 2001/07/13 15:38:27 knu Exp $
-# $Id: test.sh 25189 2009-10-02 12:04:37Z akr $
+# $Id$
 
 RUBY=${RUBY:=ruby}
 MAKE=${MAKE:=make}

@@ -2,14 +2,27 @@
 #
 #   irb/lib/tracer.rb -
 #   	$Release Version: 0.9.6$
-#   	$Revision: 53141 $
+#   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
 #
 #
-require "tracer"
+begin
+  require "tracer"
+rescue LoadError
+  $stderr.puts "Tracer extension of IRB is enabled but tracer gem doesn't found."
+  module IRB
+    TracerLoadError = true
+    class Context
+      def use_tracer=(opt)
+        # do nothing
+      end
+    end
+  end
+  return # This is about to disable loading below
+end
 
 module IRB
 

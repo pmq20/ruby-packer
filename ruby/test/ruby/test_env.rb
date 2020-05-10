@@ -46,7 +46,6 @@ class TestEnv < Test::Unit::TestCase
     end
     ENV['TEST'] = 'bar'
     assert_equal('bar', ENV['TEST'])
-    assert_predicate(ENV['TEST'], :tainted?)
     if IGNORE_CASE
       assert_equal('bar', ENV['test'])
     else
@@ -113,7 +112,6 @@ class TestEnv < Test::Unit::TestCase
     assert_invalid_env {|v| ENV[v]}
     ENV[PATH_ENV] = ""
     assert_equal("", ENV[PATH_ENV])
-    assert_predicate(ENV[PATH_ENV], :tainted?)
     assert_nil(ENV[""])
   end
 
@@ -122,7 +120,7 @@ class TestEnv < Test::Unit::TestCase
     assert_equal("foo", ENV.fetch("test"))
     ENV.delete("test")
     feature8649 = '[ruby-core:56062] [Feature #8649]'
-    e = assert_raise_with_message(KeyError, 'key not found: "test"', feature8649) do
+    e = assert_raise_with_message(KeyError, /key not found: "test"/, feature8649) do
       ENV.fetch("test")
     end
     assert_same(ENV, e.receiver)
@@ -136,7 +134,6 @@ class TestEnv < Test::Unit::TestCase
     assert_nothing_raised { ENV.fetch(PATH_ENV, "foo") }
     ENV[PATH_ENV] = ""
     assert_equal("", ENV.fetch(PATH_ENV))
-    assert_predicate(ENV.fetch(PATH_ENV), :tainted?)
   end
 
   def test_aset
@@ -154,9 +151,6 @@ class TestEnv < Test::Unit::TestCase
       assert_equal("test", ENV["foo"])
     rescue Errno::EINVAL
     end
-
-    ENV[PATH_ENV] = "/tmp/".taint
-    assert_equal("/tmp/", ENV[PATH_ENV])
   end
 
   def test_keys
@@ -222,6 +216,18 @@ class TestEnv < Test::Unit::TestCase
     assert_nil(ENV.select! {|k, v| IGNORE_CASE ? k.upcase != "TEST" : k != "test" })
   end
 
+  def test_filter_bang
+    h1 = {}
+    ENV.each_pair {|k, v| h1[k] = v }
+    ENV["test"] = "foo"
+    ENV.filter! {|k, v| IGNORE_CASE ? k.upcase != "TEST" : k != "test" }
+    h2 = {}
+    ENV.each_pair {|k, v| h2[k] = v }
+    assert_equal(h1, h2)
+
+    assert_nil(ENV.filter! {|k, v| IGNORE_CASE ? k.upcase != "TEST" : k != "test" })
+  end
+
   def test_keep_if
     h1 = {}
     ENV.each_pair {|k, v| h1[k] = v }
@@ -252,6 +258,32 @@ class TestEnv < Test::Unit::TestCase
       assert_equal("test", k)
       assert_equal("foo", v)
     end
+  end
+
+  def test_filter
+    ENV["test"] = "foo"
+    h = ENV.filter {|k| IGNORE_CASE ? k.upcase == "TEST" : k == "test" }
+    assert_equal(1, h.size)
+    k = h.keys.first
+    v = h.values.first
+    if IGNORE_CASE
+      assert_equal("TEST", k.upcase)
+      assert_equal("FOO", v.upcase)
+    else
+      assert_equal("test", k)
+      assert_equal("foo", v)
+    end
+  end
+
+  def test_slice
+    ENV.clear
+    ENV["foo"] = "bar"
+    ENV["baz"] = "qux"
+    ENV["bar"] = "rab"
+    assert_equal({}, ENV.slice())
+    assert_equal({}, ENV.slice(""))
+    assert_equal({}, ENV.slice("unknown"))
+    assert_equal({"foo"=>"bar", "baz"=>"qux"}, ENV.slice("foo", "baz"))
   end
 
   def test_clear
@@ -326,7 +358,6 @@ class TestEnv < Test::Unit::TestCase
       assert_equal("foo", v)
     end
     assert_invalid_env {|var| ENV.assoc(var)}
-    assert_predicate(v, :tainted?)
     assert_equal(Encoding.find("locale"), v.encoding)
   end
 
@@ -361,6 +392,8 @@ class TestEnv < Test::Unit::TestCase
 
   def test_to_h
     assert_equal(ENV.to_hash, ENV.to_h)
+    assert_equal(ENV.map {|k, v| ["$#{k}", v.size]}.to_h,
+                 ENV.to_h {|k, v| ["$#{k}", v.size]})
   end
 
   def test_reject
@@ -412,14 +445,14 @@ class TestEnv < Test::Unit::TestCase
     ENV.clear
     ENV["foo"] = "bar"
     ENV["baz"] = "qux"
-    ENV.update({"baz"=>"quux","a"=>"b"}) {|k, v1, v2| v1 ? k + "_" + v1 + "_" + v2 : v2 }
+    ENV.update({"baz"=>"quux","a"=>"b"}) {|k, v1, v2| k + "_" + v1 + "_" + v2 }
     check(ENV.to_hash.to_a, [%w(foo bar), %w(baz baz_qux_quux), %w(a b)])
   end
 
   def test_huge_value
     huge_value = "bar" * 40960
     ENV["foo"] = "bar"
-    if /mswin|mingw/ =~ RUBY_PLATFORM
+    if /mswin/ =~ RUBY_PLATFORM
       assert_raise(Errno::EINVAL) { ENV["foo"] = huge_value }
       assert_equal("bar", ENV["foo"])
     else
@@ -429,6 +462,10 @@ class TestEnv < Test::Unit::TestCase
   end
 
   if /mswin|mingw/ =~ RUBY_PLATFORM
+    def windows_version
+      @windows_version ||= %x[ver][/Version (\d+)/, 1].to_i
+    end
+
     def test_win32_blocksize
       keys = []
       len = 32767 - ENV.to_a.flatten.inject(1) {|r,e| r + e.bytesize + 1}
@@ -438,12 +475,22 @@ class TestEnv < Test::Unit::TestCase
         keys << key
         ENV[key] = val
       end
-      1.upto(12) {|i|
-        assert_raise(Errno::EINVAL) { ENV[key] = val }
-      }
+      if windows_version < 6
+        1.upto(12) {|i|
+          assert_raise(Errno::EINVAL) { ENV[key] = val }
+        }
+      else
+        1.upto(12) {|i|
+          assert_nothing_raised(Errno::EINVAL) { ENV[key] = val }
+        }
+      end
     ensure
       keys.each {|k| ENV.delete(k)}
     end
+  end
+
+  def test_frozen_env
+    assert_raise(TypeError) { ENV.freeze }
   end
 
   def test_frozen

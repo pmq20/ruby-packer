@@ -102,6 +102,14 @@ class TestSocketAddrinfo < Test::Unit::TestCase
     assert(!ipv4_ai.unix?)
   end
 
+  def test_error_message
+    e = assert_raise_with_message(SocketError, /getaddrinfo:/) do
+      Addrinfo.ip("...")
+    end
+    m = e.message
+    assert_not_equal([false, Encoding::ASCII_8BIT], [m.ascii_only?, m.encoding], proc {m.inspect})
+  end
+
   def test_ipv4_address_predicates
     list = [
       [:ipv4_private?, "10.0.0.0", "10.255.255.255",
@@ -680,5 +688,9 @@ class TestSocketAddrinfo < Test::Unit::TestCase
       assert_equal(ai1.canonname, ai2.canonname)
     end
 
+    def test_addrinfo_timeout
+      ai = Addrinfo.getaddrinfo("localhost", "ssh", Socket::PF_INET, Socket::SOCK_STREAM, timeout: 1).fetch(0)
+      assert_equal(22, ai.ip_port)
+    end
   end
 end

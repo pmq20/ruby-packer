@@ -7,7 +7,6 @@ require 'timeout'
 module DRbTests
 
 class DRbService
-  @@manager = DRb::ExtServManager.new
   @@ruby = [EnvUtil.rubybin]
   @@ruby << "-d" if $DEBUG
   def self.add_service_command(nm)
@@ -18,21 +17,32 @@ class DRbService
   %w(ut_drb.rb ut_array.rb ut_port.rb ut_large.rb ut_safe1.rb ut_eq.rb).each do |nm|
     add_service_command(nm)
   end
-  @server = @@server = DRb::DRbServer.new('druby://localhost:0', @@manager, {})
-  @@manager.uri = @@server.uri
-  def self.manager
-    @@manager
+
+  def initialize
+    @manager = DRb::ExtServManager.new
+    start
+    @manager.uri = server.uri
   end
-  def self.server
-    @server || @@server
+
+  def start
+    @server = DRb::DRbServer.new('druby://localhost:0', manager, {})
   end
-  def self.ext_service(name)
-    Timeout.timeout(100, RuntimeError) do
+
+  attr_reader :manager
+  attr_reader :server
+
+  def ext_service(name)
+    EnvUtil.timeout(100, RuntimeError) do
       manager.service(name)
     end
   end
-  def self.finish
-    @server.instance_variable_get(:@grp).list.each {|th| th.join }
+
+  def finish
+    server.instance_variable_get(:@grp).list.each {|th| th.join }
+    server.stop_service
+    manager.instance_variable_get(:@queue)&.push(nil)
+    manager.instance_variable_get(:@thread)&.join
+    DRb::DRbConn.stop_pool
   end
 end
 
@@ -68,35 +78,43 @@ class XArray < Array
 end
 
 module DRbBase
+  def setup
+    @drb_service ||= DRbService.new
+  end
+
   def setup_service(service_name)
     @service_name = service_name
-    @ext = DRbService.ext_service(@service_name)
+    @ext = @drb_service.ext_service(@service_name)
     @there = @ext.front
   end
 
   def teardown
     @ext.stop_service if defined?(@ext) && @ext
-    DRbService.manager.unregist(@service_name)
-    while (@there&&@there.to_s rescue nil)
-      # nop
-    end
-    signal = /mswin|mingw/ =~ RUBY_PLATFORM ? :KILL : :TERM
-    Thread.list.each {|th|
-      if th.respond_to?(:pid) && th[:drb_service] == @service_name
-        10.times do
-          begin
-            Process.kill signal, th.pid
-            break
-          rescue Errno::ESRCH
-            break
-          rescue Errno::EPERM # on Windows
-            sleep 0.1
-            retry
-          end
-        end
-        th.join
+    if defined?(@service_name) && @service_name
+      @drb_service.manager.unregist(@service_name)
+      while (@there&&@there.to_s rescue nil)
+        # nop
       end
-    }
+      signal = /mswin|mingw/ =~ RUBY_PLATFORM ? :KILL : :TERM
+      Thread.list.each {|th|
+        if th.respond_to?(:pid) && th[:drb_service] == @service_name
+          10.times do
+            begin
+              Process.kill signal, th.pid
+              break
+            rescue Errno::ESRCH
+              break
+            rescue Errno::EPERM # on Windows
+              sleep 0.1
+              retry
+            end
+          end
+          th.join
+        end
+      }
+    end
+    @drb_service.finish
+    DRb::DRbConn.stop_pool
   end
 end
 
@@ -137,6 +155,14 @@ module DRbCore
       ary = @there.to_a
       assert_kind_of(DRb::DRbObject, ary)
     end
+  end
+
+  def test_02_basic_object
+    obj = @there.basic_object
+    assert_kind_of(DRb::DRbObject, obj)
+    assert_equal(1, obj.foo)
+    assert_raise(NoMethodError){obj.prot}
+    assert_raise(NoMethodError){obj.priv}
   end
 
   def test_02_unknown
@@ -187,12 +213,16 @@ module DRbCore
   end
 
   def test_06_timeout
-    ten = Onecky.new(10)
-    assert_raise(Timeout::Error) do
-      @there.do_timeout(ten)
-    end
-    assert_raise(Timeout::Error) do
-      @there.do_timeout(ten)
+    skip if RUBY_PLATFORM.include?("armv7l-linux")
+    skip if RUBY_PLATFORM.include?("sparc-solaris2.10")
+    Timeout.timeout(60) do
+      ten = Onecky.new(10)
+      assert_raise(Timeout::Error) do
+        @there.do_timeout(ten)
+      end
+      assert_raise(Timeout::Error) do
+        @there.do_timeout(ten)
+      end
     end
   end
 

@@ -1,5 +1,5 @@
 /* $RoughId: sha1init.c,v 1.2 2001/07/13 19:49:10 knu Exp $ */
-/* $Id: sha1init.c 56456 2016-10-20 07:57:31Z svn $ */
+/* $Id$ */
 
 #include <ruby/ruby.h>
 #include "../digest.h"
@@ -53,12 +53,10 @@ Init_sha1(void)
 {
     VALUE mDigest, cDigest_Base, cDigest_SHA1;
 
-    rb_require("digest");
-
 #if 0
     mDigest = rb_define_module("Digest"); /* let rdoc know */
 #endif
-    mDigest = rb_path2class("Digest");
+    mDigest = rb_digest_namespace();
     cDigest_Base = rb_path2class("Digest::Base");
 
     cDigest_SHA1 = rb_define_class_under(mDigest, "SHA1", cDigest_Base);

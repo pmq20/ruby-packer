@@ -1,7 +1,7 @@
 # frozen_string_literal: false
 #   multi.rb -
 #   	$Release Version: 0.9.6$
-#   	$Revision: 56371 $
+#   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
@@ -9,8 +9,8 @@
 #
 #
 
-require "irb/cmd/nop.rb"
-require "irb/ext/multi-irb"
+require_relative "nop"
+require_relative "../ext/multi-irb"
 
 # :stopdoc:
 module IRB

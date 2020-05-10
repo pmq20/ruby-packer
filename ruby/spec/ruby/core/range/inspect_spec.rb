@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Range#inspect" do
   it "provides a printable form, using #inspect to convert the start and end objects" do
@@ -12,15 +12,17 @@ describe "Range#inspect" do
     (0.5..2.4).inspect.should == "0.5..2.4"
   end
 
-  it "returns a tainted string if either end is tainted" do
-    (("a".taint)..."c").inspect.tainted?.should be_true
-    ("a"...("c".taint)).inspect.tainted?.should be_true
-    ("a"..."c").taint.inspect.tainted?.should be_true
-  end
+  ruby_version_is ''...'2.7' do
+    it "returns a tainted string if either end is tainted" do
+      (("a".taint)..."c").inspect.tainted?.should be_true
+      ("a"...("c".taint)).inspect.tainted?.should be_true
+      ("a"..."c").taint.inspect.tainted?.should be_true
+    end
 
-  it "returns a untrusted string if either end is untrusted" do
-    (("a".untrust)..."c").inspect.untrusted?.should be_true
-    ("a"...("c".untrust)).inspect.untrusted?.should be_true
-    ("a"..."c").untrust.inspect.untrusted?.should be_true
+    it "returns a untrusted string if either end is untrusted" do
+      (("a".untrust)..."c").inspect.untrusted?.should be_true
+      ("a"...("c".untrust)).inspect.untrusted?.should be_true
+      ("a"..."c").untrust.inspect.untrusted?.should be_true
+    end
   end
 end

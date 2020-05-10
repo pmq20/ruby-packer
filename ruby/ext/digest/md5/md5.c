@@ -49,7 +49,7 @@
 
 /*$OrigId: md5c.c,v 1.2 2001/03/26 08:57:14 matz Exp $ */
 /*$RoughId: md5.c,v 1.2 2001/07/13 19:48:41 knu Exp $ */
-/*$Id: md5.c 47744 2014-09-30 05:25:32Z nobu $ */
+/*$Id$ */
 
 #include "md5.h"
 

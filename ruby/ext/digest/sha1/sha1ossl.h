@@ -1,4 +1,4 @@
-/* $Id: sha1ossl.h 55523 2016-06-28 09:42:29Z ngoto $ */
+/* $Id$ */
 
 #ifndef SHA1OSSL_H_INCLUDED
 #define SHA1OSSL_H_INCLUDED

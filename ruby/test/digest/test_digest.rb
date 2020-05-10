@@ -1,6 +1,6 @@
 # frozen_string_literal: false
 # $RoughId: test.rb,v 1.4 2001/07/13 15:38:27 knu Exp $
-# $Id: test_digest.rb 61186 2017-12-12 18:44:21Z eregon $
+# $Id$
 
 require 'test/unit'
 require 'tempfile'

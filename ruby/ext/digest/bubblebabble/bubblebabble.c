@@ -2,12 +2,12 @@
 
   bubblebabble.c - BubbleBabble encoding support
 
-  $Author: nobu $
+  $Author$
   created at: Fri Oct 13 18:31:42 JST 2006
 
   Copyright (C) 2006 Akinori MUSHA
 
-  $Id: bubblebabble.c 55773 2016-07-29 11:57:14Z nobu $
+  $Id$
 
 ************************************************/
 
@@ -124,6 +124,7 @@ rb_digest_instance_bubblebabble(VALUE self)
 void
 Init_bubblebabble(void)
 {
+#undef rb_intern
     VALUE rb_mDigest, rb_mDigest_Instance, rb_cDigest_Class;
 
     rb_require("digest");

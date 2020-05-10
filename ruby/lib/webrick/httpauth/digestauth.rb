@@ -12,9 +12,9 @@
 #
 # $IPR: digestauth.rb,v 1.5 2003/02/20 07:15:47 gotoyuzo Exp $
 
-require 'webrick/config'
-require 'webrick/httpstatus'
-require 'webrick/httpauth/authenticator'
+require_relative '../config'
+require_relative '../httpstatus'
+require_relative 'authenticator'
 require 'digest/md5'
 require 'digest/sha1'
 
@@ -290,23 +290,8 @@ module WEBrick
 
       def split_param_value(string)
         ret = {}
-        while string.bytesize != 0
-          case string
-          when /^\s*([\w\-\.\*\%\!]+)=\s*\"((\\.|[^\"])*)\"\s*,?/
-            key = $1
-            matched = $2
-            string = $'
-            ret[key] = matched.gsub(/\\(.)/, "\\1")
-          when /^\s*([\w\-\.\*\%\!]+)=\s*([^,\"]*),?/
-            key = $1
-            matched = $2
-            string = $'
-            ret[key] = matched.clone
-          when /^s*^,/
-            string = $'
-          else
-            break
-          end
+        string.scan(/\G\s*([\w\-.*%!]+)=\s*(?:\"((?>\\.|[^\"])*)\"|([^,\"]*))\s*,?/) do
+          ret[$1] = $3 || $2.gsub(/\\(.)/, "\\1")
         end
         ret
       end

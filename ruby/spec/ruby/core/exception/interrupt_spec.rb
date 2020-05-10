@@ -1,10 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-
-describe "Interrupt" do
-  it "is a subclass of SignalException" do
-    Interrupt.superclass.should == SignalException
-  end
-end
+require_relative '../../spec_helper'
 
 describe "Interrupt.new" do
   it "returns an instance of interrupt with no message given" do
@@ -20,7 +14,7 @@ describe "Interrupt.new" do
   end
 end
 
-describe "rescueing Interrupt" do
+describe "rescuing Interrupt" do
   before do
     @original_sigint_proc = Signal.trap(:INT, :SIG_DFL)
   end

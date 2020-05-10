@@ -2,7 +2,7 @@
 
   dbm.c -
 
-  $Author: rhe $
+  $Author$
   created at: Mon Jan 24 15:59:52 JST 1994
 
   Copyright (C) 1995-2001 Yukihiro Matsumoto
@@ -38,6 +38,8 @@ struct dbmdata {
     long di_size;
     DBM *di_dbm;
 };
+
+NORETURN(static void closed_dbm(void));
 
 static void
 closed_dbm(void)
@@ -277,12 +279,11 @@ fdbm_fetch(VALUE obj, VALUE keystr, VALUE ifnone)
       not_found:
 	if (NIL_P(ifnone) && rb_block_given_p()) {
 	    keystr = rb_str_dup(keystr);
-	    OBJ_TAINT(keystr);
 	    return rb_yield(keystr);
 	}
 	return ifnone;
     }
-    return rb_tainted_str_new(value.dptr, value.dsize);
+    return rb_str_new(value.dptr, value.dsize);
 }
 
 /*
@@ -342,7 +343,7 @@ fdbm_key(VALUE obj, VALUE valstr)
 	val = dbm_fetch(dbm, key);
 	if ((long)val.dsize == RSTRING_LEN(valstr) &&
 	    memcmp(val.dptr, RSTRING_PTR(valstr), val.dsize) == 0) {
-	    return rb_tainted_str_new(key.dptr, key.dsize);
+	    return rb_str_new(key.dptr, key.dsize);
 	}
     }
     return Qnil;
@@ -375,8 +376,8 @@ fdbm_select(VALUE obj)
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
 	VALUE assoc, v;
 	val = dbm_fetch(dbm, key);
-	assoc = rb_assoc_new(rb_tainted_str_new(key.dptr, key.dsize),
-			     rb_tainted_str_new(val.dptr, val.dsize));
+	assoc = rb_assoc_new(rb_str_new(key.dptr, key.dsize),
+			     rb_str_new(val.dptr, val.dsize));
 	v = rb_yield(assoc);
 	if (RTEST(v)) {
 	    rb_ary_push(new, assoc);
@@ -444,7 +445,7 @@ fdbm_delete(VALUE obj, VALUE keystr)
     }
 
     /* need to save value before dbm_delete() */
-    valstr = rb_tainted_str_new(value.dptr, value.dsize);
+    valstr = rb_str_new(value.dptr, value.dsize);
 
     if (dbm_delete(dbm, key)) {
 	dbmp->di_size = -1;
@@ -479,8 +480,8 @@ fdbm_shift(VALUE obj)
     key = dbm_firstkey(dbm);
     if (!key.dptr) return Qnil;
     val = dbm_fetch(dbm, key);
-    keystr = rb_tainted_str_new(key.dptr, key.dsize);
-    valstr = rb_tainted_str_new(val.dptr, val.dsize);
+    keystr = rb_str_new(key.dptr, key.dsize);
+    valstr = rb_str_new(val.dptr, val.dsize);
     dbm_delete(dbm, key);
 
     return rb_assoc_new(keystr, valstr);
@@ -512,9 +513,9 @@ fdbm_delete_if(VALUE obj)
 
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
 	val = dbm_fetch(dbm, key);
-	keystr = rb_tainted_str_new(key.dptr, key.dsize);
+	keystr = rb_str_new(key.dptr, key.dsize);
 	OBJ_FREEZE(keystr);
-	valstr = rb_tainted_str_new(val.dptr, val.dsize);
+	valstr = rb_str_new(val.dptr, val.dsize);
         ret = rb_protect(rb_yield, rb_assoc_new(rb_str_dup(keystr), valstr), &status);
         if (status != 0) break;
 	if (RTEST(ret)) rb_ary_push(ary, keystr);
@@ -581,8 +582,8 @@ fdbm_invert(VALUE obj)
     GetDBM2(obj, dbmp, dbm);
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
 	val = dbm_fetch(dbm, key);
-	keystr = rb_tainted_str_new(key.dptr, key.dsize);
-	valstr = rb_tainted_str_new(val.dptr, val.dsize);
+	keystr = rb_str_new(key.dptr, key.dsize);
+	valstr = rb_str_new(val.dptr, val.dsize);
 	rb_hash_aset(hash, valstr, keystr);
     }
     return hash;
@@ -742,7 +743,7 @@ fdbm_each_value(VALUE obj)
     GetDBM2(obj, dbmp, dbm);
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
 	val = dbm_fetch(dbm, key);
-	rb_yield(rb_tainted_str_new(val.dptr, val.dsize));
+	rb_yield(rb_str_new(val.dptr, val.dsize));
 	GetDBM2(obj, dbmp, dbm);
     }
     return obj;
@@ -765,7 +766,7 @@ fdbm_each_key(VALUE obj)
 
     GetDBM2(obj, dbmp, dbm);
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
-	rb_yield(rb_tainted_str_new(key.dptr, key.dsize));
+	rb_yield(rb_str_new(key.dptr, key.dsize));
 	GetDBM2(obj, dbmp, dbm);
     }
     return obj;
@@ -792,8 +793,8 @@ fdbm_each_pair(VALUE obj)
 
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
 	val = dbm_fetch(dbm, key);
-	keystr = rb_tainted_str_new(key.dptr, key.dsize);
-	valstr = rb_tainted_str_new(val.dptr, val.dsize);
+	keystr = rb_str_new(key.dptr, key.dsize);
+	valstr = rb_str_new(val.dptr, val.dsize);
 	rb_yield(rb_assoc_new(keystr, valstr));
 	GetDBM2(obj, dbmp, dbm);
     }
@@ -819,7 +820,7 @@ fdbm_keys(VALUE obj)
 
     ary = rb_ary_new();
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
-	rb_ary_push(ary, rb_tainted_str_new(key.dptr, key.dsize));
+	rb_ary_push(ary, rb_str_new(key.dptr, key.dsize));
     }
 
     return ary;
@@ -843,7 +844,7 @@ fdbm_values(VALUE obj)
     ary = rb_ary_new();
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
 	val = dbm_fetch(dbm, key);
-	rb_ary_push(ary, rb_tainted_str_new(val.dptr, val.dsize));
+	rb_ary_push(ary, rb_str_new(val.dptr, val.dsize));
     }
 
     return ary;
@@ -929,8 +930,8 @@ fdbm_to_a(VALUE obj)
     ary = rb_ary_new();
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
 	val = dbm_fetch(dbm, key);
-	rb_ary_push(ary, rb_assoc_new(rb_tainted_str_new(key.dptr, key.dsize),
-				      rb_tainted_str_new(val.dptr, val.dsize)));
+	rb_ary_push(ary, rb_assoc_new(rb_str_new(key.dptr, key.dsize),
+				      rb_str_new(val.dptr, val.dsize)));
     }
 
     return ary;
@@ -955,8 +956,8 @@ fdbm_to_hash(VALUE obj)
     hash = rb_hash_new();
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
 	val = dbm_fetch(dbm, key);
-	rb_hash_aset(hash, rb_tainted_str_new(key.dptr, key.dsize),
-		           rb_tainted_str_new(val.dptr, val.dsize));
+	rb_hash_aset(hash, rb_str_new(key.dptr, key.dsize),
+		           rb_str_new(val.dptr, val.dsize));
     }
 
     return hash;
@@ -992,7 +993,7 @@ fdbm_reject(VALUE obj)
  *   It is based on dbm library in Unix Version 7 but has different API to
  *   support multiple databases in a process.
  * - {Berkeley DB}[http://en.wikipedia.org/wiki/Berkeley_DB] versions
- *   1 thru 5, also known as BDB and Sleepycat DB, now owned by Oracle
+ *   1 thru 6, also known as BDB and Sleepycat DB, now owned by Oracle
  *   Corporation.
  * - Berkeley DB 1.x, still found in 4.4BSD derivatives (FreeBSD, OpenBSD, etc).
  * - {gdbm}[http://www.gnu.org/software/gdbm/], the GNU implementation of dbm.

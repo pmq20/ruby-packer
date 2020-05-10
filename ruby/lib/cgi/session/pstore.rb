@@ -10,7 +10,7 @@
 # persistent of session data on top of the pstore library.  See
 # cgi/session.rb for more details on session storage managers.
 
-require 'cgi/session'
+require_relative '../session'
 require 'pstore'
 
 class CGI
@@ -50,7 +50,6 @@ class CGI
         require 'digest/md5'
         md5 = Digest::MD5.hexdigest(id)[0,16]
         path = dir+"/"+prefix+md5
-        path.untaint
         if File::exist?(path)
           @hash = nil
         else

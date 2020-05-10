@@ -135,7 +135,7 @@ GET /
     assert_equal("", req.script_name)
     assert_equal("/foo/baz", req.path_info)
     assert_equal("9", req['content-length'])
-    assert_equal("FOO BAR BAZ", req['user-agent'])
+    assert_equal("FOO   BAR BAZ", req['user-agent'])
     assert_equal("hogehoge\n", req.body)
   end
 
@@ -237,6 +237,7 @@ GET /
 
   def test_chunked
     crlf = "\x0d\x0a"
+    expect = File.binread(__FILE__).freeze
     msg = <<-_end_of_message_
       POST /path HTTP/1.1
       Host: test.ruby-lang.org:8080
@@ -253,7 +254,14 @@ GET /
     msg << "0" << crlf
     req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
     req.parse(StringIO.new(msg))
-    assert_equal(File.read(__FILE__), req.body)
+    assert_equal(expect, req.body)
+
+    # chunked req.body_reader
+    req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
+    req.parse(StringIO.new(msg))
+    dst = StringIO.new
+    IO.copy_stream(req.body_reader, dst)
+    assert_equal(expect, dst.string)
   end
 
   def test_forwarded
@@ -340,6 +348,50 @@ GET /
     assert_equal(1234, req.port)
     assert_equal("234.234.234.234", req.remote_ip)
     assert(req.ssl?)
+
+    msg = <<-_end_of_message_
+      GET /foo HTTP/1.1
+      Host: localhost:10080
+      Client-IP: 234.234.234.234
+      X-Forwarded-Proto: https
+      X-Forwarded-For: 192.168.1.10
+      X-Forwarded-Host: [fd20:8b1e:b255:8154:250:56ff:fea8:4d84], forward2.example.com:5678
+      X-Forwarded-Server: server1.example.com, server2.example.com
+      X-Requested-With: XMLHttpRequest
+      Connection: Keep-Alive
+
+    _end_of_message_
+    msg.gsub!(/^ {6}/, "")
+    req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
+    req.parse(StringIO.new(msg))
+    assert_equal("server1.example.com", req.server_name)
+    assert_equal("https://[fd20:8b1e:b255:8154:250:56ff:fea8:4d84]/foo", req.request_uri.to_s)
+    assert_equal("[fd20:8b1e:b255:8154:250:56ff:fea8:4d84]", req.host)
+    assert_equal(443, req.port)
+    assert_equal("234.234.234.234", req.remote_ip)
+    assert(req.ssl?)
+
+    msg = <<-_end_of_message_
+      GET /foo HTTP/1.1
+      Host: localhost:10080
+      Client-IP: 234.234.234.234
+      X-Forwarded-Proto: https
+      X-Forwarded-For: 192.168.1.10
+      X-Forwarded-Host: [fd20:8b1e:b255:8154:250:56ff:fea8:4d84]:1234, forward2.example.com:5678
+      X-Forwarded-Server: server1.example.com, server2.example.com
+      X-Requested-With: XMLHttpRequest
+      Connection: Keep-Alive
+
+    _end_of_message_
+    msg.gsub!(/^ {6}/, "")
+    req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
+    req.parse(StringIO.new(msg))
+    assert_equal("server1.example.com", req.server_name)
+    assert_equal("https://[fd20:8b1e:b255:8154:250:56ff:fea8:4d84]:1234/foo", req.request_uri.to_s)
+    assert_equal("[fd20:8b1e:b255:8154:250:56ff:fea8:4d84]", req.host)
+    assert_equal(1234, req.port)
+    assert_equal("234.234.234.234", req.remote_ip)
+    assert(req.ssl?)
   end
 
   def test_continue_sent
@@ -412,6 +464,13 @@ GET /
       req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
       req.parse(StringIO.new(msg.gsub(/^ {6}/, "")))
       req.body
+    }
+  end
+
+  def test_eof_raised_when_line_is_nil
+    assert_raise(WEBrick::HTTPStatus::EOFError) {
+      req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
+      req.parse(StringIO.new(""))
     }
   end
 end

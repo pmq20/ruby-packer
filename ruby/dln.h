@@ -2,7 +2,7 @@
 
   dln.h -
 
-  $Author: nobu $
+  $Author$
   created at: Wed Jan 19 16:53:09 JST 1994
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto

@@ -1,9 +1,19 @@
 # coding: utf-8
 # frozen_string_literal: true
+
+source_version = ["", "ext/zlib/"].find do |dir|
+  begin
+    break File.open(File.join(__dir__, "#{dir}zlib.c")) {|f|
+      f.gets("\n#define RUBY_ZLIB_VERSION ")
+      f.gets[/\s*"(.+)"/, 1]
+    }
+  rescue Errno::ENOENT
+  end
+end
+
 Gem::Specification.new do |spec|
   spec.name          = "zlib"
-  spec.version       = "1.0.0"
-  spec.date          = '2017-12-11'
+  spec.version       = source_version
   spec.authors       = ["Yukihiro Matsumoto", "UENO Katsuhiro"]
   spec.email         = ["matz@ruby-lang.org", nil]
 

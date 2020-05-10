@@ -60,6 +60,10 @@ module TestStruct
     assert_equal(1, o.a)
   end
 
+  def test_attrset_id
+    assert_raise(ArgumentError) { Struct.new(:x=) }
+  end
+
   def test_members
     klass = @Struct.new(:a)
     o = klass.new(1)
@@ -92,11 +96,16 @@ module TestStruct
     assert_equal([:utime, :stime, :cutime, :cstime], Process.times.members)
   end
 
+  def test_struct_new_with_empty_hash
+    assert_equal({:a=>1}, Struct.new(:a, {}).new({:a=>1}).a)
+  end
+
   def test_struct_new_with_keyword_init
     @Struct.new("KeywordInitTrue", :a, :b, keyword_init: true)
     @Struct.new("KeywordInitFalse", :a, :b, keyword_init: false)
 
     assert_raise(ArgumentError) { @Struct::KeywordInitTrue.new(1, 2) }
+    assert_raise(ArgumentError) { @Struct::KeywordInitTrue.new({a: 100}, 2) }
     assert_nothing_raised { @Struct::KeywordInitFalse.new(1, 2) }
     assert_nothing_raised { @Struct::KeywordInitTrue.new(a: 1, b: 2) }
     assert_raise(ArgumentError) { @Struct::KeywordInitTrue.new(1, b: 2) }
@@ -104,11 +113,26 @@ module TestStruct
     assert_equal @Struct::KeywordInitTrue.new(a: 1, b: 2).values, @Struct::KeywordInitFalse.new(1, 2).values
     assert_equal "#{@Struct}::KeywordInitFalse", @Struct::KeywordInitFalse.inspect
     assert_equal "#{@Struct}::KeywordInitTrue(keyword_init: true)", @Struct::KeywordInitTrue.inspect
+    # eval is needed to prevent the warning duplication filter
+    k = eval("Class.new(@Struct::KeywordInitFalse) {def initialize(**) end}")
+    assert_warn(/Using the last argument as keyword parameters is deprecated/) {k.new(a: 1, b: 2)}
+    k = Class.new(@Struct::KeywordInitTrue) {def initialize(**) end}
+    assert_warn('') {k.new(a: 1, b: 2)}
 
     @Struct.instance_eval do
       remove_const(:KeywordInitTrue)
       remove_const(:KeywordInitFalse)
     end
+  end
+
+  def test_struct_new_with_keyword_init_and_block
+    struct = @Struct.new(:a, :b, keyword_init: true) do
+      def c
+        a + b
+      end
+    end
+
+    assert_equal(3, struct.new(a: 1, b: 2).c)
   end
 
   def test_initialize
@@ -212,6 +236,13 @@ module TestStruct
     assert_raise(ArgumentError) { o.select(1) }
   end
 
+  def test_filter
+    klass = @Struct.new(:a, :b, :c, :d, :e, :f)
+    o = klass.new(1, 2, 3, 4, 5, 6)
+    assert_equal([1, 3, 5], o.filter {|v| v % 2 != 0 })
+    assert_raise(ArgumentError) { o.filter(1) }
+  end
+
   def test_big_struct
     klass1 = @Struct.new(*('a'..'z').map(&:to_sym))
     o = klass1.new
@@ -268,6 +299,7 @@ module TestStruct
     klass = @Struct.new(:a)
     o = klass.new(1)
     assert_kind_of(Integer, o.hash)
+    assert_kind_of(String, o.hash.to_s)
   end
 
   def test_eql
@@ -355,6 +387,13 @@ module TestStruct
     assert_equal({a:1, b:2, c:3, d:4, e:5, f:6}, o.to_h)
   end
 
+  def test_to_h_block
+    klass = @Struct.new(:a, :b, :c, :d, :e, :f)
+    o = klass.new(1, 2, 3, 4, 5, 6)
+    assert_equal({"a" => 1, "b" => 4, "c" => 9, "d" => 16, "e" => 25, "f" => 36},
+                 o.to_h {|k, v| [k.to_s, v*v]})
+  end
+
   def test_question_mark_in_member
     klass = @Struct.new(:a, :b?)
     x = Object.new
@@ -386,10 +425,22 @@ module TestStruct
     assert_nil(o.dig(:b, 0))
   end
 
-  def test_new_dupilicate
+  def test_new_duplicate
     bug12291 = '[ruby-core:74971] [Bug #12291]'
     assert_raise_with_message(ArgumentError, /duplicate member/, bug12291) {
       @Struct.new(:a, :a)
+    }
+  end
+
+  def test_deconstruct_keys
+    klass = @Struct.new(:a, :b)
+    o = klass.new(1, 2)
+    assert_equal({a: 1, b: 2}, o.deconstruct_keys(nil))
+    assert_equal({a: 1, b: 2}, o.deconstruct_keys([:b, :a]))
+    assert_equal({a: 1}, o.deconstruct_keys([:a]))
+    assert_not_send([o.deconstruct_keys([:a, :c]), :key?, :c])
+    assert_raise(TypeError) {
+      o.deconstruct_keys(0)
     }
   end
 

@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Array#delete_at" do
   it "removes the element at the specified index" do
@@ -35,27 +35,29 @@ describe "Array#delete_at" do
     a.delete_at(-2).should == 1
   end
 
-  it "raises a RuntimeError on a frozen array" do
-    lambda { [1,2,3].freeze.delete_at(0) }.should raise_error(RuntimeError)
+  it "raises a #{frozen_error_class} on a frozen array" do
+    -> { [1,2,3].freeze.delete_at(0) }.should raise_error(frozen_error_class)
   end
 
-  it "keeps tainted status" do
-    ary = [1, 2]
-    ary.taint
-    ary.tainted?.should be_true
-    ary.delete_at(0)
-    ary.tainted?.should be_true
-    ary.delete_at(0) # now empty
-    ary.tainted?.should be_true
-  end
+  ruby_version_is ''...'2.7' do
+    it "keeps tainted status" do
+      ary = [1, 2]
+      ary.taint
+      ary.tainted?.should be_true
+      ary.delete_at(0)
+      ary.tainted?.should be_true
+      ary.delete_at(0) # now empty
+      ary.tainted?.should be_true
+    end
 
-  it "keeps untrusted status" do
-    ary = [1, 2]
-    ary.untrust
-    ary.untrusted?.should be_true
-    ary.delete_at(0)
-    ary.untrusted?.should be_true
-    ary.delete_at(0) # now empty
-    ary.untrusted?.should be_true
+    it "keeps untrusted status" do
+      ary = [1, 2]
+      ary.untrust
+      ary.untrusted?.should be_true
+      ary.delete_at(0)
+      ary.untrusted?.should be_true
+      ary.delete_at(0) # now empty
+      ary.untrusted?.should be_true
+    end
   end
 end

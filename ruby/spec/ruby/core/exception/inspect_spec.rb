@@ -1,9 +1,13 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/common', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/common'
 
 describe "Exception#inspect" do
   it "returns '#<Exception: Exception>' when no message given" do
     Exception.new.inspect.should == "#<Exception: Exception>"
+  end
+
+  it "keeps message encoding" do
+    Exception.new('å').inspect.should == "#<Exception: å>"
   end
 
   it "includes #to_s when the result is non-empty" do

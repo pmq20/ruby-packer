@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-# $Id: fileasserts.rb 57275 2017-01-07 02:14:07Z kazu $
+# $Id$
 
 module Test
   module Unit

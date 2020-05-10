@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rdoc/test_case'
+require_relative 'helper'
 
 class TestRDocMarkupInclude < RDoc::TestCase
 

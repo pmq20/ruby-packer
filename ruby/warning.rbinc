@@ -1,0 +1,25 @@
+// -*- c -*-
+// DO NOT MODIFY THIS FILE DIRECTLY.
+// auto-generated file
+//   by ./tool/mk_builtin_loader.rb
+//   with warning.rb
+
+static void load_warning(void)
+{
+  // table definition
+  static const struct rb_builtin_function warning_table[] = {
+    RB_BUILTIN_FUNCTION(0, rb_warn_m, rb_warn_m, 2),
+    RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0),
+  };
+
+  // arity_check
+COMPILER_WARNING_PUSH
+#if GCC_VERSION_SINCE(5, 1, 0) || __clang__
+COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)
+#endif
+  if (0) rb_builtin_function_check_arity2(rb_warn_m);
+COMPILER_WARNING_POP
+
+  // load
+  rb_load_with_builtin_functions("warning", warning_table);
+}

@@ -15,7 +15,6 @@ static inline void
 pass_passed_block_handler(rb_execution_context_t *ec)
 {
     VALUE block_handler = rb_vm_frame_block_handler(ec->cfp);
-    vm_block_handler_verify(block_handler);
     vm_passed_block_handler_set(ec, block_handler);
     VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_PASSED);
 }
@@ -158,23 +157,6 @@ LONG WINAPI rb_w32_stack_overflow_handler(struct _EXCEPTION_POINTERS *);
 # define VAR_NOCLOBBERED(var) var
 #endif
 
-#if defined(USE_UNALIGNED_MEMBER_ACCESS) && USE_UNALIGNED_MEMBER_ACCESS && \
-    defined(__clang__)
-# define UNALIGNED_MEMBER_ACCESS(expr) __extension__({ \
-    _Pragma("GCC diagnostic push"); \
-    _Pragma("GCC diagnostic ignored \"-Waddress-of-packed-member\""); \
-    typeof(expr) unaligned_member_access_result = (expr); \
-    _Pragma("GCC diagnostic pop"); \
-    unaligned_member_access_result; \
-})
-#else
-# define UNALIGNED_MEMBER_ACCESS(expr) expr
-#endif
-#define UNALIGNED_MEMBER_PTR(ptr, mem) UNALIGNED_MEMBER_ACCESS(&(ptr)->mem)
-
-#undef RB_OBJ_WRITE
-#define RB_OBJ_WRITE(a, slot, b) UNALIGNED_MEMBER_ACCESS(rb_obj_write((VALUE)(a), (VALUE *)(slot), (VALUE)(b), __FILE__, __LINE__))
-
 /* clear ec->tag->state, and return the value */
 static inline int
 rb_ec_tag_state(const rb_execution_context_t *ec)
@@ -268,9 +250,6 @@ CREF_OMOD_SHARED_UNSET(rb_cref_t *cref)
     cref->flags &= ~CREF_FL_OMOD_SHARED;
 }
 
-void rb_thread_cleanup(void);
-void rb_thread_wait_other_threads(void);
-
 enum {
     RAISED_EXCEPTION = 1,
     RAISED_STACKOVERFLOW = 2,
@@ -295,9 +274,7 @@ NORETURN(void rb_print_undef(VALUE, ID, rb_method_visibility_t));
 NORETURN(void rb_print_undef_str(VALUE, VALUE));
 NORETURN(void rb_print_inaccessible(VALUE, ID, rb_method_visibility_t));
 NORETURN(void rb_vm_localjump_error(const char *,VALUE, int));
-#if 0
 NORETURN(void rb_vm_jump_tag_but_local_jump(int));
-#endif
 
 VALUE rb_vm_make_jump_tag_but_local_jump(int state, VALUE val);
 rb_cref_t *rb_vm_cref(void);
@@ -310,6 +287,7 @@ VALUE rb_vm_cbase(void);
 /* vm_backtrace.c */
 VALUE rb_ec_backtrace_object(const rb_execution_context_t *ec);
 VALUE rb_ec_backtrace_str_ary(const rb_execution_context_t *ec, long lev, long n);
+VALUE rb_ec_backtrace_location_ary(const rb_execution_context_t *ec, long lev, long n);
 
 #ifndef CharNext		/* defined as CharNext[AW] on Windows. */
 # ifdef HAVE_MBLEN

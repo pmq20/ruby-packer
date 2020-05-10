@@ -1,4 +1,4 @@
-require File.expand_path('../enumerable_enumeratorized', __FILE__)
+require_relative 'enumerable_enumeratorized'
 
 describe :enumerable_collect, shared: true do
   before :each do
@@ -20,6 +20,12 @@ describe :enumerable_collect, shared: true do
   it "gathers initial args as elements when each yields multiple" do
     multi = EnumerableSpecs::YieldsMulti.new
     multi.send(@method) {|e| e}.should == [1,3,6]
+  end
+
+  it "only yields increasing values for a Range" do
+    (1..0).send(@method) { |x| x }.should == []
+    (1..1).send(@method) { |x| x }.should == [1]
+    (1..2).send(@method) { |x| x }.should == [1, 2]
   end
 
   it "returns an enumerator when no block given" do

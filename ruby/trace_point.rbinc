@@ -1,0 +1,63 @@
+// -*- c -*-
+// DO NOT MODIFY THIS FILE DIRECTLY.
+// auto-generated file
+//   by ./tool/mk_builtin_loader.rb
+//   with trace_point.rb
+
+static void load_trace_point(void)
+{
+  // table definition
+  static const struct rb_builtin_function trace_point_table[] = {
+    RB_BUILTIN_FUNCTION(0, tracepoint_new_s, tracepoint_new_s, 1),
+    RB_BUILTIN_FUNCTION(1, tracepoint_inspect, tracepoint_inspect, 0),
+    RB_BUILTIN_FUNCTION(2, tracepoint_stat_s, tracepoint_stat_s, 0),
+    RB_BUILTIN_FUNCTION(3, tracepoint_trace_s, tracepoint_trace_s, 1),
+    RB_BUILTIN_FUNCTION(4, tracepoint_enable_m, tracepoint_enable_m, 3),
+    RB_BUILTIN_FUNCTION(5, tracepoint_disable_m, tracepoint_disable_m, 0),
+    RB_BUILTIN_FUNCTION(6, tracepoint_enabled_p, tracepoint_enabled_p, 0),
+    RB_BUILTIN_FUNCTION(7, tracepoint_attr_event, tracepoint_attr_event, 0),
+    RB_BUILTIN_FUNCTION(8, tracepoint_attr_lineno, tracepoint_attr_lineno, 0),
+    RB_BUILTIN_FUNCTION(9, tracepoint_attr_path, tracepoint_attr_path, 0),
+    RB_BUILTIN_FUNCTION(10, tracepoint_attr_parameters, tracepoint_attr_parameters, 0),
+    RB_BUILTIN_FUNCTION(11, tracepoint_attr_method_id, tracepoint_attr_method_id, 0),
+    RB_BUILTIN_FUNCTION(12, tracepoint_attr_callee_id, tracepoint_attr_callee_id, 0),
+    RB_BUILTIN_FUNCTION(13, tracepoint_attr_defined_class, tracepoint_attr_defined_class, 0),
+    RB_BUILTIN_FUNCTION(14, tracepoint_attr_binding, tracepoint_attr_binding, 0),
+    RB_BUILTIN_FUNCTION(15, tracepoint_attr_self, tracepoint_attr_self, 0),
+    RB_BUILTIN_FUNCTION(16, tracepoint_attr_return_value, tracepoint_attr_return_value, 0),
+    RB_BUILTIN_FUNCTION(17, tracepoint_attr_raised_exception, tracepoint_attr_raised_exception, 0),
+    RB_BUILTIN_FUNCTION(18, tracepoint_attr_eval_script, tracepoint_attr_eval_script, 0),
+    RB_BUILTIN_FUNCTION(19, tracepoint_attr_instruction_sequence, tracepoint_attr_instruction_sequence, 0),
+    RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0),
+  };
+
+  // arity_check
+COMPILER_WARNING_PUSH
+#if GCC_VERSION_SINCE(5, 1, 0) || __clang__
+COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)
+#endif
+  if (0) rb_builtin_function_check_arity1(tracepoint_new_s);
+  if (0) rb_builtin_function_check_arity0(tracepoint_inspect);
+  if (0) rb_builtin_function_check_arity0(tracepoint_stat_s);
+  if (0) rb_builtin_function_check_arity1(tracepoint_trace_s);
+  if (0) rb_builtin_function_check_arity3(tracepoint_enable_m);
+  if (0) rb_builtin_function_check_arity0(tracepoint_disable_m);
+  if (0) rb_builtin_function_check_arity0(tracepoint_enabled_p);
+  if (0) rb_builtin_function_check_arity0(tracepoint_attr_event);
+  if (0) rb_builtin_function_check_arity0(tracepoint_attr_lineno);
+  if (0) rb_builtin_function_check_arity0(tracepoint_attr_path);
+  if (0) rb_builtin_function_check_arity0(tracepoint_attr_parameters);
+  if (0) rb_builtin_function_check_arity0(tracepoint_attr_method_id);
+  if (0) rb_builtin_function_check_arity0(tracepoint_attr_callee_id);
+  if (0) rb_builtin_function_check_arity0(tracepoint_attr_defined_class);
+  if (0) rb_builtin_function_check_arity0(tracepoint_attr_binding);
+  if (0) rb_builtin_function_check_arity0(tracepoint_attr_self);
+  if (0) rb_builtin_function_check_arity0(tracepoint_attr_return_value);
+  if (0) rb_builtin_function_check_arity0(tracepoint_attr_raised_exception);
+  if (0) rb_builtin_function_check_arity0(tracepoint_attr_eval_script);
+  if (0) rb_builtin_function_check_arity0(tracepoint_attr_instruction_sequence);
+COMPILER_WARNING_POP
+
+  // load
+  rb_load_with_builtin_functions("trace_point", trace_point_table);
+}

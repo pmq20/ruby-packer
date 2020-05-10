@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'strscan'
 
 describe "StringScanner#initialize" do
@@ -12,7 +12,6 @@ describe "StringScanner#initialize" do
 
   it "returns an instance of StringScanner" do
     @s.should be_kind_of(StringScanner)
-    @s.tainted?.should be_false
     @s.eos?.should be_false
   end
 

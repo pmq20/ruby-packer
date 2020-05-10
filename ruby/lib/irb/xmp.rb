@@ -2,7 +2,7 @@
 #
 #   xmp.rb - irb version of gotoken xmp
 #   	$Release Version: 0.9$
-#   	$Revision: 53141 $
+#   	$Revision$
 #   	by Keiju ISHITSUKA(Nippon Rational Inc.)
 #
 # --
@@ -11,7 +11,7 @@
 #
 
 require "irb"
-require "irb/frame"
+require_relative "frame"
 
 # An example printer for irb.
 #

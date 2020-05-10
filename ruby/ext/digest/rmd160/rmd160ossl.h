@@ -1,4 +1,4 @@
-/* $Id: rmd160ossl.h 49564 2015-02-11 02:09:23Z nobu $ */
+/* $Id$ */
 
 #ifndef RMD160OSSL_H_INCLUDED
 #define RMD160OSSL_H_INCLUDED

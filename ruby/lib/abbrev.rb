@@ -7,7 +7,7 @@
 #
 # $Idaemons: /home/cvs/rb/abbrev.rb,v 1.2 2001/05/30 09:37:45 knu Exp $
 # $RoughId: abbrev.rb,v 1.4 2003/10/14 19:45:42 knu Exp $
-# $Id: abbrev.rb 57585 2017-02-09 16:12:00Z kazu $
+# $Id$
 #++
 
 ##

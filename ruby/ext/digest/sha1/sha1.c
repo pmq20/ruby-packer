@@ -1,7 +1,7 @@
 /*	$NetBSD: sha1.c,v 1.2 2001/03/22 09:51:48 agc Exp $	*/
 /*	$OpenBSD: sha1.c,v 1.9 1997/07/23 21:12:32 kstailey Exp $	*/
 /*	$RoughId: sha1.c,v 1.2 2001/07/13 19:49:10 knu Exp $	*/
-/*	$Id: sha1.c 46827 2014-07-15 14:59:20Z nobu $	*/
+/*	$Id$	*/
 
 /*
  * SHA-1 in C

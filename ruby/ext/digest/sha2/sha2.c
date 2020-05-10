@@ -31,7 +31,7 @@
  *
  * $OrigId: sha2.c,v 1.1 2001/11/08 00:01:51 adg Exp adg $
  * $RoughId: sha2.c,v 1.3 2002/02/26 22:03:36 knu Exp $
- * $Id: sha2.c 52694 2015-11-21 04:35:57Z naruse $
+ * $Id$
  */
 
 #include "../defs.h"

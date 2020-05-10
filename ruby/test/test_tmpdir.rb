@@ -11,17 +11,6 @@ class TestTmpdir < Test::Unit::TestCase
     assert_equal(tmpdir_org, Dir.tmpdir)
   end
 
-  def test_tmpdir_modifiable_safe
-    Thread.new {
-      $SAFE = 1
-      tmpdir = Dir.tmpdir
-      assert_equal(false, tmpdir.frozen?)
-      tmpdir_org = tmpdir.dup
-      tmpdir << "foo"
-      assert_equal(tmpdir_org, Dir.tmpdir)
-    }.join
-  end
-
   def test_world_writable
     skip "no meaning on this platform" if /mswin|mingw/ =~ RUBY_PLATFORM
     Dir.mktmpdir do |tmpdir|
@@ -31,6 +20,12 @@ class TestTmpdir < Test::Unit::TestCase
         assert_equal(tmpdir, Dir.tmpdir)
         File.chmod(0777, tmpdir)
         assert_not_equal(tmpdir, Dir.tmpdir)
+        newdir = Dir.mktmpdir("d", tmpdir) do |dir|
+          assert_file.directory? dir
+          assert_equal(tmpdir, File.dirname(dir))
+          dir
+        end
+        assert_file.not_exist?(newdir)
         File.chmod(01777, tmpdir)
         assert_equal(tmpdir, Dir.tmpdir)
       ensure
@@ -57,19 +52,29 @@ class TestTmpdir < Test::Unit::TestCase
     }
   end
 
-  TRAVERSAL_PATH = Array.new(Dir.pwd.split('/').count, '..').join('/') + Dir.pwd + '/'
-
   def test_mktmpdir_traversal
-    expect = Dir.glob(TRAVERSAL_PATH + '*').count
-    Dir.mktmpdir(TRAVERSAL_PATH + 'foo')
-    actual = Dir.glob(TRAVERSAL_PATH + '*').count
-    assert_equal expect, actual
+    assert_mktmpdir_traversal do |traversal_path|
+      Dir.mktmpdir(traversal_path + 'foo') do |actual|
+        actual
+      end
+    end
   end
 
   def test_mktmpdir_traversal_array
-    expect = Dir.glob(TRAVERSAL_PATH + '*').count
-    Dir.mktmpdir([TRAVERSAL_PATH, 'foo'])
-    actual = Dir.glob(TRAVERSAL_PATH + '*').count
-    assert_equal expect, actual
+    assert_mktmpdir_traversal do |traversal_path|
+      Dir.mktmpdir([traversal_path, 'foo']) do |actual|
+        actual
+      end
+    end
+  end
+
+  def assert_mktmpdir_traversal
+    Dir.mktmpdir do |target|
+      target = target.chomp('/') + '/'
+      traversal_path = target.sub(/\A\w:/, '') # for DOSISH
+      traversal_path = Array.new(target.count('/')-2, '..').join('/') + traversal_path
+      actual = yield traversal_path
+      assert_not_send([File.absolute_path(actual), :start_with?, target])
+    end
   end
 end

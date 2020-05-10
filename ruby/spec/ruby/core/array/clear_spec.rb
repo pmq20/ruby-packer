@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Array#clear" do
   it "removes all elements" do
@@ -10,8 +10,7 @@ describe "Array#clear" do
 
   it "returns self" do
     a = [1]
-    oid = a.object_id
-    a.clear.object_id.should == oid
+    a.should equal a.clear
   end
 
   it "leaves the Array empty" do
@@ -21,29 +20,33 @@ describe "Array#clear" do
     a.size.should == 0
   end
 
-  it "keeps tainted status" do
-    a = [1]
-    a.taint
-    a.tainted?.should be_true
-    a.clear
-    a.tainted?.should be_true
+  ruby_version_is ''...'2.7' do
+    it "keeps tainted status" do
+      a = [1]
+      a.taint
+      a.tainted?.should be_true
+      a.clear
+      a.tainted?.should be_true
+    end
   end
 
   it "does not accept any arguments" do
-    lambda { [1].clear(true) }.should raise_error(ArgumentError)
+    -> { [1].clear(true) }.should raise_error(ArgumentError)
   end
 
-  it "keeps untrusted status" do
-    a = [1]
-    a.untrust
-    a.untrusted?.should be_true
-    a.clear
-    a.untrusted?.should be_true
+  ruby_version_is ''...'2.7' do
+    it "keeps untrusted status" do
+      a = [1]
+      a.untrust
+      a.untrusted?.should be_true
+      a.clear
+      a.untrusted?.should be_true
+    end
   end
 
-  it "raises a RuntimeError on a frozen array" do
+  it "raises a #{frozen_error_class} on a frozen array" do
     a = [1]
     a.freeze
-    lambda { a.clear }.should raise_error(RuntimeError)
+    -> { a.clear }.should raise_error(frozen_error_class)
   end
 end

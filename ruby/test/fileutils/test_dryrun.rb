@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-# $Id: test_dryrun.rb 57275 2017-01-07 02:14:07Z kazu $
+# $Id$
 
 require 'fileutils'
 require 'test/unit'
@@ -8,7 +8,7 @@ require_relative 'visibility_tests'
 class TestFileUtilsDryRun < Test::Unit::TestCase
 
   include FileUtils::DryRun
-  include TestFileUtils::Visibility
+  include TestFileUtilsInc::Visibility
 
   def setup
     super

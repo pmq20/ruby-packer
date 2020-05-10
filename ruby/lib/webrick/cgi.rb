@@ -6,11 +6,11 @@
 # Copyright (c) 2003 Internet Programming with Ruby writers. All rights
 # reserved.
 #
-# $Id: cgi.rb 63006 2018-03-28 12:50:56Z naruse $
+# $Id$
 
-require "webrick/httprequest"
-require "webrick/httpresponse"
-require "webrick/config"
+require_relative "httprequest"
+require_relative "httpresponse"
+require_relative "config"
 require "stringio"
 
 module WEBrick

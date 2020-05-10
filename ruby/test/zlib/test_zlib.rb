@@ -199,10 +199,10 @@ if defined? Zlib
       z = Zlib::Deflate.new
       s = z.deflate("foo", Zlib::FULL_FLUSH)
       z.avail_out = 0
-      z.params(Zlib::NO_COMPRESSION, Zlib::FILTERED)
+      EnvUtil.suppress_warning {z.params(Zlib::NO_COMPRESSION, Zlib::FILTERED)}
       s << z.deflate("bar", Zlib::FULL_FLUSH)
       z.avail_out = 0
-      z.params(Zlib::BEST_COMPRESSION, Zlib::HUFFMAN_ONLY)
+      EnvUtil.suppress_warning {z.params(Zlib::BEST_COMPRESSION, Zlib::HUFFMAN_ONLY)}
       s << z.deflate("baz", Zlib::FINISH)
       assert_equal("foobarbaz", Zlib::Inflate.inflate(s))
 
@@ -415,10 +415,10 @@ if defined? Zlib
       z = Zlib::Deflate.new
       s = z.deflate("foo" * 1000, Zlib::FULL_FLUSH)
       z.avail_out = 0
-      z.params(Zlib::NO_COMPRESSION, Zlib::FILTERED)
+      EnvUtil.suppress_warning {z.params(Zlib::NO_COMPRESSION, Zlib::FILTERED)}
       s << z.deflate("bar" * 1000, Zlib::FULL_FLUSH)
       z.avail_out = 0
-      z.params(Zlib::BEST_COMPRESSION, Zlib::HUFFMAN_ONLY)
+      EnvUtil.suppress_warning {z.params(Zlib::BEST_COMPRESSION, Zlib::HUFFMAN_ONLY)}
       s << z.deflate("baz" * 1000, Zlib::FINISH)
 
       z = Zlib::Inflate.new
@@ -486,6 +486,17 @@ if defined? Zlib
           assert_equal(tim.to_i, f.mtime.to_i)
         end
       }
+    end
+
+    def test_zero_mtime
+      sio = StringIO.new
+      gz = Zlib::GzipWriter.new(sio)
+      gz.mtime = 0
+      gz.write("Hi")
+      gz.close
+      reading_io = StringIO.new(sio.string)
+      reader = Zlib::GzipReader.new(reading_io)
+      assert_equal(0, reader.mtime.to_i)
     end
 
     def test_level
@@ -621,9 +632,9 @@ if defined? Zlib
         gz.close
 
         sio = StringIO.new(s)
-        Zlib::GzipReader.new(sio) do |f|
-          assert_raise(NoMethodError) { f.path }
-        end
+        gz = Zlib::GzipReader.new(sio)
+        assert_raise(NoMethodError) { gz.path }
+        gz.close
       }
     end
   end
@@ -1081,12 +1092,28 @@ if defined? Zlib
         assert_nothing_raised { w.close }
       }
     end
+
+    def test_zlib_writer_buffered_write
+      bug15356 = '[ruby-core:90346] [Bug #15356]'.freeze
+      fixes = 'r61631 (commit a55abcc0ca6f628fc05304f81e5a044d65ab4a68)'.freeze
+      ary = []
+      def ary.write(*args)
+        self.concat(args)
+      end
+      gz = Zlib::GzipWriter.new(ary)
+      gz.write(bug15356)
+      gz.write("\n")
+      gz.write(fixes)
+      gz.close
+      assert_not_predicate ary, :empty?
+      exp = [ bug15356, fixes ]
+      assert_equal exp, Zlib.gunzip(ary.join('')).split("\n")
+    end
   end
 
   class TestZlib < Test::Unit::TestCase
     def test_version
       assert_instance_of(String, Zlib.zlib_version)
-      assert(Zlib.zlib_version.tainted?)
     end
 
     def test_adler32

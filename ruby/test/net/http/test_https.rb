@@ -50,6 +50,78 @@ class TestNetHTTPS < Test::Unit::TestCase
     skip $!
   end
 
+  def test_get_SNI
+    http = Net::HTTP.new("localhost", config("port"))
+    http.ipaddr = config('host')
+    http.use_ssl = true
+    http.cert_store = TEST_STORE
+    certs = []
+    http.verify_callback = Proc.new do |preverify_ok, store_ctx|
+      certs << store_ctx.current_cert
+      preverify_ok
+    end
+    http.request_get("/") {|res|
+      assert_equal($test_net_http_data, res.body)
+    }
+    assert_equal(CA_CERT.to_der, certs[0].to_der)
+    assert_equal(SERVER_CERT.to_der, certs[1].to_der)
+  end
+
+  def test_get_SNI_proxy
+    TCPServer.open("127.0.0.1", 0) {|serv|
+      _, port, _, _ = serv.addr
+      client_thread = Thread.new {
+        proxy = Net::HTTP.Proxy("127.0.0.1", port, 'user', 'password')
+        http = proxy.new("foo.example.org", 8000)
+        http.ipaddr = "192.0.2.1"
+        http.use_ssl = true
+        http.cert_store = TEST_STORE
+        certs = []
+        http.verify_callback = Proc.new do |preverify_ok, store_ctx|
+          certs << store_ctx.current_cert
+          preverify_ok
+        end
+        begin
+          http.start
+        rescue EOFError
+        end
+      }
+      server_thread = Thread.new {
+        sock = serv.accept
+        begin
+          proxy_request = sock.gets("\r\n\r\n")
+          assert_equal(
+            "CONNECT 192.0.2.1:8000 HTTP/1.1\r\n" +
+            "Host: foo.example.org:8000\r\n" +
+            "Proxy-Authorization: Basic dXNlcjpwYXNzd29yZA==\r\n" +
+            "\r\n",
+            proxy_request,
+            "[ruby-dev:25673]")
+        ensure
+          sock.close
+        end
+      }
+      assert_join_threads([client_thread, server_thread])
+    }
+
+  end
+
+  def test_get_SNI_failure
+    TestNetHTTPUtils.clean_http_proxy_env do
+      http = Net::HTTP.new("invalid_servername", config("port"))
+      http.ipaddr = config('host')
+      http.use_ssl = true
+      http.cert_store = TEST_STORE
+      certs = []
+      http.verify_callback = Proc.new do |preverify_ok, store_ctx|
+        certs << store_ctx.current_cert
+        preverify_ok
+      end
+      @log_tester = lambda {|_| }
+      assert_raise(OpenSSL::SSL::SSLError){ http.start }
+    end
+  end
+
   def test_post
     http = Net::HTTP.new("localhost", config("port"))
     http.use_ssl = true
@@ -63,6 +135,10 @@ class TestNetHTTPS < Test::Unit::TestCase
   end
 
   def test_session_reuse
+    # FIXME: The new_session_cb is known broken for clients in OpenSSL 1.1.0h.
+    # See https://github.com/openssl/openssl/pull/5967 for details.
+    skip if OpenSSL::OPENSSL_LIBRARY_VERSION =~ /OpenSSL 1.1.0h/
+
     http = Net::HTTP.new("localhost", config("port"))
     http.use_ssl = true
     http.cert_store = TEST_STORE
@@ -73,18 +149,9 @@ class TestNetHTTPS < Test::Unit::TestCase
 
     http.start
     http.get("/")
-    http.finish # three times due to possible bug in OpenSSL 0.9.8
-
-    sid = http.instance_variable_get(:@ssl_session).id
-
-    http.start
-    http.get("/")
 
     socket = http.instance_variable_get(:@socket).io
-
-    assert socket.session_reused?
-
-    assert_equal sid, http.instance_variable_get(:@ssl_session).id
+    assert_equal true, socket.session_reused?
 
     http.finish
   rescue SystemCallError
@@ -92,6 +159,9 @@ class TestNetHTTPS < Test::Unit::TestCase
   end
 
   def test_session_reuse_but_expire
+    # FIXME: The new_session_cb is known broken for clients in OpenSSL 1.1.0h.
+    skip if OpenSSL::OPENSSL_LIBRARY_VERSION =~ /OpenSSL 1.1.0h/
+
     http = Net::HTTP.new("localhost", config("port"))
     http.use_ssl = true
     http.cert_store = TEST_STORE
@@ -101,15 +171,11 @@ class TestNetHTTPS < Test::Unit::TestCase
     http.get("/")
     http.finish
 
-    sid = http.instance_variable_get(:@ssl_session).id
-
     http.start
     http.get("/")
 
     socket = http.instance_variable_get(:@socket).io
     assert_equal false, socket.session_reused?
-
-    assert_not_equal sid, http.instance_variable_get(:@ssl_session).id
 
     http.finish
   rescue SystemCallError
@@ -160,15 +226,16 @@ class TestNetHTTPS < Test::Unit::TestCase
   end
 
   def test_identity_verify_failure
+    # the certificate's subject has CN=localhost
     http = Net::HTTP.new("127.0.0.1", config("port"))
     http.use_ssl = true
-    http.verify_callback = Proc.new do |preverify_ok, store_ctx|
-      true
-    end
+    http.cert_store = TEST_STORE
+    @log_tester = lambda {|_| }
     ex = assert_raise(OpenSSL::SSL::SSLError){
       http.request_get("/") {|res| }
     }
-    assert_match(/hostname \"127.0.0.1\" does not match/, ex.message)
+    re_msg = /certificate verify failed|hostname \"127.0.0.1\" does not match/
+    assert_match(re_msg, ex.message)
   end
 
   def test_timeout_during_SSL_handshake
@@ -193,16 +260,13 @@ class TestNetHTTPS < Test::Unit::TestCase
   end
 
   def test_min_version
-    http = Net::HTTP.new("127.0.0.1", config("port"))
+    http = Net::HTTP.new("localhost", config("port"))
     http.use_ssl = true
     http.min_version = :TLS1
-    http.verify_callback = Proc.new do |preverify_ok, store_ctx|
-      true
-    end
-    ex = assert_raise(OpenSSL::SSL::SSLError){
-      http.request_get("/") {|res| }
+    http.cert_store = TEST_STORE
+    http.request_get("/") {|res|
+      assert_equal($test_net_http_data, res.body)
     }
-    assert_match(/hostname \"127.0.0.1\" does not match/, ex.message)
   end
 
   def test_max_version

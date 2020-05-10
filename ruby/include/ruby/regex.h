@@ -2,7 +2,7 @@
 
   regex.h -
 
-  $Author: nobu $
+  $Author$
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
 

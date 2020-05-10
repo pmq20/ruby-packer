@@ -2,7 +2,7 @@
 
   ruby/version.h -
 
-  $Author: matz $
+  $Author$
   created at: Wed May 13 12:56:56 JST 2009
 
   Copyright (C) 1993-2009 Yukihiro Matsumoto
@@ -31,7 +31,7 @@
 
 /* API version */
 #define RUBY_API_VERSION_MAJOR 2
-#define RUBY_API_VERSION_MINOR 5
+#define RUBY_API_VERSION_MINOR 7
 #define RUBY_API_VERSION_TEENY 0
 #define RUBY_API_VERSION_CODE (RUBY_API_VERSION_MAJOR*10000+RUBY_API_VERSION_MINOR*100+RUBY_API_VERSION_TEENY)
 

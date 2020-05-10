@@ -102,11 +102,11 @@ class TestSuper < Test::Unit::TestCase
   def test_optional2
     assert_raise(ArgumentError) do
       # call Base#optional with 2 arguments; the 2nd arg is supplied
-      assert_equal(9, Optional2.new.optional(9))
+      Optional2.new.optional(9)
     end
     assert_raise(ArgumentError) do
       # call Base#optional with 2 arguments
-      assert_equal(9, Optional2.new.optional(9, 2))
+      Optional2.new.optional(9, 2)
     end
   end
   def test_optional3
@@ -300,6 +300,29 @@ class TestSuper < Test::Unit::TestCase
           super()
         end
       end
+    }
+    obj = sub_class.new
+    assert_raise_with_message(TypeError, /Sub\u{30af 30e9 30b9}/) do
+      obj.foo
+    end
+  end
+
+  def test_super_in_instance_eval_in_module
+    super_class = EnvUtil.labeled_class("Super\u{30af 30e9 30b9}") {
+      def foo
+        return [:super, self]
+      end
+    }
+    mod = EnvUtil.labeled_module("Mod\u{30af 30e9 30b9}") {
+      def foo
+        x = Object.new
+        x.instance_eval do
+          super()
+        end
+      end
+    }
+    sub_class = EnvUtil.labeled_class("Sub\u{30af 30e9 30b9}", super_class) {
+      include mod
     }
     obj = sub_class.new
     assert_raise_with_message(TypeError, /Sub\u{30af 30e9 30b9}/) do

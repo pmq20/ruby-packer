@@ -1,0 +1,29 @@
+// -*- c -*-
+// DO NOT MODIFY THIS FILE DIRECTLY.
+// auto-generated file
+//   by ./tool/mk_builtin_loader.rb
+//   with pack.rb
+
+static void load_pack(void)
+{
+  // table definition
+  static const struct rb_builtin_function pack_table[] = {
+    RB_BUILTIN_FUNCTION(0, pack_pack, pack_pack, 2),
+    RB_BUILTIN_FUNCTION(1, pack_unpack, pack_unpack, 1),
+    RB_BUILTIN_FUNCTION(2, pack_unpack1, pack_unpack1, 1),
+    RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0),
+  };
+
+  // arity_check
+COMPILER_WARNING_PUSH
+#if GCC_VERSION_SINCE(5, 1, 0) || __clang__
+COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)
+#endif
+  if (0) rb_builtin_function_check_arity2(pack_pack);
+  if (0) rb_builtin_function_check_arity1(pack_unpack);
+  if (0) rb_builtin_function_check_arity1(pack_unpack1);
+COMPILER_WARNING_POP
+
+  // load
+  rb_load_with_builtin_functions("pack", pack_table);
+}

@@ -25,7 +25,7 @@ enc_raise(rb_encoding *enc, VALUE exc, const char *fmt, ...)
 
 /* unicode */
 
-static const char digit_values[256] = {
+static const signed char digit_values[256] = {
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, -1,
@@ -44,7 +44,7 @@ static const char digit_values[256] = {
 
 static UTF32 unescape_unicode(const unsigned char *p)
 {
-    char b;
+    signed char b;
     UTF32 result = 0;
     b = digit_values[p[0]];
     if (b < 0) return UNI_REPLACEMENT_CHAR;
@@ -89,12 +89,13 @@ static int convert_UTF32_to_UTF8(char *buf, UTF32 ch)
 
 static VALUE mJSON, mExt, cParser, eParserError, eNestingError;
 static VALUE CNaN, CInfinity, CMinusInfinity;
+static VALUE cBigDecimal = Qundef;
 
 static ID i_json_creatable_p, i_json_create, i_create_id, i_create_additions,
           i_chr, i_max_nesting, i_allow_nan, i_symbolize_names,
           i_object_class, i_array_class, i_decimal_class, i_key_p,
           i_deep_const_get, i_match, i_match_string, i_aset, i_aref,
-          i_leftshift, i_new;
+          i_leftshift, i_new, i_BigDecimal;
 
 %%{
     machine JSON_common;
@@ -339,6 +340,19 @@ static char *JSON_parse_integer(JSON_Parser *json, char *p, char *pe, VALUE *res
              )  (^[0-9Ee.\-]? @exit );
 }%%
 
+static int is_bigdecimal_class(VALUE obj)
+{
+  if (cBigDecimal == Qundef) {
+    if (rb_const_defined(rb_cObject, i_BigDecimal)) {
+      cBigDecimal = rb_const_get_at(rb_cObject, i_BigDecimal);
+    }
+    else {
+      return 0;
+    }
+  }
+  return obj == cBigDecimal;
+}
+
 static char *JSON_parse_float(JSON_Parser *json, char *p, char *pe, VALUE *result)
 {
     int cs = EVIL;
@@ -357,7 +371,11 @@ static char *JSON_parse_float(JSON_Parser *json, char *p, char *pe, VALUE *resul
         } else {
           VALUE text;
           text = rb_str_new2(FBUFFER_PTR(json->fbuffer));
-          *result = rb_funcall(json->decimal_class, i_new, 1, text);
+          if (is_bigdecimal_class(json->decimal_class)) {
+            *result = rb_funcall(Qnil, i_BigDecimal, 1, text);
+          } else {
+            *result = rb_funcall(json->decimal_class, i_new, 1, text);
+          }
         }
         return p + 1;
     } else {
@@ -553,7 +571,7 @@ static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *resu
 
     if (json->symbolize_names && json->parsing_name) {
       *result = rb_str_intern(*result);
-    } else {
+    } else if (RB_TYPE_P(*result, T_STRING)) {
       rb_str_resize(*result, RSTRING_LEN(*result));
     }
     if (cs >= JSON_string_first_final) {
@@ -710,7 +728,7 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
     } else {
         json->max_nesting = 100;
         json->allow_nan = 0;
-        json->create_additions = 1;
+        json->create_additions = 0;
         json->create_id = rb_funcall(mJSON, i_create_id, 0);
         json->object_class = Qnil;
         json->array_class = Qnil;
@@ -824,20 +842,28 @@ static VALUE cParser_source(VALUE self)
 
 void Init_parser(void)
 {
+#undef rb_intern
     rb_require("json/common");
     mJSON = rb_define_module("JSON");
     mExt = rb_define_module_under(mJSON, "Ext");
     cParser = rb_define_class_under(mExt, "Parser", rb_cObject);
     eParserError = rb_path2class("JSON::ParserError");
     eNestingError = rb_path2class("JSON::NestingError");
+    rb_gc_register_mark_object(eParserError);
+    rb_gc_register_mark_object(eNestingError);
     rb_define_alloc_func(cParser, cJSON_parser_s_allocate);
     rb_define_method(cParser, "initialize", cParser_initialize, -1);
     rb_define_method(cParser, "parse", cParser_parse, 0);
     rb_define_method(cParser, "source", cParser_source, 0);
 
     CNaN = rb_const_get(mJSON, rb_intern("NaN"));
+    rb_gc_register_mark_object(CNaN);
+
     CInfinity = rb_const_get(mJSON, rb_intern("Infinity"));
+    rb_gc_register_mark_object(CInfinity);
+
     CMinusInfinity = rb_const_get(mJSON, rb_intern("MinusInfinity"));
+    rb_gc_register_mark_object(CMinusInfinity);
 
     i_json_creatable_p = rb_intern("json_creatable?");
     i_json_create = rb_intern("json_create");
@@ -858,6 +884,7 @@ void Init_parser(void)
     i_aref = rb_intern("[]");
     i_leftshift = rb_intern("<<");
     i_new = rb_intern("new");
+    i_BigDecimal = rb_intern("BigDecimal");
 }
 
 /*

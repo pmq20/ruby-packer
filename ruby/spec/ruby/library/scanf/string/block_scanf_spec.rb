@@ -1,7 +1,10 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../shared/block_scanf.rb', __FILE__)
-require 'scanf'
+require_relative '../../../spec_helper'
 
-describe "String#block_scanf" do
-  it_behaves_like(:scanf_string_block_scanf, :block_scanf)
+ruby_version_is ''...'2.7' do
+  require_relative 'shared/block_scanf'
+  require 'scanf'
+
+  describe "String#block_scanf" do
+    it_behaves_like :scanf_string_block_scanf, :block_scanf
+  end
 end

@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
-require File.expand_path('../shared/set_visibility', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
+require_relative 'shared/set_visibility'
 
 describe "Module#private" do
   it_behaves_like :set_visibility, :private
@@ -17,7 +17,7 @@ describe "Module#private" do
       private :foo
     end
 
-    lambda { obj.foo }.should raise_error(NoMethodError)
+    -> { obj.foo }.should raise_error(NoMethodError)
   end
 
   it "makes a public Object instance method private in a new module" do
@@ -47,7 +47,7 @@ describe "Module#private" do
   end
 
   it "raises a NameError when given an undefined name" do
-    lambda do
+    -> do
       Module.new.send(:private, :undefined)
     end.should raise_error(NameError)
   end
@@ -67,7 +67,7 @@ describe "Module#private" do
     end
 
     base.new.wrapped.should == 1
-    lambda do
+    -> do
       klass.new.wrapped
     end.should raise_error(NameError)
   end

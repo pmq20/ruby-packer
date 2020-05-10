@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 #
-# $Id: sexp.rb 59246 2017-07-01 02:01:05Z nobu $
+# $Id$
 #
 # Copyright (c) 2004,2005 Minero Aoki
 #
@@ -25,7 +25,7 @@ class Ripper
   #     #=> [:program,
   #          [[:def,
   #           [:@ident, "m", [1, 4]],
-  #           [:paren, [:params, [[:@ident, "a", [1, 6]]], nil, nil, nil, nil]],
+  #           [:paren, [:params, [[:@ident, "a", [1, 6]]], nil, nil, nil, nil, nil, nil]],
   #           [:bodystmt, [[:var_ref, [:@kw, "nil", [1, 9]]]], nil, nil, nil]]]]
   #
   def Ripper.sexp(src, filename = '-', lineno = 1)

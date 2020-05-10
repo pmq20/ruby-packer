@@ -38,13 +38,15 @@ class Gem::Commands::SourcesCommand < Gem::Command
     add_proxy_option
   end
 
-  def add_source source_uri # :nodoc:
+  def add_source(source_uri) # :nodoc:
     check_rubygems_https source_uri
 
     source = Gem::Source.new source_uri
 
+    check_typo_squatting(source)
+
     begin
-      if Gem.sources.include? source then
+      if Gem.sources.include? source
         say "source #{source_uri} already present in the cache"
       else
         source.load_specs :released
@@ -62,11 +64,23 @@ class Gem::Commands::SourcesCommand < Gem::Command
     end
   end
 
-  def check_rubygems_https source_uri # :nodoc:
+  def check_typo_squatting(source)
+    if source.typo_squatting?("rubygems.org")
+      question = <<-QUESTION.chomp
+#{source.uri.to_s} is too similar to https://rubygems.org
+
+Do you want to add this source?
+      QUESTION
+
+      terminate_interaction 1 unless ask_yes_no question
+    end
+  end
+
+  def check_rubygems_https(source_uri) # :nodoc:
     uri = URI source_uri
 
     if uri.scheme and uri.scheme.downcase == 'http' and
-       uri.host.downcase == 'rubygems.org' then
+       uri.host.downcase == 'rubygems.org'
       question = <<-QUESTION.chomp
 https://rubygems.org is recommended for security over #{uri}
 
@@ -81,10 +95,10 @@ Do you want to add this insecure source?
     path = Gem.spec_cache_dir
     FileUtils.rm_rf path
 
-    unless File.exist? path then
+    unless File.exist? path
       say "*** Removed specs cache ***"
     else
-      unless File.writable? path then
+      unless File.writable? path
         say "*** Unable to remove source cache (write protected) ***"
       else
         say "*** Unable to remove source cache ***"
@@ -175,8 +189,8 @@ To remove a source use the --remove argument:
     list if list?
   end
 
-  def remove_source source_uri # :nodoc:
-    unless Gem.sources.include? source_uri then
+  def remove_source(source_uri) # :nodoc:
+    unless Gem.sources.include? source_uri
       say "source #{source_uri} not present in cache"
     else
       Gem.sources.delete source_uri
@@ -195,12 +209,12 @@ To remove a source use the --remove argument:
     say "source cache successfully updated"
   end
 
-  def remove_cache_file desc, path # :nodoc:
+  def remove_cache_file(desc, path) # :nodoc:
     FileUtils.rm_rf path
 
-    if not File.exist?(path) then
+    if not File.exist?(path)
       say "*** Removed #{desc} source cache ***"
-    elsif not File.writable?(path) then
+    elsif not File.writable?(path)
       say "*** Unable to remove #{desc} source cache (write protected) ***"
     else
       say "*** Unable to remove #{desc} source cache ***"
@@ -208,4 +222,3 @@ To remove a source use the --remove argument:
   end
 
 end
-

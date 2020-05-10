@@ -3,6 +3,7 @@ firstline, predefined = __LINE__+1, %[\
   max
   min
   freeze
+  nil?
   inspect
   intern
   object_id
@@ -38,17 +39,37 @@ firstline, predefined = __LINE__+1, %[\
   to_a
   to_s
   to_i
+  to_f
   to_r
   bt
   bt_locations
   call
   mesg
   exception
+  locals
   not                                                   NOT
   and                                                   AND
   or                                                    OR
+  div
+  divmod
+  fdiv
+  quo
+  name
+  nil
 
   _                                                     UScore
+
+  # MUST be successive
+  _1  NUMPARAM_1
+  _2  NUMPARAM_2
+  _3  NUMPARAM_3
+  _4  NUMPARAM_4
+  _5  NUMPARAM_5
+  _6  NUMPARAM_6
+  _7  NUMPARAM_7
+  _8  NUMPARAM_8
+  _9  NUMPARAM_9
+
   "/*NULL*/"                                            NULL
   empty?
   eql?
@@ -62,21 +83,23 @@ firstline, predefined = __LINE__+1, %[\
   core#define_method
   core#define_singleton_method
   core#set_postexe
-  core#hash_from_ary
-  core#hash_merge_ary
   core#hash_merge_ptr
   core#hash_merge_kwd
+  core#raise
 
   -                                                     debug#created_info
 
   $_                                                    LASTLINE
   $~                                                    BACKREF
+  $!                                                    ERROR_INFO
 ]
 
 # VM ID         OP      Parser Token
 token_ops = %[\
   Dot2          ..      DOT2
   Dot3          ...     DOT3
+  BDot2         ..      BDOT2
+  BDot3         ...     BDOT3
   UPlus         +@      UPLUS
   UMinus        -@      UMINUS
   Pow           **      POW
@@ -96,6 +119,8 @@ token_ops = %[\
   Eqq           ===     EQQ
   Neq           !=      NEQ
   Not           !
+  And           &
+  Or            |
   Backquote     `
   EqTilde       =~      MATCH
   NeqTilde      !~      NMATCH

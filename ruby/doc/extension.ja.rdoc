@@ -215,17 +215,6 @@ rb_str_new_literal(const char *ptr) ::
 
   Cのリテラル文字列からRubyの文字列を生成する．
 
-rb_tainted_str_new(const char *ptr, long len) ::
-
-  汚染マークが付加された新しいRubyの文字列を生成する．外部
-  からのデータに基づく文字列には汚染マークが付加されるべき
-  である．
-
-rb_tainted_str_new2(const char *ptr) ::
-rb_tainted_str_new_cstr(const char *ptr) ::
-
-  Cの文字列から汚染マークが付加されたRubyの文字列を生成する．
-
 rb_str_append(VALUE str1, VALUE str2) ::
 
   Rubyの文字列str1にRubyの文字列str2を追加する．
@@ -300,6 +289,14 @@ rb_str_set_len(VALUE str, long len) ::
   能でなければ例外が発生する．RSTRING_LEN(str)とは無関係に，
   lenバイトまでの内容は保存される．lenはstrの容量を越えてい
   てはならない．
+
+rb_str_modify(VALUE str) ::
+
+  Rubyの文字列の変更する準備をする．strが変更可能でなければ例
+  外が発生する．strのバッファが共有されている場合は，新しいバッ
+  ファを割り当てて共有されていない状態にする．RSTRING_PTRを使っ
+  て中身を変更したり，rb_str_set_lenを呼んだりする前には，
+  必ずこの関数を呼ばなけれならない．
 
 ==== 配列に対する関数
 
@@ -1243,7 +1240,6 @@ Data_Get_Struct(data, type, sval) ::
   RB_INTEGER_TYPE_P(value)
   RB_FLOAT_TYPE_P(value)
   void Check_Type(VALUE value, int type)
-  SafeStringValue(value)
 
 === 型変換
 
@@ -1325,8 +1321,13 @@ void rb_define_hooked_variable(const char *name, VALUE *var, VALUE (*getter)(), 
 
 void rb_global_variable(VALUE *var) ::
 
-  GCのため，Rubyプログラムからはアクセスされないが, Rubyオブ
-  ジェクトを含む大域変数をマークする．
+  マークする必要のあるRubyオブジェクトを含む大域変数を，GC
+  によって解放されないように保護する．
+
+void rb_gc_register_mark_object(VALUE object) ::
+
+  マークする必要のあるRubyオブジェクトを，GCによって解放さ
+  れないように登録する．
 
 === 定数
 

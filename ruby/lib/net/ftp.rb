@@ -17,7 +17,7 @@
 
 require "socket"
 require "monitor"
-require "net/protocol"
+require_relative "protocol"
 require "time"
 begin
   require "openssl"
@@ -230,6 +230,10 @@ module Net
         if defined?(VerifyCallbackProc)
           @ssl_context.verify_callback = VerifyCallbackProc
         end
+        @ssl_context.session_cache_mode =
+          OpenSSL::SSL::SSLContext::SESSION_CACHE_CLIENT |
+          OpenSSL::SSL::SSLContext::SESSION_CACHE_NO_INTERNAL_STORE
+        @ssl_context.session_new_cb = proc {|sock, sess| @ssl_session = sess }
         @ssl_session = nil
         if options[:private_data_connection].nil?
           @private_data_connection = true
@@ -349,7 +353,6 @@ module Net
       if @ssl_context.verify_mode != VERIFY_NONE
         ssl_sock.post_connection_check(@host)
       end
-      @ssl_session = ssl_sock.session
       return ssl_sock
     end
     private :start_tls_session
@@ -628,9 +631,7 @@ module Net
         with_binary(true) do
           begin
             conn = transfercmd(cmd, rest_offset)
-            loop do
-              data = conn.read(blocksize)
-              break if data == nil
+            while data = conn.read(blocksize)
               yield(data)
             end
             conn.shutdown(Socket::SHUT_WR)
@@ -655,9 +656,7 @@ module Net
         with_binary(false) do
           begin
             conn = transfercmd(cmd)
-            loop do
-              line = conn.gets
-              break if line == nil
+            while line = conn.gets
               yield(line.sub(/\r?\n\z/, ""), !line.match(/\n\z/).nil?)
             end
             conn.shutdown(Socket::SHUT_WR)
@@ -683,14 +682,18 @@ module Net
       end
       synchronize do
         with_binary(true) do
-          conn = transfercmd(cmd)
-          loop do
-            buf = file.read(blocksize)
-            break if buf == nil
-            conn.write(buf)
-            yield(buf) if block_given?
+          begin
+            conn = transfercmd(cmd)
+            while buf = file.read(blocksize)
+              conn.write(buf)
+              yield(buf) if block_given?
+            end
+            conn.shutdown(Socket::SHUT_WR)
+            conn.read_timeout = 1
+            conn.read
+          ensure
+            conn.close if conn
           end
-          conn.close
           voidresp
         end
       end
@@ -712,17 +715,21 @@ module Net
     def storlines(cmd, file) # :yield: line
       synchronize do
         with_binary(false) do
-          conn = transfercmd(cmd)
-          loop do
-            buf = file.gets
-            break if buf == nil
-            if buf[-2, 2] != CRLF
-              buf = buf.chomp + CRLF
+          begin
+            conn = transfercmd(cmd)
+            while buf = file.gets
+              if buf[-2, 2] != CRLF
+                buf = buf.chomp + CRLF
+              end
+              conn.write(buf)
+              yield(buf) if block_given?
             end
-            conn.write(buf)
-            yield(buf) if block_given?
+            conn.shutdown(Socket::SHUT_WR)
+            conn.read_timeout = 1
+            conn.read
+          ensure
+            conn.close if conn
           end
-          conn.close
           voidresp
         end
       end
@@ -1233,8 +1240,9 @@ module Net
 
     #
     # Returns the status (STAT command).
-    # pathname - when stat is invoked with pathname as a parameter it acts like
-    #            list but alot faster and over the same tcp session.
+    #
+    # pathname:: when stat is invoked with pathname as a parameter it acts like
+    #            list but a lot faster and over the same tcp session.
     #
     def status(pathname = nil)
       line = pathname ? "STAT #{pathname}" : "STAT"
@@ -1291,6 +1299,41 @@ module Net
     #
     def site(arg)
       cmd = "SITE " + arg
+      voidcmd(cmd)
+    end
+
+    #
+    # Issues a FEAT command
+    #
+    # Returns an array of supported optional features
+    #
+    def features
+      resp = sendcmd("FEAT")
+      if !resp.start_with?("211")
+        raise FTPReplyError, resp
+      end
+
+      feats = []
+      resp.split("\n").each do |line|
+        next if !line.start_with?(' ') # skip status lines
+
+        feats << line.strip
+      end
+
+      return feats
+    end
+
+    #
+    # Issues an OPTS command
+    # - name Should be the name of the option to set
+    # - params is any optional parameters to supply with the option
+    #
+    # example: option('UTF8', 'ON') => 'OPTS UTF8 ON'
+    #
+    def option(name, params = nil)
+      cmd = "OPTS #{name}"
+      cmd += " #{params}" if params
+
       voidcmd(cmd)
     end
 
@@ -1453,7 +1496,7 @@ module Net
 
     if defined?(OpenSSL::SSL::SSLSocket)
       class BufferedSSLSocket <  BufferedSocket
-        def initialize(*args)
+        def initialize(*args, **options)
           super
           @is_shutdown = false
         end

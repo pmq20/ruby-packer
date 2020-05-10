@@ -164,7 +164,7 @@ class RDoc::Options
   ##
   # Files matching this pattern will be excluded
 
-  attr_accessor :exclude
+  attr_writer :exclude
 
   ##
   # The list of files to be processed
@@ -344,7 +344,10 @@ class RDoc::Options
 
   def init_ivars # :nodoc:
     @dry_run = false
-    @exclude = []
+    @exclude = %w[
+      ~\z \.orig\z \.rej\z \.bak\z
+      \.gemspec\z
+    ]
     @files = nil
     @force_output = false
     @force_update = true
@@ -494,6 +497,20 @@ class RDoc::Options
   end
 
   ##
+  # Create a regexp for #exclude
+
+  def exclude
+    if @exclude.nil? or Regexp === @exclude then
+      # done, #finish is being re-run
+      @exclude
+    elsif @exclude.empty? then
+      nil
+    else
+      Regexp.new(@exclude.join("|"))
+    end
+  end
+
+  ##
   # Completes any unfinished option setup business such as filtering for
   # existent files, creating a regexp for #exclude and setting a default
   # #template.
@@ -505,13 +522,7 @@ class RDoc::Options
     root = @root.to_s
     @rdoc_include << root unless @rdoc_include.include?(root)
 
-    if @exclude.nil? or Regexp === @exclude then
-      # done, #finish is being re-run
-    elsif @exclude.empty? then
-      @exclude = nil
-    else
-      @exclude = Regexp.new(@exclude.join("|"))
-    end
+    @exclude = self.exclude
 
     finish_page_dir
 
@@ -544,7 +555,13 @@ class RDoc::Options
 
     @files << @page_dir.to_s
 
-    page_dir = @page_dir.expand_path.relative_path_from @root
+    page_dir = nil
+    begin
+      page_dir = @page_dir.expand_path.relative_path_from @root
+    rescue ArgumentError
+      # On Windows, sometimes crosses different drive letters.
+      page_dir = @page_dir.expand_path
+    end
 
     @page_dir = page_dir
   end
@@ -1143,8 +1160,17 @@ Usage: #{opt.program_name} [options] [names...]
 
     path.reject do |item|
       path = Pathname.new(item).expand_path
-      relative = path.relative_path_from(dot).to_s
-      relative.start_with? '..'
+      is_reject = nil
+      relative = nil
+      begin
+        relative = path.relative_path_from(dot).to_s
+      rescue ArgumentError
+        # On Windows, sometimes crosses different drive letters.
+        is_reject = true
+      else
+        is_reject = relative.start_with? '..'
+      end
+      is_reject
     end
   end
 
@@ -1217,7 +1243,7 @@ Usage: #{opt.program_name} [options] [names...]
   def write_options
     RDoc.load_yaml
 
-    open '.rdoc_options', 'w' do |io|
+    File.open '.rdoc_options', 'w' do |io|
       io.set_encoding Encoding::UTF_8
 
       YAML.dump self, io

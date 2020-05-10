@@ -2,7 +2,7 @@
 #
 # extconf.rb
 #
-# $Id: extconf.rb 57766 2017-03-03 09:27:27Z nobu $
+# $Id$
 #
 
 require 'mkmf'

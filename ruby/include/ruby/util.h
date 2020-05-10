@@ -2,7 +2,7 @@
 
   util.h -
 
-  $Author: nobu $
+  $Author$
   created at: Thu Mar  9 11:55:53 JST 1995
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto

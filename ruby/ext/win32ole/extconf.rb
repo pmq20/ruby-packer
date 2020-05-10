@@ -1,7 +1,7 @@
 # frozen_string_literal: false
 #----------------------------------
 # extconf.rb
-# $Revision: 53143 $
+# $Revision$
 #----------------------------------
 require 'mkmf'
 

@@ -22,8 +22,9 @@ struct inetsock_arg
 };
 
 static VALUE
-inetsock_cleanup(struct inetsock_arg *arg)
+inetsock_cleanup(VALUE v)
 {
+    struct inetsock_arg *arg = (void *)v;
     if (arg->remote.res) {
 	rb_freeaddrinfo(arg->remote.res);
 	arg->remote.res = 0;
@@ -39,8 +40,9 @@ inetsock_cleanup(struct inetsock_arg *arg)
 }
 
 static VALUE
-init_inetsock_internal(struct inetsock_arg *arg)
+init_inetsock_internal(VALUE v)
 {
+    struct inetsock_arg *arg = (void *)v;
     int error = 0;
     int type = arg->type;
     struct addrinfo *res, *lres;
@@ -99,6 +101,11 @@ init_inetsock_internal(struct inetsock_arg *arg)
 	}
 	else {
 	    if (lres) {
+#if !defined(_WIN32) && !defined(__CYGWIN__)
+                status = 1;
+                setsockopt(fd, SOL_SOCKET, SO_REUSEADDR,
+                           (char*)&status, (socklen_t)sizeof(status));
+#endif
 		status = bind(fd, lres->ai_addr, lres->ai_addrlen);
 		local = status;
 		syscall = "bind(2)";

@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes.rb', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 ruby_version_is '2.5' do
   describe "String#delete_suffix" do
@@ -22,9 +22,11 @@ ruby_version_is '2.5' do
       r.should == s
     end
 
-    it "taints resulting strings when other is tainted" do
-      'hello'.taint.delete_suffix('ello').tainted?.should == true
-      'hello'.taint.delete_suffix('').tainted?.should == true
+    ruby_version_is ''...'2.7' do
+      it "taints resulting strings when other is tainted" do
+        'hello'.taint.delete_suffix('ello').tainted?.should == true
+        'hello'.taint.delete_suffix('').tainted?.should == true
+      end
     end
 
     it "doesn't set $~" do
@@ -72,10 +74,10 @@ ruby_version_is '2.5' do
       'hello'.delete_suffix!(o).should == 'h'
     end
 
-    it "raises a RuntimeError when self is frozen" do
-      lambda { 'hello'.freeze.delete_suffix!('ello') }.should raise_error(RuntimeError)
-      lambda { 'hello'.freeze.delete_suffix!('') }.should raise_error(RuntimeError)
-      lambda { ''.freeze.delete_suffix!('') }.should raise_error(RuntimeError)
+    it "raises a #{frozen_error_class} when self is frozen" do
+      -> { 'hello'.freeze.delete_suffix!('ello') }.should raise_error(frozen_error_class)
+      -> { 'hello'.freeze.delete_suffix!('') }.should raise_error(frozen_error_class)
+      -> { ''.freeze.delete_suffix!('') }.should raise_error(frozen_error_class)
     end
   end
 end

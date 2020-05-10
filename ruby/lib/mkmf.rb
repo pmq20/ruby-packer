@@ -7,8 +7,9 @@ require 'rbconfig'
 require 'fileutils'
 require 'shellwords'
 
-# :stopdoc:
 class String
+  # :stopdoc:
+
   # Wraps a string in escaped quotes if it contains whitespace.
   def quote
     /\s/ =~ self ? "\"#{self}\"" : "#{self}"
@@ -31,15 +32,20 @@ class String
   def sans_arguments
     self[/\A[^()]+/]
   end
+
+  # :startdoc:
 end
 
 class Array
+  # :stopdoc:
+
   # Wraps all strings in escaped quotes if they contain whitespace.
   def quote
     map {|s| s.quote}
   end
+
+  # :startdoc:
 end
-# :startdoc:
 
 ##
 # mkmf.rb is used by Ruby C extensions to generate a Makefile which will
@@ -241,7 +247,12 @@ module MakeMakefile
     $topdir ||= RbConfig::CONFIG["topdir"]
     $arch_hdrdir = "$(extout)/include/$(arch)"
   else
-    abort "mkmf.rb can't find header files for ruby at #{$hdrdir}/ruby.h"
+    abort <<MESSAGE
+mkmf.rb can't find header files for ruby at #{$hdrdir}/ruby.h
+
+You might have to install separate package for the ruby development
+environment, ruby-dev or ruby-devel for example.
+MESSAGE
   end
 
   CONFTEST = "conftest".freeze
@@ -423,6 +434,10 @@ EOM
 EOM
   end
 
+  def conftest_source
+    CONFTEST_C
+  end
+
   def create_tmpsrc(src)
     src = "#{COMMON_HEADERS}\n#{src}"
     src = yield(src) if block_given?
@@ -431,7 +446,7 @@ EOM
     src.sub!(/[^\n]\z/, "\\&\n")
     count = 0
     begin
-      open(CONFTEST_C, "wb") do |cfile|
+      open(conftest_source, "wb") do |cfile|
         cfile.print src
       end
     rescue Errno::EACCES
@@ -466,10 +481,10 @@ MSG
     end
   end
 
-  def link_command(ldflags, opt="", libpath=$DEFLIBPATH|$LIBPATH)
+  def link_config(ldflags, opt="", libpath=$DEFLIBPATH|$LIBPATH)
     librubyarg = $extmk ? $LIBRUBYARG_STATIC : "$(LIBRUBYARG)"
     conf = RbConfig::CONFIG.merge('hdrdir' => $hdrdir.quote,
-                                  'src' => "#{CONFTEST_C}",
+                                  'src' => "#{conftest_source}",
                                   'arch_hdrdir' => $arch_hdrdir.quote,
                                   'top_srcdir' => $top_srcdir.quote,
                                   'INCFLAGS' => "#$INCFLAGS",
@@ -480,21 +495,29 @@ MSG
                                   'LOCAL_LIBS' => "#$LOCAL_LIBS #$libs",
                                   'LIBS' => "#{librubyarg} #{opt} #$LIBS")
     conf['LIBPATH'] = libpathflag(libpath.map {|s| RbConfig::expand(s.dup, conf)})
+    conf
+  end
+
+  def link_command(ldflags, *opts)
+    conf = link_config(ldflags, *opts)
     RbConfig::expand(TRY_LINK.dup, conf)
   end
 
-  def cc_command(opt="")
+  def cc_config(opt="")
     conf = RbConfig::CONFIG.merge('hdrdir' => $hdrdir.quote, 'srcdir' => $srcdir.quote,
                                   'arch_hdrdir' => $arch_hdrdir.quote,
                                   'top_srcdir' => $top_srcdir.quote)
+    conf
+  end
+
+  def cc_command(opt="")
+    conf = cc_config(opt)
     RbConfig::expand("$(CC) #$INCFLAGS #$CPPFLAGS #$CFLAGS #$ARCH_FLAG #{opt} -c #{CONFTEST_C}",
                      conf)
   end
 
   def cpp_command(outfile, opt="")
-    conf = RbConfig::CONFIG.merge('hdrdir' => $hdrdir.quote, 'srcdir' => $srcdir.quote,
-                                  'arch_hdrdir' => $arch_hdrdir.quote,
-                                  'top_srcdir' => $top_srcdir.quote)
+    conf = cc_config(opt)
     if $universal and (arch_flag = conf['ARCH_FLAG']) and !arch_flag.empty?
       conf['ARCH_FLAG'] = arch_flag.gsub(/(?:\G|\s)-arch\s+\S+/, '')
     end
@@ -657,7 +680,8 @@ MSG
   end
 
   def try_ldflags(flags, opts = {})
-    try_link(MAIN_DOES_NOTHING, flags, {:werror => true}.update(opts))
+    opts = {:werror => true}.update(opts) if $mswin
+    try_link(MAIN_DOES_NOTHING, flags, opts)
   end
 
   def append_ldflags(flags, *opts)
@@ -995,6 +1019,7 @@ SRC
   # <code>--with-FOOlib</code> configuration option.
   #
   def have_library(lib, func = nil, headers = nil, opt = "", &b)
+    dir_config(lib)
     lib = with_config(lib+'lib', lib)
     checking_for checking_message(func && func.funcall_style, LIBARG%lib, opt) do
       if COMMON_LIBS.include?(lib)
@@ -1020,6 +1045,7 @@ SRC
   # library paths searched and linked against.
   #
   def find_library(lib, func, *paths, &b)
+    dir_config(lib)
     lib = with_config(lib+'lib', lib)
     paths = paths.collect {|path| path.split(File::PATH_SEPARATOR)}.flatten
     checking_for checking_message(func && func.funcall_style, LIBARG%lib) do
@@ -1093,6 +1119,7 @@ SRC
   # +HAVE_FOO_H+ preprocessor macro would be passed to the compiler.
   #
   def have_header(header, preheaders = nil, opt = "", &b)
+    dir_config(header[/.*?(?=\/)|.*?(?=\.)/])
     checking_for header do
       if try_header(cpp_include(preheaders)+cpp_include(header), opt, &b)
         $defs.push(format("-DHAVE_%s", header.tr_cpp))
@@ -1736,6 +1763,10 @@ SRC
   # application.
   #
   def dir_config(target, idefault=nil, ldefault=nil)
+    if conf = $config_dirs[target]
+      return conf
+    end
+
     if dir = with_config(target + "-dir", (idefault unless ldefault))
       defaults = Array === dir ? dir : dir.split(File::PATH_SEPARATOR)
       idefault = ldefault = nil
@@ -1766,7 +1797,7 @@ SRC
     end
     $LIBPATH = ldirs | $LIBPATH
 
-    [idir, ldir]
+    $config_dirs[target] = [idir, ldir]
   end
 
   # Returns compile/link information about an installed library in a
@@ -1782,7 +1813,7 @@ SRC
   #
   # Where {option} is, for instance, <code>--cflags</code>.
   #
-  # The values obtained are appended to +$CFLAGS+, +$LDFLAGS+ and
+  # The values obtained are appended to +$INCFLAGS+, +$CFLAGS+, +$LDFLAGS+ and
   # +$libs+.
   #
   # If an <code>option</code> argument is given, the config command is
@@ -1838,9 +1869,9 @@ SRC
 
       $LDFLAGS = [orig_ldflags, ldflags].join(' ')
       Logging::message "package configuration for %s\n", pkg
-      Logging::message "cflags: %s\nldflags: %s\nlibs: %s\n\n",
-                       cflags, ldflags, libs
-      [cflags, ldflags, libs]
+      Logging::message "incflags: %s\ncflags: %s\nldflags: %s\nlibs: %s\n\n",
+                       incflags, cflags, ldflags, libs
+      [[incflags, cflags].join(' '), ldflags, libs]
     else
       Logging::message "package configuration for %s is not found\n", pkg
       nil
@@ -1959,6 +1990,7 @@ VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
     headers << '$(RUBY_EXTCONF_H)' if $extconf_h
     mk << %{
 
+CC_WRAPPER = #{CONFIG['CC_WRAPPER']}
 CC = #{CONFIG['CC']}
 CXX = #{CONFIG['CXX']}
 LIBRUBY = #{CONFIG['LIBRUBY']}
@@ -1976,6 +2008,7 @@ cxxflags = #{CONFIG['cxxflags']}
 optflags = #{CONFIG['optflags']}
 debugflags = #{CONFIG['debugflags']}
 warnflags = #{$warnflags}
+cppflags = #{CONFIG['cppflags']}
 CCDLFLAGS = #{$static ? '' : CONFIG['CCDLFLAGS']}
 CFLAGS   = $(CCDLFLAGS) #$CFLAGS $(ARCH_FLAG)
 INCFLAGS = -I. #$INCFLAGS
@@ -2101,7 +2134,6 @@ RULES
       line.gsub!(/\.o\b/, ".#{$OBJEXT}")
       line.gsub!(/\{\$\(VPATH\)\}/, "") unless $nmake
       line.gsub!(/\$\((?:hdr|top)dir\)\/config.h/, $config_h)
-      line.gsub!(%r"\$\(hdrdir\)/(?!ruby(?![^:;/\s]))(?=[-\w]+\.h)", '\&ruby/')
       if $nmake && /\A\s*\$\(RM|COPY\)/ =~ line
         line.gsub!(%r"[-\w\./]{2,}"){$&.tr("/", "\\")}
         line.gsub!(/(\$\((?!RM|COPY)[^:)]+)(?=\))/, '\1:/=\\')
@@ -2250,7 +2282,7 @@ RULES
     origdef ||= ''
 
     if $extout and $INSTALLFILES
-      $cleanfiles.concat($INSTALLFILES.collect {|files, dir|File.join(dir, files.sub(/\A\.\//, ''))})
+      $cleanfiles.concat($INSTALLFILES.collect {|files, dir|File.join(dir, files.delete_prefix('./'))})
       $distcleandirs.concat($INSTALLFILES.collect {|files, dir| dir})
     end
 
@@ -2494,6 +2526,8 @@ site-install-rb: install-rb
     $enable_shared = config['ENABLE_SHARED'] == 'yes'
     $defs = []
     $extconf_h = nil
+    $config_dirs = {}
+
     if $warnflags = CONFIG['warnflags'] and CONFIG['GCC'] == 'yes'
       # turn warnings into errors only for bundled extensions.
       config['warnflags'] = $warnflags.gsub(/(\A|\s)-Werror[-=]/, '\1-W')
@@ -2505,6 +2539,9 @@ site-install-rb: install-rb
         RbConfig.expand(rbconfig[key] = val.dup) if /warnflags/ =~ val
       end
       $warnflags = config['warnflags'] unless $extmk
+    end
+    if (w = rbconfig['CC_WRAPPER']) and !w.empty? and !File.executable?(w)
+      rbconfig['CC_WRAPPER'] = config['CC_WRAPPER'] = ''
     end
     $CFLAGS = with_config("cflags", arg_config("CFLAGS", config["CFLAGS"])).dup
     $CXXFLAGS = (with_config("cxxflags", arg_config("CXXFLAGS", config["CXXFLAGS"]))||'').dup
@@ -2549,6 +2586,7 @@ site-install-rb: install-rb
     $extout_prefix ||= nil
 
     $arg_config.clear
+    $config_dirs.clear
     dir_config("opt")
   end
 
@@ -2584,7 +2622,8 @@ MESSAGE
       src = src.sub(/\{/) do
         $& +
           "\n  if (argc > 1000000) {\n" +
-          refs.map {|n|"    printf(\"%p\", &#{n});\n"}.join("") +
+          refs.map {|n|"    int (* volatile #{n}p)(void)=(int (*)(void))&#{n};\n"}.join("") +
+          refs.map {|n|"    printf(\"%d\", (*#{n}p)());\n"}.join("") +
           "  }\n"
       end
     end
@@ -2708,7 +2747,7 @@ MESSAGE
   ##
   # A C main function which does no work
 
-  MAIN_DOES_NOTHING = config_string('MAIN_DOES_NOTHING') || "int main(int argc, char **argv)\n{\n  return 0;\n}"
+  MAIN_DOES_NOTHING = config_string('MAIN_DOES_NOTHING') || "int main(int argc, char **argv)\n{\n  return !!argv[argc];\n}"
   UNIVERSAL_INTS = config_string('UNIVERSAL_INTS') {|s| Shellwords.shellwords(s)} ||
     %w[int short long long\ long]
 
@@ -2736,6 +2775,51 @@ distclean: clean distclean-so distclean-static distclean-rb-default distclean-rb
 
 realclean: distclean
 "
+
+  @lang = Hash.new(self)
+
+  def self.[](name)
+    @lang.fetch(name)
+  end
+
+  def self.[]=(name, mod)
+    @lang[name] = mod
+  end
+
+  self["C++"] = Module.new do
+    include MakeMakefile
+    extend self
+
+    CONFTEST_CXX = "#{CONFTEST}.#{config_string('CXX_EXT') || CXX_EXT[0]}"
+
+    TRY_LINK_CXX = config_string('TRY_LINK_CXX') ||
+                   ((cmd = TRY_LINK.gsub(/\$\(C(?:C|(FLAGS))\)/, '$(CXX\1)')) != TRY_LINK && cmd) ||
+                   "$(CXX) #{OUTFLAG}#{CONFTEST}#{$EXEEXT} $(INCFLAGS) $(CPPFLAGS) " \
+                   "$(CXXFLAGS) $(src) $(LIBPATH) $(LDFLAGS) $(ARCH_FLAG) $(LOCAL_LIBS) $(LIBS)"
+
+    def have_devel?
+      unless defined? @have_devel
+        @have_devel = true
+        @have_devel = try_link(MAIN_DOES_NOTHING)
+      end
+      @have_devel
+    end
+
+    def conftest_source
+      CONFTEST_CXX
+    end
+
+    def cc_command(opt="")
+      conf = cc_config(opt)
+      RbConfig::expand("$(CXX) #$INCFLAGS #$CPPFLAGS #$CXXFLAGS #$ARCH_FLAG #{opt} -c #{CONFTEST_CXX}",
+                       conf)
+    end
+
+    def link_command(ldflags, *opts)
+      conf = link_config(ldflags, *opts)
+      RbConfig::expand(TRY_LINK_CXX.dup, conf)
+    end
+  end
 end
 
 include MakeMakefile

@@ -304,7 +304,6 @@ ossl_x509store_add_file(VALUE self, VALUE file)
     char *path = NULL;
 
     if(file != Qnil){
-	rb_check_safe_obj(file);
 	path = StringValueCStr(file);
     }
     GetX509Store(self, store);
@@ -344,7 +343,6 @@ ossl_x509store_add_path(VALUE self, VALUE dir)
     char *path = NULL;
 
     if(dir != Qnil){
-	rb_check_safe_obj(dir);
 	path = StringValueCStr(dir);
     }
     GetX509Store(self, store);
@@ -780,6 +778,7 @@ ossl_x509stctx_set_time(VALUE self, VALUE time)
 void
 Init_ossl_x509store(void)
 {
+#undef rb_intern
 #if 0
     mOSSL = rb_define_module("OpenSSL");
     eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);

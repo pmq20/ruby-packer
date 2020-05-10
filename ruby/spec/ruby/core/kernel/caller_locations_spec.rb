@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/caller_locations', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/caller_locations'
 
 describe 'Kernel#caller_locations' do
   it 'is a private method' do
@@ -13,7 +13,7 @@ describe 'Kernel#caller_locations' do
   it 'returns an Array of caller locations using a custom offset' do
     locations = KernelSpecs::CallerLocationsTest.locations(2)
 
-    locations[0].absolute_path.end_with?('mspec.rb').should == true
+    locations[0].absolute_path.should.end_with?('mspec.rb')
   end
 
   it 'returns an Array of caller locations using a custom limit' do

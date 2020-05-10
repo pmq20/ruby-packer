@@ -1,5 +1,5 @@
-require File.expand_path('../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/match_operators', __FILE__)
+require_relative '../spec_helper'
+require_relative 'fixtures/match_operators'
 
 describe "The !~ operator" do
   before :each do
@@ -45,6 +45,13 @@ describe "The =~ operator with named captures" do
       local_variables.should == [:matched, :unmatched]
       matched.should == "foo"
       unmatched.should == nil
+    end
+  end
+
+  describe "on syntax of 'string_literal' =~ /regexp/" do
+    it "does not set local variables" do
+      'string literal' =~ /(?<matched>str)(?<unmatched>lit)?/
+      local_variables.should == []
     end
   end
 

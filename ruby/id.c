@@ -3,7 +3,7 @@
 
   id.c -
 
-  $Author: nobu $
+  $Author$
   created at: Wed Dec  5 02:36:10 2012
 
   Copyright (C) 2004-2007 Koichi Sasada
@@ -69,6 +69,7 @@ Init_id(void)
     REGISTER_SYMID(idMax, "max");
     REGISTER_SYMID(idMin, "min");
     REGISTER_SYMID(idFreeze, "freeze");
+    REGISTER_SYMID(idNilP, "nil?");
     REGISTER_SYMID(idInspect, "inspect");
     REGISTER_SYMID(idIntern, "intern");
     REGISTER_SYMID(idObject_id, "object_id");
@@ -104,16 +105,33 @@ Init_id(void)
     REGISTER_SYMID(idTo_a, "to_a");
     REGISTER_SYMID(idTo_s, "to_s");
     REGISTER_SYMID(idTo_i, "to_i");
+    REGISTER_SYMID(idTo_f, "to_f");
     REGISTER_SYMID(idTo_r, "to_r");
     REGISTER_SYMID(idBt, "bt");
     REGISTER_SYMID(idBt_locations, "bt_locations");
     REGISTER_SYMID(idCall, "call");
     REGISTER_SYMID(idMesg, "mesg");
     REGISTER_SYMID(idException, "exception");
+    REGISTER_SYMID(idLocals, "locals");
     REGISTER_SYMID(idNOT, "not");
     REGISTER_SYMID(idAND, "and");
     REGISTER_SYMID(idOR, "or");
+    REGISTER_SYMID(idDiv, "div");
+    REGISTER_SYMID(idDivmod, "divmod");
+    REGISTER_SYMID(idFdiv, "fdiv");
+    REGISTER_SYMID(idQuo, "quo");
+    REGISTER_SYMID(idName, "name");
+    REGISTER_SYMID(idNil, "nil");
     REGISTER_SYMID(idUScore, "_");
+    REGISTER_SYMID(idNUMPARAM_1, "_1");
+    REGISTER_SYMID(idNUMPARAM_2, "_2");
+    REGISTER_SYMID(idNUMPARAM_3, "_3");
+    REGISTER_SYMID(idNUMPARAM_4, "_4");
+    REGISTER_SYMID(idNUMPARAM_5, "_5");
+    REGISTER_SYMID(idNUMPARAM_6, "_6");
+    REGISTER_SYMID(idNUMPARAM_7, "_7");
+    REGISTER_SYMID(idNUMPARAM_8, "_8");
+    REGISTER_SYMID(idNUMPARAM_9, "_9");
     REGISTER_SYMID(idNULL, ""/*NULL*/"");
     REGISTER_SYMID(idEmptyP, "empty?");
     REGISTER_SYMID(idEqlP, "eql?");
@@ -127,10 +145,10 @@ Init_id(void)
     REGISTER_SYMID(id_core_define_method, "core#define_method");
     REGISTER_SYMID(id_core_define_singleton_method, "core#define_singleton_method");
     REGISTER_SYMID(id_core_set_postexe, "core#set_postexe");
-    REGISTER_SYMID(id_core_hash_from_ary, "core#hash_from_ary");
-    REGISTER_SYMID(id_core_hash_merge_ary, "core#hash_merge_ary");
     REGISTER_SYMID(id_core_hash_merge_ptr, "core#hash_merge_ptr");
     REGISTER_SYMID(id_core_hash_merge_kwd, "core#hash_merge_kwd");
+    REGISTER_SYMID(id_core_raise, "core#raise");
     REGISTER_SYMID(idLASTLINE, "$_");
     REGISTER_SYMID(idBACKREF, "$~");
+    REGISTER_SYMID(idERROR_INFO, "$!");
 }

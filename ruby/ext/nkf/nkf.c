@@ -3,11 +3,11 @@
  *
  *  original nkf2.x is maintained at http://sourceforge.jp/projects/nkf/
  *
- *  $Id: nkf.c 60071 2017-09-30 08:35:23Z nobu $
+ *  $Id$
  *
  */
 
-#define RUBY_NKF_REVISION "$Revision: 60071 $"
+#define RUBY_NKF_REVISION "$Revision$"
 #define RUBY_NKF_VERSION NKF_VERSION " (" NKF_RELEASE_DATE ")"
 
 #include "ruby/ruby.h"
@@ -168,7 +168,6 @@ rb_nkf_convert(VALUE obj, VALUE opt, VALUE src)
     /* use _result_ end */
 
     rb_str_set_len(tmp, output_ctr);
-    OBJ_INFECT(tmp, src);
 
     if (mimeout_f)
 	rb_enc_associate(tmp, rb_usascii_encoding());

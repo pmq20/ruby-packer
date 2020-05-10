@@ -1,5 +1,11 @@
 # Ruby Packer Changelog
 
+## v2.7.1
+
+- upgrade ruby to 2.7.1
+- use internal enclosed Ruby version as rubyc's version prefix
+- update license to 2020 and collective authorship
+
 ## v0.4.0
 
 - upgrade libsquash to v0.8.0

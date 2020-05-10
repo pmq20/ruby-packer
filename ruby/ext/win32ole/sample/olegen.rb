@@ -1,7 +1,7 @@
 # frozen_string_literal: false
 #-----------------------------
 # olegen.rb
-# $Revision: 53143 $
+# $Revision$
 #-----------------------------
 
 require 'win32ole'

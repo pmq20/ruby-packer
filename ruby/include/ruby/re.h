@@ -2,7 +2,7 @@
 
   re.h -
 
-  $Author: nobu $
+  $Author$
   created at: Thu Sep 30 14:18:32 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -36,9 +36,8 @@ struct rmatch_offset {
 struct rmatch {
     struct re_registers regs;
 
-    int char_offset_updated;
-    int char_offset_num_allocated;
     struct rmatch_offset *char_offset;
+    int char_offset_num_allocated;
 };
 
 struct RMatch {

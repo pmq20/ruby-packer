@@ -10,8 +10,12 @@
 	return "NODE_CASE";
       case NODE_CASE2:
 	return "NODE_CASE2";
+      case NODE_CASE3:
+	return "NODE_CASE3";
       case NODE_WHEN:
 	return "NODE_WHEN";
+      case NODE_IN:
+	return "NODE_IN";
       case NODE_WHILE:
 	return "NODE_WHILE";
       case NODE_UNTIL:
@@ -20,6 +24,8 @@
 	return "NODE_ITER";
       case NODE_FOR:
 	return "NODE_FOR";
+      case NODE_FOR_MASGN:
+	return "NODE_FOR_MASGN";
       case NODE_BREAK:
 	return "NODE_BREAK";
       case NODE_NEXT:
@@ -80,10 +86,10 @@
 	return "NODE_SUPER";
       case NODE_ZSUPER:
 	return "NODE_ZSUPER";
-      case NODE_ARRAY:
-	return "NODE_ARRAY";
-      case NODE_ZARRAY:
-	return "NODE_ZARRAY";
+      case NODE_LIST:
+	return "NODE_LIST";
+      case NODE_ZLIST:
+	return "NODE_ZLIST";
       case NODE_VALUES:
 	return "NODE_VALUES";
       case NODE_HASH:
@@ -128,6 +134,8 @@
 	return "NODE_EVSTR";
       case NODE_DREGX:
 	return "NODE_DREGX";
+      case NODE_ONCE:
+	return "NODE_ONCE";
       case NODE_ARGS:
 	return "NODE_ARGS";
       case NODE_ARGS_AUX:
@@ -192,7 +200,9 @@
 	return "NODE_DSYM";
       case NODE_ATTRASGN:
 	return "NODE_ATTRASGN";
-      case NODE_PRELUDE:
-	return "NODE_PRELUDE";
       case NODE_LAMBDA:
 	return "NODE_LAMBDA";
+      case NODE_ARYPTN:
+	return "NODE_ARYPTN";
+      case NODE_HSHPTN:
+	return "NODE_HSHPTN";

@@ -1,6 +1,6 @@
 # frozen_string_literal: false
 require 'socket'
-require 'drb/drb'
+require_relative 'drb'
 require 'tmpdir'
 
 raise(LoadError, "UNIXServer is required") unless defined?(UNIXServer)
@@ -15,19 +15,18 @@ module DRb
   class DRbUNIXSocket < DRbTCPSocket
     # :stopdoc:
     def self.parse_uri(uri)
-      if /^drbunix:(.*?)(\?(.*))?$/ =~ uri
+      if /\Adrbunix:(.*?)(\?(.*))?\z/ =~ uri
         filename = $1
         option = $3
         [filename, option]
       else
-        raise(DRbBadScheme, uri) unless uri =~ /^drbunix:/
+        raise(DRbBadScheme, uri) unless uri.start_with?('drbunix:')
         raise(DRbBadURI, 'can\'t parse uri:' + uri)
       end
     end
 
     def self.open(uri, config)
       filename, = parse_uri(uri)
-      filename.untaint
       soc = UNIXSocket.open(filename)
       self.new(uri, soc, config)
     end
@@ -95,6 +94,7 @@ module DRb
     public
     def close
       return unless @socket
+      shutdown # DRbProtocol#shutdown
       path = @socket.path if @server_mode
       @socket.close
       File.unlink(path) if @server_mode

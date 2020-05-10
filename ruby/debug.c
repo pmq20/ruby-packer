@@ -2,7 +2,7 @@
 
   debug.c -
 
-  $Author: nobu $
+  $Author$
   created at: 04/08/25 02:31:54 JST
 
   Copyright (C) 2004-2007 Koichi Sasada
@@ -11,6 +11,7 @@
 
 #include "ruby/ruby.h"
 #include "ruby/encoding.h"
+#include "ruby/io.h"
 #include "ruby/util.h"
 #include "vm_debug.h"
 #include "eval_intern.h"
@@ -146,6 +147,7 @@ extern int ruby_w32_rtc_error;
 UINT ruby_w32_codepage[2];
 #endif
 extern int ruby_rgengc_debug;
+extern int ruby_on_ci;
 
 int
 ruby_env_debug_option(const char *str, int len, void *arg)
@@ -191,6 +193,7 @@ ruby_env_debug_option(const char *str, int len, void *arg)
 
     SET_WHEN("gc_stress", *ruby_initial_gc_stress_ptr, Qtrue);
     SET_WHEN("core", ruby_enable_coredump, 1);
+    SET_WHEN("ci", ruby_on_ci, 1);
     if (NAME_MATCH_VALUE("rgengc")) {
 	if (!len) ruby_rgengc_debug = 1;
 	else SET_UINT_LIST("rgengc", &ruby_rgengc_debug, 1);

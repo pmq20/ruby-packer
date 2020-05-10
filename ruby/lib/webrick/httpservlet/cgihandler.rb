@@ -11,8 +11,8 @@
 
 require 'rbconfig'
 require 'tempfile'
-require 'webrick/config'
-require 'webrick/httpservlet/abstract'
+require_relative '../config'
+require_relative 'abstract'
 
 module WEBrick
   module HTTPServlet
@@ -28,6 +28,7 @@ module WEBrick
     class CGIHandler < AbstractServlet
       Ruby = RbConfig.ruby # :nodoc:
       CGIRunner = "\"#{Ruby}\" \"#{WEBrick::Config::LIBDIR}/httpservlet/cgi_runner.rb\"" # :nodoc:
+      CGIRunnerArray = [Ruby, "#{WEBrick::Config::LIBDIR}/httpservlet/cgi_runner.rb".freeze].freeze # :nodoc:
 
       ##
       # Creates a new CGI script servlet for the script at +name+
@@ -36,7 +37,12 @@ module WEBrick
         super(server, name)
         @script_filename = name
         @tempdir = server[:TempDir]
-        @cgicmd = "#{CGIRunner} #{server[:CGIInterpreter]}"
+        interpreter = server[:CGIInterpreter]
+        if interpreter.is_a?(Array)
+          @cgicmd = CGIRunnerArray + interpreter
+        else
+          @cgicmd = "#{CGIRunner} #{interpreter}"
+        end
       end
 
       # :stopdoc:

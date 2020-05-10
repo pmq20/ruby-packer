@@ -2,7 +2,7 @@
 
   defines.h -
 
-  $Author: naruse $
+  $Author$
   created at: Wed May 18 00:21:44 JST 1994
 
 ************************************************/
@@ -29,10 +29,6 @@ extern "C" {
 #ifndef PUREFUNC
 # define PUREFUNC(x) x
 #endif
-#define NORETURN_STYLE_NEW 1
-#ifndef NORETURN
-# define NORETURN(x) x
-#endif
 #ifndef DEPRECATED
 # define DEPRECATED(x) x
 #endif
@@ -41,6 +37,9 @@ extern "C" {
 #endif
 #ifndef DEPRECATED_TYPE
 # define DEPRECATED_TYPE(mesg, decl) decl
+#endif
+#ifndef RUBY_CXX_DEPRECATED
+# define RUBY_CXX_DEPRECATED(mesg) /* nothing */
 #endif
 #ifndef NOINLINE
 # define NOINLINE(x) x
@@ -93,9 +92,24 @@ extern "C" {
 #define RB_UNLIKELY(x) (x)
 #endif /* __GNUC__ >= 3 */
 
+/*
+  cold attribute for code layout improvements
+  RUBY_FUNC_ATTRIBUTE not used because MSVC does not like nested func macros
+ */
+#if defined(__clang__) || GCC_VERSION_SINCE(4, 3, 0)
+#define COLDFUNC __attribute__((cold))
+#else
+#define COLDFUNC
+#endif
+
 #ifdef __GNUC__
+#if defined __MINGW_PRINTF_FORMAT
+#define PRINTF_ARGS(decl, string_index, first_to_check) \
+  decl __attribute__((format(__MINGW_PRINTF_FORMAT, string_index, first_to_check)))
+#else
 #define PRINTF_ARGS(decl, string_index, first_to_check) \
   decl __attribute__((format(printf, string_index, first_to_check)))
+#endif
 #else
 #define PRINTF_ARGS(decl, string_index, first_to_check) decl
 #endif
@@ -138,6 +152,9 @@ extern "C" {
 #endif
 #ifdef HAVE_STDINT_H
 # include <stdint.h>
+#endif
+#ifdef HAVE_STDALIGN_H
+# include <stdalign.h>
 #endif
 #ifdef HAVE_UNISTD_H
 # include <unistd.h>
@@ -200,16 +217,116 @@ RUBY_SYMBOL_EXPORT_BEGIN
 
 #if GCC_VERSION_SINCE(4,3,0)
 # define RUBY_ATTR_ALLOC_SIZE(params) __attribute__ ((alloc_size params))
-#else
+#elif defined(__has_attribute)
+# if __has_attribute(alloc_size)
+#  define RUBY_ATTR_ALLOC_SIZE(params) __attribute__((__alloc_size__ params))
+# endif
+#endif
+#ifndef RUBY_ATTR_ALLOC_SIZE
 # define RUBY_ATTR_ALLOC_SIZE(params)
 #endif
 
-void *xmalloc(size_t) RUBY_ATTR_ALLOC_SIZE((1));
-void *xmalloc2(size_t,size_t) RUBY_ATTR_ALLOC_SIZE((1,2));
-void *xcalloc(size_t,size_t) RUBY_ATTR_ALLOC_SIZE((1,2));
-void *xrealloc(void*,size_t) RUBY_ATTR_ALLOC_SIZE((2));
-void *xrealloc2(void*,size_t,size_t) RUBY_ATTR_ALLOC_SIZE((2,3));
-void xfree(void*);
+#ifdef __has_attribute
+# if __has_attribute(malloc)
+#  define RUBY_ATTR_MALLOC __attribute__((__malloc__))
+# endif
+#endif
+#ifndef RUBY_ATTR_MALLOC
+# define RUBY_ATTR_MALLOC
+#endif
+
+#ifdef __has_attribute
+# if __has_attribute(returns_nonnull)
+#  define RUBY_ATTR_RETURNS_NONNULL __attribute__((__returns_nonnull__))
+# endif
+#endif
+#ifndef RUBY_ATTR_RETURNS_NONNULL
+# define RUBY_ATTR_RETURNS_NONNULL
+#endif
+
+void *ruby_xmalloc(size_t) RUBY_ATTR_MALLOC RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((1));
+void *ruby_xmalloc2(size_t,size_t) RUBY_ATTR_MALLOC RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((1,2));
+void *ruby_xcalloc(size_t,size_t) RUBY_ATTR_MALLOC RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((1,2));
+void *ruby_xrealloc(void*,size_t) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2));
+void *ruby_xrealloc2(void*,size_t,size_t) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2,3));
+void ruby_xfree(void*);
+
+#ifndef USE_GC_MALLOC_OBJ_INFO_DETAILS
+#define USE_GC_MALLOC_OBJ_INFO_DETAILS 0
+#endif
+
+#if USE_GC_MALLOC_OBJ_INFO_DETAILS
+
+void *ruby_xmalloc_body(size_t) RUBY_ATTR_MALLOC RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((1));
+void *ruby_xmalloc2_body(size_t,size_t) RUBY_ATTR_MALLOC RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((1,2));
+void *ruby_xcalloc_body(size_t,size_t) RUBY_ATTR_MALLOC RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((1,2));
+void *ruby_xrealloc_body(void*,size_t) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2));
+void *ruby_xrealloc2_body(void*,size_t,size_t) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2,3));
+
+#define ruby_xmalloc(s1)            ruby_xmalloc_with_location(s1, __FILE__, __LINE__)
+#define ruby_xmalloc2(s1, s2)       ruby_xmalloc2_with_location(s1, s2, __FILE__, __LINE__)
+#define ruby_xcalloc(s1, s2)        ruby_xcalloc_with_location(s1, s2, __FILE__, __LINE__)
+#define ruby_xrealloc(ptr, s1)      ruby_xrealloc_with_location(ptr, s1, __FILE__, __LINE__)
+#define ruby_xrealloc2(ptr, s1, s2) ruby_xrealloc2_with_location(ptr, s1, s2, __FILE__, __LINE__)
+
+extern const char *ruby_malloc_info_file;
+extern int ruby_malloc_info_line;
+
+static inline void *
+ruby_xmalloc_with_location(size_t s, const char *file, int line)
+{
+    void *ptr;
+    ruby_malloc_info_file = file;
+    ruby_malloc_info_line = line;
+    ptr = ruby_xmalloc_body(s);
+    ruby_malloc_info_file = NULL;
+    return ptr;
+}
+
+static inline void *
+ruby_xmalloc2_with_location(size_t s1, size_t s2, const char *file, int line)
+{
+    void *ptr;
+    ruby_malloc_info_file = file;
+    ruby_malloc_info_line = line;
+    ptr = ruby_xmalloc2_body(s1, s2);
+    ruby_malloc_info_file = NULL;
+    return ptr;
+}
+
+static inline void *
+ruby_xcalloc_with_location(size_t s1, size_t s2, const char *file, int line)
+{
+    void *ptr;
+    ruby_malloc_info_file = file;
+    ruby_malloc_info_line = line;
+    ptr = ruby_xcalloc_body(s1, s2);
+    ruby_malloc_info_file = NULL;
+    return ptr;
+}
+
+static inline void *
+ruby_xrealloc_with_location(void *ptr, size_t s, const char *file, int line)
+{
+    void *rptr;
+    ruby_malloc_info_file = file;
+    ruby_malloc_info_line = line;
+    rptr = ruby_xrealloc_body(ptr, s);
+    ruby_malloc_info_file = NULL;
+    return rptr;
+}
+
+static inline void *
+ruby_xrealloc2_with_location(void *ptr, size_t s1, size_t s2, const char *file, int line)
+{
+    void *rptr;
+    ruby_malloc_info_file = file;
+    ruby_malloc_info_line = line;
+    rptr = ruby_xrealloc2_body(ptr, s1, s2);
+    ruby_malloc_info_file = NULL;
+    return rptr;
+}
+#endif
 
 #define STRINGIZE(expr) STRINGIZE0(expr)
 #ifndef STRINGIZE0
@@ -274,6 +391,17 @@ void xfree(void*);
 #define RUBY_FUNC_EXPORTED
 #endif
 
+/* These macros are used for functions which are exported only for MJIT
+   and NOT ensured to be exported in future versions. */
+#define MJIT_FUNC_EXPORTED RUBY_FUNC_EXPORTED
+#define MJIT_SYMBOL_EXPORT_BEGIN RUBY_SYMBOL_EXPORT_BEGIN
+#define MJIT_SYMBOL_EXPORT_END RUBY_SYMBOL_EXPORT_END
+
+#if defined(MJIT_HEADER) && defined(_MSC_VER)
+# undef MJIT_FUNC_EXPORTED
+# define MJIT_FUNC_EXPORTED static
+#endif
+
 #ifndef RUBY_EXTERN
 #define RUBY_EXTERN extern
 #endif
@@ -299,10 +427,6 @@ void xfree(void*);
 #if defined(__sparc)
 void rb_sparc_flush_register_windows(void);
 #  define FLUSH_REGISTER_WINDOWS rb_sparc_flush_register_windows()
-#elif defined(__ia64)
-void *rb_ia64_bsp(void);
-void rb_ia64_flushrs(void);
-#  define FLUSH_REGISTER_WINDOWS rb_ia64_flushrs()
 #else
 #  define FLUSH_REGISTER_WINDOWS ((void)0)
 #endif
@@ -354,6 +478,9 @@ void rb_ia64_flushrs(void);
 #define RUBY_ALIAS_FUNCTION(prot, name, args) \
     RUBY_ALIAS_FUNCTION_TYPE(VALUE, prot, name, args)
 #endif
+#ifndef RUBY_FUNC_NONNULL
+#define RUBY_FUNC_NONNULL(n, x) x
+#endif
 
 #ifndef UNALIGNED_WORD_ACCESS
 # if defined(__i386) || defined(__i386__) || defined(_M_IX86) || \
@@ -374,6 +501,31 @@ void rb_ia64_flushrs(void);
 # else
 #   define PACKED_STRUCT_UNALIGNED(x) x
 # endif
+#endif
+
+#ifndef RUBY_ALIGNAS
+#define RUBY_ALIGNAS(x) /* x */
+#endif
+
+#ifdef RUBY_ALIGNOF
+/* OK, take that definition */
+#elif defined(__cplusplus) && (__cplusplus >= 201103L)
+#define RUBY_ALIGNOF alignof
+#elif defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L)
+#define RUBY_ALIGNOF _Alignof
+#else
+#define RUBY_ALIGNOF(type) ((size_t)offsetof(struct { char f1; type f2; }, f2))
+#endif
+
+#define NORETURN_STYLE_NEW 1
+#ifdef NORETURN
+/* OK, take that definition */
+#elif defined(__cplusplus) && (__cplusplus >= 201103L)
+#define NORETURN(x) [[ noreturn ]] x
+#elif defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L)
+#define NORETURN(x) _Noreturn x
+#else
+#define NORETURN(x) x
 #endif
 
 RUBY_SYMBOL_EXPORT_END

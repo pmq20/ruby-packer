@@ -338,7 +338,7 @@ ossl_clear_error(void)
  * implementation.
  */
 VALUE
-ossl_get_errors(void)
+ossl_get_errors(VALUE _)
 {
     VALUE ary;
     long e;
@@ -398,7 +398,7 @@ ossl_debug_set(VALUE self, VALUE val)
 }
 
 /*
- * call-seq
+ * call-seq:
  *   OpenSSL.fips_mode -> true | false
  */
 static VALUE
@@ -1099,6 +1099,7 @@ static void Init_ossl_locks(void)
 void
 Init_openssl(void)
 {
+#undef rb_intern
     /*
      * Init timezone info
      */

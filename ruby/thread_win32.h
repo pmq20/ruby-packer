@@ -2,7 +2,7 @@
 
   thread_win32.h -
 
-  $Author: ko1 $
+  $Author$
 
   Copyright (C) 2004-2007 Koichi Sasada
 

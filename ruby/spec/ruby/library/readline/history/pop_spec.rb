@@ -1,4 +1,4 @@
-require File.expand_path('../../spec_helper', __FILE__)
+require_relative '../spec_helper'
 
 with_feature :readline do
   describe "Readline::HISTORY.pop" do
@@ -20,11 +20,13 @@ with_feature :readline do
       Readline::HISTORY.size.should == 0
     end
 
-    it "taints the returned strings" do
-      Readline::HISTORY.push("1", "2", "3")
-      Readline::HISTORY.pop.tainted?.should be_true
-      Readline::HISTORY.pop.tainted?.should be_true
-      Readline::HISTORY.pop.tainted?.should be_true
+    ruby_version_is ''...'2.7' do
+      it "taints the returned strings" do
+        Readline::HISTORY.push("1", "2", "3")
+        Readline::HISTORY.pop.tainted?.should be_true
+        Readline::HISTORY.pop.tainted?.should be_true
+        Readline::HISTORY.pop.tainted?.should be_true
+      end
     end
   end
 end

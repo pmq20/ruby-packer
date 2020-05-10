@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 #
-# $Id: filter.rb 59896 2017-09-14 10:53:47Z nobu $
+# $Id$
 #
 # Copyright (c) 2004,2005 Minero Aoki
 #

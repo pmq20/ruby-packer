@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 ruby_version_is "2.5" do
   describe "Hash#transform_keys" do
@@ -60,17 +60,39 @@ ruby_version_is "2.5" do
       @hash.should == { 'a' => 1, 'b' => 2, 'c' => 3, 'd' => 4 }
     end
 
-    it "prevents conflicts between new keys and old ones" do
-      @hash.transform_keys!(&:succ)
-      @hash.should == { b: 1, c: 2, d: 3, e: 4 }
+    # https://bugs.ruby-lang.org/issues/14380
+    ruby_version_is ""..."2.5.1" do
+      it "does not prevent conflicts between new keys and old ones" do
+        @hash.transform_keys!(&:succ)
+        @hash.should == { e: 1 }
+      end
     end
 
-    it "partially modifies the contents if we broke from the block" do
-      @hash.transform_keys! do |v|
-        break if v == :c
-        v.succ
+    ruby_version_is "2.5.1" do
+      it "prevents conflicts between new keys and old ones" do
+        @hash.transform_keys!(&:succ)
+        @hash.should == { b: 1, c: 2, d: 3, e: 4 }
       end
-      @hash.should == { b: 1, c: 2 }
+    end
+
+    ruby_version_is ""..."2.5.1" do
+      it "partially modifies the contents if we broke from the block" do
+        @hash.transform_keys! do |v|
+          break if v == :c
+          v.succ
+        end
+        @hash.should == { c: 1, d: 4 }
+      end
+    end
+
+    ruby_version_is "2.5.1" do
+      it "returns the processed keys if we broke from the block" do
+        @hash.transform_keys! do |v|
+          break if v == :c
+          v.succ
+        end
+        @hash.should == { b: 1, c: 2 }
+      end
     end
 
     it "keeps later pair if new keys conflict" do
@@ -91,12 +113,12 @@ ruby_version_is "2.5" do
         @hash.freeze
       end
 
-      it "raises a RuntimeError on an empty hash" do
-        ->{ {}.freeze.transform_keys!(&:upcase) }.should raise_error(RuntimeError)
+      it "raises a #{frozen_error_class} on an empty hash" do
+        ->{ {}.freeze.transform_keys!(&:upcase) }.should raise_error(frozen_error_class)
       end
 
-      it "keeps pairs and raises a RuntimeError" do
-        ->{ @hash.transform_keys!(&:upcase) }.should raise_error(RuntimeError)
+      it "keeps pairs and raises a #{frozen_error_class}" do
+        ->{ @hash.transform_keys!(&:upcase) }.should raise_error(frozen_error_class)
         @hash.should == @initial_pairs
       end
 

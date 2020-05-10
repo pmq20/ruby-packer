@@ -4853,6 +4853,7 @@ rsock_family_to_int(const char *str, long len, int *valp)
         return -1;
 
       default:
+        if (!str || !valp) {/* wrong argument */}
         return -1;
     }
 }
@@ -4923,6 +4924,7 @@ rsock_socktype_to_int(const char *str, long len, int *valp)
         return -1;
 
       default:
+        if (!str || !valp) {/* wrong argument */}
         return -1;
     }
 }
@@ -5131,6 +5133,7 @@ rsock_ipproto_to_int(const char *str, long len, int *valp)
         return -1;
 
       default:
+        if (!str || !valp) {/* wrong argument */}
         return -1;
     }
 }
@@ -5153,6 +5156,7 @@ rsock_unknown_level_to_int(const char *str, long len, int *valp)
         return -1;
 
       default:
+        if (!str || !valp) {/* wrong argument */}
         return -1;
     }
 }
@@ -5367,6 +5371,7 @@ rsock_ip_level_to_int(const char *str, long len, int *valp)
         return -1;
 
       default:
+        if (!str || !valp) {/* wrong argument */}
         return -1;
     }
 }
@@ -5806,6 +5811,7 @@ rsock_so_optname_to_int(const char *str, long len, int *valp)
         return -1;
 
       default:
+        if (!str || !valp) {/* wrong argument */}
         return -1;
     }
 }
@@ -6134,6 +6140,7 @@ rsock_ip_optname_to_int(const char *str, long len, int *valp)
         return -1;
 
       default:
+        if (!str || !valp) {/* wrong argument */}
         return -1;
     }
 }
@@ -6349,6 +6356,7 @@ rsock_ipv6_optname_to_int(const char *str, long len, int *valp)
         return -1;
 
       default:
+        if (!str || !valp) {/* wrong argument */}
         return -1;
     }
 }
@@ -6570,6 +6578,7 @@ rsock_tcp_optname_to_int(const char *str, long len, int *valp)
         return -1;
 
       default:
+        if (!str || !valp) {/* wrong argument */}
         return -1;
     }
 }
@@ -6592,6 +6601,7 @@ rsock_udp_optname_to_int(const char *str, long len, int *valp)
         return -1;
 
       default:
+        if (!str || !valp) {/* wrong argument */}
         return -1;
     }
 }
@@ -6632,6 +6642,7 @@ rsock_shutdown_how_to_int(const char *str, long len, int *valp)
         return -1;
 
       default:
+        if (!str || !valp) {/* wrong argument */}
         return -1;
     }
 }
@@ -6726,6 +6737,7 @@ rsock_scm_optname_to_int(const char *str, long len, int *valp)
         return -1;
 
       default:
+        if (!str || !valp) {/* wrong argument */}
         return -1;
     }
 }

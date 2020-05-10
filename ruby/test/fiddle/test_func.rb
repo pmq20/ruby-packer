@@ -11,16 +11,6 @@ module Fiddle
       assert_nil f.call(10)
     end
 
-    def test_syscall_with_tainted_string
-      f = Function.new(@libc['system'], [TYPE_VOIDP], TYPE_INT)
-      Thread.new {
-        $SAFE = 1
-        assert_raise(SecurityError) do
-          f.call("uname -rs".dup.taint)
-        end
-      }.join
-    end
-
     def test_sinf
       begin
         f = Function.new(@libm['sinf'], [TYPE_FLOAT], TYPE_FLOAT)

@@ -1,8 +1,8 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 require 'stringio'
 require 'zlib'
 
-describe "GzipReader#each_byte" do
+describe "Zlib::GzipReader#each_byte" do
 
   before :each do
     @data = '12345abcde'

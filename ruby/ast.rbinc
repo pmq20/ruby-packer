@@ -1,0 +1,43 @@
+// -*- c -*-
+// DO NOT MODIFY THIS FILE DIRECTLY.
+// auto-generated file
+//   by ./tool/mk_builtin_loader.rb
+//   with ast.rb
+
+static void load_ast(void)
+{
+  // table definition
+  static const struct rb_builtin_function ast_table[] = {
+    RB_BUILTIN_FUNCTION(0, ast_s_parse, ast_s_parse, 1),
+    RB_BUILTIN_FUNCTION(1, ast_s_parse_file, ast_s_parse_file, 1),
+    RB_BUILTIN_FUNCTION(2, ast_s_of, ast_s_of, 1),
+    RB_BUILTIN_FUNCTION(3, ast_node_type, ast_node_type, 0),
+    RB_BUILTIN_FUNCTION(4, ast_node_first_lineno, ast_node_first_lineno, 0),
+    RB_BUILTIN_FUNCTION(5, ast_node_first_column, ast_node_first_column, 0),
+    RB_BUILTIN_FUNCTION(6, ast_node_last_lineno, ast_node_last_lineno, 0),
+    RB_BUILTIN_FUNCTION(7, ast_node_last_column, ast_node_last_column, 0),
+    RB_BUILTIN_FUNCTION(8, ast_node_children, ast_node_children, 0),
+    RB_BUILTIN_FUNCTION(9, ast_node_inspect, ast_node_inspect, 0),
+    RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0),
+  };
+
+  // arity_check
+COMPILER_WARNING_PUSH
+#if GCC_VERSION_SINCE(5, 1, 0) || __clang__
+COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)
+#endif
+  if (0) rb_builtin_function_check_arity1(ast_s_parse);
+  if (0) rb_builtin_function_check_arity1(ast_s_parse_file);
+  if (0) rb_builtin_function_check_arity1(ast_s_of);
+  if (0) rb_builtin_function_check_arity0(ast_node_type);
+  if (0) rb_builtin_function_check_arity0(ast_node_first_lineno);
+  if (0) rb_builtin_function_check_arity0(ast_node_first_column);
+  if (0) rb_builtin_function_check_arity0(ast_node_last_lineno);
+  if (0) rb_builtin_function_check_arity0(ast_node_last_column);
+  if (0) rb_builtin_function_check_arity0(ast_node_children);
+  if (0) rb_builtin_function_check_arity0(ast_node_inspect);
+COMPILER_WARNING_POP
+
+  // load
+  rb_load_with_builtin_functions("ast", ast_table);
+}

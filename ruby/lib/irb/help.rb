@@ -2,7 +2,7 @@
 #
 #   irb/help.rb - print usage module
 #   	$Release Version: 0.9.6$
-#   	$Revision: 53141 $
+#   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
 #
 # --
@@ -10,7 +10,7 @@
 #
 #
 
-require 'irb/magic-file'
+require_relative 'magic-file'
 
 module IRB
   # Outputs the irb help message, see IRB@Command+line+options.

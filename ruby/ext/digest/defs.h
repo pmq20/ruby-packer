@@ -1,5 +1,5 @@
 /* -*- C -*-
- * $Id: defs.h 25189 2009-10-02 12:04:37Z akr $
+ * $Id$
  */
 
 #ifndef DEFS_H

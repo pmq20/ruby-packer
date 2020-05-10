@@ -2,7 +2,7 @@
 
   gdbm.c -
 
-  $Author: rhe $
+  $Author$
   modified at: Mon Jan 24 15:59:52 JST 1994
 
   Documentation by Peter Adolphs < futzilogik at users dot sourceforge dot net >
@@ -83,6 +83,10 @@ static VALUE rb_cGDBM, rb_eGDBMError, rb_eGDBMFatalError;
 
 #define MY_BLOCK_SIZE (2048)
 #define MY_FATAL_FUNC rb_gdbm_fatal
+
+NORETURN(static void rb_gdbm_fatal(const char *msg));
+NORETURN(static void closed_dbm(void));
+
 static void
 rb_gdbm_fatal(const char *msg)
 {
@@ -320,7 +324,6 @@ rb_gdbm_fetch(GDBM_FILE dbm, datum key)
 
     str = rb_str_new(val.dptr, val.dsize);
     free(val.dptr);
-    OBJ_TAINT(str);
     return str;
 }
 
@@ -361,7 +364,6 @@ rb_gdbm_firstkey(GDBM_FILE dbm)
 
     str = rb_str_new(key.dptr, key.dsize);
     free(key.dptr);
-    OBJ_TAINT(str);
     return str;
 }
 
@@ -382,7 +384,6 @@ rb_gdbm_nextkey(GDBM_FILE dbm, VALUE keystr)
 
     str = rb_str_new(key2.dptr, key2.dsize);
     free(key2.dptr);
-    OBJ_TAINT(str);
     return str;
 }
 

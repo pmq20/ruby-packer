@@ -1,0 +1,27 @@
+// -*- c -*-
+// DO NOT MODIFY THIS FILE DIRECTLY.
+// auto-generated file
+//   by ./tool/mk_builtin_loader.rb
+//   with io.rb
+
+static void load_io(void)
+{
+  // table definition
+  static const struct rb_builtin_function io_table[] = {
+    RB_BUILTIN_FUNCTION(0, io_read_nonblock, io_read_nonblock, 3),
+    RB_BUILTIN_FUNCTION(1, io_write_nonblock, io_write_nonblock, 2),
+    RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0),
+  };
+
+  // arity_check
+COMPILER_WARNING_PUSH
+#if GCC_VERSION_SINCE(5, 1, 0) || __clang__
+COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)
+#endif
+  if (0) rb_builtin_function_check_arity3(io_read_nonblock);
+  if (0) rb_builtin_function_check_arity2(io_write_nonblock);
+COMPILER_WARNING_POP
+
+  // load
+  rb_load_with_builtin_functions("io", io_table);
+}

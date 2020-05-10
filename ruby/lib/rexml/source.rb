@@ -1,6 +1,6 @@
 # coding: US-ASCII
 # frozen_string_literal: false
-require 'rexml/encoding'
+require_relative 'encoding'
 
 module REXML
   # Generates Source-s.  USE THIS CLASS.
@@ -200,7 +200,7 @@ module REXML
         end
         rv = super
       end
-      rv.taint
+      rv.taint if RUBY_VERSION < '2.7'
       rv
     end
 
@@ -228,7 +228,7 @@ module REXML
           @source = nil
         end
       end
-      rv.taint
+      rv.taint if RUBY_VERSION < '2.7'
       rv
     end
 
@@ -254,6 +254,7 @@ module REXML
           end
         rescue
         end
+        @er_source.seek(pos)
       rescue IOError
         pos = -1
         line = -1

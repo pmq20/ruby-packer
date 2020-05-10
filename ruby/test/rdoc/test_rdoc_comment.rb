@@ -1,7 +1,7 @@
 # coding: us-ascii
 # frozen_string_literal: true
 
-require 'rdoc/test_case'
+require_relative 'helper'
 
 class TestRDocComment < RDoc::TestCase
 
@@ -77,7 +77,7 @@ call-seq:
 
     comment.extract_call_seq m
 
-    assert_equal nil, m.call_seq
+    assert_nil m.call_seq
   end
 
   def test_extract_call_seq_no_blank
@@ -241,6 +241,7 @@ lines, one line per element. Lines are assumed to be separated by _sep_.
     @comment.text = <<-TEXT
   # comment
     TEXT
+    @comment.language = :ruby
 
     assert_same @comment, @comment.normalize
 
@@ -293,7 +294,7 @@ lines, one line per element. Lines are assumed to be separated by _sep_.
     c = RDoc::Comment.new nil, @top_level
     c.document = @RM::Document.new
 
-    e = assert_raises RDoc::Error do
+    e = assert_raise RDoc::Error do
       c.text = 'other'
     end
 

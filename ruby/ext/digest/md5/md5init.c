@@ -1,5 +1,5 @@
 /* $RoughId: md5init.c,v 1.2 2001/07/13 19:49:10 knu Exp $ */
-/* $Id: md5init.c 56459 2016-10-20 13:18:52Z kazu $ */
+/* $Id$ */
 
 #include <ruby/ruby.h>
 #include "../digest.h"
@@ -51,12 +51,10 @@ Init_md5(void)
 {
     VALUE mDigest, cDigest_Base, cDigest_MD5;
 
-    rb_require("digest");
-
 #if 0
     mDigest = rb_define_module("Digest"); /* let rdoc know */
 #endif
-    mDigest = rb_path2class("Digest");
+    mDigest = rb_digest_namespace();
     cDigest_Base = rb_path2class("Digest::Base");
 
     cDigest_MD5 = rb_define_class_under(mDigest, "MD5", cDigest_Base);

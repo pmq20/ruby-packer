@@ -38,7 +38,7 @@ module MSpec
   @expectation  = nil
   @expectations = false
 
-  def self.describe(mod, options=nil, &block)
+  def self.describe(mod, options = nil, &block)
     state = ContextState.new mod, options
     state.parent = current
 
@@ -50,6 +50,7 @@ module MSpec
 
   def self.process
     STDOUT.puts RUBY_DESCRIPTION
+    STDOUT.flush
 
     actions :start
     files
@@ -58,9 +59,8 @@ module MSpec
 
   def self.each_file(&block)
     if ENV["MSPEC_MULTI"]
-      STDOUT.print "."
-      STDOUT.flush
-      while file = STDIN.gets and file = file.chomp
+      while file = STDIN.gets
+        file = file.chomp
         return if file == "QUIT"
         yield file
         begin
@@ -105,6 +105,8 @@ module MSpec
       return true
     rescue SystemExit => e
       raise e
+    rescue SkippedSpecError => e
+      return false
     rescue Exception => exc
       register_exit 1
       actions :exception, ExceptionState.new(current && current.state, location, exc)
@@ -257,7 +259,7 @@ module MSpec
     end
   end
 
-  def self.randomize(flag=true)
+  def self.randomize(flag = true)
     @randomize = flag
   end
 

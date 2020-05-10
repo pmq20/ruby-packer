@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 # ipaddr.rb - A class to manipulate an IP address
 #
@@ -8,7 +8,7 @@
 #
 # You can redistribute and/or modify it under the same terms as Ruby.
 #
-# $Id: ipaddr.rb 61155 2017-12-12 11:56:25Z shyouhei $
+# $Id$
 #
 # Contact:
 #   - Akinori MUSHA <knu@iDaemons.org> (current maintainer)
@@ -103,13 +103,13 @@ class IPAddr
 
   # Creates a new ipaddr containing the given network byte ordered
   # string form of an IP address.
-  def IPAddr::new_ntoh(addr)
-    return IPAddr.new(IPAddr::ntop(addr))
+  def self.new_ntoh(addr)
+    return new(ntop(addr))
   end
 
   # Convert a network byte ordered string form of an IP address into
   # human readable form.
-  def IPAddr::ntop(addr)
+  def self.ntop(addr)
     case addr.size
     when 4
       s = addr.unpack('C4').join('.')
@@ -594,6 +594,8 @@ class IPAddr
     else
       @mask_addr = (@family == Socket::AF_INET) ? IN4MASK : IN6MASK
     end
+  rescue InvalidAddressError => e
+    raise e.class, "#{e.message}: #{addr}"
   end
 
   def coerce_other(other)

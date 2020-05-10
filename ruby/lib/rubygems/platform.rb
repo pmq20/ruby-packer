@@ -56,7 +56,7 @@ class Gem::Platform
     when String then
       arch = arch.split '-'
 
-      if arch.length > 2 and arch.last !~ /\d/ then # reassemble x86-linux-gnu
+      if arch.length > 2 and arch.last !~ /\d/  # reassemble x86-linux-gnu
         extra = arch.pop
         arch.last << "-#{extra}"
       end
@@ -68,7 +68,7 @@ class Gem::Platform
              else cpu
              end
 
-      if arch.length == 2 and arch.last =~ /^\d+(\.\d+)?$/ then # for command-line
+      if arch.length == 2 and arch.last =~ /^\d+(\.\d+)?$/  # for command-line
         @os, @version = arch
         return
       end
@@ -88,7 +88,7 @@ class Gem::Platform
                       when /^dalvik(\d+)?$/ then        [ 'dalvik',    $1  ]
                       when /^dotnet$/ then              [ 'dotnet',    nil ]
                       when /^dotnet([\d.]*)/ then       [ 'dotnet',    $1  ]
-                      when /linux/ then                 [ 'linux',     $1  ]
+                      when /linux-?((?!gnu)\w+)?/ then  [ 'linux',     $1  ]
                       when /mingw32/ then               [ 'mingw32',   nil ]
                       when /(mswin\d+)(\_(\d+))?/ then
                         os, version = $1, $3
@@ -195,12 +195,12 @@ class Gem::Platform
   # A pure-Ruby gem that may use Gem::Specification#extensions to build
   # binary files.
 
-  RUBY = 'ruby'
+  RUBY = 'ruby'.freeze
 
   ##
   # A platform-specific gem that is built for the packaging Ruby's platform.
   # This will be replaced with Gem::Platform::local.
 
-  CURRENT = 'current'
-end
+  CURRENT = 'current'.freeze
 
+end

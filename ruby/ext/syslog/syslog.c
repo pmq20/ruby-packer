@@ -5,7 +5,7 @@
  * Documented by mathew <meta@pobox.com>
  *
  * $RoughId: syslog.c,v 1.21 2002/02/25 12:21:17 knu Exp $
- * $Id: syslog.c 60071 2017-09-30 08:35:23Z nobu $
+ * $Id$
  */
 
 #include "ruby/ruby.h"
@@ -162,7 +162,6 @@ static VALUE mSyslog_open(int argc, VALUE *argv, VALUE self)
         ident = rb_gv_get("$0");
     }
     ident_ptr = StringValueCStr(ident);
-    rb_check_safe_obj(ident);
     syslog_ident = strdup(ident_ptr);
 
     if (NIL_P(opt)) {
@@ -297,10 +296,6 @@ static VALUE mSyslog_set_mask(VALUE self, VALUE mask)
  *   Syslog.log(Syslog::LOG_ALERT, "Out of memory")
  *   Syslog.alert("Out of memory")
  *
- * Format strings are as for printf/sprintf, except that in addition %m is
- * replaced with the error message string that would be returned by
- * strerror(errno).
- *
  */
 static VALUE mSyslog_log(int argc, VALUE *argv, VALUE self)
 {
@@ -420,6 +415,7 @@ static VALUE mSyslogMacros_included(VALUE mod, VALUE target)
  */
 void Init_syslog(void)
 {
+#undef rb_intern
     mSyslog = rb_define_module("Syslog");
 
     mSyslogConstants    = rb_define_module_under(mSyslog, "Constants");

@@ -2,7 +2,7 @@
 
   sdbminit.c -
 
-  $Author: naruse $
+  $Author$
   created at: Fri May  7 08:34:24 JST 1999
 
   Copyright (C) 1995-2001 Yukihiro Matsumoto
@@ -70,6 +70,8 @@ struct dbmdata {
     int  di_size;
     DBM *di_dbm;
 };
+
+NORETURN(static void closed_sdbm(void));
 
 static void
 closed_sdbm(void)

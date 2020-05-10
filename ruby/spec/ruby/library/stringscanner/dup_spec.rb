@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'strscan'
 
 describe "StringScanner#dup" do
@@ -12,7 +12,7 @@ describe "StringScanner#dup" do
     s.string.should == @string
   end
 
-  it "copies the passed StringSCanner's position to self" do
+  it "copies the passed StringScanner's position to self" do
     @orig_s.pos = 5
     s = @orig_s.dup
     s.pos.should eql(5)

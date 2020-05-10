@@ -98,7 +98,7 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
     config = { :DocumentRoot => File.dirname(__FILE__), }
     this_file = File.basename(__FILE__)
     filesize = File.size(__FILE__)
-    this_data = File.open(__FILE__, "rb") {|f| f.read}
+    this_data = File.binread(__FILE__)
     range = nil
     bug2593 = '[ruby-dev:40030]'
 
@@ -114,7 +114,7 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
       http.request(req){|res|
         assert_equal("200", res.code, log.call)
         assert_equal("text/plain", res.content_type, log.call)
-        assert_equal(File.read(__FILE__), res.body, log.call)
+        assert_equal(this_data, res.body, log.call)
       }
 
       req = Net::HTTP::Get.new("/#{this_file}", "range"=>"bytes=#{filesize-100}-")
@@ -289,7 +289,7 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
     return if File.executable?(__FILE__) # skip on strange file system
 
     config = {
-      :CGIInterpreter => TestWEBrick::RubyBin,
+      :CGIInterpreter => TestWEBrick::RubyBinArray,
       :DocumentRoot => File.dirname(__FILE__),
       :CGIPathEnv => ENV['PATH'],
       :RequestCallback => Proc.new{|req, res|
@@ -307,6 +307,8 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
     }
     TestWEBrick.start_httpserver(config, log_tester) do |server, addr, port, log|
       http = Net::HTTP.new(addr, port)
+      http.read_timeout = EnvUtil.apply_timeout_scale(60)
+      http.write_timeout = EnvUtil.apply_timeout_scale(60) if http.respond_to?(:write_timeout=)
 
       req = Net::HTTP::Get.new("/webrick.cgi/test")
       http.request(req) do |res|

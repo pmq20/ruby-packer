@@ -16,11 +16,11 @@ The program contains each ASCII character from 0x20 ' ' to 0x7e '~' exactly once
 
 ### Internals
 
-The algorthim is the obvious loop "32.upto(126){|x| putc x}".
+The algorithm is the obvious loop "32.upto(126){|x| putc x}".
 
 It is not so hard to transform it to use each character *at most once*. The only slight difficulty comes from the constraint that we cannot "declare and then use" variables, because then the code will contain the variable name twice. This restriction is worked around by the $. global variable, the best friend of Ruby golfers.
 
-The relatively interesting part is to use all the charcters *at least once*. Of course, this is easily accomplished by putting everything into a comment (i.e., #unused...) or to a string literal (%(unused...), note that normal string literals are forbidden since they use quotation marks twice). Hey, but that's not fun at all! I tried to minimize the escapeway.
+The relatively interesting part is to use all the characters *at least once*. Of course, this is easily accomplished by putting everything into a comment (i.e., #unused...) or to a string literal (%(unused...), note that normal string literals are forbidden since they use quotation marks twice). Hey, but that's not fun at all! I tried to minimize the escapeway.
 
 * "@THEqQUICKbBROWNfFXjJMPSvVLAZYDGgkyz". Trash box of unused alphabet. I wish I could have used "gkyz" somewhere else.
 

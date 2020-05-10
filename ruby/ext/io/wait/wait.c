@@ -2,7 +2,7 @@
 
   io/wait.c -
 
-  $Author: nobu $
+  $Author$
   created at: Tue Aug 28 09:08:06 JST 2001
 
   All the files in this distribution are covered under the Ruby's
@@ -95,10 +95,9 @@ io_nread(VALUE io)
 
 /*
  * call-seq:
- *   io.ready? -> true, false or nil
+ *   io.ready? -> true or false
  *
  * Returns true if input available without blocking, or false.
- * Returns nil if no information available.
  */
 
 static VALUE

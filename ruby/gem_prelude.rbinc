@@ -1,0 +1,23 @@
+// -*- c -*-
+// DO NOT MODIFY THIS FILE DIRECTLY.
+// auto-generated file
+//   by ./tool/mk_builtin_loader.rb
+//   with gem_prelude.rb
+
+static void load_gem_prelude(void)
+{
+  // table definition
+  static const struct rb_builtin_function gem_prelude_table[] = {
+    RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0),
+  };
+
+  // arity_check
+COMPILER_WARNING_PUSH
+#if GCC_VERSION_SINCE(5, 1, 0) || __clang__
+COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)
+#endif
+COMPILER_WARNING_POP
+
+  // load
+  rb_load_with_builtin_functions("gem_prelude", gem_prelude_table);
+}

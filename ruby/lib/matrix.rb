@@ -12,17 +12,44 @@
 # Original Documentation:: Gavin Sinclair (sourced from <i>Ruby in a Nutshell</i> (Matsumoto, O'Reilly))
 ##
 
-require "e2mmap.rb"
+require_relative "matrix/version"
 
 module ExceptionForMatrix # :nodoc:
-  extend Exception2MessageMapper
-  def_e2message(TypeError, "wrong argument type %s (expected %s)")
-  def_e2message(ArgumentError, "Wrong # of arguments(%d for %d)")
+  class ErrDimensionMismatch < StandardError
+    def initialize(val = nil)
+      if val
+        super(val)
+      else
+        super("Dimension mismatch")
+      end
+    end
+  end
 
-  def_exception("ErrDimensionMismatch", "\#{self.name} dimension mismatch")
-  def_exception("ErrNotRegular", "Not Regular Matrix")
-  def_exception("ErrOperationNotDefined", "Operation(%s) can\\'t be defined: %s op %s")
-  def_exception("ErrOperationNotImplemented", "Sorry, Operation(%s) not implemented: %s op %s")
+  class ErrNotRegular < StandardError
+    def initialize(val = nil)
+      if val
+        super(val)
+      else
+        super("Not Regular Matrix")
+      end
+    end
+  end
+
+  class ErrOperationNotDefined < StandardError
+    def initialize(vals)
+      if vals.is_a?(Array)
+        super("Operation(#{vals[0]}) can\\'t be defined: #{vals[1]} op #{vals[2]}")
+      else
+        super(vals)
+      end
+    end
+  end
+
+  class ErrOperationNotImplemented < StandardError
+    def initialize(vals)
+      super("Sorry, Operation(#{vals[0]}) not implemented: #{vals[1]} op #{vals[2]}")
+    end
+  end
 end
 
 #
@@ -145,8 +172,8 @@ class Matrix
     scalar(n, 1)
   end
   class << Matrix
-    alias unit identity
-    alias I identity
+    alias_method :unit, :identity
+    alias_method :I, :identity
   end
 
   #
@@ -263,7 +290,7 @@ class Matrix
     matrices.map!(&CoercionHelper.method(:coerce_to_matrix))
     x = matrices.first
     matrices.each do |m|
-      Matrix.Raise ErrDimensionMismatch unless x.row_count == m.row_count && x.column_count == m.column_count
+      raise ErrDimensionMismatch unless x.row_count == m.row_count && x.column_count == m.column_count
     end
 
     rows = Array.new(x.row_count) do |i|
@@ -289,10 +316,9 @@ class Matrix
     @column_count = column_count
   end
 
-  def new_matrix(rows, column_count = rows[0].size) # :nodoc:
+  private def new_matrix(rows, column_count = rows[0].size) # :nodoc:
     self.class.send(:new, rows, column_count) # bypass privacy of Matrix.new
   end
-  private :new_matrix
 
   #
   # Returns element (+i+,+j+) of the matrix.  That is: row +i+, column +j+.
@@ -303,12 +329,107 @@ class Matrix
   alias element []
   alias component []
 
+  #
+  # :call-seq:
+  #   matrix[range, range] = matrix/element
+  #   matrix[range, integer] = vector/column_matrix/element
+  #   matrix[integer, range] = vector/row_matrix/element
+  #   matrix[integer, integer] = element
+  #
+  # Set element or elements of matrix.
   def []=(i, j, v)
-    @rows[i][j] = v
+    raise FrozenError, "can't modify frozen Matrix" if frozen?
+    rows = check_range(i, :row) or row = check_int(i, :row)
+    columns = check_range(j, :column) or column = check_int(j, :column)
+    if rows && columns
+      set_row_and_col_range(rows, columns, v)
+    elsif rows
+      set_row_range(rows, column, v)
+    elsif columns
+      set_col_range(row, columns, v)
+    else
+      set_value(row, column, v)
+    end
   end
   alias set_element []=
   alias set_component []=
-  private :[]=, :set_element, :set_component
+  private :set_element, :set_component
+
+  # Returns range or nil
+  private def check_range(val, direction)
+    return unless val.is_a?(Range)
+    count = direction == :row ? row_count : column_count
+    CoercionHelper.check_range(val, count, direction)
+  end
+
+  private def check_int(val, direction)
+    count = direction == :row ? row_count : column_count
+    CoercionHelper.check_int(val, count, direction)
+  end
+
+  private def set_value(row, col, value)
+    raise ErrDimensionMismatch, "Expected a a value, got a #{value.class}" if value.respond_to?(:to_matrix)
+
+    @rows[row][col] = value
+  end
+
+  private def set_row_and_col_range(row_range, col_range, value)
+    if value.is_a?(Matrix)
+      if row_range.size != value.row_count || col_range.size != value.column_count
+        raise ErrDimensionMismatch, [
+          'Expected a Matrix of dimensions',
+          "#{row_range.size}x#{col_range.size}",
+          'got',
+          "#{value.row_count}x#{value.column_count}",
+        ].join(' ')
+      end
+      source = value.instance_variable_get :@rows
+      row_range.each_with_index do |row, i|
+        @rows[row][col_range] = source[i]
+      end
+    elsif value.is_a?(Vector)
+      raise ErrDimensionMismatch, 'Expected a Matrix or a value, got a Vector'
+    else
+      value_to_set = Array.new(col_range.size, value)
+      row_range.each do |i|
+        @rows[i][col_range] = value_to_set
+      end
+    end
+  end
+
+  private def set_row_range(row_range, col, value)
+    if value.is_a?(Vector)
+      raise ErrDimensionMismatch unless row_range.size == value.size
+      set_column_vector(row_range, col, value)
+    elsif value.is_a?(Matrix)
+      raise ErrDimensionMismatch unless value.column_count == 1
+      value = value.column(0)
+      raise ErrDimensionMismatch unless row_range.size == value.size
+      set_column_vector(row_range, col, value)
+    else
+      @rows[row_range].each{|e| e[col] = value }
+    end
+  end
+
+  private def set_column_vector(row_range, col, value)
+    value.each_with_index do |e, index|
+      r = row_range.begin + index
+      @rows[r][col] = e
+    end
+  end
+
+  private def set_col_range(row, col_range, value)
+    value = if value.is_a?(Vector)
+      value.to_a
+    elsif value.is_a?(Matrix)
+      raise ErrDimensionMismatch unless value.row_count == 1
+      value.row(0).to_a
+    else
+      Array.new(col_range.size, value)
+    end
+    raise ErrDimensionMismatch unless col_range.size == value.size
+    @rows[row][col_range] = value
+  end
 
   #
   # Returns the number of rows.
@@ -361,16 +482,48 @@ class Matrix
   #
   # Returns a matrix that is the result of iteration of the given block over all
   # elements of the matrix.
+  # Elements can be restricted by passing an argument:
+  # * :all (default): yields all elements
+  # * :diagonal: yields only elements on the diagonal
+  # * :off_diagonal: yields all elements except on the diagonal
+  # * :lower: yields only elements on or below the diagonal
+  # * :strict_lower: yields only elements below the diagonal
+  # * :strict_upper: yields only elements above the diagonal
+  # * :upper: yields only elements on or above the diagonal
   #   Matrix[ [1,2], [3,4] ].collect { |e| e**2 }
   #     => 1  4
   #        9 16
   #
-  def collect(&block) # :yield: e
-    return to_enum(:collect) unless block_given?
-    rows = @rows.collect{|row| row.collect(&block)}
-    new_matrix rows, column_count
+  def collect(which = :all, &block) # :yield: e
+    return to_enum(:collect, which) unless block_given?
+    dup.collect!(which, &block)
   end
-  alias map collect
+  alias_method :map, :collect
+
+  #
+  # Invokes the given block for each element of matrix, replacing the element with the value
+  # returned by the block.
+  # Elements can be restricted by passing an argument:
+  # * :all (default): yields all elements
+  # * :diagonal: yields only elements on the diagonal
+  # * :off_diagonal: yields all elements except on the diagonal
+  # * :lower: yields only elements on or below the diagonal
+  # * :strict_lower: yields only elements below the diagonal
+  # * :strict_upper: yields only elements above the diagonal
+  # * :upper: yields only elements on or above the diagonal
+  #
+  def collect!(which = :all)
+    return to_enum(:collect!, which) unless block_given?
+    raise FrozenError, "can't modify frozen Matrix" if frozen?
+    each_with_index(which){ |e, row_index, col_index| @rows[row_index][col_index] = yield e }
+  end
+
+  alias map! collect!
+
+  def freeze
+    @rows.freeze
+    super
+  end
 
   #
   # Yields all elements of the matrix, starting with those of the first row,
@@ -388,12 +541,11 @@ class Matrix
   #     # => prints the numbers 1 to 4
   #   Matrix[ [1,2], [3,4] ].each(:strict_lower).to_a # => [3]
   #
-  def each(which = :all) # :yield: e
+  def each(which = :all, &block) # :yield: e
     return to_enum :each, which unless block_given?
     last = column_count - 1
     case which
     when :all
-      block = Proc.new
       @rows.each do |row|
         row.each(&block)
       end
@@ -613,7 +765,7 @@ class Matrix
   #
   def cofactor(row, column)
     raise RuntimeError, "cofactor of empty matrix is not defined" if empty?
-    Matrix.Raise ErrDimensionMismatch unless square?
+    raise ErrDimensionMismatch unless square?
 
     det_of_minor = first_minor(row, column).determinant
     det_of_minor * (-1) ** (row + column)
@@ -627,7 +779,7 @@ class Matrix
   #        -3 7
   #
   def adjugate
-    Matrix.Raise ErrDimensionMismatch unless square?
+    raise ErrDimensionMismatch unless square?
     Matrix.build(row_count, column_count) do |row, column|
       cofactor(column, row)
     end
@@ -650,7 +802,7 @@ class Matrix
       raise ArgumentError, "exactly one the row or column arguments must be specified"
     end
 
-    Matrix.Raise ErrDimensionMismatch unless square?
+    raise ErrDimensionMismatch unless square?
     raise RuntimeError, "laplace_expansion of empty matrix is not defined" if empty?
 
     unless 0 <= num && num < row_count
@@ -673,7 +825,7 @@ class Matrix
   # Raises an error if matrix is not square.
   #
   def diagonal?
-    Matrix.Raise ErrDimensionMismatch unless square?
+    raise ErrDimensionMismatch unless square?
     each(:off_diagonal).all?(&:zero?)
   end
 
@@ -690,7 +842,7 @@ class Matrix
   # Raises an error if matrix is not square.
   #
   def hermitian?
-    Matrix.Raise ErrDimensionMismatch unless square?
+    raise ErrDimensionMismatch unless square?
     each_with_index(:upper).all? do |e, row, col|
       e == rows[col][row].conj
     end
@@ -708,7 +860,7 @@ class Matrix
   # Raises an error if matrix is not square.
   #
   def normal?
-    Matrix.Raise ErrDimensionMismatch unless square?
+    raise ErrDimensionMismatch unless square?
     rows.each_with_index do |row_i, i|
       rows.each_with_index do |row_j, j|
         s = 0
@@ -726,7 +878,7 @@ class Matrix
   # Raises an error if matrix is not square.
   #
   def orthogonal?
-    Matrix.Raise ErrDimensionMismatch unless square?
+    raise ErrDimensionMismatch unless square?
     rows.each_with_index do |row, i|
       column_count.times do |j|
         s = 0
@@ -744,7 +896,7 @@ class Matrix
   # Raises an error if matrix is not square.
   #
   def permutation?
-    Matrix.Raise ErrDimensionMismatch unless square?
+    raise ErrDimensionMismatch unless square?
     cols = Array.new(column_count)
     rows.each_with_index do |row, i|
       found = false
@@ -794,7 +946,7 @@ class Matrix
   # Raises an error if matrix is not square.
   #
   def symmetric?
-    Matrix.Raise ErrDimensionMismatch unless square?
+    raise ErrDimensionMismatch unless square?
     each_with_index(:strict_upper) do |e, row, col|
       return false if e != rows[col][row]
     end
@@ -802,11 +954,24 @@ class Matrix
   end
 
   #
+  # Returns +true+ if this is an antisymmetric matrix.
+  # Raises an error if matrix is not square.
+  #
+  def antisymmetric?
+    raise ErrDimensionMismatch unless square?
+    each_with_index(:upper) do |e, row, col|
+      return false unless e == -rows[col][row]
+    end
+    true
+  end
+  alias_method :skew_symmetric?, :antisymmetric?
+
+  #
   # Returns +true+ if this is a unitary matrix
   # Raises an error if matrix is not square.
   #
   def unitary?
-    Matrix.Raise ErrDimensionMismatch unless square?
+    raise ErrDimensionMismatch unless square?
     rows.each_with_index do |row, i|
       column_count.times do |j|
         s = 0
@@ -853,12 +1018,11 @@ class Matrix
   end
 
   #
-  # Returns a clone of the matrix, so that the contents of each do not reference
-  # identical objects.
-  # There should be no good reason to do this since Matrices are immutable.
+  # Called for dup & clone.
   #
-  def clone
-    new_matrix @rows.map(&:dup), column_count
+  private def initialize_copy(m)
+    super
+    @rows = @rows.map(&:dup) unless frozen?
   end
 
   #
@@ -890,7 +1054,7 @@ class Matrix
       r = self * m
       return r.column(0)
     when Matrix
-      Matrix.Raise ErrDimensionMismatch if column_count != m.row_count
+      raise ErrDimensionMismatch if column_count != m.row_count
 
       rows = Array.new(row_count) {|i|
         Array.new(m.column_count) {|j|
@@ -914,7 +1078,7 @@ class Matrix
   def +(m)
     case m
     when Numeric
-      Matrix.Raise ErrOperationNotDefined, "+", self.class, m.class
+      raise ErrOperationNotDefined, ["+", self.class, m.class]
     when Vector
       m = self.class.column_vector(m)
     when Matrix
@@ -922,7 +1086,7 @@ class Matrix
       return apply_through_coercion(m, __method__)
     end
 
-    Matrix.Raise ErrDimensionMismatch unless row_count == m.row_count && column_count == m.column_count
+    raise ErrDimensionMismatch unless row_count == m.row_count && column_count == m.column_count
 
     rows = Array.new(row_count) {|i|
       Array.new(column_count) {|j|
@@ -941,7 +1105,7 @@ class Matrix
   def -(m)
     case m
     when Numeric
-      Matrix.Raise ErrOperationNotDefined, "-", self.class, m.class
+      raise ErrOperationNotDefined, ["-", self.class, m.class]
     when Vector
       m = self.class.column_vector(m)
     when Matrix
@@ -949,7 +1113,7 @@ class Matrix
       return apply_through_coercion(m, __method__)
     end
 
-    Matrix.Raise ErrDimensionMismatch unless row_count == m.row_count && column_count == m.column_count
+    raise ErrDimensionMismatch unless row_count == m.row_count && column_count == m.column_count
 
     rows = Array.new(row_count) {|i|
       Array.new(column_count) {|j|
@@ -997,12 +1161,12 @@ class Matrix
   #         0 -1
   #
   def inverse
-    Matrix.Raise ErrDimensionMismatch unless square?
+    raise ErrDimensionMismatch unless square?
     self.class.I(row_count).send(:inverse_from, self)
   end
-  alias inv inverse
+  alias_method :inv, :inverse
 
-  def inverse_from(src) # :nodoc:
+  private def inverse_from(src) # :nodoc:
     last = row_count - 1
     a = src.to_a
 
@@ -1016,7 +1180,7 @@ class Matrix
           akk = v
         end
       end
-      Matrix.Raise ErrNotRegular if akk == 0
+      raise ErrNotRegular if akk == 0
       if i != k
         a[i], a[k] = a[k], a[i]
         @rows[i], @rows[k] = @rows[k], @rows[i]
@@ -1045,7 +1209,6 @@ class Matrix
     end
     self
   end
-  private :inverse_from
 
   #
   # Matrix exponentiation.
@@ -1075,7 +1238,7 @@ class Matrix
       v, d, v_inv = eigensystem
       v * self.class.diagonal(*d.each(:diagonal).map{|e| e ** other}) * v_inv
     else
-      Matrix.Raise ErrOperationNotDefined, "**", self.class, other.class
+      raise ErrOperationNotDefined, ["**", self.class, other.class]
     end
   end
 
@@ -1085,6 +1248,13 @@ class Matrix
 
   def -@
     collect {|e| -e }
+  end
+
+  #
+  # Returns the absolute value elementwise
+  #
+  def abs
+    collect(&:abs)
   end
 
   #--
@@ -1102,7 +1272,7 @@ class Matrix
   #     => 45
   #
   def determinant
-    Matrix.Raise ErrDimensionMismatch unless square?
+    raise ErrDimensionMismatch unless square?
     m = @rows
     case row_count
       # Up to 4x4, give result using Laplacian expansion by minors.
@@ -1152,7 +1322,7 @@ class Matrix
   # with smaller bignums (if any), while a matrix of Float will usually have
   # intermediate results with better precision.
   #
-  def determinant_bareiss
+  private def determinant_bareiss
     size = row_count
     last = size - 1
     a = to_a
@@ -1178,7 +1348,6 @@ class Matrix
     end
     sign * pivot
   end
-  private :determinant_bareiss
 
   #
   # deprecated; use Matrix#determinant
@@ -1187,7 +1356,7 @@ class Matrix
     warn "Matrix#determinant_e is deprecated; use #determinant", uplevel: 1
     determinant
   end
-  alias det_e determinant_e
+  alias_method :det_e, :determinant_e
 
   #
   # Returns a new matrix resulting by stacking horizontally
@@ -1259,12 +1428,12 @@ class Matrix
   #     => 16
   #
   def trace
-    Matrix.Raise ErrDimensionMismatch unless square?
+    raise ErrDimensionMismatch unless square?
     (0...column_count).inject(0) do |tr, i|
       tr + @rows[i][i]
     end
   end
-  alias tr trace
+  alias_method :tr, :trace
 
   #
   # Returns the transpose of the matrix.
@@ -1280,7 +1449,7 @@ class Matrix
     return self.class.empty(column_count, 0) if row_count.zero?
     new_matrix @rows.transpose, row_count
   end
-  alias t transpose
+  alias_method :t, :transpose
 
   #
   # Returns a new matrix resulting by stacking vertically
@@ -1309,7 +1478,7 @@ class Matrix
   def eigensystem
     EigenvalueDecomposition.new(self)
   end
-  alias eigen eigensystem
+  alias_method :eigen, :eigensystem
 
   #
   # Returns the LUP decomposition of the matrix; see +LUPDecomposition+.
@@ -1324,7 +1493,7 @@ class Matrix
   def lup
     LUPDecomposition.new(self)
   end
-  alias lup_decomposition lup
+  alias_method :lup_decomposition, :lup
 
   #--
   # COMPLEX ARITHMETIC -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
@@ -1342,7 +1511,7 @@ class Matrix
   def conjugate
     collect(&:conjugate)
   end
-  alias conj conjugate
+  alias_method :conj, :conjugate
 
   #
   # Returns the imaginary part of the matrix.
@@ -1356,7 +1525,7 @@ class Matrix
   def imaginary
     collect(&:imaginary)
   end
-  alias imag imaginary
+  alias_method :imag, :imaginary
 
   #
   # Returns the real part of the matrix.
@@ -1380,7 +1549,7 @@ class Matrix
   def rect
     [real, imag]
   end
-  alias rectangular rect
+  alias_method :rectangular, :rect
 
   #--
   # CONVERTING -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -1434,16 +1603,25 @@ class Matrix
     @rows.collect(&:dup)
   end
 
+  # Deprecated.
+  #
+  # Use map(&:to_f)
   def elements_to_f
     warn "Matrix#elements_to_f is deprecated, use map(&:to_f)", uplevel: 1
     map(&:to_f)
   end
 
+  # Deprecated.
+  #
+  # Use map(&:to_i)
   def elements_to_i
     warn "Matrix#elements_to_i is deprecated, use map(&:to_i)", uplevel: 1
     map(&:to_i)
   end
 
+  # Deprecated.
+  #
+  # Use map(&:to_r)
   def elements_to_r
     warn "Matrix#elements_to_r is deprecated, use map(&:to_r)", uplevel: 1
     map(&:to_r)
@@ -1484,7 +1662,7 @@ class Matrix
     # Converts the obj to an Array. If copy is set to true
     # a copy of obj will be made if necessary.
     #
-    def convert_to_array(obj, copy = false) # :nodoc:
+    private def convert_to_array(obj, copy = false) # :nodoc:
       case obj
       when Array
         copy ? obj.dup : obj
@@ -1500,7 +1678,6 @@ class Matrix
         converted
       end
     end
-    private :convert_to_array
   end
 
   extend ConversionHelper
@@ -1510,14 +1687,13 @@ class Matrix
     # Applies the operator +oper+ with argument +obj+
     # through coercion of +obj+
     #
-    def apply_through_coercion(obj, oper)
+    private def apply_through_coercion(obj, oper)
       coercion = obj.coerce(self)
       raise TypeError unless coercion.is_a?(Array) && coercion.length == 2
       coercion[0].public_send(oper, coercion[1])
     rescue
       raise TypeError, "#{obj.inspect} can't be coerced into #{self.class}"
     end
-    private :apply_through_coercion
 
     #
     # Helper method to coerce a value into a specific class.
@@ -1545,6 +1721,26 @@ class Matrix
     def self.coerce_to_matrix(obj)
       coerce_to(obj, Matrix, :to_matrix)
     end
+
+    # Returns `nil` for non Ranges
+    # Checks range validity, return canonical range with 0 <= begin <= end < count
+    def self.check_range(val, count, kind)
+      canonical = (val.begin + (val.begin < 0 ? count : 0))..
+                  (val.end ? val.end + (val.end < 0 ? count : 0) - (val.exclude_end? ? 1 : 0)
+                           : count - 1)
+      unless 0 <= canonical.begin && canonical.begin <= canonical.end && canonical.end < count
+        raise IndexError, "given range #{val} is outside of #{kind} dimensions: 0...#{count}"
+      end
+      canonical
+    end
+
+    def self.check_int(val, count, kind)
+      val = CoercionHelper.coerce_to_int(val)
+      if val >= count || val < -count
+        raise IndexError, "given #{kind} #{val} is outside of #{-count}...#{count}"
+      end
+      val
+    end
   end
 
   include CoercionHelper
@@ -1565,7 +1761,7 @@ class Matrix
       when Numeric
         Scalar.new(@value + other)
       when Vector, Matrix
-        Scalar.Raise ErrOperationNotDefined, "+", @value.class, other.class
+        raise ErrOperationNotDefined, ["+", @value.class, other.class]
       else
         apply_through_coercion(other, __method__)
       end
@@ -1576,7 +1772,7 @@ class Matrix
       when Numeric
         Scalar.new(@value - other)
       when Vector, Matrix
-        Scalar.Raise ErrOperationNotDefined, "-", @value.class, other.class
+        raise ErrOperationNotDefined, ["-", @value.class, other.class]
       else
         apply_through_coercion(other, __method__)
       end
@@ -1598,7 +1794,7 @@ class Matrix
       when Numeric
         Scalar.new(@value / other)
       when Vector
-        Scalar.Raise ErrOperationNotDefined, "/", @value.class, other.class
+        raise ErrOperationNotDefined, ["/", @value.class, other.class]
       when Matrix
         self * other.inverse
       else
@@ -1611,10 +1807,10 @@ class Matrix
       when Numeric
         Scalar.new(@value ** other)
       when Vector
-        Scalar.Raise ErrOperationNotDefined, "**", @value.class, other.class
+        raise ErrOperationNotDefined, ["**", @value.class, other.class]
       when Matrix
         #other.powered_by(self)
-        Scalar.Raise ErrOperationNotImplemented, "**", @value.class, other.class
+        raise ErrOperationNotImplemented, ["**", @value.class, other.class]
       else
         apply_through_coercion(other, __method__)
       end
@@ -1639,6 +1835,9 @@ end
 # To access elements:
 # * #[](i)
 #
+# To set elements:
+# * #[]=(i, v)
+#
 # To enumerate the elements:
 # * #each2(v)
 # * #collect2(v)
@@ -1661,8 +1860,10 @@ end
 # * #inner_product(v), dot(v)
 # * #cross_product(v), cross(v)
 # * #collect
+# * #collect!
 # * #magnitude
 # * #map
+# * #map!
 # * #map2(v)
 # * #norm
 # * #normalize
@@ -1741,7 +1942,11 @@ class Vector
   # ACCESSING
 
   #
-  # Returns element number +i+ (starting at zero) of the vector.
+  # :call-seq:
+  #   vector[range]
+  #   vector[integer]
+  #
+  # Returns element or elements of the vector.
   #
   def [](i)
     @elements[i]
@@ -1749,12 +1954,44 @@ class Vector
   alias element []
   alias component []
 
+  #
+  # :call-seq:
+  #   vector[range] = new_vector
+  #   vector[range] = row_matrix
+  #   vector[range] = new_element
+  #   vector[integer] = new_element
+  #
+  # Set element or elements of vector.
+  #
   def []=(i, v)
-    @elements[i]= v
+    raise FrozenError, "can't modify frozen Vector" if frozen?
+    if i.is_a?(Range)
+      range = Matrix::CoercionHelper.check_range(i, size, :vector)
+      set_range(range, v)
+    else
+      index = Matrix::CoercionHelper.check_int(i, size, :index)
+      set_value(index, v)
+    end
   end
   alias set_element []=
   alias set_component []=
-  private :[]=, :set_element, :set_component
+  private :set_element, :set_component
+
+  private def set_value(index, value)
+    @elements[index] = value
+  end
+
+  private def set_range(range, value)
+    if value.is_a?(Vector)
+      raise ArgumentError, "vector to be set has wrong size" unless range.size == value.size
+      @elements[range] = value.elements
+    elsif value.is_a?(Matrix)
+      raise ErrDimensionMismatch unless value.row_count == 1
+      @elements[range] = value.row(0).elements
+    else
+      @elements[range] = Array.new(range.size, value)
+    end
+  end
 
   # Returns a vector with entries rounded to the given precision
   # (see Float#round)
@@ -1788,7 +2025,7 @@ class Vector
   #
   def each2(v) # :yield: e1, e2
     raise TypeError, "Integer is not like Vector" if v.kind_of?(Integer)
-    Vector.Raise ErrDimensionMismatch if size != v.size
+    raise ErrDimensionMismatch if size != v.size
     return to_enum(:each2, v) unless block_given?
     size.times do |i|
       yield @elements[i], v[i]
@@ -1802,7 +2039,7 @@ class Vector
   #
   def collect2(v) # :yield: e1, e2
     raise TypeError, "Integer is not like Vector" if v.kind_of?(Integer)
-    Vector.Raise ErrDimensionMismatch if size != v.size
+    raise ErrDimensionMismatch if size != v.size
     return to_enum(:collect2, v) unless block_given?
     Array.new(size) do |i|
       yield @elements[i], v[i]
@@ -1825,7 +2062,7 @@ class Vector
   def Vector.independent?(*vs)
     vs.each do |v|
       raise TypeError, "expected Vector, got #{v.class}" unless v.is_a?(Vector)
-      Vector.Raise ErrDimensionMismatch unless v.size == vs.first.size
+      raise ErrDimensionMismatch unless v.size == vs.first.size
     end
     return false if vs.count > vs.first.size
     Matrix[*vs].rank.eql?(vs.count)
@@ -1851,6 +2088,20 @@ class Vector
     all?(&:zero?)
   end
 
+  def freeze
+    @elements.freeze
+    super
+  end
+
+  #
+  # Called for dup & clone.
+  #
+  private def initialize_copy(v)
+    super
+    @elements = @elements.dup unless frozen?
+  end
+
+
   #--
   # COMPARING -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   #++
@@ -1866,13 +2117,6 @@ class Vector
   def eql?(other)
     return false unless Vector === other
     @elements.eql? other.elements
-  end
-
-  #
-  # Returns a copy of the vector.
-  #
-  def clone
-    self.class.elements(@elements)
   end
 
   #
@@ -1897,7 +2141,7 @@ class Vector
     when Matrix
       Matrix.column_vector(self) * x
     when Vector
-      Vector.Raise ErrOperationNotDefined, "*", self.class, x.class
+      raise ErrOperationNotDefined, ["*", self.class, x.class]
     else
       apply_through_coercion(x, __method__)
     end
@@ -1909,7 +2153,7 @@ class Vector
   def +(v)
     case v
     when Vector
-      Vector.Raise ErrDimensionMismatch if size != v.size
+      raise ErrDimensionMismatch if size != v.size
       els = collect2(v) {|v1, v2|
         v1 + v2
       }
@@ -1927,7 +2171,7 @@ class Vector
   def -(v)
     case v
     when Vector
-      Vector.Raise ErrDimensionMismatch if size != v.size
+      raise ErrDimensionMismatch if size != v.size
       els = collect2(v) {|v1, v2|
         v1 - v2
       }
@@ -1948,7 +2192,7 @@ class Vector
       els = @elements.collect{|e| e / x}
       self.class.elements(els, false)
     when Matrix, Vector
-      Vector.Raise ErrOperationNotDefined, "/", self.class, x.class
+      raise ErrOperationNotDefined, ["/", self.class, x.class]
     else
       apply_through_coercion(x, __method__)
     end
@@ -1971,7 +2215,7 @@ class Vector
   #   Vector[4,7].inner_product Vector[10,1]  => 47
   #
   def inner_product(v)
-    Vector.Raise ErrDimensionMismatch if size != v.size
+    raise ErrDimensionMismatch if size != v.size
 
     p = 0
     each2(v) {|v1, v2|
@@ -1998,7 +2242,7 @@ class Vector
     raise ArgumentError, "wrong number of arguments (#{vs.size} for #{size - 2})" unless vs.size == size - 2
     vs.each do |v|
       raise TypeError, "expected Vector, got #{v.class}" unless v.is_a? Vector
-      Vector.Raise ErrDimensionMismatch unless v.size == size
+      raise ErrDimensionMismatch unless v.size == size
     end
     case size
     when 2
@@ -2023,7 +2267,18 @@ class Vector
     els = @elements.collect(&block)
     self.class.elements(els, false)
   end
-  alias map collect
+  alias_method :map, :collect
+
+  #
+  # Like Array#collect!
+  #
+  def collect!(&block)
+    return to_enum(:collect!) unless block_given?
+    raise FrozenError, "can't modify frozen Vector" if frozen?
+    @elements.collect!(&block)
+    self
+  end
+  alias map! collect!
 
   #
   # Returns the modulus (Pythagorean distance) of the vector.
@@ -2032,8 +2287,8 @@ class Vector
   def magnitude
     Math.sqrt(@elements.inject(0) {|v, e| v + e.abs2})
   end
-  alias r magnitude
-  alias norm magnitude
+  alias_method :r, :magnitude
+  alias_method :norm, :magnitude
 
   #
   # Like Vector#collect2, but returns a Vector instead of an Array.
@@ -2059,17 +2314,21 @@ class Vector
   end
 
   #
-  # Returns an angle with another vector. Result is within the [0...Math::PI].
+  # Returns an angle with another vector. Result is within the [0..Math::PI].
   #   Vector[1,0].angle_with(Vector[0,1])
   #   # => Math::PI / 2
   #
   def angle_with(v)
     raise TypeError, "Expected a Vector, got a #{v.class}" unless v.is_a?(Vector)
-    Vector.Raise ErrDimensionMismatch if size != v.size
+    raise ErrDimensionMismatch if size != v.size
     prod = magnitude * v.magnitude
     raise ZeroVectorError, "Can't get angle of zero vector" if prod == 0
-
-    Math.acos( inner_product(v) / prod )
+    dot = inner_product(v)
+    if dot.abs >= prod
+      dot.positive? ? 0 : Math::PI
+    else
+      Math.acos(dot / prod)
+    end
   end
 
   #--

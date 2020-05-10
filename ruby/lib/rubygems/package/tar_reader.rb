@@ -55,6 +55,8 @@ class Gem::Package::TarReader
   def each
     return enum_for __method__ unless block_given?
 
+    use_seek = @io.respond_to?(:seek)
+
     until @io.eof? do
       header = Gem::Package::TarHeader.from @io
       return if header.empty?
@@ -67,16 +69,20 @@ class Gem::Package::TarReader
       skip = (512 - (size % 512)) % 512
       pending = size - entry.bytes_read
 
-      begin
-        # avoid reading...
-        @io.seek pending, IO::SEEK_CUR
-        pending = 0
-      rescue Errno::EINVAL, NameError
-        while pending > 0 do
-          bytes_read = @io.read([pending, 4096].min).size
-          raise UnexpectedEOF if @io.eof?
-          pending -= bytes_read
+      if use_seek
+        begin
+          # avoid reading if the @io supports seeking
+          @io.seek pending, IO::SEEK_CUR
+          pending = 0
+        rescue Errno::EINVAL
         end
+      end
+
+      # if seeking isn't supported or failed
+      while pending > 0 do
+        bytes_read = @io.read([pending, 4096].min).size
+        raise UnexpectedEOF if @io.eof?
+        pending -= bytes_read
       end
 
       @io.read skip # discard trailing zeros
@@ -92,11 +98,9 @@ class Gem::Package::TarReader
   # NOTE: Do not call #rewind during #each
 
   def rewind
-    if @init_pos == 0 then
-      raise Gem::Package::NonSeekableIO unless @io.respond_to? :rewind
+    if @init_pos == 0
       @io.rewind
     else
-      raise Gem::Package::NonSeekableIO unless @io.respond_to? :pos=
       @io.pos = @init_pos
     end
   end
@@ -106,7 +110,7 @@ class Gem::Package::TarReader
   # yields it.  Rewinds the tar file to the beginning when the block
   # terminates.
 
-  def seek name # :yields: entry
+  def seek(name) # :yields: entry
     found = find do |entry|
       entry.full_name == name
     end

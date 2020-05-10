@@ -1,11 +1,11 @@
-require File.expand_path('../../../enumerable/shared/enumeratorized', __FILE__)
+require_relative '../../enumerable/shared/enumeratorized'
 
 describe :array_collect, shared: true do
   it "returns a copy of array with each element replaced by the value returned by block" do
     a = ['a', 'b', 'c', 'd']
     b = a.send(@method) { |i| i + '!' }
     b.should == ["a!", "b!", "c!", "d!"]
-    b.object_id.should_not == a.object_id
+    b.should_not equal a
   end
 
   it "does not return subclass instance" do
@@ -37,21 +37,23 @@ describe :array_collect, shared: true do
 
   it "raises an ArgumentError when no block and with arguments" do
     a = [1, 2, 3]
-    lambda {
+    -> {
       a.send(@method, :foo)
     }.should raise_error(ArgumentError)
   end
 
-  it "does not copy tainted status" do
-    a = [1, 2, 3]
-    a.taint
-    a.send(@method){|x| x}.tainted?.should be_false
-  end
+  ruby_version_is ''...'2.7' do
+    it "does not copy tainted status" do
+      a = [1, 2, 3]
+      a.taint
+      a.send(@method){|x| x}.tainted?.should be_false
+    end
 
-  it "does not copy untrusted status" do
-    a = [1, 2, 3]
-    a.untrust
-    a.send(@method){|x| x}.untrusted?.should be_false
+    it "does not copy untrusted status" do
+      a = [1, 2, 3]
+      a.untrust
+      a.send(@method){|x| x}.untrusted?.should be_false
+    end
   end
 
   before :all do
@@ -70,7 +72,7 @@ describe :array_collect_b, shared: true do
   it "returns self" do
     a = [1, 2, 3, 4, 5]
     b = a.send(@method) {|i| i+1 }
-    a.object_id.should == b.object_id
+    a.should equal b
   end
 
   it "returns the evaluated value of block but its contents is partially modified, if it broke in the block" do
@@ -94,38 +96,40 @@ describe :array_collect_b, shared: true do
     a.should == ["1!", "2!", "3!"]
   end
 
-  it "keeps tainted status" do
-    a = [1, 2, 3]
-    a.taint
-    a.tainted?.should be_true
-    a.send(@method){|x| x}
-    a.tainted?.should be_true
-  end
+  ruby_version_is ''...'2.7' do
+    it "keeps tainted status" do
+      a = [1, 2, 3]
+      a.taint
+      a.tainted?.should be_true
+      a.send(@method){|x| x}
+      a.tainted?.should be_true
+    end
 
-  it "keeps untrusted status" do
-    a = [1, 2, 3]
-    a.untrust
-    a.send(@method){|x| x}
-    a.untrusted?.should be_true
+    it "keeps untrusted status" do
+      a = [1, 2, 3]
+      a.untrust
+      a.send(@method){|x| x}
+      a.untrusted?.should be_true
+    end
   end
 
   describe "when frozen" do
-    it "raises a RuntimeError" do
-      lambda { ArraySpecs.frozen_array.send(@method) {} }.should raise_error(RuntimeError)
+    it "raises a #{frozen_error_class}" do
+      -> { ArraySpecs.frozen_array.send(@method) {} }.should raise_error(frozen_error_class)
     end
 
-    it "raises a RuntimeError when empty" do
-      lambda { ArraySpecs.empty_frozen_array.send(@method) {} }.should raise_error(RuntimeError)
+    it "raises a #{frozen_error_class} when empty" do
+      -> { ArraySpecs.empty_frozen_array.send(@method) {} }.should raise_error(frozen_error_class)
     end
 
-    it "raises a RuntimeError when calling #each on the returned Enumerator" do
+    it "raises a #{frozen_error_class} when calling #each on the returned Enumerator" do
       enumerator = ArraySpecs.frozen_array.send(@method)
-      lambda { enumerator.each {|x| x } }.should raise_error(RuntimeError)
+      -> { enumerator.each {|x| x } }.should raise_error(frozen_error_class)
     end
 
-    it "raises a RuntimeError when calling #each on the returned Enumerator when empty" do
+    it "raises a #{frozen_error_class} when calling #each on the returned Enumerator when empty" do
       enumerator = ArraySpecs.empty_frozen_array.send(@method)
-      lambda { enumerator.each {|x| x } }.should raise_error(RuntimeError)
+      -> { enumerator.each {|x| x } }.should raise_error(frozen_error_class)
     end
   end
 

@@ -1,0 +1,41 @@
+// -*- c -*-
+// DO NOT MODIFY THIS FILE DIRECTLY.
+// auto-generated file
+//   by ./tool/mk_builtin_loader.rb
+//   with gc.rb
+
+static void load_gc(void)
+{
+  // table definition
+  static const struct rb_builtin_function gc_table[] = {
+    RB_BUILTIN_FUNCTION(0, gc_start_internal, gc_start_internal, 3),
+    RB_BUILTIN_FUNCTION(1, gc_enable, gc_enable, 0),
+    RB_BUILTIN_FUNCTION(2, gc_disable, gc_disable, 0),
+    RB_BUILTIN_FUNCTION(3, gc_stress_get, gc_stress_get, 0),
+    RB_BUILTIN_FUNCTION(4, gc_stress_set_m, gc_stress_set_m, 1),
+    RB_BUILTIN_FUNCTION(5, gc_count, gc_count, 0),
+    RB_BUILTIN_FUNCTION(6, gc_stat, gc_stat, 1),
+    RB_BUILTIN_FUNCTION(7, gc_latest_gc_info, gc_latest_gc_info, 1),
+    RB_BUILTIN_FUNCTION(8, rb_gc_compact, rb_gc_compact, 0),
+    RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0),
+  };
+
+  // arity_check
+COMPILER_WARNING_PUSH
+#if GCC_VERSION_SINCE(5, 1, 0) || __clang__
+COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)
+#endif
+  if (0) rb_builtin_function_check_arity3(gc_start_internal);
+  if (0) rb_builtin_function_check_arity0(gc_enable);
+  if (0) rb_builtin_function_check_arity0(gc_disable);
+  if (0) rb_builtin_function_check_arity0(gc_stress_get);
+  if (0) rb_builtin_function_check_arity1(gc_stress_set_m);
+  if (0) rb_builtin_function_check_arity0(gc_count);
+  if (0) rb_builtin_function_check_arity1(gc_stat);
+  if (0) rb_builtin_function_check_arity1(gc_latest_gc_info);
+  if (0) rb_builtin_function_check_arity0(rb_gc_compact);
+COMPILER_WARNING_POP
+
+  // load
+  rb_load_with_builtin_functions("gc", gc_table);
+}

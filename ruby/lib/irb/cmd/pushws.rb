@@ -2,7 +2,7 @@
 #
 #   change-ws.rb -
 #   	$Release Version: 0.9.6$
-#   	$Revision: 56371 $
+#   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
@@ -10,8 +10,8 @@
 #
 #
 
-require "irb/cmd/nop.rb"
-require "irb/ext/workspaces.rb"
+require_relative "nop"
+require_relative "../ext/workspaces"
 
 # :stopdoc:
 module IRB

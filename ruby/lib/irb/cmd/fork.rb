@@ -2,7 +2,7 @@
 #
 #   fork.rb -
 #   	$Release Version: 0.9.6 $
-#   	$Revision: 56371 $
+#   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
@@ -21,7 +21,7 @@ module IRB
           class << self
             alias_method :exit, ExtendCommand.irb_original_method_name('exit')
           end
-          if iterator?
+          if block_given?
             begin
               yield
             ensure

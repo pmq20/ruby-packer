@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "ARGF.binmode" do
   before :each do
@@ -22,7 +22,7 @@ describe "ARGF.binmode" do
       end
     end
 
-    it "puts alls subsequent stream reading through ARGF into binmode" do
+    it "puts all subsequent streams reading through ARGF into binmode" do
       argf [@bin_file, @bin_file] do
         @argf.binmode
         @argf.gets.should == "test\r\n"
@@ -31,13 +31,13 @@ describe "ARGF.binmode" do
     end
   end
 
-  it "sets the file's encoding to ASCII-8BIT" do
+  it "sets the file's encoding to BINARY" do
     argf [@bin_file, @file1] do
       @argf.binmode
       @argf.binmode?.should == true
-      @argf.gets.encoding.should == Encoding::ASCII_8BIT
+      @argf.gets.encoding.should == Encoding::BINARY
       @argf.skip
-      @argf.read.encoding.should == Encoding::ASCII_8BIT
+      @argf.read.encoding.should == Encoding::BINARY
     end
   end
 end

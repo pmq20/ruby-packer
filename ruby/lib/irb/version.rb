@@ -2,7 +2,7 @@
 #
 #   irb/version.rb - irb version definition file
 #   	$Release Version: 0.9.6$
-#   	$Revision: 53141 $
+#   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
 #
 # --
@@ -11,6 +11,7 @@
 #
 
 module IRB # :nodoc:
-  @RELEASE_VERSION = "0.9.6"
-  @LAST_UPDATE_DATE = "09/06/30"
+  VERSION = "1.2.3"
+  @RELEASE_VERSION = VERSION
+  @LAST_UPDATE_DATE = "2020-02-15"
 end

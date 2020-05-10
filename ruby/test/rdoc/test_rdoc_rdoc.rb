@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rdoc/test_case'
+require_relative 'helper'
 
 class TestRDocRDoc < RDoc::TestCase
 
@@ -26,7 +26,7 @@ class TestRDocRDoc < RDoc::TestCase
     temp_dir do
       options.op_dir = 'ri'
 
-      capture_io do
+      capture_output do
         rdoc.document options
       end
 
@@ -53,7 +53,7 @@ class TestRDocRDoc < RDoc::TestCase
 
     out = nil
     temp_dir do
-      out, = capture_io do
+      out, = capture_output do
         rdoc.document options
       end
 
@@ -78,7 +78,7 @@ class TestRDocRDoc < RDoc::TestCase
   def test_handle_pipe
     $stdin = StringIO.new "hello"
 
-    out, = capture_io do
+    out, = capture_output do
       @rdoc.handle_pipe
     end
 
@@ -92,7 +92,7 @@ class TestRDocRDoc < RDoc::TestCase
 
     @rdoc.options.markup = 'rd'
 
-    out, = capture_io do
+    out, = capture_output do
       @rdoc.handle_pipe
     end
 
@@ -115,11 +115,11 @@ class TestRDocRDoc < RDoc::TestCase
 
   def test_load_options_invalid
     temp_dir do
-      open '.rdoc_options', 'w' do |io|
+      File.open '.rdoc_options', 'w' do |io|
         io.write "a: !ruby.yaml.org,2002:str |\nfoo"
       end
 
-      e = assert_raises RDoc::Error do
+      e = assert_raise RDoc::Error do
         @rdoc.load_options
       end
 
@@ -152,8 +152,6 @@ class TestRDocRDoc < RDoc::TestCase
   end
 
   def test_normalized_file_list_not_modified
-    files = [__FILE__]
-
     @rdoc.last_modified[__FILE__] = File.stat(__FILE__).mtime
 
     files = @rdoc.normalized_file_list [__FILE__]
@@ -163,12 +161,12 @@ class TestRDocRDoc < RDoc::TestCase
 
   def test_normalized_file_list_non_file_directory
     dev = File::NULL
-    skip "#{dev} is not a character special" unless
+    omit "#{dev} is not a character special" unless
       File.chardev? dev
 
     files = nil
 
-    out, err = verbose_capture_io do
+    out, err = verbose_capture_output do
       files = @rdoc.normalized_file_list [dev]
     end
 
@@ -181,13 +179,75 @@ class TestRDocRDoc < RDoc::TestCase
     assert_match %r"#{dev}$",           err
   end
 
+  def test_normalized_file_list_with_dot_doc
+    expected_files = []
+    files = temp_dir do |dir|
+      a = File.expand_path('a.rb')
+      b = File.expand_path('b.rb')
+      c = File.expand_path('c.rb')
+      FileUtils.touch a
+      FileUtils.touch b
+      FileUtils.touch c
+      # Use Dir.glob to convert short path of Dir.tmpdir to long path.
+      a = Dir.glob(a).first
+      b = Dir.glob(b).first
+      c = Dir.glob(c).first
+
+      dot_doc = File.expand_path('.document')
+      FileUtils.touch dot_doc
+      open(dot_doc, 'w') do |f|
+        f.puts 'a.rb'
+        f.puts 'b.rb'
+      end
+      expected_files << a
+      expected_files << b
+
+      @rdoc.normalized_file_list [File.realpath(dir)]
+    end
+
+    files = files.map { |file| File.expand_path file }
+
+    assert_equal expected_files, files
+  end
+
+  def test_normalized_file_list_with_dot_doc_overridden_by_exclude_option
+    expected_files = []
+    files = temp_dir do |dir|
+      a = File.expand_path('a.rb')
+      b = File.expand_path('b.rb')
+      c = File.expand_path('c.rb')
+      FileUtils.touch a
+      FileUtils.touch b
+      FileUtils.touch c
+      # Use Dir.glob to convert short path of Dir.tmpdir to long path.
+      a = Dir.glob(a).first
+      b = Dir.glob(b).first
+      c = Dir.glob(c).first
+
+      dot_doc = File.expand_path('.document')
+      FileUtils.touch dot_doc
+      open(dot_doc, 'w') do |f|
+        f.puts 'a.rb'
+        f.puts 'b.rb'
+      end
+      expected_files << a
+
+      @rdoc.options.exclude = Regexp.new(['b.rb'].join('|'))
+      @rdoc.normalized_file_list [File.realpath(dir)]
+    end
+
+    files = files.map { |file| File.expand_path file }
+
+    assert_equal expected_files, files
+  end
+
   def test_parse_file
     @rdoc.store = RDoc::Store.new
 
     temp_dir do |dir|
       @rdoc.options.root = Pathname(Dir.pwd)
 
-      open 'test.txt', 'w' do |io|
+      File.open 'test.txt', 'w' do |io|
         io.puts 'hi'
       end
 
@@ -205,7 +265,7 @@ class TestRDocRDoc < RDoc::TestCase
 
     @rdoc.options.root = Pathname root
 
-    out, err = capture_io do
+    out, err = capture_output do
       Dir.chdir root do
         assert_nil @rdoc.parse_file 'binary.dat'
       end
@@ -223,11 +283,11 @@ class TestRDocRDoc < RDoc::TestCase
     temp_dir do |dir|
       @rdoc.options.parse %W[--root #{test_path}]
 
-      open 'include.txt', 'w' do |io|
+      File.open 'include.txt', 'w' do |io|
         io.puts ':include: test.txt'
       end
 
-      out, err = capture_io do
+      out, err = capture_output do
         top_level = @rdoc.parse_file 'include.txt'
       end
       assert_empty out
@@ -244,7 +304,7 @@ class TestRDocRDoc < RDoc::TestCase
       @rdoc.options.page_dir = Pathname('pages')
       @rdoc.options.root = Pathname(Dir.pwd)
 
-      open 'pages/test.txt', 'w' do |io|
+      File.open 'pages/test.txt', 'w' do |io|
         io.puts 'hi'
       end
 
@@ -263,7 +323,7 @@ class TestRDocRDoc < RDoc::TestCase
     temp_dir do |dir|
       @rdoc.options.root = Pathname(dir)
 
-      open 'test.txt', 'w' do |io|
+      File.open 'test.txt', 'w' do |io|
         io.puts 'hi'
       end
 
@@ -295,8 +355,8 @@ class TestRDocRDoc < RDoc::TestCase
   end
 
   def test_parse_file_forbidden
-    skip 'chmod not supported' if Gem.win_platform?
-    skip 'skipped in root privilege' if Process.uid == 0
+    omit 'chmod not supported' if Gem.win_platform?
+    omit "assumes that euid is not root" if Process.euid == 0
 
     @rdoc.store = RDoc::Store.new
 
@@ -309,7 +369,7 @@ class TestRDocRDoc < RDoc::TestCase
       begin
         top_level = :bug
 
-        _, err = capture_io do
+        _, err = capture_output do
           top_level = @rdoc.parse_file io.path
         end
 
@@ -340,7 +400,7 @@ class TestRDocRDoc < RDoc::TestCase
 
   def test_remove_unparseable_tags_emacs
     temp_dir do
-      open 'TAGS', 'wb' do |io| # emacs
+      File.open 'TAGS', 'wb' do |io| # emacs
         io.write "\f\nlib/foo.rb,43\n"
       end
 
@@ -354,7 +414,7 @@ class TestRDocRDoc < RDoc::TestCase
 
   def test_remove_unparseable_tags_vim
     temp_dir do
-      open 'TAGS', 'w' do |io| # emacs
+      File.open 'TAGS', 'w' do |io| # emacs
         io.write "!_TAG_"
       end
 
@@ -393,7 +453,7 @@ class TestRDocRDoc < RDoc::TestCase
 
   def test_setup_output_dir_exists
     Dir.mktmpdir {|path|
-      open @rdoc.output_flag_file(path), 'w' do |io|
+      File.open @rdoc.output_flag_file(path), 'w' do |io|
         io.puts Time.at 0
         io.puts "./lib/rdoc.rb\t#{Time.at 86400}"
       end
@@ -407,9 +467,9 @@ class TestRDocRDoc < RDoc::TestCase
 
   def test_setup_output_dir_exists_empty_created_rid
     Dir.mktmpdir {|path|
-      open @rdoc.output_flag_file(path), 'w' do end
+      File.open @rdoc.output_flag_file(path), 'w' do end
 
-      e = assert_raises RDoc::Error do
+      e = assert_raise RDoc::Error do
         @rdoc.setup_output_dir path, false
       end
 
@@ -421,7 +481,7 @@ class TestRDocRDoc < RDoc::TestCase
     tf = Tempfile.open 'test_rdoc_rdoc' do |tempfile|
       path = tempfile.path
 
-      e = assert_raises RDoc::Error do
+      e = assert_raise RDoc::Error do
         @rdoc.setup_output_dir path, false
       end
 
@@ -434,7 +494,7 @@ class TestRDocRDoc < RDoc::TestCase
 
   def test_setup_output_dir_exists_not_rdoc
     Dir.mktmpdir do |dir|
-      e = assert_raises RDoc::Error do
+      e = assert_raise RDoc::Error do
         @rdoc.setup_output_dir dir, false
       end
 
@@ -465,6 +525,25 @@ class TestRDocRDoc < RDoc::TestCase
       @rdoc.update_output_dir d, Time.now, {}
 
       refute File.exist? "#{d}/created.rid"
+    end
+  end
+
+  def test_update_output_dir_with_reproducible_time
+    Dir.mktmpdir do |d|
+      backup_epoch = ENV['SOURCE_DATE_EPOCH']
+      ruby_birthday = Time.parse 'Wed, 24 Feb 1993 21:00:00 +0900'
+      ENV['SOURCE_DATE_EPOCH'] = ruby_birthday.to_i.to_s
+
+      @rdoc.update_output_dir d, Time.now, {}
+
+      assert File.exist? "#{d}/created.rid"
+
+      f = File.open("#{d}/created.rid", 'r')
+      head_timestamp = Time.parse f.gets.chomp
+      f.close
+      assert_equal ruby_birthday, head_timestamp
+
+      ENV['SOURCE_DATE_EPOCH'] = backup_epoch
     end
   end
 

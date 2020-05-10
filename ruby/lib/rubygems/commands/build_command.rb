@@ -10,6 +10,18 @@ class Gem::Commands::BuildCommand < Gem::Command
     add_option '--force', 'skip validation of the spec' do |value, options|
       options[:force] = true
     end
+
+    add_option '--strict', 'consider warnings as errors when validating the spec' do |value, options|
+      options[:strict] = true
+    end
+
+    add_option '-o', '--output FILE', 'output gem with the given filename' do |value, options|
+      options[:output] = value
+    end
+
+    add_option '-C PATH', '', 'Run as if gem build was started in <PATH> instead of the current working directory.' do |value, options|
+      options[:build_path] = value
+    end
   end
 
   def arguments # :nodoc:
@@ -32,6 +44,11 @@ with gem spec:
   $ cd my_gem-1.0
   [edit gem contents]
   $ gem build my_gem-1.0.gemspec
+
+Gems can be saved to a specified filename with the output option:
+
+  $ gem build my_gem-1.0.gemspec --output=release.gem
+
     EOF
   end
 
@@ -40,26 +57,56 @@ with gem spec:
   end
 
   def execute
-    gemspec = get_one_gem_name
+    gem_name = get_one_optional_argument || find_gemspec
+    build_gem(gem_name)
+  end
 
-    unless File.exist? gemspec
-      gemspec += '.gemspec' if File.exist? gemspec + '.gemspec'
+  private
+
+  def find_gemspec
+    gemspecs = Dir.glob("*.gemspec").sort
+
+    if gemspecs.size > 1
+      alert_error "Multiple gemspecs found: #{gemspecs}, please specify one"
+      terminate_interaction(1)
     end
 
-    if File.exist? gemspec then
-      spec = Gem::Specification.load gemspec
+    gemspecs.first
+  end
 
-      if spec then
-        Gem::Package.build spec, options[:force]
+  def build_gem(gem_name)
+    gemspec = File.exist?(gem_name) ? gem_name : "#{gem_name}.gemspec"
+
+    if File.exist?(gemspec)
+      spec = Gem::Specification.load(gemspec)
+
+      if options[:build_path]
+        Dir.chdir(File.dirname(gemspec)) do
+          spec = Gem::Specification.load(File.basename(gemspec))
+          build_package(spec)
+        end
       else
-        alert_error "Error loading gemspec. Aborting."
-        terminate_interaction 1
+        build_package(spec)
       end
+
     else
       alert_error "Gemspec file not found: #{gemspec}"
+      terminate_interaction(1)
+    end
+  end
+
+  def build_package(spec)
+    if spec
+      Gem::Package.build(
+        spec,
+        options[:force],
+        options[:strict],
+        options[:output]
+      )
+    else
+      alert_error "Error loading gemspec. Aborting."
       terminate_interaction 1
     end
   end
 
 end
-

@@ -1,6 +1,7 @@
 /*
  *  (c) 1995 Microsoft Corporation. All rights reserved.
- *  Developed by ActiveWare Internet Corp., http://www.ActiveWare.com
+ *  Developed by ActiveWare Internet Corp., now known as
+ *  ActiveState Tool Corp., http://www.ActiveState.com
  *
  *  Other modifications Copyright (c) 1997, 1998 by Gurusamy Sarathy
  *  <gsar@umich.edu> and Jan Dubois <jan.dubois@ibm.net>
@@ -1984,10 +1985,6 @@ fole_s_connect(int argc, VALUE *argv, VALUE self)
 
     rb_scan_args(argc, argv, "1*", &svr_name, &others);
     StringValue(svr_name);
-    if (rb_safe_level() > 0 && OBJ_TAINTED(svr_name)) {
-        rb_raise(rb_eSecurityError, "insecure connection - `%s'",
-		StringValuePtr(svr_name));
-    }
 
     /* get CLSID from OLE server name */
     pBuf = ole_vstr2wc(svr_name);
@@ -2477,16 +2474,8 @@ fole_initialize(int argc, VALUE *argv, VALUE self)
     rb_scan_args(argc, argv, "11*:", &svr_name, &host, &others, &opts);
 
     StringValue(svr_name);
-    if (rb_safe_level() > 0 && OBJ_TAINTED(svr_name)) {
-        rb_raise(rb_eSecurityError, "insecure object creation - `%s'",
-                 StringValuePtr(svr_name));
-    }
     if (!NIL_P(host)) {
         StringValue(host);
-        if (rb_safe_level() > 0 && OBJ_TAINTED(host)) {
-            rb_raise(rb_eSecurityError, "insecure object creation - `%s'",
-                     StringValuePtr(host));
-        }
         return ole_create_dcom(self, svr_name, host, others);
     }
 

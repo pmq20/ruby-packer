@@ -1,4 +1,4 @@
-require File.expand_path('../spec_helper', __FILE__)
+require_relative 'spec_helper'
 
 load_extension("gc")
 
@@ -9,9 +9,9 @@ describe "CApiGCSpecs" do
 
   it "correctly gets the value from a registered address" do
     @f.registered_tagged_address.should == 10
-    @f.registered_tagged_address.object_id.should == @f.registered_tagged_address.object_id
+    @f.registered_tagged_address.should equal(@f.registered_tagged_address)
     @f.registered_reference_address.should == "Globally registered data"
-    @f.registered_reference_address.object_id.should == @f.registered_reference_address.object_id
+    @f.registered_reference_address.should equal(@f.registered_reference_address)
   end
 
   describe "rb_gc_enable" do
@@ -42,13 +42,20 @@ describe "CApiGCSpecs" do
   end
 
   describe "rb_gc" do
-
     it "increases gc count" do
       gc_count = GC.count
       @f.rb_gc
       GC.count.should > gc_count
     end
-
   end
 
+  describe "rb_gc_adjust_memory_usage" do
+    # Just check that it does not throw, as it seems hard to observe any effect
+    it "adjusts the amount of registered external memory" do
+      -> {
+        @f.rb_gc_adjust_memory_usage(8)
+        @f.rb_gc_adjust_memory_usage(-8)
+      }.should_not raise_error
+    end
+  end
 end

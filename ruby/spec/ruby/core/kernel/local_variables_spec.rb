@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Kernel#local_variables" do
   after :each do
@@ -33,5 +33,16 @@ describe "Kernel#local_variables" do
     eval "a=1; b=2; ScratchPad.record local_variables"
     ScratchPad.recorded.should include(:a, :b)
     ScratchPad.recorded.length.should == 2
+  end
+
+  it "includes only unique variable names" do
+    def local_var_method
+      a = 1
+      1.times do |;a|
+        return local_variables
+      end
+    end
+
+    local_var_method.should == [:a]
   end
 end
