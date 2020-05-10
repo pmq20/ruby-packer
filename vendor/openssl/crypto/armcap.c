@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2011-2018 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the OpenSSL license (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -13,6 +13,7 @@
 #include <setjmp.h>
 #include <signal.h>
 #include <openssl/crypto.h>
+#include <internal/cryptlib.h>
 
 #include "arm_arch.h"
 
@@ -69,7 +70,7 @@ static unsigned long (*getauxval) (unsigned long) = NULL;
 # endif
 
 /*
- * ARM puts the the feature bits for Crypto Extensions in AT_HWCAP2, whereas
+ * ARM puts the feature bits for Crypto Extensions in AT_HWCAP2, whereas
  * AArch64 used AT_HWCAP.
  */
 # if defined(__arm__) || defined (__arm)

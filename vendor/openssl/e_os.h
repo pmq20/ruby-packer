@@ -171,7 +171,6 @@ extern "C" {
 #  if !defined(WINNT) && !defined(__DJGPP__)
 #   define NO_SYSLOG
 #  endif
-#  define NO_DIRENT
 
 #  ifdef WINDOWS
 #   if !defined(_WIN32_WCE) && !defined(_WIN32_WINNT)
@@ -344,9 +343,7 @@ extern FILE *_imp___iob;
 #   else
 #    include <unistd.h>
 #   endif
-#   ifndef NO_SYS_TYPES_H
-#    include <sys/types.h>
-#   endif
+#   include <sys/types.h>
 #   ifdef OPENSSL_SYS_WIN32_CYGWIN
 #    include <io.h>
 #    include <fcntl.h>
@@ -521,7 +518,7 @@ struct servent *getservbyname(const char *name, const char *proto);
 # endif
 /* end vxworks */
 
-#define OSSL_NELEM(x)    (sizeof(x)/sizeof(x[0]))
+#define OSSL_NELEM(x)    (sizeof(x)/sizeof((x)[0]))
 
 #ifdef  __cplusplus
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2016 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2018 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the OpenSSL license (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -56,9 +56,21 @@ static DH_METHOD dh_ossl = {
     NULL
 };
 
+static const DH_METHOD *default_DH_method = &dh_ossl;
+
 const DH_METHOD *DH_OpenSSL(void)
 {
     return &dh_ossl;
+}
+
+void DH_set_default_method(const DH_METHOD *meth)
+{
+    default_DH_method = meth;
+}
+
+const DH_METHOD *DH_get_default_method(void)
+{
+    return default_DH_method;
 }
 
 static int generate_key(DH *dh)
@@ -66,9 +78,14 @@ static int generate_key(DH *dh)
     int ok = 0;
     int generate_new_key = 0;
     unsigned l;
-    BN_CTX *ctx;
+    BN_CTX *ctx = NULL;
     BN_MONT_CTX *mont = NULL;
     BIGNUM *pub_key = NULL, *priv_key = NULL;
+
+    if (BN_num_bits(dh->p) > OPENSSL_DH_MAX_MODULUS_BITS) {
+        DHerr(DH_F_GENERATE_KEY, DH_R_MODULUS_TOO_LARGE);
+        return 0;
+    }
 
     ctx = BN_CTX_new();
     if (ctx == NULL)

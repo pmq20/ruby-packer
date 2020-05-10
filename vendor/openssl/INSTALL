@@ -3,7 +3,8 @@
  --------------------
 
  This document describes installation on all supported operating
- systems (the Linux/Unix family, OpenVMS and Windows)
+ systems (the Unix/Linux family (which includes Mac OS/X), OpenVMS,
+ and Windows).
 
  To install OpenSSL, you will need:
 
@@ -76,7 +77,7 @@
 
  If you want to just get on with it, do:
 
-  on Unix:
+  on Unix (again, this includes Mac OS/X):
 
     $ ./config
     $ make
@@ -408,8 +409,9 @@
                    has an impact when not built "shared".
 
   no-stdio
-                   Don't use any C "stdio" features. Only libcrypto and libssl
-                   can be built in this way. Using this option will suppress
+                   Don't use anything from the C header file "stdio.h" that
+                   makes use of the "FILE" type. Only libcrypto and libssl can
+                   be built in this way. Using this option will suppress
                    building the command line applications. Additionally since
                    the OpenSSL tests also use the command line applications the
                    tests will also be skipped.
@@ -678,7 +680,8 @@
      compiler optimization flags from the CFLAGS line in Makefile and
      run "make clean; make" or corresponding.
 
-     Please send bug reports to <rt@openssl.org>.
+     To report a bug please open an issue on GitHub, at
+     https://github.com/openssl/openssl/issues.
 
   4. If everything tests ok, install OpenSSL with
 

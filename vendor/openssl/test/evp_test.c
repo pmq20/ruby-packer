@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2015-2018 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the OpenSSL license (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -273,6 +273,7 @@ static const struct evp_test_method pderive_test_method;
 static const struct evp_test_method pbe_test_method;
 static const struct evp_test_method encode_test_method;
 static const struct evp_test_method kdf_test_method;
+static const struct evp_test_method keypair_test_method;
 
 static const struct evp_test_method *evp_test_list[] = {
     &digest_test_method,
@@ -286,6 +287,7 @@ static const struct evp_test_method *evp_test_list[] = {
     &pbe_test_method,
     &encode_test_method,
     &kdf_test_method,
+    &keypair_test_method,
     NULL
 };
 
@@ -1590,19 +1592,19 @@ static int pderive_test_run(struct evp_test *t)
     struct pkey_data *kdata = t->data;
     unsigned char *out = NULL;
     size_t out_len;
-    const char *err = "INTERNAL_ERROR";
+    const char *err = "DERIVE_ERROR";
 
-    out_len = kdata->output_len;
+    if (EVP_PKEY_derive(kdata->ctx, NULL, &out_len) <= 0)
+        goto err;
     out = OPENSSL_malloc(out_len);
     if (!out) {
         fprintf(stderr, "Error allocating output buffer!\n");
         exit(1);
     }
-    err = "DERIVE_ERROR";
     if (EVP_PKEY_derive(kdata->ctx, out, &out_len) <= 0)
         goto err;
     err = "SHARED_SECRET_LENGTH_MISMATCH";
-    if (out_len != kdata->output_len)
+    if (kdata->output == NULL || out_len != kdata->output_len)
         goto err;
     err = "SHARED_SECRET_MISMATCH";
     if (check_output(t, kdata->output, out, out_len))
@@ -2040,3 +2042,131 @@ static const struct evp_test_method kdf_test_method = {
     kdf_test_parse,
     kdf_test_run
 };
+
+struct keypair_test_data {
+    EVP_PKEY *privk;
+    EVP_PKEY *pubk;
+};
+
+static int keypair_test_init(struct evp_test *t, const char *pair)
+{
+    int rv = 0;
+    EVP_PKEY *pk = NULL, *pubk = NULL;
+    char *pub, *priv = NULL;
+    const char *err = "INTERNAL_ERROR";
+    struct keypair_test_data *data;
+
+    priv = OPENSSL_strdup(pair);
+    if (priv == NULL)
+        return 0;
+    pub = strchr(priv, ':');
+    if ( pub == NULL ) {
+        fprintf(stderr, "Wrong syntax \"%s\"\n", pair);
+        goto end;
+    }
+    *pub++ = 0; /* split priv and pub strings */
+
+    if (find_key(&pk, priv, t->private) == 0) {
+        fprintf(stderr, "Cannot find private key: %s\n", priv);
+        err = "MISSING_PRIVATE_KEY";
+        goto end;
+    }
+    if (find_key(&pubk, pub, t->public) == 0) {
+        fprintf(stderr, "Cannot find public key: %s\n", pub);
+        err = "MISSING_PUBLIC_KEY";
+        goto end;
+    }
+
+    if (pk == NULL && pubk == NULL) {
+        /* Both keys are listed but unsupported: skip this test */
+        t->skip = 1;
+        rv = 1;
+        goto end;
+    }
+
+    data = OPENSSL_malloc(sizeof(*data));
+    if (data == NULL )
+        goto end;
+
+    data->privk = pk;
+    data->pubk = pubk;
+    t->data = data;
+
+    rv = 1;
+    err = NULL;
+
+end:
+    if (priv)
+        OPENSSL_free(priv);
+    t->err = err;
+    return rv;
+}
+
+static void keypair_test_cleanup(struct evp_test *t)
+{
+    struct keypair_test_data *data = t->data;
+    t->data = NULL;
+    if (data)
+        test_free(data);
+    return;
+}
+
+/* For test that do not accept any custom keyword:
+ *      return 0 if called
+ */
+static int void_test_parse(struct evp_test *t, const char *keyword, const char *value)
+{
+    return 0;
+}
+
+static int keypair_test_run(struct evp_test *t)
+{
+    int rv = 0;
+    const struct keypair_test_data *pair = t->data;
+    const char *err = "INTERNAL_ERROR";
+
+    if (pair == NULL)
+        goto end;
+
+    if (pair->privk == NULL || pair->pubk == NULL) {
+        /* this can only happen if only one of the keys is not set
+         * which means that one of them was unsupported while the
+         * other isn't: hence a key type mismatch.
+         */
+        err = "KEYPAIR_TYPE_MISMATCH";
+        rv = 1;
+        goto end;
+    }
+
+    if ((rv = EVP_PKEY_cmp(pair->privk, pair->pubk)) != 1 ) {
+        if ( 0 == rv ) {
+            err = "KEYPAIR_MISMATCH";
+        } else if ( -1 == rv ) {
+            err = "KEYPAIR_TYPE_MISMATCH";
+        } else if ( -2 == rv ) {
+            err = "UNSUPPORTED_KEY_COMPARISON";
+        } else {
+            fprintf(stderr, "Unexpected error in key comparison\n");
+            rv = 0;
+            goto end;
+        }
+        rv = 1;
+        goto end;
+    }
+
+    rv = 1;
+    err = NULL;
+
+end:
+    t->err = err;
+    return rv;
+}
+
+static const struct evp_test_method keypair_test_method = {
+    "PrivPubKeyPair",
+    keypair_test_init,
+    keypair_test_cleanup,
+    void_test_parse,
+    keypair_test_run
+};
+

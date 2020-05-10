@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2016 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2018 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the OpenSSL license (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -472,19 +472,13 @@ static int i2d_name_canon(STACK_OF(STACK_OF_X509_NAME_ENTRY) * _intname,
 
 int X509_NAME_set(X509_NAME **xn, X509_NAME *name)
 {
-    X509_NAME *in;
-
-    if (!xn || !name)
-        return (0);
-
-    if (*xn != name) {
-        in = X509_NAME_dup(name);
-        if (in != NULL) {
-            X509_NAME_free(*xn);
-            *xn = in;
-        }
-    }
-    return (*xn != NULL);
+    if (*xn == name)
+        return *xn != NULL;
+    if ((name = X509_NAME_dup(name)) == NULL)
+        return 0;
+    X509_NAME_free(*xn);
+    *xn = name;
+    return 1;
 }
 
 int X509_NAME_print(BIO *bp, const X509_NAME *name, int obase)

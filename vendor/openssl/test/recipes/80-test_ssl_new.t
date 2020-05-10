@@ -12,8 +12,7 @@ use warnings;
 
 use File::Basename;
 use File::Compare qw/compare_text/;
-use if $^O ne "VMS", 'File::Glob' => qw/glob/;
-
+use OpenSSL::Glob;
 use OpenSSL::Test qw/:DEFAULT srctop_dir srctop_file/;
 use OpenSSL::Test::Utils qw/disabled alldisabled available_protocols/;
 
@@ -29,7 +28,7 @@ map { s/\^// } @conf_files if $^O eq "VMS";
 
 # We hard-code the number of tests to double-check that the globbing above
 # finds all files as expected.
-plan tests => 18;  # = scalar @conf_srcs
+plan tests => 19;  # = scalar @conf_srcs
 
 # Some test results depend on the configuration of enabled protocols. We only
 # verify generated sources in the default configuration.
@@ -76,6 +75,7 @@ my %skip = (
   "15-certstatus.conf" => $no_tls || $no_ocsp,
   "16-dtls-certstatus.conf" => $no_dtls || $no_ocsp,
   "18-dtls-renegotiate.conf" => $no_dtls,
+  "19-mac-then-encrypt.conf" => disabled("tls1_2"),
 );
 
 foreach my $conf (@conf_files) {
@@ -101,7 +101,7 @@ sub test_conf {
 
       skip 'failure', 2 unless
         ok(run(perltest(["generate_ssl_tests.pl", $input_file],
-                        interpreter_args => [ "-I", srctop_dir("test", "testlib")],
+                        interpreter_args => [ "-I", srctop_dir("util", "perl")],
                         stdout => $tmp_file)),
            "Getting output from generate_ssl_tests.pl.");
 

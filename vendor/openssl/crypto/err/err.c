@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2016 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2018 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the OpenSSL license (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -122,6 +122,7 @@ static ERR_STRING_DATA ERR_str_reasons[] = {
 #endif
 
 static CRYPTO_ONCE err_init = CRYPTO_ONCE_STATIC_INIT;
+static int set_err_thread_local;
 static CRYPTO_THREAD_LOCAL err_thread_local;
 
 static CRYPTO_ONCE err_string_init = CRYPTO_ONCE_STATIC_INIT;
@@ -253,14 +254,16 @@ static void ERR_STATE_free(ERR_STATE *s)
 
 DEFINE_RUN_ONCE_STATIC(do_err_strings_init)
 {
-    OPENSSL_init_crypto(0, NULL);
+    if (!OPENSSL_init_crypto(0, NULL))
+        return 0;
     err_string_lock = CRYPTO_THREAD_lock_new();
     return err_string_lock != NULL;
 }
 
 void err_cleanup(void)
 {
-    CRYPTO_THREAD_cleanup_local(&err_thread_local);
+    if (set_err_thread_local != 0)
+        CRYPTO_THREAD_cleanup_local(&err_thread_local);
     CRYPTO_THREAD_lock_free(err_string_lock);
     err_string_lock = NULL;
 }
@@ -359,6 +362,8 @@ void ERR_put_error(int lib, int func, int reason, const char *file, int line)
     }
 #endif
     es = ERR_get_state();
+    if (es == NULL)
+        return;
 
     es->top = (es->top + 1) % ERR_NUM_ERRORS;
     if (es->top == es->bottom)
@@ -376,6 +381,8 @@ void ERR_clear_error(void)
     ERR_STATE *es;
 
     es = ERR_get_state();
+    if (es == NULL)
+        return;
 
     for (i = 0; i < ERR_NUM_ERRORS; i++) {
         err_clear(es, i);
@@ -440,6 +447,8 @@ static unsigned long get_error_values(int inc, int top, const char **file,
     unsigned long ret;
 
     es = ERR_get_state();
+    if (es == NULL)
+        return 0;
 
     if (inc && top) {
         if (file)
@@ -617,7 +626,7 @@ const char *ERR_reason_error_string(unsigned long e)
 
 void err_delete_thread_state(void)
 {
-    ERR_STATE *state = ERR_get_state();
+    ERR_STATE *state = CRYPTO_THREAD_get_local(&err_thread_local);
     if (state == NULL)
         return;
 
@@ -639,43 +648,82 @@ void ERR_remove_state(unsigned long pid)
 
 DEFINE_RUN_ONCE_STATIC(err_do_init)
 {
+    set_err_thread_local = 1;
     return CRYPTO_THREAD_init_local(&err_thread_local, NULL);
 }
 
 ERR_STATE *ERR_get_state(void)
 {
-    ERR_STATE *state = NULL;
+    ERR_STATE *state;
+
+    if (!OPENSSL_init_crypto(OPENSSL_INIT_BASE_ONLY, NULL))
+        return NULL;
 
     if (!RUN_ONCE(&err_init, err_do_init))
         return NULL;
 
     state = CRYPTO_THREAD_get_local(&err_thread_local);
+    if (state == (ERR_STATE*)-1)
+        return NULL;
 
     if (state == NULL) {
-        state = OPENSSL_zalloc(sizeof(*state));
-        if (state == NULL)
+        if (!CRYPTO_THREAD_set_local(&err_thread_local, (ERR_STATE*)-1))
             return NULL;
 
-        if (!CRYPTO_THREAD_set_local(&err_thread_local, state)) {
+        if ((state = OPENSSL_zalloc(sizeof(*state))) == NULL) {
+            CRYPTO_THREAD_set_local(&err_thread_local, NULL);
+            return NULL;
+        }
+
+        if (!ossl_init_thread_start(OPENSSL_INIT_THREAD_ERR_STATE)
+                || !CRYPTO_THREAD_set_local(&err_thread_local, state)) {
             ERR_STATE_free(state);
+            CRYPTO_THREAD_set_local(&err_thread_local, NULL);
             return NULL;
         }
 
         /* Ignore failures from these */
         OPENSSL_init_crypto(OPENSSL_INIT_LOAD_CRYPTO_STRINGS, NULL);
-        ossl_init_thread_start(OPENSSL_INIT_THREAD_ERR_STATE);
     }
 
     return state;
+}
+
+/*
+ * err_shelve_state returns the current thread local error state
+ * and freezes the error module until err_unshelve_state is called.
+ */
+int err_shelve_state(void **state)
+{
+    if (!OPENSSL_init_crypto(OPENSSL_INIT_BASE_ONLY, NULL))
+        return 0;
+
+    if (!RUN_ONCE(&err_init, err_do_init))
+        return 0;
+
+    *state = CRYPTO_THREAD_get_local(&err_thread_local);
+    if (!CRYPTO_THREAD_set_local(&err_thread_local, (ERR_STATE*)-1))
+        return 0;
+
+    return 1;
+}
+
+/*
+ * err_unshelve_state restores the error state that was returned
+ * by err_shelve_state previously.
+ */
+void err_unshelve_state(void* state)
+{
+    if (state != (void*)-1)
+        CRYPTO_THREAD_set_local(&err_thread_local, (ERR_STATE*)state);
 }
 
 int ERR_get_next_error_library(void)
 {
     int ret;
 
-    if (!RUN_ONCE(&err_string_init, do_err_strings_init)) {
+    if (!RUN_ONCE(&err_string_init, do_err_strings_init))
         return 0;
-    }
 
     CRYPTO_THREAD_write_lock(err_string_lock);
     ret = int_err_library_number++;
@@ -689,10 +737,10 @@ void ERR_set_error_data(char *data, int flags)
     int i;
 
     es = ERR_get_state();
+    if (es == NULL)
+        return;
 
     i = es->top;
-    if (i == 0)
-        i = ERR_NUM_ERRORS - 1;
 
     err_clear_data(es, i);
     es->err_data[i] = data;
@@ -744,6 +792,8 @@ int ERR_set_mark(void)
     ERR_STATE *es;
 
     es = ERR_get_state();
+    if (es == NULL)
+        return 0;
 
     if (es->bottom == es->top)
         return 0;
@@ -756,6 +806,8 @@ int ERR_pop_to_mark(void)
     ERR_STATE *es;
 
     es = ERR_get_state();
+    if (es == NULL)
+        return 0;
 
     while (es->bottom != es->top
            && (es->err_flags[es->top] & ERR_FLAG_MARK) == 0) {

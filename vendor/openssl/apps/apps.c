@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2016 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2018 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the OpenSSL license (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -18,9 +18,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifndef NO_SYS_TYPES_H
-# include <sys/types.h>
-#endif
+#include <sys/types.h>
 #ifndef OPENSSL_NO_POSIX_IO
 # include <sys/stat.h>
 # include <fcntl.h>
@@ -1014,7 +1012,8 @@ int set_name_ex(unsigned long *flags, const char *arg)
     };
     if (set_multi_opts(flags, arg, ex_tbl) == 0)
         return 0;
-    if ((*flags & XN_FLAG_SEP_MASK) == 0)
+    if (*flags != XN_FLAG_COMPAT
+        && (*flags & XN_FLAG_SEP_MASK) == 0)
         *flags |= XN_FLAG_SEP_CPLUS_SPC;
     return 1;
 }
@@ -1390,9 +1389,9 @@ int save_serial(const char *serialfile, const char *suffix, const BIGNUM *serial
         OPENSSL_strlcpy(buf[0], serialfile, BSIZE);
     else {
 #ifndef OPENSSL_SYS_VMS
-        j = BIO_snprintf(buf[0], sizeof buf[0], "%s.%s", serialfile, suffix);
+        j = BIO_snprintf(buf[0], sizeof(buf[0]), "%s.%s", serialfile, suffix);
 #else
-        j = BIO_snprintf(buf[0], sizeof buf[0], "%s-%s", serialfile, suffix);
+        j = BIO_snprintf(buf[0], sizeof(buf[0]), "%s-%s", serialfile, suffix);
 #endif
     }
     out = BIO_new_file(buf[0], "w");
@@ -1433,11 +1432,11 @@ int rotate_serial(const char *serialfile, const char *new_suffix,
         goto err;
     }
 #ifndef OPENSSL_SYS_VMS
-    j = BIO_snprintf(buf[0], sizeof buf[0], "%s.%s", serialfile, new_suffix);
-    j = BIO_snprintf(buf[1], sizeof buf[1], "%s.%s", serialfile, old_suffix);
+    j = BIO_snprintf(buf[0], sizeof(buf[0]), "%s.%s", serialfile, new_suffix);
+    j = BIO_snprintf(buf[1], sizeof(buf[1]), "%s.%s", serialfile, old_suffix);
 #else
-    j = BIO_snprintf(buf[0], sizeof buf[0], "%s-%s", serialfile, new_suffix);
-    j = BIO_snprintf(buf[1], sizeof buf[1], "%s-%s", serialfile, old_suffix);
+    j = BIO_snprintf(buf[0], sizeof(buf[0]), "%s-%s", serialfile, new_suffix);
+    j = BIO_snprintf(buf[1], sizeof(buf[1]), "%s-%s", serialfile, old_suffix);
 #endif
     if (rename(serialfile, buf[1]) < 0 && errno != ENOENT
 #ifdef ENOTDIR
@@ -1506,9 +1505,9 @@ CA_DB *load_index(const char *dbfile, DB_ATTR *db_attr)
         goto err;
 
 #ifndef OPENSSL_SYS_VMS
-    BIO_snprintf(buf, sizeof buf, "%s.attr", dbfile);
+    BIO_snprintf(buf, sizeof(buf), "%s.attr", dbfile);
 #else
-    BIO_snprintf(buf, sizeof buf, "%s-attr", dbfile);
+    BIO_snprintf(buf, sizeof(buf), "%s-attr", dbfile);
 #endif
     dbattr_conf = app_load_config(buf);
 
@@ -1569,13 +1568,13 @@ int save_index(const char *dbfile, const char *suffix, CA_DB *db)
         goto err;
     }
 #ifndef OPENSSL_SYS_VMS
-    j = BIO_snprintf(buf[2], sizeof buf[2], "%s.attr", dbfile);
-    j = BIO_snprintf(buf[1], sizeof buf[1], "%s.attr.%s", dbfile, suffix);
-    j = BIO_snprintf(buf[0], sizeof buf[0], "%s.%s", dbfile, suffix);
+    j = BIO_snprintf(buf[2], sizeof(buf[2]), "%s.attr", dbfile);
+    j = BIO_snprintf(buf[1], sizeof(buf[1]), "%s.attr.%s", dbfile, suffix);
+    j = BIO_snprintf(buf[0], sizeof(buf[0]), "%s.%s", dbfile, suffix);
 #else
-    j = BIO_snprintf(buf[2], sizeof buf[2], "%s-attr", dbfile);
-    j = BIO_snprintf(buf[1], sizeof buf[1], "%s-attr-%s", dbfile, suffix);
-    j = BIO_snprintf(buf[0], sizeof buf[0], "%s-%s", dbfile, suffix);
+    j = BIO_snprintf(buf[2], sizeof(buf[2]), "%s-attr", dbfile);
+    j = BIO_snprintf(buf[1], sizeof(buf[1]), "%s-attr-%s", dbfile, suffix);
+    j = BIO_snprintf(buf[0], sizeof(buf[0]), "%s-%s", dbfile, suffix);
 #endif
     out = BIO_new_file(buf[0], "w");
     if (out == NULL) {
@@ -1618,17 +1617,17 @@ int rotate_index(const char *dbfile, const char *new_suffix,
         goto err;
     }
 #ifndef OPENSSL_SYS_VMS
-    j = BIO_snprintf(buf[4], sizeof buf[4], "%s.attr", dbfile);
-    j = BIO_snprintf(buf[3], sizeof buf[3], "%s.attr.%s", dbfile, old_suffix);
-    j = BIO_snprintf(buf[2], sizeof buf[2], "%s.attr.%s", dbfile, new_suffix);
-    j = BIO_snprintf(buf[1], sizeof buf[1], "%s.%s", dbfile, old_suffix);
-    j = BIO_snprintf(buf[0], sizeof buf[0], "%s.%s", dbfile, new_suffix);
+    j = BIO_snprintf(buf[4], sizeof(buf[4]), "%s.attr", dbfile);
+    j = BIO_snprintf(buf[3], sizeof(buf[3]), "%s.attr.%s", dbfile, old_suffix);
+    j = BIO_snprintf(buf[2], sizeof(buf[2]), "%s.attr.%s", dbfile, new_suffix);
+    j = BIO_snprintf(buf[1], sizeof(buf[1]), "%s.%s", dbfile, old_suffix);
+    j = BIO_snprintf(buf[0], sizeof(buf[0]), "%s.%s", dbfile, new_suffix);
 #else
-    j = BIO_snprintf(buf[4], sizeof buf[4], "%s-attr", dbfile);
-    j = BIO_snprintf(buf[3], sizeof buf[3], "%s-attr-%s", dbfile, old_suffix);
-    j = BIO_snprintf(buf[2], sizeof buf[2], "%s-attr-%s", dbfile, new_suffix);
-    j = BIO_snprintf(buf[1], sizeof buf[1], "%s-%s", dbfile, old_suffix);
-    j = BIO_snprintf(buf[0], sizeof buf[0], "%s-%s", dbfile, new_suffix);
+    j = BIO_snprintf(buf[4], sizeof(buf[4]), "%s-attr", dbfile);
+    j = BIO_snprintf(buf[3], sizeof(buf[3]), "%s-attr-%s", dbfile, old_suffix);
+    j = BIO_snprintf(buf[2], sizeof(buf[2]), "%s-attr-%s", dbfile, new_suffix);
+    j = BIO_snprintf(buf[1], sizeof(buf[1]), "%s-%s", dbfile, old_suffix);
+    j = BIO_snprintf(buf[0], sizeof(buf[0]), "%s-%s", dbfile, new_suffix);
 #endif
     if (rename(dbfile, buf[1]) < 0 && errno != ENOENT
 #ifdef ENOTDIR
@@ -1708,8 +1707,14 @@ X509_NAME *parse_name(const char *cp, long chtype, int canmulti)
     char *work;
     X509_NAME *n;
 
-    if (*cp++ != '/')
+    if (*cp++ != '/') {
+        BIO_printf(bio_err,
+                   "name is expected to be in the format "
+                   "/type0=value0/type1=value1/type2=... where characters may "
+                   "be escaped by \\. This name is not in that format: '%s'\n",
+                   --cp);
         return NULL;
+    }
 
     n = X509_NAME_new();
     if (n == NULL)
@@ -1763,6 +1768,12 @@ X509_NAME *parse_name(const char *cp, long chtype, int canmulti)
         if (nid == NID_undef) {
             BIO_printf(bio_err, "%s: Skipping unknown attribute \"%s\"\n",
                       opt_getprog(), typestr);
+            continue;
+        }
+        if (*valstr == '\0') {
+            BIO_printf(bio_err,
+                       "%s: No value provided for Subject Attribute %s, skipped\n",
+                       opt_getprog(), typestr);
             continue;
         }
         if (!X509_NAME_add_entry_by_NID(n, nid, chtype,
@@ -2255,29 +2266,27 @@ int app_access(const char* name, int flag)
 #ifdef _WIN32
 int app_isdir(const char *name)
 {
-    HANDLE hList;
-    WIN32_FIND_DATA FileData;
+    DWORD attr;
 # if defined(UNICODE) || defined(_UNICODE)
     size_t i, len_0 = strlen(name) + 1;
+    WCHAR tempname[MAX_PATH];
 
-    if (len_0 > OSSL_NELEM(FileData.cFileName))
+    if (len_0 > MAX_PATH)
         return -1;
 
 #  if !defined(_WIN32_WCE) || _WIN32_WCE>=101
-    if (!MultiByteToWideChar
-        (CP_ACP, 0, name, len_0, FileData.cFileName, len_0))
+    if (!MultiByteToWideChar(CP_ACP, 0, name, len_0, tempname, MAX_PATH))
 #  endif
         for (i = 0; i < len_0; i++)
-            FileData.cFileName[i] = (WCHAR)name[i];
+            tempname[i] = (WCHAR)name[i];
 
-    hList = FindFirstFile(FileData.cFileName, &FileData);
+    attr = GetFileAttributes(tempname);
 # else
-    hList = FindFirstFile(name, &FileData);
+    attr = GetFileAttributes(name);
 # endif
-    if (hList == INVALID_HANDLE_VALUE)
+    if (attr == INVALID_FILE_ATTRIBUTES)
         return -1;
-    FindClose(hList);
-    return ((FileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0);
+    return ((attr & FILE_ATTRIBUTE_DIRECTORY) != 0);
 }
 #else
 # include <sys/stat.h>
@@ -2575,6 +2584,7 @@ void wait_for_async(SSL *s)
     fd_set asyncfds;
     OSSL_ASYNC_FD *fds;
     size_t numfds;
+    size_t i;
 
     if (!SSL_get_all_async_fds(s, NULL, &numfds))
         return;
@@ -2583,17 +2593,17 @@ void wait_for_async(SSL *s)
     fds = app_malloc(sizeof(OSSL_ASYNC_FD) * numfds, "allocate async fds");
     if (!SSL_get_all_async_fds(s, fds, &numfds)) {
         OPENSSL_free(fds);
+        return;
     }
 
     FD_ZERO(&asyncfds);
-    while (numfds > 0) {
-        if (width <= (int)*fds)
-            width = (int)*fds + 1;
-        openssl_fdset((int)*fds, &asyncfds);
-        numfds--;
-        fds++;
+    for (i = 0; i < numfds; i++) {
+        if (width <= (int)fds[i])
+            width = (int)fds[i] + 1;
+        openssl_fdset((int)fds[i], &asyncfds);
     }
     select(width, (void *)&asyncfds, NULL, NULL, NULL);
+    OPENSSL_free(fds);
 #endif
 }
 

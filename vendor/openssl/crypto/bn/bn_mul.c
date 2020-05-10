@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2016 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2018 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the OpenSSL license (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -115,10 +115,12 @@ BN_ULONG bn_sub_part_words(BN_ULONG *r,
                     r[1] = a[1];
                     if (--dl <= 0)
                         break;
+                    /* fall thru */
                 case 2:
                     r[2] = a[2];
                     if (--dl <= 0)
                         break;
+                    /* fall thru */
                 case 3:
                     r[3] = a[3];
                     if (--dl <= 0)
@@ -206,10 +208,12 @@ BN_ULONG bn_add_part_words(BN_ULONG *r,
                     r[1] = b[1];
                     if (++dl >= 0)
                         break;
+                    /* fall thru */
                 case 2:
                     r[2] = b[2];
                     if (++dl >= 0)
                         break;
+                    /* fall thru */
                 case 3:
                     r[3] = b[3];
                     if (++dl >= 0)
@@ -276,10 +280,12 @@ BN_ULONG bn_add_part_words(BN_ULONG *r,
                     r[1] = a[1];
                     if (--dl <= 0)
                         break;
+                    /* fall thru */
                 case 2:
                     r[2] = a[2];
                     if (--dl <= 0)
                         break;
+                    /* fall thru */
                 case 3:
                     r[3] = a[3];
                     if (--dl <= 0)
@@ -827,6 +833,16 @@ void bn_mul_high(BN_ULONG *r, BN_ULONG *a, BN_ULONG *b, BN_ULONG *l, int n2,
 
 int BN_mul(BIGNUM *r, const BIGNUM *a, const BIGNUM *b, BN_CTX *ctx)
 {
+    int ret = bn_mul_fixed_top(r, a, b, ctx);
+
+    bn_correct_top(r);
+    bn_check_top(r);
+
+    return ret;
+}
+
+int bn_mul_fixed_top(BIGNUM *r, const BIGNUM *a, const BIGNUM *b, BN_CTX *ctx)
+{
     int ret = 0;
     int top, al, bl;
     BIGNUM *rr;
@@ -918,46 +934,6 @@ int BN_mul(BIGNUM *r, const BIGNUM *a, const BIGNUM *b, BN_CTX *ctx)
             rr->top = top;
             goto end;
         }
-# if 0
-        if (i == 1 && !BN_get_flags(b, BN_FLG_STATIC_DATA)) {
-            BIGNUM *tmp_bn = (BIGNUM *)b;
-            if (bn_wexpand(tmp_bn, al) == NULL)
-                goto err;
-            tmp_bn->d[bl] = 0;
-            bl++;
-            i--;
-        } else if (i == -1 && !BN_get_flags(a, BN_FLG_STATIC_DATA)) {
-            BIGNUM *tmp_bn = (BIGNUM *)a;
-            if (bn_wexpand(tmp_bn, bl) == NULL)
-                goto err;
-            tmp_bn->d[al] = 0;
-            al++;
-            i++;
-        }
-        if (i == 0) {
-            /* symmetric and > 4 */
-            /* 16 or larger */
-            j = BN_num_bits_word((BN_ULONG)al);
-            j = 1 << (j - 1);
-            k = j + j;
-            t = BN_CTX_get(ctx);
-            if (al == j) {      /* exact multiple */
-                if (bn_wexpand(t, k * 2) == NULL)
-                    goto err;
-                if (bn_wexpand(rr, k * 2) == NULL)
-                    goto err;
-                bn_mul_recursive(rr->d, a->d, b->d, al, t->d);
-            } else {
-                if (bn_wexpand(t, k * 4) == NULL)
-                    goto err;
-                if (bn_wexpand(rr, k * 4) == NULL)
-                    goto err;
-                bn_mul_part_recursive(rr->d, a->d, b->d, al - j, j, t->d);
-            }
-            rr->top = top;
-            goto end;
-        }
-# endif
     }
 #endif                          /* BN_RECURSION */
     if (bn_wexpand(rr, top) == NULL)
@@ -969,7 +945,7 @@ int BN_mul(BIGNUM *r, const BIGNUM *a, const BIGNUM *b, BN_CTX *ctx)
  end:
 #endif
     rr->neg = a->neg ^ b->neg;
-    bn_correct_top(rr);
+    rr->flags |= BN_FLG_FIXED_TOP;
     if (r != rr && BN_copy(r, rr) == NULL)
         goto err;
 

@@ -79,9 +79,9 @@ int passwd_main(int argc, char **argv)
     char *salt_malloc = NULL, *passwd_malloc = NULL, *prog;
     OPTION_CHOICE o;
     int in_stdin = 0, pw_source_defined = 0;
-#ifndef OPENSSL_NO_UI
+# ifndef OPENSSL_NO_UI
     int in_noverify = 0;
-#endif
+# endif
     int passed_salt = 0, quiet = 0, table = 0, reverse = 0;
     int ret = 1, usecrypt = 0, use1 = 0, useapr1 = 0;
     size_t passwd_malloc_size = 0, pw_maxlen = 256;
@@ -105,9 +105,9 @@ int passwd_main(int argc, char **argv)
             pw_source_defined = 1;
             break;
         case OPT_NOVERIFY:
-#ifndef OPENSSL_NO_UI
+# ifndef OPENSSL_NO_UI
             in_noverify = 1;
-#endif
+# endif
             break;
         case OPT_QUIET:
             quiet = 1;
@@ -198,25 +198,30 @@ int passwd_main(int argc, char **argv)
     }
 
     if ((in == NULL) && (passwds == NULL)) {
+        /*
+         * we use the following method to make sure what
+         * in the 'else' section is always compiled, to
+         * avoid rot of not-frequently-used code.
+         */
         if (1) {
-#ifndef OPENSSL_NO_UI
+# ifndef OPENSSL_NO_UI
             /* build a null-terminated list */
             static char *passwds_static[2] = { NULL, NULL };
 
             passwds = passwds_static;
-            if (in == NULL)
+            if (in == NULL) {
                 if (EVP_read_pw_string
                     (passwd_malloc, passwd_malloc_size, "Password: ",
                      !(passed_salt || in_noverify)) != 0)
                     goto end;
+            }
             passwds[0] = passwd_malloc;
         } else {
-#endif
+# endif
             BIO_printf(bio_err, "password required\n");
             goto end;
         }
     }
-
 
     if (in == NULL) {
         assert(passwds != NULL);
@@ -228,11 +233,9 @@ int passwd_main(int argc, char **argv)
                            quiet, table, reverse, pw_maxlen, usecrypt, use1,
                            useapr1))
                 goto end;
-        }
-        while (*passwds != NULL);
-    } else
+        } while (*passwds != NULL);
+    } else {
         /* in != NULL */
-    {
         int done;
 
         assert(passwd != NULL);
@@ -240,13 +243,13 @@ int passwd_main(int argc, char **argv)
             int r = BIO_gets(in, passwd, pw_maxlen + 1);
             if (r > 0) {
                 char *c = (strchr(passwd, '\n'));
-                if (c != NULL)
+                if (c != NULL) {
                     *c = 0;     /* truncate at newline */
-                else {
+                } else {
                     /* ignore rest of line */
                     char trash[BUFSIZ];
                     do
-                        r = BIO_gets(in, trash, sizeof trash);
+                        r = BIO_gets(in, trash, sizeof(trash));
                     while ((r > 0) && (!strchr(trash, '\n')));
                 }
 
@@ -256,8 +259,7 @@ int passwd_main(int argc, char **argv)
                     goto end;
             }
             done = (r <= 0);
-        }
-        while (!done);
+        } while (!done);
     }
     ret = 0;
 
@@ -298,9 +300,9 @@ static char *md5crypt(const char *passwd, const char *magic, const char *salt)
     if (magic_len > 4)    /* assert it's  "1" or "apr1" */
         return NULL;
 
-    OPENSSL_strlcat(out_buf, magic, sizeof out_buf);
-    OPENSSL_strlcat(out_buf, "$", sizeof out_buf);
-    OPENSSL_strlcat(out_buf, salt, sizeof out_buf);
+    OPENSSL_strlcat(out_buf, magic, sizeof(out_buf));
+    OPENSSL_strlcat(out_buf, "$", sizeof(out_buf));
+    OPENSSL_strlcat(out_buf, salt, sizeof(out_buf));
 
     if (strlen(out_buf) > 6 + 8) /* assert "$apr1$..salt.." */
         return NULL;
@@ -330,8 +332,8 @@ static char *md5crypt(const char *passwd, const char *magic, const char *salt)
         || !EVP_DigestFinal_ex(md2, buf, NULL))
         goto err;
 
-    for (i = passwd_len; i > sizeof buf; i -= sizeof buf) {
-        if (!EVP_DigestUpdate(md, buf, sizeof buf))
+    for (i = passwd_len; i > sizeof(buf); i -= sizeof(buf)) {
+        if (!EVP_DigestUpdate(md, buf, sizeof(buf)))
             goto err;
     }
     if (!EVP_DigestUpdate(md, buf, i))
@@ -351,7 +353,7 @@ static char *md5crypt(const char *passwd, const char *magic, const char *salt)
             goto err;
         if (!EVP_DigestUpdate(md2,
                               (i & 1) ? (unsigned const char *)passwd : buf,
-                              (i & 1) ? passwd_len : sizeof buf))
+                              (i & 1) ? passwd_len : sizeof(buf)))
             goto err;
         if (i % 3) {
             if (!EVP_DigestUpdate(md2, salt_out, salt_len))
@@ -363,7 +365,7 @@ static char *md5crypt(const char *passwd, const char *magic, const char *salt)
         }
         if (!EVP_DigestUpdate(md2,
                               (i & 1) ? buf : (unsigned const char *)passwd,
-                              (i & 1) ? sizeof buf : passwd_len))
+                              (i & 1) ? sizeof(buf) : passwd_len))
                 goto err;
         if (!EVP_DigestFinal_ex(md2, buf, NULL))
                 goto err;
@@ -375,7 +377,7 @@ static char *md5crypt(const char *passwd, const char *magic, const char *salt)
 
     {
         /* transform buf into output string */
-        unsigned char buf_perm[sizeof buf];
+        unsigned char buf_perm[sizeof(buf)];
         int dest, source;
         char *output;
 
@@ -387,7 +389,7 @@ static char *md5crypt(const char *passwd, const char *magic, const char *salt)
         buf_perm[15] = buf[11];
 #  ifndef PEDANTIC              /* Unfortunately, this generates a "no
                                  * effect" warning */
-        assert(16 == sizeof buf_perm);
+        assert(16 == sizeof(buf_perm));
 #  endif
 
         output = salt_out + salt_len;
@@ -433,9 +435,8 @@ static int do_passwd(int passed_salt, char **salt_p, char **salt_malloc_p,
     if (!passed_salt) {
 # ifndef OPENSSL_NO_DES
         if (usecrypt) {
-            if (*salt_malloc_p == NULL) {
+            if (*salt_malloc_p == NULL)
                 *salt_p = *salt_malloc_p = app_malloc(3, "salt buffer");
-            }
             if (RAND_bytes((unsigned char *)*salt_p, 2) <= 0)
                 goto end;
             (*salt_p)[0] = cov_2char[(*salt_p)[0] & 0x3f]; /* 6 bits */
@@ -452,9 +453,8 @@ static int do_passwd(int passed_salt, char **salt_p, char **salt_malloc_p,
         if (use1 || useapr1) {
             int i;
 
-            if (*salt_malloc_p == NULL) {
+            if (*salt_malloc_p == NULL)
                 *salt_p = *salt_malloc_p = app_malloc(9, "salt buffer");
-            }
             if (RAND_bytes((unsigned char *)*salt_p, 8) <= 0)
                 goto end;
 

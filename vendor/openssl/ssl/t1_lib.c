@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2016 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2018 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the OpenSSL license (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -408,7 +408,7 @@ int tls1_set_curves(unsigned char **pext, size_t *pextlen,
     return 1;
 }
 
-# define MAX_CURVELIST   28
+# define MAX_CURVELIST   OSSL_NELEM(nid_list)
 
 typedef struct {
     size_t nidcnt;
@@ -490,13 +490,16 @@ static int tls1_set_ec_id(unsigned char *curve_id, unsigned char *comp_id,
     return 1;
 }
 
+# define DONT_CHECK_OWN_GROUPS  0
+# define CHECK_OWN_GROUPS       1
 /* Check an EC key is compatible with extensions */
-static int tls1_check_ec_key(SSL *s,
-                             unsigned char *curve_id, unsigned char *comp_id)
+static int tls1_check_ec_key(SSL *s, unsigned char *curve_id,
+                             unsigned char *comp_id, int check_own_groups)
 {
     const unsigned char *pformats, *pcurves;
     size_t num_formats, num_curves, i;
     int j;
+
     /*
      * If point formats extension present check it, otherwise everything is
      * supported (see RFC4492).
@@ -513,8 +516,12 @@ static int tls1_check_ec_key(SSL *s,
     }
     if (!curve_id)
         return 1;
+
+    if (!s->server && !check_own_groups)
+        return 1;
+
     /* Check curve is consistent with client and server preferences */
-    for (j = 0; j <= 1; j++) {
+    for (j = check_own_groups ? 0 : 1; j <= 1; j++) {
         if (!tls1_get_curvelist(s, j, &pcurves, &num_curves))
             return 0;
         if (j == 1 && num_curves == 0) {
@@ -579,9 +586,12 @@ static int tls1_check_cert_param(SSL *s, X509 *x, int set_ee_md)
         return 0;
     /*
      * Can't check curve_id for client certs as we don't have a supported
-     * curves extension.
+     * curves extension. For server certs we will tolerate certificates that
+     * aren't in our own list of curves. If we've been configured to use an EC
+     * cert then we should use it - therefore we use DONT_CHECK_OWN_GROUPS here.
      */
-    rv = tls1_check_ec_key(s, s->server ? curve_id : NULL, &comp_id);
+    rv = tls1_check_ec_key(s, s->server ? curve_id : NULL, &comp_id,
+                           DONT_CHECK_OWN_GROUPS);
     if (!rv)
         return 0;
     /*
@@ -644,7 +654,7 @@ int tls1_check_ec_tmp_key(SSL *s, unsigned long cid)
             return 0;
         curve_id[0] = 0;
         /* Check this curve is acceptable */
-        if (!tls1_check_ec_key(s, curve_id, NULL))
+        if (!tls1_check_ec_key(s, curve_id, NULL, CHECK_OWN_GROUPS))
             return 0;
         return 1;
     }
@@ -746,8 +756,9 @@ size_t tls12_get_psigalgs(SSL *s, int sent, const unsigned char **psigs)
 }
 
 /*
- * Check signature algorithm is consistent with sent supported signature
- * algorithms and if so return relevant digest.
+ * Check signature algorithm received from the peer with a signature is
+ * consistent with the sent supported signature algorithms and if so return
+ * relevant digest.
  */
 int tls12_check_peer_sigalg(const EVP_MD **pmd, SSL *s,
                             const unsigned char *sig, EVP_PKEY *pkey)
@@ -769,7 +780,8 @@ int tls12_check_peer_sigalg(const EVP_MD **pmd, SSL *s,
         /* Check compression and curve matches extensions */
         if (!tls1_set_ec_id(curve_id, &comp_id, EVP_PKEY_get0_EC_KEY(pkey)))
             return 0;
-        if (!s->server && !tls1_check_ec_key(s, curve_id, &comp_id)) {
+        if (!s->server && !tls1_check_ec_key(s, curve_id, &comp_id,
+                                             CHECK_OWN_GROUPS)) {
             SSLerr(SSL_F_TLS12_CHECK_PEER_SIGALG, SSL_R_WRONG_CURVE);
             return 0;
         }
@@ -863,19 +875,31 @@ void ssl_set_client_disabled(SSL *s)
  * @s: SSL connection that you want to use the cipher on
  * @c: cipher to check
  * @op: Security check that you want to do
+ * @ecdhe: If set to 1 then TLSv1 ECDHE ciphers are also allowed in SSLv3
  *
  * Returns 1 when it's disabled, 0 when enabled.
  */
-int ssl_cipher_disabled(SSL *s, const SSL_CIPHER *c, int op)
+int ssl_cipher_disabled(SSL *s, const SSL_CIPHER *c, int op, int ecdhe)
 {
     if (c->algorithm_mkey & s->s3->tmp.mask_k
         || c->algorithm_auth & s->s3->tmp.mask_a)
         return 1;
     if (s->s3->tmp.max_ver == 0)
         return 1;
-    if (!SSL_IS_DTLS(s) && ((c->min_tls > s->s3->tmp.max_ver)
-                            || (c->max_tls < s->s3->tmp.min_ver)))
-        return 1;
+    if (!SSL_IS_DTLS(s)) {
+        int min_tls = c->min_tls;
+
+        /*
+         * For historical reasons we will allow ECHDE to be selected by a server
+         * in SSLv3 if we are a client
+         */
+        if (min_tls == TLS1_VERSION && ecdhe
+                && (c->algorithm_mkey & (SSL_kECDHE | SSL_kECDHEPSK)) != 0)
+            min_tls = SSL3_VERSION;
+
+        if ((min_tls > s->s3->tmp.max_ver) || (c->max_tls < s->s3->tmp.min_ver))
+            return 1;
+    }
     if (SSL_IS_DTLS(s) && (DTLS_VERSION_GT(c->min_dtls, s->s3->tmp.max_ver)
                            || DTLS_VERSION_LT(c->max_dtls, s->s3->tmp.min_ver)))
         return 1;
@@ -1185,30 +1209,6 @@ unsigned char *ssl_add_clienthello_tlsext(SSL *s, unsigned char *buf,
     }
  skip_ext:
 
-    if (SSL_CLIENT_USE_SIGALGS(s)) {
-        size_t salglen;
-        const unsigned char *salg;
-        unsigned char *etmp;
-        salglen = tls12_get_psigalgs(s, 1, &salg);
-
-        /*-
-         * check for enough space.
-         * 4 bytes for the sigalgs type and extension length
-         * 2 bytes for the sigalg list length
-         * + sigalg list length
-         */
-        if (CHECKLEN(ret, salglen + 6, limit))
-            return NULL;
-        s2n(TLSEXT_TYPE_signature_algorithms, ret);
-        etmp = ret;
-        /* Skip over lengths for now */
-        ret += 4;
-        salglen = tls12_copy_sigalgs(s, ret, salg, salglen);
-        /* Fill in lengths */
-        s2n(salglen + 2, etmp);
-        s2n(salglen, etmp);
-        ret += salglen;
-    }
 #ifndef OPENSSL_NO_OCSP
     if (s->tlsext_status_type == TLSEXT_STATUSTYPE_ocsp) {
         int i;
@@ -1368,8 +1368,9 @@ unsigned char *ssl_add_clienthello_tlsext(SSL *s, unsigned char *buf,
      * silently failed to actually do it. It is fixed in 1.1.1 but to
      * ease the transition especially from 1.1.0b to 1.1.0c, we just
      * disable it in 1.1.0.
+     * Also skip if SSL_OP_NO_ENCRYPT_THEN_MAC is set.
      */
-    if (!SSL_IS_DTLS(s)) {
+    if (!SSL_IS_DTLS(s) && !(s->options & SSL_OP_NO_ENCRYPT_THEN_MAC)) {
         /*-
          * check for enough space.
          * 4 bytes for the ETM type and extension length
@@ -1404,10 +1405,41 @@ unsigned char *ssl_add_clienthello_tlsext(SSL *s, unsigned char *buf,
     s2n(0, ret);
 
     /*
+     * WebSphere application server can not handle having the
+     * last extension be 0-length (e.g. EMS, EtM), so keep those
+     * before SigAlgs
+     */
+    if (SSL_CLIENT_USE_SIGALGS(s)) {
+        size_t salglen;
+        const unsigned char *salg;
+        unsigned char *etmp;
+        salglen = tls12_get_psigalgs(s, 1, &salg);
+
+        /*-
+         * check for enough space.
+         * 4 bytes for the sigalgs type and extension length
+         * 2 bytes for the sigalg list length
+         * + sigalg list length
+         */
+        if (CHECKLEN(ret, salglen + 6, limit))
+            return NULL;
+        s2n(TLSEXT_TYPE_signature_algorithms, ret);
+        etmp = ret;
+        /* Skip over lengths for now */
+        ret += 4;
+        salglen = tls12_copy_sigalgs(s, ret, salg, salglen);
+        /* Fill in lengths */
+        s2n(salglen + 2, etmp);
+        s2n(salglen, etmp);
+        ret += salglen;
+    }
+
+    /*
      * Add padding to workaround bugs in F5 terminators. See
      * https://tools.ietf.org/html/draft-agl-tls-padding-03 NB: because this
      * code works out the length of all existing extensions it MUST always
-     * appear last.
+     * appear last. WebSphere 7.x/8.x is intolerant of empty extensions
+     * being last, so minimum length of 1.
      */
     if (s->options & SSL_OP_TLSEXT_PADDING) {
         int hlen = ret - (unsigned char *)s->init_buf->data;
@@ -1417,7 +1449,7 @@ unsigned char *ssl_add_clienthello_tlsext(SSL *s, unsigned char *buf,
             if (hlen >= 4)
                 hlen -= 4;
             else
-                hlen = 0;
+                hlen = 1;
 
             /*-
              * check for enough space. Strictly speaking we know we've already
@@ -1469,6 +1501,7 @@ unsigned char *ssl_add_serverhello_tlsext(SSL *s, unsigned char *buf,
     if (s->s3->send_connection_binding) {
         int el;
 
+        /* Still add this even if SSL_OP_NO_RENEGOTIATION is set */
         if (!ssl_add_serverhello_renegotiate_ext(s, 0, &el, 0)) {
             SSLerr(SSL_F_SSL_ADD_SERVERHELLO_TLSEXT, ERR_R_INTERNAL_ERROR);
             return NULL;
@@ -2123,6 +2156,10 @@ static int ssl_scan_clienthello_tlsext(SSL *s, PACKET *pkt, int *al)
                 }
             }
         } else if (type == TLSEXT_TYPE_status_request) {
+            /* Ignore this if resuming */
+            if (s->hit)
+                continue;
+
             if (!PACKET_get_1(&extension,
                               (unsigned int *)&s->tlsext_status_type)) {
                 return 0;
@@ -2266,7 +2303,8 @@ static int ssl_scan_clienthello_tlsext(SSL *s, PACKET *pkt, int *al)
                 return 0;
         }
 #endif
-        else if (type == TLSEXT_TYPE_encrypt_then_mac)
+        else if (type == TLSEXT_TYPE_encrypt_then_mac &&
+                 !(s->options & SSL_OP_NO_ENCRYPT_THEN_MAC))
             s->tlsext_use_etm = 1;
         /*
          * Note: extended master secret extension handled in
@@ -2586,7 +2624,8 @@ static int ssl_scan_serverhello_tlsext(SSL *s, PACKET *pkt, int *al)
 #endif
         else if (type == TLSEXT_TYPE_encrypt_then_mac) {
             /* Ignore if inappropriate ciphersuite */
-            if (s->s3->tmp.new_cipher->algorithm_mac != SSL_AEAD
+            if (!(s->options & SSL_OP_NO_ENCRYPT_THEN_MAC) &&
+                s->s3->tmp.new_cipher->algorithm_mac != SSL_AEAD
                 && s->s3->tmp.new_cipher->algorithm_enc != SSL_RC4)
                 s->tlsext_use_etm = 1;
         } else if (type == TLSEXT_TYPE_extended_master_secret) {
@@ -2705,6 +2744,7 @@ static int ssl_check_clienthello_tlsext_early(SSL *s)
 
     case SSL_TLSEXT_ERR_NOACK:
         s->servername_done = 0;
+        /* fall thru */
     default:
         return 1;
     }
@@ -2760,7 +2800,7 @@ int tls1_set_server_sigalgs(SSL *s)
         if (!s->cert->shared_sigalgs) {
             SSLerr(SSL_F_TLS1_SET_SERVER_SIGALGS,
                    SSL_R_NO_SHARED_SIGNATURE_ALGORITHMS);
-            al = SSL_AD_ILLEGAL_PARAMETER;
+            al = SSL_AD_HANDSHAKE_FAILURE;
             goto err;
         }
     } else {
@@ -2892,6 +2932,7 @@ int ssl_check_serverhello_tlsext(SSL *s)
 
     case SSL_TLSEXT_ERR_NOACK:
         s->servername_done = 0;
+        /* fall thru */
     default:
         return 1;
     }
@@ -3086,8 +3127,14 @@ static int tls_decrypt_ticket(SSL *s, const unsigned char *etick,
     int slen, mlen, renew_ticket = 0, ret = -1;
     unsigned char tick_hmac[EVP_MAX_MD_SIZE];
     HMAC_CTX *hctx = NULL;
-    EVP_CIPHER_CTX *ctx;
+    EVP_CIPHER_CTX *ctx = NULL;
     SSL_CTX *tctx = s->session_ctx;
+
+    /* Need at least keyname + iv */
+    if (eticklen < TLSEXT_KEYNAME_LENGTH + EVP_MAX_IV_LENGTH) {
+        ret = 2;
+        goto err;
+    }
 
     /* Initialize session ticket encryption and HMAC contexts */
     hctx = HMAC_CTX_new();
@@ -3100,7 +3147,8 @@ static int tls_decrypt_ticket(SSL *s, const unsigned char *etick,
     }
     if (tctx->tlsext_ticket_key_cb) {
         unsigned char *nctick = (unsigned char *)etick;
-        int rv = tctx->tlsext_ticket_key_cb(s, nctick, nctick + 16,
+        int rv = tctx->tlsext_ticket_key_cb(s, nctick,
+                                            nctick + TLSEXT_KEYNAME_LENGTH,
                                             ctx, hctx, 0);
         if (rv < 0)
             goto err;
@@ -3113,7 +3161,7 @@ static int tls_decrypt_ticket(SSL *s, const unsigned char *etick,
     } else {
         /* Check key name matches */
         if (memcmp(etick, tctx->tlsext_tick_key_name,
-                   sizeof(tctx->tlsext_tick_key_name)) != 0) {
+                   TLSEXT_KEYNAME_LENGTH) != 0) {
             ret = 2;
             goto err;
         }
@@ -3122,8 +3170,7 @@ static int tls_decrypt_ticket(SSL *s, const unsigned char *etick,
                          EVP_sha256(), NULL) <= 0
             || EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), NULL,
                                   tctx->tlsext_tick_aes_key,
-                                  etick + sizeof(tctx->tlsext_tick_key_name)) <=
-            0) {
+                                  etick + TLSEXT_KEYNAME_LENGTH) <= 0) {
             goto err;
         }
     }
@@ -4094,13 +4141,16 @@ DH *ssl_get_auto_dh(SSL *s)
         if (dhp == NULL)
             return NULL;
         g = BN_new();
-        if (g != NULL)
-            BN_set_word(g, 2);
+        if (g == NULL || !BN_set_word(g, 2)) {
+            DH_free(dhp);
+            BN_free(g);
+            return NULL;
+        }
         if (dh_secbits >= 192)
             p = BN_get_rfc3526_prime_8192(NULL);
         else
             p = BN_get_rfc3526_prime_3072(NULL);
-        if (p == NULL || g == NULL || !DH_set0_pqg(dhp, p, NULL, g)) {
+        if (p == NULL || !DH_set0_pqg(dhp, p, NULL, g)) {
             DH_free(dhp);
             BN_free(p);
             BN_free(g);
@@ -4141,6 +4191,9 @@ static int ssl_security_cert_sig(SSL *s, SSL_CTX *ctx, X509 *x, int op)
     if ((X509_get_extension_flags(x) & EXFLAG_SS) != 0)
         return 1;
     sig_nid = X509_get_signature_nid(x);
+    /* We are not able to look up the CA MD for RSA PSS in this version */
+    if (sig_nid == NID_rsassaPss)
+        return 1;
     if (sig_nid && OBJ_find_sigid_algs(sig_nid, &md_nid, NULL)) {
         const EVP_MD *md;
         if (md_nid && (md = EVP_get_digestbynid(md_nid)))

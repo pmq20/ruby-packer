@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2016 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2003-2018 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the OpenSSL license (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -9,6 +9,7 @@
 
 #include <stdio.h>
 #include "internal/cryptlib.h"
+#include "internal/numbers.h"
 #include "internal/asn1_int.h"
 #include <openssl/asn1t.h>
 #include <openssl/conf.h>
@@ -61,6 +62,46 @@ ASN1_SEQUENCE(NAME_CONSTRAINTS) = {
 
 IMPLEMENT_ASN1_ALLOC_FUNCTIONS(GENERAL_SUBTREE)
 IMPLEMENT_ASN1_ALLOC_FUNCTIONS(NAME_CONSTRAINTS)
+
+/*
+ * We cannot use strncasecmp here because that applies locale specific rules.
+ * For example in Turkish 'I' is not the uppercase character for 'i'. We need to
+ * do a simple ASCII case comparison ignoring the locale (that is why we use
+ * numeric constants below).
+ */
+static int ia5ncasecmp(const char *s1, const char *s2, size_t n)
+{
+    for (; n > 0; n--, s1++, s2++) {
+        if (*s1 != *s2) {
+            unsigned char c1 = (unsigned char)*s1, c2 = (unsigned char)*s2;
+
+            /* Convert to lower case */
+            if (c1 >= 0x41 /* A */ && c1 <= 0x5A /* Z */)
+                c1 += 0x20;
+            if (c2 >= 0x41 /* A */ && c2 <= 0x5A /* Z */)
+                c2 += 0x20;
+
+            if (c1 == c2)
+                continue;
+
+            if (c1 < c2)
+                return -1;
+
+            /* c1 > c2 */
+            return 1;
+        } else if (*s1 == 0) {
+            /* If we get here we know that *s2 == 0 too */
+            return 0;
+        }
+    }
+
+    return 0;
+}
+
+static int ia5casecmp(const char *s1, const char *s2)
+{
+    return ia5ncasecmp(s1, s2, SIZE_MAX);
+}
 
 static void *v2i_NAME_CONSTRAINTS(const X509V3_EXT_METHOD *method,
                                   X509V3_CTX *ctx, STACK_OF(CONF_VALUE) *nval)
@@ -165,6 +206,22 @@ static int print_nc_ipadd(BIO *bp, ASN1_OCTET_STRING *ip)
     return 1;
 }
 
+#define NAME_CHECK_MAX (1 << 20)
+
+static int add_lengths(int *out, int a, int b)
+{
+    /* sk_FOO_num(NULL) returns -1 but is effectively 0 when iterating. */
+    if (a < 0)
+        a = 0;
+    if (b < 0)
+        b = 0;
+
+    if (a > INT_MAX - b)
+        return 0;
+    *out = a + b;
+    return 1;
+}
+
 /*-
  * Check a certificate conforms to a specified set of constraints.
  * Return values:
@@ -179,10 +236,22 @@ static int print_nc_ipadd(BIO *bp, ASN1_OCTET_STRING *ip)
 
 int NAME_CONSTRAINTS_check(X509 *x, NAME_CONSTRAINTS *nc)
 {
-    int r, i;
+    int r, i, name_count, constraint_count;
     X509_NAME *nm;
 
     nm = X509_get_subject_name(x);
+
+    /*
+     * Guard against certificates with an excessive number of names or
+     * constraints causing a computationally expensive name constraints check.
+     */
+    if (!add_lengths(&name_count, X509_NAME_entry_count(nm),
+                     sk_GENERAL_NAME_num(x->altname))
+        || !add_lengths(&constraint_count,
+                        sk_GENERAL_SUBTREE_num(nc->permittedSubtrees),
+                        sk_GENERAL_SUBTREE_num(nc->excludedSubtrees))
+        || (name_count > 0 && constraint_count > NAME_CHECK_MAX / name_count))
+        return X509_V_ERR_UNSPECIFIED;
 
     if (X509_NAME_entry_count(nm) > 0) {
         GENERAL_NAME gntmp;
@@ -228,47 +297,140 @@ int NAME_CONSTRAINTS_check(X509 *x, NAME_CONSTRAINTS *nc)
 
 }
 
+static int cn2dnsid(ASN1_STRING *cn, unsigned char **dnsid, size_t *idlen)
+{
+    int utf8_length;
+    unsigned char *utf8_value;
+    int i;
+    int isdnsname = 0;
+
+    /* Don't leave outputs uninitialized */
+    *dnsid = NULL;
+    *idlen = 0;
+
+    /*-
+     * Per RFC 6125, DNS-IDs representing internationalized domain names appear
+     * in certificates in A-label encoded form:
+     *
+     *   https://tools.ietf.org/html/rfc6125#section-6.4.2
+     *
+     * The same applies to CNs which are intended to represent DNS names.
+     * However, while in the SAN DNS-IDs are IA5Strings, as CNs they may be
+     * needlessly encoded in 16-bit Unicode.  We perform a conversion to UTF-8
+     * to ensure that we get an ASCII representation of any CNs that are
+     * representable as ASCII, but just not encoded as ASCII.  The UTF-8 form
+     * may contain some non-ASCII octets, and that's fine, such CNs are not
+     * valid legacy DNS names.
+     *
+     * Note, 'int' is the return type of ASN1_STRING_to_UTF8() so that's what
+     * we must use for 'utf8_length'.
+     */
+    if ((utf8_length = ASN1_STRING_to_UTF8(&utf8_value, cn)) < 0)
+        return X509_V_ERR_OUT_OF_MEM;
+
+    /*
+     * Some certificates have had names that include a *trailing* NUL byte.
+     * Remove these harmless NUL characters. They would otherwise yield false
+     * alarms with the following embedded NUL check.
+     */
+    while (utf8_length > 0 && utf8_value[utf8_length - 1] == '\0')
+        --utf8_length;
+
+    /* Reject *embedded* NULs */
+    if ((size_t)utf8_length != strlen((char *)utf8_value)) {
+        OPENSSL_free(utf8_value);
+        return X509_V_ERR_UNSUPPORTED_NAME_SYNTAX;
+    }
+
+    /*
+     * XXX: Deviation from strict DNS name syntax, also check names with '_'
+     * Check DNS name syntax, any '-' or '.' must be internal,
+     * and on either side of each '.' we can't have a '-' or '.'.
+     *
+     * If the name has just one label, we don't consider it a DNS name.  This
+     * means that "CN=sometld" cannot be precluded by DNS name constraints, but
+     * that is not a problem.
+     */
+    for (i = 0; i < utf8_length; ++i) {
+        unsigned char c = utf8_value[i];
+
+        if ((c >= 'a' && c <= 'z')
+            || (c >= 'A' && c <= 'Z')
+            || (c >= '0' && c <= '9')
+            || c == '_')
+            continue;
+
+        /* Dot and hyphen cannot be first or last. */
+        if (i > 0 && i < utf8_length - 1) {
+            if (c == '-')
+                continue;
+            /*
+             * Next to a dot the preceding and following characters must not be
+             * another dot or a hyphen.  Otherwise, record that the name is
+             * plausible, since it has two or more labels.
+             */
+            if (c == '.'
+                && utf8_value[i + 1] != '.'
+                && utf8_value[i - 1] != '-'
+                && utf8_value[i + 1] != '-') {
+                isdnsname = 1;
+                continue;
+            }
+        }
+        isdnsname = 0;
+        break;
+    }
+
+    if (isdnsname) {
+        *dnsid = utf8_value;
+        *idlen = (size_t)utf8_length;
+        return X509_V_OK;
+    }
+    OPENSSL_free(utf8_value);
+    return X509_V_OK;
+}
+
+/*
+ * Check CN against DNS-ID name constraints.
+ */
 int NAME_CONSTRAINTS_check_CN(X509 *x, NAME_CONSTRAINTS *nc)
 {
     int r, i;
-    X509_NAME *nm;
-
+    X509_NAME *nm = X509_get_subject_name(x);
     ASN1_STRING stmp;
     GENERAL_NAME gntmp;
+
     stmp.flags = 0;
     stmp.type = V_ASN1_IA5STRING;
     gntmp.type = GEN_DNS;
     gntmp.d.dNSName = &stmp;
 
-    nm = X509_get_subject_name(x);
-
     /* Process any commonName attributes in subject name */
 
     for (i = -1;;) {
         X509_NAME_ENTRY *ne;
-        ASN1_STRING *hn;
+        ASN1_STRING *cn;
+        unsigned char *idval;
+        size_t idlen;
+
         i = X509_NAME_get_index_by_NID(nm, NID_commonName, i);
         if (i == -1)
             break;
         ne = X509_NAME_get_entry(nm, i);
-        hn = X509_NAME_ENTRY_get_data(ne);
+        cn = X509_NAME_ENTRY_get_data(ne);
+
         /* Only process attributes that look like host names */
-        if (asn1_valid_host(hn)) {
-            unsigned char *h;
-            int hlen = ASN1_STRING_to_UTF8(&h, hn);
-            if (hlen <= 0)
-                return X509_V_ERR_OUT_OF_MEM;
+        if ((r = cn2dnsid(cn, &idval, &idlen)) != X509_V_OK)
+            return r;
+        if (idlen == 0)
+            continue;
 
-            stmp.length = hlen;
-            stmp.data = h;
-
-            r = nc_match(&gntmp, nc);
-
-            OPENSSL_free(h);
-
-            if (r != X509_V_OK)
-                    return r;
-        }
+        stmp.length = idlen;
+        stmp.data = idval;
+        r = nc_match(&gntmp, nc);
+        OPENSSL_free(idval);
+        if (r != X509_V_OK)
+            return r;
     }
     return X509_V_OK;
 }
@@ -387,7 +549,7 @@ static int nc_dns(ASN1_IA5STRING *dns, ASN1_IA5STRING *base)
             return X509_V_ERR_PERMITTED_VIOLATION;
     }
 
-    if (strcasecmp(baseptr, dnsptr))
+    if (ia5casecmp(baseptr, dnsptr))
         return X509_V_ERR_PERMITTED_VIOLATION;
 
     return X509_V_OK;
@@ -407,7 +569,7 @@ static int nc_email(ASN1_IA5STRING *eml, ASN1_IA5STRING *base)
     if (!baseat && (*baseptr == '.')) {
         if (eml->length > base->length) {
             emlptr += eml->length - base->length;
-            if (strcasecmp(baseptr, emlptr) == 0)
+            if (ia5casecmp(baseptr, emlptr) == 0)
                 return X509_V_OK;
         }
         return X509_V_ERR_PERMITTED_VIOLATION;
@@ -428,7 +590,7 @@ static int nc_email(ASN1_IA5STRING *eml, ASN1_IA5STRING *base)
     }
     emlptr = emlat + 1;
     /* Just have hostname left to match: case insensitive */
-    if (strcasecmp(baseptr, emlptr))
+    if (ia5casecmp(baseptr, emlptr))
         return X509_V_ERR_PERMITTED_VIOLATION;
 
     return X509_V_OK;
@@ -467,14 +629,14 @@ static int nc_uri(ASN1_IA5STRING *uri, ASN1_IA5STRING *base)
     if (*baseptr == '.') {
         if (hostlen > base->length) {
             p = hostptr + hostlen - base->length;
-            if (strncasecmp(p, baseptr, base->length) == 0)
+            if (ia5ncasecmp(p, baseptr, base->length) == 0)
                 return X509_V_OK;
         }
         return X509_V_ERR_PERMITTED_VIOLATION;
     }
 
     if ((base->length != (int)hostlen)
-        || strncasecmp(hostptr, baseptr, hostlen))
+        || ia5ncasecmp(hostptr, baseptr, hostlen))
         return X509_V_ERR_PERMITTED_VIOLATION;
 
     return X509_V_OK;

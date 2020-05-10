@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2015-2018 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the OpenSSL license (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -119,7 +119,7 @@ EC_KEY *EC_KEY_new_method(ENGINE *engine)
     }
     return ret;
 
-err:
+ err:
     EC_KEY_free(ret);
     return NULL;
 }
@@ -236,7 +236,7 @@ void EC_KEY_METHOD_set_verify(EC_KEY_METHOD *meth,
     meth->verify_sig = verify_sig;
 }
 
-void EC_KEY_METHOD_get_init(EC_KEY_METHOD *meth,
+void EC_KEY_METHOD_get_init(const EC_KEY_METHOD *meth,
                             int (**pinit)(EC_KEY *key),
                             void (**pfinish)(EC_KEY *key),
                             int (**pcopy)(EC_KEY *dest, const EC_KEY *src),
@@ -261,14 +261,14 @@ void EC_KEY_METHOD_get_init(EC_KEY_METHOD *meth,
         *pset_public = meth->set_public;
 }
 
-void EC_KEY_METHOD_get_keygen(EC_KEY_METHOD *meth,
+void EC_KEY_METHOD_get_keygen(const EC_KEY_METHOD *meth,
                               int (**pkeygen)(EC_KEY *key))
 {
     if (pkeygen != NULL)
         *pkeygen = meth->keygen;
 }
 
-void EC_KEY_METHOD_get_compute_key(EC_KEY_METHOD *meth,
+void EC_KEY_METHOD_get_compute_key(const EC_KEY_METHOD *meth,
                                    int (**pck)(unsigned char **pout,
                                                size_t *poutlen,
                                                const EC_POINT *pub_key,
@@ -278,7 +278,7 @@ void EC_KEY_METHOD_get_compute_key(EC_KEY_METHOD *meth,
         *pck = meth->compute_key;
 }
 
-void EC_KEY_METHOD_get_sign(EC_KEY_METHOD *meth,
+void EC_KEY_METHOD_get_sign(const EC_KEY_METHOD *meth,
                             int (**psign)(int type, const unsigned char *dgst,
                                           int dlen, unsigned char *sig,
                                           unsigned int *siglen,
@@ -300,7 +300,7 @@ void EC_KEY_METHOD_get_sign(EC_KEY_METHOD *meth,
         *psign_sig = meth->sign_sig;
 }
 
-void EC_KEY_METHOD_get_verify(EC_KEY_METHOD *meth,
+void EC_KEY_METHOD_get_verify(const EC_KEY_METHOD *meth,
                               int (**pverify)(int type, const unsigned
                                               char *dgst, int dgst_len,
                                               const unsigned char *sigbuf,
