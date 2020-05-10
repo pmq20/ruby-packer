@@ -104,6 +104,8 @@ build ruby and the libraries stuffed inside rubyc which include at least:
 * yaml
 * zlib
 
+Also see the OS-specific prerequisites below.
+
 If you are unsure if your toolchain is complete then trying to build `rubyc`
 will let you know you are missing something.  Unfortunately it may tell you
 with some unfamiliar message.  Please file an issue here if this occurs.
@@ -124,9 +126,7 @@ very, very long*.
 If you make changes to the stuffed libraries or the compiler you may need to
 add the `--clean-tmpdir` argument to `rubyc` for a clean rebuild.
 
-### Building `rubyc` on macOS
-
-First install the prerequisites:
+### Prerequisites of macOS
 
 * [SquashFS Tools 4.3](http://squashfs.sourceforge.net/): `brew install squashfs`
 * [Xcode](https://developer.apple.com/xcode/download/)
@@ -135,10 +135,7 @@ First install the prerequisites:
   * This step will install `gcc` and the related toolchain containing `make`
 * [Ruby](https://www.ruby-lang.org/)
 
-
-### Building `rubyc` on Linux
-
-First install the prerequisites:
+### Prerequisites of Linux
 
 * [SquashFS Tools 4.3](http://squashfs.sourceforge.net/)
   - `sudo yum install squashfs-tools`
@@ -147,9 +144,7 @@ First install the prerequisites:
 * GNU Make
 * [Ruby](https://www.ruby-lang.org/)
 
-### Building `rubyc` on Windows
-
-First install the prerequisites:
+### Prerequisites of Windows
 
 * [SquashFS Tools 4.3](https://github.com/pmq20/squashfuse/files/691217/sqfs43-win32.zip)
 * [Visual Studio 2015 Update 3](https://visualstudio.microsoft.com/vs/older-downloads/), all editions
