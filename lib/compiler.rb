@@ -951,6 +951,7 @@ class Compiler
       @ldflags += " #{@utils.escape libz} "   if File.exist? libz
       @ldflags += " #{@utils.escape lib64z} " if File.exist? lib64z
 
+      @cflags += " -I#{@utils.escape @ruby_source_dir} "
       @cflags += " -I#{@utils.escape File.join(@local_build, 'include')} "
       @cflags += " -I#{@utils.escape File.join(lib, 'libffi-3.2.1', 'include')} "
     end
