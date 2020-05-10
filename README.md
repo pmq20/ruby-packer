@@ -19,7 +19,7 @@ It takes less than 5 minutes to pack any project with Ruby Packer. You won't nee
 
 ## Usage
 
-If ENTRANCE was not provided, then a single Ruby interpreter executable will be produced.
+If ENTRANCE was not provided, then a single raw Ruby interpreter executable will be produced.
 ENTRANCE can be either a file path, or a "x" string as in bundle exec "x".
 
     rubyc [OPTION]... [ENTRANCE]
