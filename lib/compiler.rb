@@ -882,7 +882,7 @@ class Compiler
 
   def make_enclose_io_vars
     @utils.chdir(@ruby_source_dir) do
-      File.open("include/enclose_io.h", "w") do |f|
+      File.open("enclose_io.h", "w") do |f|
         # remember to change libsquash's sample/enclose_io.h as well
         # might need to remove some object files at the 2nd pass
         f.puts '#ifndef ENCLOSE_IO_H_999BC1DA'
