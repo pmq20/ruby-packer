@@ -49,7 +49,7 @@ very, very long*.
 If you make changes to the stuffed libraries or the compiler you may need to
 add the `--clean-tmpdir` argument to `rubyc` for a clean rebuild.
 
-### Get Started on macOS
+### Building `rubyc` on macOS
 
 First install the prerequisites:
 
@@ -64,9 +64,9 @@ Then,
 
     curl -L http://enclose.io/rubyc/rubyc-darwin-x64.gz | gunzip > rubyc
     chmod +x rubyc
-    ./rubyc --help
+    ./rubyc
 
-### Get Started on Linux
+### Building `rubyc` on Linux
 
 First install the prerequisites:
 
@@ -81,9 +81,10 @@ Then,
 
     curl -L http://enclose.io/rubyc/rubyc-linux-x64.gz | gunzip > rubyc
     chmod +x rubyc
+    bundle exec rake rubyc
     ./rubyc --help
 
-### Get Started on Windows
+### Building `rubyc` on Windows
 
 First install the prerequisites:
 
