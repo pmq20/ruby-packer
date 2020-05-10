@@ -7,6 +7,8 @@
 
 ## Features
 
+It takes less than 5 minutes to pack any project with Ruby Packer. You won't need to modify a single line of code in your application, no matter how you developed it as long as it works in plain Ruby!
+
 - Works on Linux, Mac and Windows
 - Creates a binary distribution of your application
 - Supports natively any form of `require` and `load`, including dynamic ones (e.g. `load(my_path + 'x.rb'`)
@@ -16,8 +18,6 @@
 - Open Source, MIT Licensed
 
 ## Get Started
-
-It takes less than 5 minutes to pack any project with Ruby Packer. You won't need to modify a single line of code in your application, no matter how you developed it as long as it works in plain Ruby!
 
 To build `rubyc` you must have a C compiler and the necessary toolchain to
 build ruby and the libraries stuffed inside rubyc which include at least:
