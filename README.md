@@ -71,10 +71,23 @@ Then,
 First install the prerequisites:
 
 * [SquashFS Tools 4.3](https://github.com/pmq20/squashfuse/files/691217/sqfs43-win32.zip)
-* [Visual Studio 2015 Update 3](https://www.visualstudio.com/), all editions
+* [Visual Studio 2015 Update 3](https://visualstudio.microsoft.com/vs/older-downloads/), all editions
   including the Community edition (remember to select
   "Common Tools for Visual C++ 2015" feature during installation).
+* [Bison for Windows](http://gnuwin32.sourceforge.net/packages/bison.htm).  When installing, make sure
+  to select the binaries and developer files.  Do NOT install to the default C:\Program Files location.
+  Choose a location without spaces, such as C:\Gnuwin32.
+  If you encounter problems related to bison later in your installation, you may want to consider overwriting
+  bison.exe with this [patched Windows binary](http://marin.jb.free.fr/bison/).
+* [Sed for Windows](http://gnuwin32.sourceforge.net/packages/sed.htm).  When installing, make sure
+  to select the binaries and developer files.  Do NOT install to the default C:\Program Files location.
+  Choose a location without spaces, such as C:\Gnuwin32.
 * [Ruby](https://www.ruby-lang.org/)
+
+From a command prompt window, load the Visual Studio environment variables for 32-bit compilation.  By default,
+this is located at c:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\vcvars32.bat.
+
+Ensure that bison and sed are in your path.  If you installed to C:\Gnuwin32, they will be in C:\Gnuwin32\bin.
 
 Then download [rubyc-x64.zip](http://enclose.io/rubyc/rubyc-x64.zip),
 and this zip file contains only one executable.
