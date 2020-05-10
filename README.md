@@ -7,8 +7,6 @@
 
 ## Features
 
-It takes less than 5 minutes to pack any project with Ruby Packer. You won't need to modify a single line of code in your application, no matter how you developed it as long as it works in plain Ruby!
-
 - Works on Linux, Mac and Windows
 - Creates a binary distribution of your application
 - Supports natively any form of `require` and `load`, including dynamic ones (e.g. `load(my_path + 'x.rb'`)
@@ -16,6 +14,70 @@ It takes less than 5 minutes to pack any project with Ruby Packer. You won't nee
 - Native C extensions are fully supported
 - Rails applications are fully supported
 - Open Source, MIT Licensed
+
+## Download and Install
+
+It takes less than 5 minutes to compile any project with Ruby Compiler.
+
+You won't need to modify a single line of code in your application, no matter how you developed it as long as it works in plain Ruby!
+
+|                       | Architecture |           Latest&#160;Stable                 |
+|:---------------------:|:------------:|----------------------------------------------|
+|       **macOS**       |    x86-64    | http://enclose.io/rubyc/rubyc-darwin-x64.gz  |
+|       **Linux**       |    x86-64    | http://enclose.io/rubyc/rubyc-linux-x64.gz   |
+|      **Windows**      |    x86-64    | http://enclose.io/rubyc/rubyc-x64.zip        |
+
+For previous releases, cf. http://enclose.io/rubyc
+
+### Install on macOS
+
+First install the prerequisites:
+
+* [SquashFS Tools 4.3](http://squashfs.sourceforge.net/): `brew install squashfs`
+* [Xcode](https://developer.apple.com/xcode/download/)
+  * You also need to install the `Command Line Tools` via Xcode. You can find
+    this under the menu `Xcode -> Preferences -> Downloads`
+  * This step will install `gcc` and the related toolchain containing `make`
+* [Ruby](https://www.ruby-lang.org/)
+
+Then,
+
+    curl -L http://enclose.io/rubyc/rubyc-darwin-x64.gz | gunzip > rubyc
+    chmod +x rubyc
+    ./rubyc --help
+
+### Install on Linux
+
+First install the prerequisites:
+
+* [SquashFS Tools 4.3](http://squashfs.sourceforge.net/)
+  - `sudo yum install squashfs-tools`
+  - `sudo apt-get install squashfs-tools`
+* `gcc` or `clang`
+* GNU Make
+* [Ruby](https://www.ruby-lang.org/)
+
+Then,
+
+    curl -L http://enclose.io/rubyc/rubyc-linux-x64.gz | gunzip > rubyc
+    chmod +x rubyc
+    ./rubyc --help
+
+### Install on Windows
+
+First install the prerequisites:
+
+* [SquashFS Tools 4.3](https://github.com/pmq20/squashfuse/files/691217/sqfs43-win32.zip)
+* [Visual Studio 2015 Update 3](https://www.visualstudio.com/), all editions
+  including the Community edition (remember to select
+  "Common Tools for Visual C++ 2015" feature during installation).
+* [Ruby](https://www.ruby-lang.org/)
+
+Then download [rubyc-x64.zip](http://enclose.io/rubyc/rubyc-x64.zip),
+and this zip file contains only one executable.
+Unzip it. Optionally,
+rename it to `rubyc.exe` and put it under `C:\Windows` (or any other directory that is part of `PATH`).
+Execute `rubyc --help` from the command line.
 
 ## Usage
 
