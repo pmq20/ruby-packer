@@ -655,7 +655,7 @@ class Compiler
 
       # enclose_io_memfs.o - 2nd pass
       prepare_work_dir
-      prepare_local if @entrance
+      prepare_local
 
       @utils.rm_f('include/enclose_io.h')
       @utils.rm_f('enclose_io_memfs.c')
@@ -670,7 +670,7 @@ class Compiler
 
       # enclose_io_memfs.o - 2nd pass
       prepare_work_dir
-      prepare_local if @entrance
+      prepare_local
 
       @utils.rm_f('include/enclose_io.h')
       @utils.rm_f('enclose_io_memfs.c')
@@ -797,51 +797,53 @@ class Compiler
 
   def prepare_local
     # Prepare /__enclose_io_memfs__/local
-    @utils.chdir(@root) do
-      gemspecs = Dir['./*.gemspec']
-      gemfiles = Dir['./gems.rb', './Gemfile']
-      gems = Dir['./*.gem']
+    if @entrance
+      @utils.chdir(@root) do
+        gemspecs = Dir['./*.gemspec']
+        gemfiles = Dir['./gems.rb', './Gemfile']
+        gems = Dir['./*.gem']
 
-      @gem    = File.join(@ruby_install_1_bin, "gem")
-      @bundle = File.join(@ruby_install_1_bin, "bundle")
+        @gem    = File.join(@ruby_install_1_bin, "gem")
+        @bundle = File.join(@ruby_install_1_bin, "bundle")
 
-      log "=> gem env"
-      @utils.run @local_toolchain, @gem, "env"
+        log "=> gem env"
+        @utils.run @local_toolchain, @gem, "env"
 
-      if gemspecs.size > 0
-        raise "Multiple gemspecs detected" unless 1 == gemspecs.size
+        if gemspecs.size > 0
+          raise "Multiple gemspecs detected" unless 1 == gemspecs.size
 
-        install_from_gemspec gemspecs.first, gemfiles
-      elsif gemfiles.size > 0
-        raise 'Multiple Gemfiles detected' unless 1 == gemfiles.size
+          install_from_gemspec gemspecs.first, gemfiles
+        elsif gemfiles.size > 0
+          raise 'Multiple Gemfiles detected' unless 1 == gemfiles.size
 
-        install_from_gemfile gemfiles.first
-      elsif gems.size > 0
-        raise 'Multiple gem files detected' unless 1 == gems.size
+          install_from_gemfile gemfiles.first
+        elsif gems.size > 0
+          raise 'Multiple gem files detected' unless 1 == gems.size
 
-        install_from_gem gems.first
-      else
-        install_from_local
-      end
+          install_from_gem gems.first
+        else
+          install_from_local
+        end
 
-      if @work_dir_local
-        @utils.chdir(@work_dir_local) do
-          if Dir.exist?('.git')
-            log `git status`
-            @utils.rm_rf('.git')
-          end
-          if File.exist?('a.exe')
-            log `dir a.exe`
-            @utils.rm_rf('a.exe')
-          end
-          if File.exist?('a.out')
-            log `ls -l a.out`
-            @utils.rm_rf('a.out')
+        if @work_dir_local
+          @utils.chdir(@work_dir_local) do
+            if Dir.exist?('.git')
+              log `git status`
+              @utils.rm_rf('.git')
+            end
+            if File.exist?('a.exe')
+              log `dir a.exe`
+              @utils.rm_rf('a.exe')
+            end
+            if File.exist?('a.out')
+              log `ls -l a.out`
+              @utils.rm_rf('a.out')
+            end
           end
         end
-      end
 
-      @utils.rm_rf(File.join(@gems_dir, 'cache'))
+        @utils.rm_rf(File.join(@gems_dir, 'cache'))
+      end
     end
 
     sources = Dir[File.join(@ruby_install_1, '*')]
