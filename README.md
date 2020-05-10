@@ -9,8 +9,6 @@
 
 It takes less than 5 minutes to pack any project with Ruby Packer. You won't need to modify a single line of code in your application, no matter how you developed it as long as it works in plain Ruby!
 
-More details were explained at [RubyConf 2017 (New Orleans, LA): Packing your Ruby application into a single executable](https://www.youtube.com/watch?v=1mme7HiLqzA).
-
 - Works on Linux, Mac and Windows
 - Creates a binary distribution of your application
 - Supports natively any form of `require` and `load`, including dynamic ones (e.g. `load(my_path + 'x.rb'`)
@@ -18,6 +16,8 @@ More details were explained at [RubyConf 2017 (New Orleans, LA): Packing your Ru
 - Native C extensions are fully supported
 - Rails applications are fully supported
 - Open Source, MIT Licensed
+
+More details were explained at [RubyConf 2017 (New Orleans, LA): Packing your Ruby application into a single executable](https://www.youtube.com/watch?v=1mme7HiLqzA).
 
 ## Usage
 
