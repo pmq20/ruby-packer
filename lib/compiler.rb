@@ -1,12 +1,14 @@
-# Copyright (c) 2017 - 2020 Ruby Packer authors (Minqi Pan et al.)
+# frozen_string_literal: true
+
+# Copyright (c) 2017 - 2020 Minqi Pan et al.
 #
 # This file is part of Ruby Packer, distributed under the MIT License
 # For full terms see the included LICENSE file
 
-require "compiler/constants"
-require "compiler/error"
-require "compiler/utils"
-require "compiler/gem_package"
+require 'compiler/constants'
+require 'compiler/error'
+require 'compiler/utils'
+require 'compiler/gem_package'
 require 'shellwords'
 require 'tmpdir'
 require 'fileutils'
@@ -15,7 +17,50 @@ require 'open3'
 require 'pathname'
 require 'uri'
 
+# A ::Compiler object corresponds to a Ruby Packer runtime instance
 class Compiler
+  class << self
+    def ruby_api_version
+      @ruby_api_version ||= peek_ruby_api_version
+    end
+
+    def ruby_version
+      @ruby_version ||= peek_ruby_version
+    end
+
+    def peek_ruby_version
+      version_info = File.read(File.join(PRJ_ROOT, 'ruby/include/ruby/version.h'))
+      versions = []
+      raise 'Cannot peek RUBY_API_VERSION_MAJOR' unless version_info =~ /RUBY_API_VERSION_MAJOR\s+(\d+)/
+
+      versions << Regexp.last_match(1).dup
+      raise 'Cannot peek RUBY_API_VERSION_MINOR' unless version_info =~ /RUBY_API_VERSION_MINOR\s+(\d+)/
+
+      versions << Regexp.last_match(1).dup
+
+      version_info = File.read(File.join(PRJ_ROOT, 'ruby/version.h'))
+      raise 'Cannot peek RUBY_VERSION_TEENY' unless version_info =~ /RUBY_VERSION_TEENY\s+(\d+)/
+
+      versions << Regexp.last_match(1).dup
+      versions.join('.')
+    end
+
+    def peek_ruby_api_version
+      version_info = File.read(File.join(PRJ_ROOT, 'ruby/include/ruby/version.h'))
+      versions = []
+      raise 'Cannot peek RUBY_API_VERSION_MAJOR' unless version_info =~ /RUBY_API_VERSION_MAJOR\s+(\d+)/
+
+      versions << Regexp.last_match(1).dup
+      raise 'Cannot peek RUBY_API_VERSION_MINOR' unless version_info =~ /RUBY_API_VERSION_MINOR\s+(\d+)/
+
+      versions << Regexp.last_match(1).dup
+      raise 'Cannot peek RUBY_API_VERSION_TEENY' unless version_info =~ /RUBY_API_VERSION_TEENY\s+(\d+)/
+
+      versions << Regexp.last_match(1).dup
+      versions.join('.')
+    end
+  end
+
   attr_reader :entrance
   attr_reader :options
 
@@ -26,47 +71,13 @@ class Compiler
       'a.out'
     end
 
-  def self.ruby_api_version
-    @ruby_api_version ||= peek_ruby_api_version
-  end
-
-  def self.peek_ruby_version
-    version_info = File.read(File.join(PRJ_ROOT, 'ruby/version.h'))
-    if version_info =~ /RUBY_VERSION\s+"([^"]+)"\s*$/
-      return $1.dup
-    else
-      raise 'Cannot peek RUBY_VERSION'
-    end
-  end
-
-  def self.peek_ruby_api_version
-    version_info = File.read(File.join(PRJ_ROOT, 'ruby/include/ruby/version.h'))
-    versions = []
-    if version_info =~ /RUBY_API_VERSION_MAJOR\s+(\d+)/
-      versions << $1.dup
-    else
-      raise 'Cannot peek RUBY_API_VERSION_MAJOR'
-    end
-    if version_info =~ /RUBY_API_VERSION_MINOR\s+(\d+)/
-      versions << $1.dup
-    else
-      raise 'Cannot peek RUBY_API_VERSION_MINOR'
-    end
-    if version_info =~ /RUBY_API_VERSION_TEENY\s+(\d+)/
-      versions << $1.dup
-    else
-      raise 'Cannot peek RUBY_API_VERSION_TEENY'
-    end
-    versions.join('.')
-  end
-
   def initialize(entrance, options = {})
     if entrance
-      if File.exist?(File.expand_path(entrance))
-        @entrance = File.expand_path(entrance)
-      else
-        @entrance = entrance
-      end
+      @entrance = if File.exist?(File.expand_path(entrance))
+                    File.expand_path(entrance)
+                  else
+                    entrance
+                  end
     end
 
     @gem_package = nil
@@ -83,35 +94,77 @@ class Compiler
     if entrance
       log "- entrance: #{@entrance}"
     else
-      log "- entrance: not provided, a single Ruby interpreter executable will be produced."
-      log "- HINT: call rubyc with --help to see more options and use case examples"
+      log '- entrance: not provided, a single Ruby interpreter executable will be produced.'
+      log '- HINT: call rubyc with --help to see more options and use case examples'
     end
     log "- options: #{@options}"
     log
 
     prepare_flags1
 
-    @ruby_install_1 = File.join(@options[:tmpdir], 'ruby_install_1')
-    @ruby_install_1_bin = File.join(@ruby_install_1, 'bin')
-    @ruby_install_2 = File.join(@options[:tmpdir], 'ruby_install_2')
+    @ruby_install1 = File.join(@options[:tmpdir], 'ruby_install_1')
+    @ruby_install1_bin = File.join(@ruby_install1, 'bin')
+    @ruby_install2 = File.join(@options[:tmpdir], 'ruby_install_2')
 
     # prefix for stuffed libraries
     @local_build = File.join(@options[:tmpdir], 'local')
   end
 
+  def run!
+    clean_env
+
+    stuff_tmpdir
+
+    @build_pass1 = File.join(@options[:tmpdir], 'build_pass_1')
+    @build_pass2 = File.join(@options[:tmpdir], 'build_pass_2')
+    @utils.mkdir_p(@build_pass1)
+    @utils.mkdir_p(@build_pass2)
+
+    if Gem.win_platform?
+      @ruby_configure = "#{@ruby_source_dir}\\win32\\configure.bat"
+
+      build_ruby_pass_1_windows
+
+      patch_ext
+      patch_makefile
+
+      # enclose_io_memfs.o - 2nd pass
+      prepare_work_dir
+      prepare_local
+
+      @utils.rm_f('include/enclose_io.h')
+      @utils.rm_f('enclose_io_memfs.c')
+
+      build_ruby_pass_2_windows
+    else
+      @ruby_configure = File.join(@ruby_source_dir, 'configure')
+
+      build_ruby_pass_1_unix
+
+      patch_ext
+
+      # enclose_io_memfs.o - 2nd pass
+      prepare_work_dir
+      prepare_local
+
+      @utils.rm_f('include/enclose_io.h')
+      @utils.rm_f('enclose_io_memfs.c')
+
+      build_ruby_pass_2_unix
+    end
+  end
+
   def init_options
-    @options[:make_args] ||= '-j4'
+    @options[:make_args] ||= "-j#{@utils.default_make_j_arg}"
     @options[:output] ||= DEFAULT_NAME
     @options[:output] = File.expand_path(@options[:output])
-    @options[:tmpdir] ||= File.expand_path("rubyc", Dir.tmpdir)
+    @options[:tmpdir] ||= File.expand_path('rubyc', Dir.tmpdir)
     @options[:tmpdir] = File.expand_path(@options[:tmpdir])
     @options[:openssl_dir] ||= '/usr/local/etc/openssl/'
-    @options[:ignore_file].concat(File.readlines('.rubycignore').map(&:strip)) if File.exists?('.rubycignore')
+    @options[:ignore_file].concat(File.readlines('.rubycignore').map(&:strip)) if File.exist?('.rubycignore')
 
     if @options[:auto_update_url] || @options[:auto_update_base]
-      unless @options[:auto_update_url].length > 0 && @options[:auto_update_base].length > 0
-        raise Error, "Please provide both --auto-update-url and --auto-update-base"
-      end
+      raise Error, 'Please provide both --auto-update-url and --auto-update-base' unless !@options[:auto_update_url].empty? && !@options[:auto_update_base].empty?
     end
 
     @ruby_source_dir =
@@ -127,64 +180,66 @@ class Compiler
       @root = File.expand_path(@options[:root])
     else
       @root = @entrance.dup
-      while true
+      loop do
         @root = File.expand_path('..', @root)
         if File.expand_path('..', @root) == @root
           @root = Dir.pwd
           break
         end
-        if File.exist?(File.join(@root, 'Gemfile')) || File.exist?(File.join(@root, 'gems.rb')) || Dir.exist?(File.join(@root, '.git'))
-          break
-        end
+        break if File.exist?(File.join(@root, 'Gemfile'))
+        break if File.exist?(File.join(@root, 'gems.rb'))
+        break if Dir.exist?(File.join(@root, '.git'))
       end
       log "-> Project root not supplied, #{@root} assumed."
     end
   end
 
   def init_tmpdir
-    if @root && @options[:tmpdir].include?(@root)
-      raise Error, "Tempdir #{@options[:tmpdir]} cannot reside inside #{@root}."
-    end
+    return unless @root && @options[:tmpdir].include?(@root)
+
+    raise Error, "Tempdir #{@options[:tmpdir]} cannot reside inside #{@root}."
   end
 
   def build_ruby_pass_1_unix
-    return if Dir.exist? @ruby_install_1
+    return if Dir.exist? @ruby_install1
 
-    log "=> Building ruby phase 1"
+    log '=> Building ruby phase 1'
 
     @compile_env['ENCLOSE_IO_RUBYC_1ST_PASS'] = '1'
     @compile_env['ENCLOSE_IO_RUBYC_2ND_PASS'] = nil
 
-    Dir.chdir(@build_pass_1) do
+    Dir.chdir(@build_pass1) do
       @utils.run(@compile_env,
                  @ruby_configure,
-                 "--prefix", @ruby_install_1,
-                 "--enable-bundled-libyaml",
-                 "--without-gmp",
-                 "--disable-dtrace",
-                 "--enable-debug-env",
-                 "--disable-install-rdoc")
-
+                 '-C',
+                 '--prefix', @ruby_install1,
+                 '--enable-bundled-libyaml',
+                 '--without-gmp',
+                 '--disable-dtrace',
+                 '--enable-debug-env',
+                 '--disable-install-rdoc')
       @utils.run(@compile_env, "make #{@options[:make_args]}")
-      @utils.run(@compile_env, "make install")
+      @utils.run(@compile_env, 'make update-gems')
+      @utils.run(@compile_env, 'make extract-gems')
+      @utils.run(@compile_env, 'make install')
     end
   end
 
   def build_ruby_pass_1_windows
-    return if Dir.exist? @ruby_install_1
+    return if Dir.exist? @ruby_install1
 
-    log "=> Building ruby phase 1"
+    log '=> Building ruby phase 1'
 
     @compile_env['ENCLOSE_IO_RUBYC_1ST_PASS'] = '1'
     @compile_env['ENCLOSE_IO_RUBYC_2ND_PASS'] = nil
 
-    Dir.chdir(@build_pass_1) do
+    Dir.chdir(@build_pass1) do
       @utils.run(@compile_env,
-                 "call", @ruby_configure,
-                         "--disable-install-doc",
-                         "--prefix=#{@ruby_install_1}")
+                 'call', @ruby_configure,
+                 '--disable-install-doc',
+                 "--prefix=#{@ruby_install1}")
       @utils.run(@compile_env, "nmake #{@options[:nmake_args]}")
-      @utils.run(@compile_env, "nmake install")
+      @utils.run(@compile_env, 'nmake install')
     end
   end
 
@@ -192,21 +247,22 @@ class Compiler
     @compile_env['ENCLOSE_IO_RUBYC_1ST_PASS'] = nil
     @compile_env['ENCLOSE_IO_RUBYC_2ND_PASS'] = '1'
 
-    log "=> Building ruby phase 2"
+    log '=> Building ruby phase 2'
 
-    Dir.chdir(@build_pass_2) do
-      baseruby = File.join(@ruby_install_1_bin, "ruby")
+    Dir.chdir(@build_pass2) do
+      baseruby = File.join(@ruby_install1_bin, 'ruby')
 
       @utils.run(@compile_env,
                  @ruby_configure,
-                 "--prefix", @ruby_install_2,
+                 '-C',
+                 '--prefix', @ruby_install2,
                  "--with-baseruby=#{baseruby}",
-                 "--enable-bundled-libyaml",
-                 "--without-gmp",
-                 "--disable-dtrace",
-                 "--enable-debug-env",
-                 "--disable-install-rdoc",
-                 "--with-static-linked-ext")
+                 '--enable-bundled-libyaml',
+                 '--without-gmp',
+                 '--disable-dtrace',
+                 '--enable-debug-env',
+                 '--disable-install-rdoc',
+                 '--with-static-linked-ext')
 
       make_enclose_io_memfs
       make_enclose_io_vars
@@ -220,23 +276,23 @@ class Compiler
     @compile_env['ENCLOSE_IO_RUBYC_1ST_PASS'] = nil
     @compile_env['ENCLOSE_IO_RUBYC_2ND_PASS'] = '1'
 
-    log "=> Building ruby phase 2"
+    log '=> Building ruby phase 2'
 
-    Dir.chdir(@build_pass_2) do
+    Dir.chdir(@build_pass2) do
       @utils.run(@compile_env,
-                 "call", @ruby_configure,
-                         "--prefix=#{@ruby_install_2}",
-                         "--enable-bundled-libyaml",\
-                         "--enable-debug-env",
-                         "--disable-install-doc",
-                         "--with-static-linked-ext")
+                 'call', @ruby_configure,
+                 "--prefix=#{@ruby_install2}",
+                 '--enable-bundled-libyaml',\
+                 '--enable-debug-env',
+                 '--disable-install-doc',
+                 '--with-static-linked-ext')
 
       make_enclose_io_memfs
       make_enclose_io_vars
 
       @utils.run_allow_failures(@compile_env, "nmake #{@options[:nmake_args]}")
-      @utils.run(@compile_env, %Q{nmake #{@options[:nmake_args]} -f enc.mk V="0" UNICODE_HDR_DIR="./enc/unicode/9.0.0"  RUBY=".\\miniruby.exe -I./lib -I. " MINIRUBY=".\\miniruby.exe -I./lib -I. " -l libenc})
-      @utils.run(@compile_env, %Q{nmake #{@options[:nmake_args]} -f enc.mk V="0" UNICODE_HDR_DIR="./enc/unicode/9.0.0"  RUBY=".\\miniruby.exe -I./lib -I. " MINIRUBY=".\\miniruby.exe -I./lib -I. " -l libtrans})
+      @utils.run(@compile_env, %(nmake #{@options[:nmake_args]} -f enc.mk V="0" UNICODE_HDR_DIR="./enc/unicode/9.0.0"  RUBY=".\\miniruby.exe -I./lib -I. " MINIRUBY=".\\miniruby.exe -I./lib -I. " -l libenc))
+      @utils.run(@compile_env, %(nmake #{@options[:nmake_args]} -f enc.mk V="0" UNICODE_HDR_DIR="./enc/unicode/9.0.0"  RUBY=".\\miniruby.exe -I./lib -I. " MINIRUBY=".\\miniruby.exe -I./lib -I. " -l libtrans))
       @utils.run(@compile_env, "nmake #{@options[:nmake_args]}")
       @utils.run(@compile_env, "nmake #{@options[:nmake_args]} ruby_static.exe")
       @utils.cp('ruby_static.exe', @options[:output])
@@ -256,7 +312,7 @@ class Compiler
     ENV.delete 'RUBYLIB'          # disable outside changes to $LOAD_PATH
     ENV.delete 'RUBYOPT'          # disable outside changes to ruby options
 
-    log "=> ENV"
+    log '=> ENV'
     ENV.sort_by(&:first).each do |name, value|
       log "\t#{@utils.escape name} => #{@utils.escape value}"
     end
@@ -279,33 +335,31 @@ class Compiler
     end
 
     patch_common_mk
-    patch_Makefile_sub_CFLAGS_LDFLAGS if Gem.win_platform?
+    patch_win32 if Gem.win_platform?
   end
 
   def install_from_gem(gem)
     log "=> Installing source from gem #{File.expand_path gem}"
 
-    @pre_prepare_dir = File.join(@options[:tmpdir], "__pre_prepare__")
+    @pre_prepare_dir = File.join(@options[:tmpdir], '__pre_prepare__')
 
     @utils.rm_rf(@pre_prepare_dir)
     @utils.cp_r(@root, @pre_prepare_dir)
 
     @utils.chdir(@pre_prepare_dir) do
       @utils.run(@local_toolchain,
-                 @gem, "install", gem,
-                 "--install-dir", @gems_dir,
-                 "--no-document")
+                 @gem, 'install', gem,
+                 '--install-dir', @gems_dir,
+                 '--no-document')
 
       if File.exist?(File.join(@gems_dir, "bin/#{@entrance}"))
         @memfs_entrance = "#{MEMFS}/lib/ruby/gems/#{self.class.ruby_api_version}/bin/#{@entrance}"
+      elsif File.exist?(File.join(@gems_dir, "bin/#{File.basename(@entrance)}"))
+        @entrance = File.basename(@entrance)
+        @memfs_entrance = "#{MEMFS}/lib/ruby/gems/#{self.class.ruby_api_version}/bin/#{@entrance}"
       else
-        if File.exist?(File.join(@gems_dir, "bin/#{File.basename(@entrance)}"))
-          @entrance = File.basename(@entrance)
-          @memfs_entrance = "#{MEMFS}/lib/ruby/gems/#{self.class.ruby_api_version}/bin/#{@entrance}"
-        else
-          @utils.chdir(File.join(@gems_dir, "bin")) do
-            raise Error, "Cannot find entrance #{@entrance}, available entrances are #{ Dir["*"].join(", ") }."
-          end
+        @utils.chdir(File.join(@gems_dir, 'bin')) do
+          raise Error, "Cannot find entrance #{@entrance}, available entrances are #{Dir['*'].join(', ')}."
         end
       end
     end
@@ -316,55 +370,48 @@ class Compiler
   def install_from_gemfile(gemfile)
     log "=> Installing source from gemfile #{File.expand_path gemfile}"
 
-    @work_dir_local = File.join(@work_dir_inner, "local")
+    @work_dir_local = File.join(@work_dir_inner, 'local')
 
     @env_bundle_gemfile = "/__enclose_io_memfs__/local/#{gemfile}"
 
-    unless @options[:keep_tmpdir]
-      @utils.cp_r(@root, @work_dir_local)
-    end
+    @utils.cp_r(@root, @work_dir_local) unless @options[:keep_tmpdir]
 
     @utils.chdir(@work_dir_local) do
       # installing with --binstubs is duplicated below.  We should probably
       # flatten the nested if below and always install with --binstubs.
       @utils.run(@local_toolchain,
-                 @bundle, "install",
-                          "--deployment",
-                          "--binstubs")
-
-      if 0 == @utils.run_allow_failures(@local_toolchain, @bundle, "show", "rails")
-        log "=> Detected a Rails project"
+                 @bundle, 'install',
+                 '--deployment',
+                 '--binstubs')
+      if @utils.run_allow_failures(@local_toolchain, @bundle, 'show', 'rails').exitstatus.zero?
+        log '=> Detected a Rails project'
         @enclose_io_rails = true
-        @utils.rm_rf("tmp")
-        @utils.rm_rf("log")
-        @utils.mkdir("tmp")
-        @utils.mkdir("log")
+        @utils.rm_rf('tmp')
+        @utils.rm_rf('log')
+        @utils.mkdir('tmp')
+        @utils.mkdir('log')
       else
-        log "=> Not a Rails project"
+        log '=> Not a Rails project'
       end
 
       if File.exist?(@entrance)
         @memfs_entrance = mempath(@entrance)
+      elsif File.exist?("bin/#{@entrance}")
+        @memfs_entrance = "#{MEMFS}/local/bin/#{@entrance}"
       else
+        @utils.run(@local_toolchain,
+                   @bundle, 'install',
+                   '--deployment',
+                   '--binstubs')
+
         if File.exist?("bin/#{@entrance}")
           @memfs_entrance = "#{MEMFS}/local/bin/#{@entrance}"
+        elsif File.exist?("bin/#{File.basename(@entrance)}")
+          @entrance = File.basename(@entrance)
+          @memfs_entrance = "#{MEMFS}/local/bin/#{@entrance}"
         else
-          @utils.run(@local_toolchain,
-                     @bundle, "install",
-                              "--deployment",
-                              "--binstubs")
-
-          if File.exist?("bin/#{@entrance}")
-            @memfs_entrance = "#{MEMFS}/local/bin/#{@entrance}"
-          else
-            if File.exist?("bin/#{File.basename(@entrance)}")
-              @entrance = File.basename(@entrance)
-              @memfs_entrance = "#{MEMFS}/local/bin/#{@entrance}"
-            else
-              @utils.chdir("bin") do
-                raise Error, "Cannot find entrance #{@entrance}, available entrances are #{ Dir["*"].join(", ") }."
-              end
-            end
+          @utils.chdir('bin') do
+            raise Error, "Cannot find entrance #{@entrance}, available entrances are #{Dir['*'].join(', ')}."
           end
         end
       end
@@ -374,43 +421,41 @@ class Compiler
   def install_from_gemspec(gemspec, gemfiles)
     log "=> Installing source from gemspec #{File.expand_path gemspec}"
 
-    @pre_prepare_dir = File.join(@options[:tmpdir], "__pre_prepare__")
+    @pre_prepare_dir = File.join(@options[:tmpdir], '__pre_prepare__')
     @utils.rm_rf(@pre_prepare_dir)
     @utils.cp_r(@root, @pre_prepare_dir)
 
     @utils.chdir(@pre_prepare_dir) do
-      log "-> Detected a gemspec, trying to build the gem"
-      @utils.rm_f("./*.gem")
+      log '-> Detected a gemspec, trying to build the gem'
+      @utils.rm_f('./*.gem')
 
-      if gemfiles.size > 0
+      if !gemfiles.empty?
         @utils.run(@local_toolchain,
-                   @bundle, "install")
+                   @bundle, 'install')
         @utils.run(@local_toolchain,
-                   @bundle, "exec", @gem, "build", gemspec)
+                   @bundle, 'exec', @gem, 'build', gemspec)
       else
-        @utils.run(@local_toolchain, @gem, "build", gemspec)
+        @utils.run(@local_toolchain, @gem, 'build', gemspec)
       end
 
-      gems = Dir["./*.gem"]
-      raise "failed to build gem #{gem}" unless 1 == gems.size
+      gems = Dir['./*.gem']
+      raise "failed to build gem #{gem}" unless gems.size == 1
 
       gem = gems.first
 
       @utils.run(@local_toolchain,
-                 @gem, "install", gem,
-                 "--install-dir", @gems_dir,
-                 "--no-document")
+                 @gem, 'install', gem,
+                 '--install-dir', @gems_dir,
+                 '--no-document')
 
       if File.exist?(File.join(@gems_dir, "bin/#{@entrance}"))
         @memfs_entrance = "#{MEMFS}/lib/ruby/gems/#{self.class.ruby_api_version}/bin/#{@entrance}"
+      elsif File.exist?(File.join(@gems_dir, "bin/#{File.basename(@entrance)}"))
+        @entrance = File.basename(@entrance)
+        @memfs_entrance = "#{MEMFS}/lib/ruby/gems/#{self.class.ruby_api_version}/bin/#{@entrance}"
       else
-        if File.exist?(File.join(@gems_dir, "bin/#{File.basename(@entrance)}"))
-          @entrance = File.basename(@entrance)
-          @memfs_entrance = "#{MEMFS}/lib/ruby/gems/#{self.class.ruby_api_version}/bin/#{@entrance}"
-        else
-          @utils.chdir(File.join(@gems_dir, "bin")) do
-            raise Error, "Cannot find entrance #{@entrance}, available entrances are #{ Dir["*"].join(", ") }."
-          end
+        @utils.chdir(File.join(@gems_dir, 'bin')) do
+          raise Error, "Cannot find entrance #{@entrance}, available entrances are #{Dir['*'].join(', ')}."
         end
       end
     end
@@ -420,7 +465,7 @@ class Compiler
   def install_from_local
     log "=> Installing source from local files #{@root}"
 
-    @work_dir_local = File.join(@work_dir_inner, "local")
+    @work_dir_local = File.join(@work_dir_inner, 'local')
     @utils.cp_r(@root, @work_dir_local)
 
     @utils.chdir(@work_dir_local) do
@@ -429,21 +474,20 @@ class Compiler
 
       if x.absolute?
         raise "Entrance #{@entrance} is not in the project root #{@root}" unless @entrance.include?(@root)
+
         @entrance = x.relative_path_from y
       end
 
-      if File.exist?("#{@entrance}")
-        @memfs_entrance = "#{MEMFS}/local/#{@entrance}"
-      else
-        raise Error, "Cannot find entrance #{@entrance}"
-      end
+      raise Error, "Cannot find entrance #{@entrance}" unless File.exist?(@entrance.to_s)
+
+      @memfs_entrance = "#{MEMFS}/local/#{@entrance}"
     end
   end
 
   def log(message = nil)
     return if @options[:quiet]
 
-    $stderr.puts message
+    warn message
   end
 
   def stuff(library)
@@ -478,11 +522,11 @@ class Compiler
         @utils.run(@compile_env, 'nmake /f win32\\Makefile.msc')
       else
         @utils.run(@compile_env,
-                   "./configure",
-                   "--static",
+                   './configure',
+                   '--static',
                    "--prefix=#{@local_build}")
         @utils.run(@compile_env, "make #{@options[:make_args]}")
-        @utils.run(@compile_env, "make install")
+        @utils.run(@compile_env, 'make install')
       end
     end
   end
@@ -498,12 +542,12 @@ class Compiler
         File.utime(Time.at(0), Time.at(0), x)
       end
       @utils.run(@compile_env,
-                 "./config",
-                 "no-shared",
+                 './config',
+                 'no-shared',
                  "--openssldir=#{@options[:openssl_dir]}",
                  "--prefix=#{@local_build}")
       @utils.run(@compile_env, "make #{@options[:make_args]}")
-      @utils.run(@compile_env, "make install_sw")
+      @utils.run(@compile_env, 'make install_sw')
     end
   end
 
@@ -519,15 +563,15 @@ class Compiler
       end
 
       @utils.run(@compile_env,
-                 "./configure",
-                 "--with-pic",
-                 "--enable-libgdbm-compat",
-                 "--disable-shared",
-                 "--enable-static",
-                 "--without-readline",
+                 './configure',
+                 '--with-pic',
+                 '--enable-libgdbm-compat',
+                 '--disable-shared',
+                 '--enable-static',
+                 '--without-readline',
                  "--prefix=#{@local_build}")
       @utils.run(@compile_env, "make #{@options[:make_args]}")
-      @utils.run(@compile_env, "make install")
+      @utils.run(@compile_env, 'make install')
     end
   end
 
@@ -543,13 +587,13 @@ class Compiler
       end
 
       @utils.run(@compile_env,
-                 "./configure",
-                 "--with-pic",
-                 "--disable-shared",
-                 "--enable-static",
+                 './configure',
+                 '--with-pic',
+                 '--disable-shared',
+                 '--enable-static',
                  "--prefix=#{@local_build}")
       @utils.run(@compile_env, "make #{@options[:make_args]}")
-      @utils.run(@compile_env, "make install")
+      @utils.run(@compile_env, 'make install')
     end
   end
 
@@ -565,13 +609,13 @@ class Compiler
       end
 
       @utils.run(@compile_env,
-                 "./configure",
-                 "--with-pic",
-                 "--disable-shared",
-                 "--enable-static",
+                 './configure',
+                 '--with-pic',
+                 '--disable-shared',
+                 '--enable-static',
                  "--prefix=#{@local_build}")
       @utils.run(@compile_env, "make #{@options[:make_args]}")
-      @utils.run(@compile_env, "make install")
+      @utils.run(@compile_env, 'make install')
     end
   end
 
@@ -586,12 +630,12 @@ class Compiler
         File.utime(Time.at(0), Time.at(0), x)
       end
       @utils.run(@compile_env,
-                 "./configure",
-                 "--without-shared",
-                 "--without-cxx-shared",
+                 './configure',
+                 '--without-shared',
+                 '--without-cxx-shared',
                  "--prefix=#{@local_build}")
       @utils.run(@compile_env, "make #{@options[:make_args]}")
-      @utils.run(@compile_env, "make install.libs")
+      @utils.run(@compile_env, 'make install.libs')
     end
   end
 
@@ -607,12 +651,12 @@ class Compiler
       end
 
       @utils.run(@compile_env,
-                 "./configure",
-                 "--disable-shared",
-                 "--enable-static",
+                 './configure',
+                 '--disable-shared',
+                 '--enable-static',
                  "--prefix=#{@local_build}")
       @utils.run(@compile_env, "make #{@options[:make_args]}")
-      @utils.run(@compile_env, "make install")
+      @utils.run(@compile_env, 'make install')
     end
   end
 
@@ -632,54 +676,10 @@ class Compiler
 
     copy_ruby_source
 
-    @gem_package.stuff_tmpdir if @gem_package
+    @gem_package&.stuff_tmpdir
   end
 
-  def run!
-    clean_env
-
-    stuff_tmpdir
-
-    @build_pass_1 = File.join(@options[:tmpdir], 'build_pass_1')
-    @build_pass_2 = File.join(@options[:tmpdir], 'build_pass_2')
-    @utils.mkdir_p(@build_pass_1)
-    @utils.mkdir_p(@build_pass_2)
-
-    if Gem.win_platform?
-      @ruby_configure = "#{@ruby_source_dir}\\win32\\configure.bat"
-
-      build_ruby_pass_1_windows
-
-      patch_ext_Setup_nodynamic
-      patch_Makefile_sub_LOAD_RELATIVE
-
-      # enclose_io_memfs.o - 2nd pass
-      prepare_work_dir
-      prepare_local
-
-      @utils.rm_f('include/enclose_io.h')
-      @utils.rm_f('enclose_io_memfs.c')
-
-      build_ruby_pass_2_windows
-    else
-      @ruby_configure = File.join(@ruby_source_dir, "configure")
-
-      build_ruby_pass_1_unix
-
-      patch_ext_Setup_nodynamic
-
-      # enclose_io_memfs.o - 2nd pass
-      prepare_work_dir
-      prepare_local
-
-      @utils.rm_f('include/enclose_io.h')
-      @utils.rm_f('enclose_io_memfs.c')
-
-      build_ruby_pass_2_unix
-    end
-  end
-
-  def patch_Makefile_sub_CFLAGS_LDFLAGS
+  def patch_win32
     target = File.join(@ruby_source_dir, 'win32', 'Makefile.sub')
     target_content = File.read(target)
 
@@ -687,22 +687,22 @@ class Compiler
 
     File.open(target, 'w') do |f|
       target_content.each_line do |line|
-        if 0 == found && (line =~ /^CFLAGS = (.*)$/)
+        if found.zero? && (line =~ /^CFLAGS = (.*)$/)
           found = 1
-          f.puts "CFLAGS = #{$1} #{@cflags}"
-        elsif 1 == found && (line =~ /^LDFLAGS = (.*)$/)
+          f.puts "CFLAGS = #{Regexp.last_match(1)} #{@cflags}"
+        elsif found == 1 && (line =~ /^LDFLAGS = (.*)$/)
           found = 2
-          f.puts "LDFLAGS = #{$1} #{@ldflags}"
+          f.puts "LDFLAGS = #{Regexp.last_match(1)} #{@ldflags}"
         else
           f.print line
         end
       end
     end
 
-    raise "Failed to patch CFLAGS and LDFLAGS of #{target}" unless 2 == found
+    raise "Failed to patch CFLAGS and LDFLAGS of #{target}" unless found == 2
   end
 
-  def patch_Makefile_sub_LOAD_RELATIVE
+  def patch_makefile
     # PATCH win32\Makefile.sub for 2nd pass
     target = File.join(@ruby_source_dir, 'win32', 'Makefile.sub')
     target_content = File.read(target)
@@ -710,16 +710,16 @@ class Compiler
 
     File.open(target, 'w') do |f|
       target_content.each_line do |line|
-        if 0 == found && (line =~ /^#define LOAD_RELATIVE 1$/)
+        if found.zero? && (line =~ /^#define LOAD_RELATIVE 1$/)
           found = 1
-          f.puts ""
+          f.puts ''
         else
           f.print line
         end
       end
     end
 
-    raise "Failed to patch CFLAGS and LDFLAGS of #{target}" unless 1 == found
+    raise "Failed to patch CFLAGS and LDFLAGS of #{target}" unless found == 1
   end
 
   def patch_common_mk
@@ -732,7 +732,7 @@ class Compiler
       target_content.each_line do |line|
         if !found && (line =~ /^INCFLAGS = (.*)$/)
           found = true
-          f.puts "INCFLAGS = #{$1} #{@cflags}"
+          f.puts "INCFLAGS = #{Regexp.last_match(1)} #{@cflags}"
         else
           f.print line
         end
@@ -742,7 +742,7 @@ class Compiler
     raise "Failed to patch INCFLAGS of #{target}" unless found
   end
 
-  def patch_ext_Setup_nodynamic
+  def patch_ext
     ext_setup = File.join(@ruby_source_dir, 'ext', 'Setup')
 
     File.open(ext_setup, 'w') do |f|
@@ -783,9 +783,9 @@ class Compiler
     @utils.mkdir @work_dir_inner
 
     @gems_dir =
-      File.join(@ruby_install_1, "lib", "ruby", "gems", self.class.ruby_api_version)
+      File.join(@ruby_install1, 'lib', 'ruby', 'gems', self.class.ruby_api_version)
 
-    @path_env = "#{File.join(@ruby_install_1, 'bin')}:#{ENV['PATH']}"
+    @path_env = "#{File.join(@ruby_install1, 'bin')}:#{ENV['PATH']}"
     @local_toolchain = {
       'CI' => 'true',
       'PATH' => @path_env,
@@ -803,22 +803,22 @@ class Compiler
         gemfiles = Dir['./gems.rb', './Gemfile']
         gems = Dir['./*.gem']
 
-        @gem    = File.join(@ruby_install_1_bin, "gem")
-        @bundle = File.join(@ruby_install_1_bin, "bundle")
+        @gem    = File.join(@ruby_install1_bin, 'gem')
+        @bundle = File.join(@ruby_install1_bin, 'bundle')
 
-        log "=> gem env"
-        @utils.run @local_toolchain, @gem, "env"
+        log '=> gem env'
+        @utils.run @local_toolchain, @gem, 'env'
 
-        if gemspecs.size > 0
-          raise "Multiple gemspecs detected" unless 1 == gemspecs.size
+        if !gemspecs.empty?
+          raise 'Multiple gemspecs detected' unless gemspecs.size == 1
 
           install_from_gemspec gemspecs.first, gemfiles
-        elsif gemfiles.size > 0
-          raise 'Multiple Gemfiles detected' unless 1 == gemfiles.size
+        elsif !gemfiles.empty?
+          raise 'Multiple Gemfiles detected' unless gemfiles.size == 1
 
           install_from_gemfile gemfiles.first
-        elsif gems.size > 0
-          raise 'Multiple gem files detected' unless 1 == gems.size
+        elsif !gems.empty?
+          raise 'Multiple gem files detected' unless gems.size == 1
 
           install_from_gem gems.first
         else
@@ -846,7 +846,7 @@ class Compiler
       end
     end
 
-    sources = Dir[File.join(@ruby_install_1, '*')]
+    sources = Dir[File.join(@ruby_install1, '*')]
     @utils.cp_r(sources, @work_dir_inner, preserve: true)
 
     Dir["#{@work_dir_inner}/**/*.{a,dylib,so,dll,lib,bundle}"].each do |thisdl|
@@ -870,21 +870,21 @@ class Compiler
 
   def make_enclose_io_memfs
     @utils.chdir(@ruby_source_dir) do
-      log "=> making squashfs"
+      log '=> making squashfs'
 
       @utils.rm_f('enclose_io_memfs.squashfs')
       @utils.rm_f('enclose_io_memfs.c')
-      @utils.run("mksquashfs", "-version")
-      @utils.run("mksquashfs", @work_dir, "enclose_io_memfs.squashfs")
+      @utils.run('mksquashfs', '-version')
+      @utils.run('mksquashfs', @work_dir, 'enclose_io_memfs.squashfs')
 
-      squashfs_to_c "enclose_io_memfs.squashfs", "enclose_io_memfs.c"
-      log "=> squashfs complete"
+      squashfs_to_c 'enclose_io_memfs.squashfs', 'enclose_io_memfs.c'
+      log '=> squashfs complete'
     end
   end
 
   def make_enclose_io_vars
     @utils.chdir(@ruby_source_dir) do
-      File.open("enclose_io.h", "w") do |f|
+      File.open('enclose_io.h', 'w') do |f|
         # remember to change libsquash's sample/enclose_io.h as well
         # might need to remove some object files at the 2nd pass
         f.puts '#ifndef ENCLOSE_IO_H_999BC1DA'
@@ -897,19 +897,20 @@ class Compiler
         f.puts ''
         f.puts "#define ENCLOSE_IO_ENV_BUNDLE_GEMFILE #{@env_bundle_gemfile.inspect}" if @env_bundle_gemfile
         f.puts "#define ENCLOSE_IO_ENTRANCE #{@memfs_entrance.inspect}" if @entrance
-        f.puts "#define ENCLOSE_IO_RAILS 1" if @enclose_io_rails
+        f.puts '#define ENCLOSE_IO_RAILS 1' if @enclose_io_rails
         if @options[:auto_update_url] && @options[:auto_update_base]
-          f.puts "#define ENCLOSE_IO_AUTO_UPDATE 1"
+          f.puts '#define ENCLOSE_IO_AUTO_UPDATE 1'
           f.puts "#define ENCLOSE_IO_AUTO_UPDATE_BASE #{@options[:auto_update_base].inspect}"
           urls = URI.split(@options[:auto_update_url])
-          raise 'logic error' unless 9 == urls.length
+          raise 'logic error' unless urls.length == 9
+
           port = urls[3]
           if port.nil?
-            if 'https' == urls[0]
-              port = 443
-            else
-              port = 80
-            end
+            port = if urls[0] == 'https'
+                     443
+                   else
+                     80
+                   end
           end
           f.puts "#define ENCLOSE_IO_AUTO_UPDATE_URL_Scheme #{urls[0].inspect}" if urls[0]
           f.puts "#define ENCLOSE_IO_AUTO_UPDATE_URL_Userinfo #{urls[1].inspect}" if urls[1]
@@ -934,40 +935,39 @@ class Compiler
   def mempath(path)
     path = File.expand_path(path)
     raise "path #{path} should start with #{@root}" unless @root == path[0...(@root.size)]
-    "#{MEMFS}/local#{path[(@root.size)..-1]}"
+
+    "#{MEMFS}/local#{path[(@root.size)..]}"
   end
 
   def prepare_flags1
     @ldflags = ''
     @cflags = ''
 
-    if Gem.win_platform?
-      if @options[:debug]
-        @cflags += ' -MD /DEBUG:FULL /Od -Zi '
-      else
-        @cflags += ' -MD /Ox '
-      end
-    else
-      if @options[:debug]
-        @cflags += ' -fPIC -g -O0 -pipe '
-      else
-        @cflags += ' -fPIC -O3 -fno-fast-math -ggdb3 -Os -fdata-sections -ffunction-sections -pipe '
-      end
-    end
+    @cflags += if Gem.win_platform?
+                 if @options[:debug]
+                   ' -MD /DEBUG:FULL /Od -Zi '
+                 else
+                   ' -MD /Ox '
+                 end
+               elsif @options[:debug]
+                 ' -DRUBY_DEBUG -fPIC -g -O0 -pipe '
+               else
+                 ' -DRUBY_DEBUG -fPIC -O3 -fno-fast-math -ggdb3 -Os -fdata-sections -ffunction-sections -pipe '
+               end
 
-    if Gem.win_platform?
-      @compile_env = {
-        'CI' => 'true',
-        'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1'
-      }
-    else
-      @compile_env = {
-        'CI' => 'true',
-        'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1',
-        'CFLAGS' => @cflags,
-        'LDFLAGS' => @ldflags
-      }
-    end
+    @compile_env = if Gem.win_platform?
+                     {
+                       'CI' => 'true',
+                       'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1'
+                     }
+                   else
+                     {
+                       'CI' => 'true',
+                       'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1',
+                       'CFLAGS' => @cflags,
+                       'LDFLAGS' => @ldflags
+                     }
+                   end
   end
 
   def prepare_flags2
@@ -992,19 +992,19 @@ class Compiler
       @cflags += " -I#{@utils.escape File.join(lib, 'libffi-3.2.1', 'include')} "
     end
 
-    if Gem.win_platform?
-      @compile_env = {
-        'CI' => 'true',
-        'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1'
-      }
-    else
-      @compile_env = {
-        'CI' => 'true',
-        'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1',
-        'CFLAGS' => @cflags,
-        'LDFLAGS' => @ldflags
-      }
-    end
+    @compile_env = if Gem.win_platform?
+                     {
+                       'CI' => 'true',
+                       'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1'
+                     }
+                   else
+                     {
+                       'CI' => 'true',
+                       'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1',
+                       'CFLAGS' => @cflags,
+                       'LDFLAGS' => @ldflags
+                     }
+                   end
   end
 
   ##
@@ -1012,20 +1012,20 @@ class Compiler
   # sample/enclose_io_memfs.c as well
 
   def squashfs_to_c(squashfs_file, c_file)
-    File.open squashfs_file, "rb" do |squashfs|
-      File.open(c_file, "w") do |c|
-        c.puts "#include <stdint.h>"
-        c.puts "#include <stddef.h>"
+    File.open squashfs_file, 'rb' do |squashfs|
+      File.open(c_file, 'w') do |c|
+        c.puts '#include <stdint.h>'
+        c.puts '#include <stddef.h>'
         c.puts
 
         byte = squashfs.read(1).bytes.first
         c.puts "const uint8_t enclose_io_memfs[#{squashfs.size}] = { #{byte}"
 
-        while chunk = squashfs.read(101)
-          c.puts ",#{chunk.bytes.join ","}"
+        while (chunk = squashfs.read(101))
+          c.puts ",#{chunk.bytes.join ','}"
         end
 
-        c.puts "};"
+        c.puts '};'
         c.puts
       end
     end

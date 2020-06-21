@@ -1,12 +1,17 @@
 # Ruby Packer Changelog
 
-## v2.7.1
+## v2.7.1a
 
-- upgrade ruby to 2.7.1
-- use internal enclosed Ruby version as rubyc's version prefix
-- remove `ruby/vendor/bundler-1.16.1.gem` since it is nowadays part of ruby
-- update license year to 2020
-- change to collective authorship
+- upgrade the enclosed Ruby to `2.7.1`
+- use the enclosed Ruby version as the version prefix of `rubyc`
+- remove `ruby/vendor/bundler-1.16.1.gem` because Bundler is a part of Ruby's standard library since Ruby 2.6
+- compile with `-DRUBY_DEBUG` flag when `rubyc` was called with `--debug`
+- automatically determine the `-j` argument value of `make` by trying `nproc --all`
+- let `rake test:roundtrip` run `rubyc` with `Bundler.with_clean_env` so that `rubyc` is all on its own
+- let `rake test:roundtrip` live stream the `STDERR` and `STDOUT` outputs of spawned `rubyc`
+- add rubocop, fix lint issues and run lint in CI
+- update the license authorship to include all contributors
+- update the license year to 2020
 
 ## v0.4.0
 

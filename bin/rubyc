@@ -1,16 +1,17 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 
-# Copyright (c) 2017 - 2020 Ruby Packer authors (Minqi Pan et al.)
-# 
+# Copyright (c) 2017 - 2020 Minqi Pan et al.
+#
 # This file is part of Ruby Packer, distributed under the MIT License
 # For full terms see the included LICENSE file
 
-$LOAD_PATH.unshift File.expand_path("../../lib", __FILE__)
+$LOAD_PATH.unshift File.expand_path('../lib', __dir__)
 
-require "compiler"
+require 'compiler'
 require 'optparse'
 
-USAGE = %Q{
+USAGE = %{
 
 Ruby Compiler (rubyc) v#{::Compiler::VERSION}
 Compiling your Ruby application into a single executable.
@@ -22,20 +23,20 @@ Usage
 
 }.strip
 
-EXAMPLES = %Q{
+EXAMPLES = %{
 
 Examples
 
   Producing a single Ruby interpreter executable:
     rubyc
     ./a.out (or a.exe on Windows)
-  
+
   Compiling a CLI tool:
     git clone --depth 1 https://github.com/pmq20/ruby-packer.git
     cd ruby-packer
     rubyc bin/rubyc
     ./a.out (or a.exe on Windows)
-  
+
   Compiling a Rails application:
     rails new yours
     cd yours
@@ -59,55 +60,55 @@ end
 OptionParser.new do |opts|
   opts.banner = USAGE
 
-  opts.on("-rDIR", "--root=DIR", "The path to the root of the application") do |dir|
+  opts.on('-rDIR', '--root=DIR', 'The path to the root of the application') do |dir|
     options[:root] = dir
   end
 
-  opts.on("-oFILE", "--output=FILE", "The path of the output file") do |file|
+  opts.on('-oFILE', '--output=FILE', 'The path of the output file') do |file|
     options[:output] = file
   end
 
-  opts.on("-dDIR", "--tmpdir=DIR", "The directory for temporary files") do |dir|
+  opts.on('-dDIR', '--tmpdir=DIR', 'The directory for temporary files') do |dir|
     options[:tmpdir] = dir
   end
 
-  opts.on("-c", "--clean-tmpdir", "Cleans temporary files before compiling") do
+  opts.on('-c', '--clean-tmpdir', 'Cleans temporary files before compiling') do
     options[:clean_tmpdir] = true
   end
 
-  opts.on("--keep-tmpdir", "Keeps all temporary files that were generated last time") do
+  opts.on('--keep-tmpdir', 'Keeps all temporary files that were generated last time') do
     options[:keep_tmpdir] = true
   end
 
-  opts.on("--openssl-dir", "The path to openssl") do |dir|
+  opts.on('--openssl-dir', 'The path to openssl') do |dir|
     options[:openssl_dir] = dir
   end
 
-  opts.on("--make-args=ARGS", "Extra arguments to be passed to make") do |args|
+  opts.on('--make-args=ARGS', 'Extra arguments to be passed to make') do |args|
     options[:make_args] = args
   end
 
-  opts.on("--nmake-args=ARGS", "Extra arguments to be passed to nmake") do |args|
+  opts.on('--nmake-args=ARGS', 'Extra arguments to be passed to nmake') do |args|
     options[:nmake_args] = args
   end
 
-  opts.on("--gem=NAME", "Downloads and compiles the specified gem") do |name|
+  opts.on('--gem=NAME', 'Downloads and compiles the specified gem') do |name|
     options[:gem] = name
   end
 
-  opts.on("--gem-version=VER", "Downloads and compiles the specified version of the gem") do |ver|
+  opts.on('--gem-version=VER', 'Downloads and compiles the specified version of the gem') do |ver|
     options[:gem_version] = ver
   end
 
-  opts.on("--auto-update-url=URL", "Enables auto-update and specifies the URL to get the latest version") do |url|
+  opts.on('--auto-update-url=URL', 'Enables auto-update and specifies the URL to get the latest version') do |url|
     options[:auto_update_url] = url
   end
 
-  opts.on("--auto-update-base=STRING", "Enables auto-update and specifies the base version string") do |string|
+  opts.on('--auto-update-base=STRING', 'Enables auto-update and specifies the base version string') do |string|
     options[:auto_update_base] = string
   end
 
-  opts.on("-i", "--ignore-file=STRING", "Ignore file(s) from build") do |string|
+  opts.on('-i', '--ignore-file=STRING', 'Ignore file(s) from build') do |string|
     if options[:ignore_file].is_a?(Array)
       options[:ignore_file] << string
     else
@@ -115,25 +116,30 @@ OptionParser.new do |opts|
     end
   end
 
-  opts.on("--debug", "Enable debug mode") do
+  opts.on('--debug', 'Enable debug mode') do
     options[:debug] = true
   end
 
-  opts.on("--quiet", "Enable quiet mode") do
+  opts.on('--quiet', 'Enable quiet mode') do
     options[:quiet] = true
   end
 
-  opts.on("-v", "--version", "Prints the version of rubyc and exit") do
+  opts.on('-v', '--version', 'Prints the version of rubyc and exit') do
     puts ::Compiler::VERSION
     exit 0
   end
 
-  opts.on("--ruby-api-version", "Prints the version of the Ruby API and exit") do
+  opts.on('-V', '--ruby-version', 'Prints the version of the Ruby runtime and exit') do
+    puts ::Compiler.ruby_version
+    exit 0
+  end
+
+  opts.on('--ruby-api-version', 'Prints the version of the Ruby API and exit') do
     puts ::Compiler.ruby_api_version
     exit 0
   end
 
-  opts.on("-h", "--help", "Prints this help and exit") do
+  opts.on('-h', '--help', 'Prints this help and exit') do
     usage.call(STDOUT)
     STDOUT.puts
     STDOUT.puts EXAMPLES
@@ -149,6 +155,6 @@ begin
   instance = ::Compiler.new entrance, options
   instance.run!
 rescue ::Compiler::Error => e
-  STDERR.puts e.message
+  warn e.message
   exit 1
 end

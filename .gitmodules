@@ -1,6 +1,0 @@
-[submodule "tests/ruby-compiler-ram"]
-	path = tests/ruby-compiler-ram
-	url = https://github.com/pmq20/ruby-compiler-ram.git
-[submodule "tests/ruby-compiler-blbt"]
-	path = tests/ruby-compiler-blbt
-	url = https://github.com/pmq20/ruby-compiler-blbt.git

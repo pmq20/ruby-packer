@@ -2,9 +2,6 @@
 
 *Packing your Ruby application into a single executable.*
 
-[![Status](https://ci.appveyor.com/api/projects/status/93i36eliiy6v3686/branch/master?svg=true)](https://ci.appveyor.com/project/pmq20/ruby-packer/branch/master)
-[![Status](https://travis-ci.org/pmq20/ruby-packer.svg?branch=master)](https://travis-ci.org/pmq20/ruby-packer)
-
 ## Features
 
 - Works on Linux, Mac and Windows
@@ -52,7 +49,7 @@ First install the prerequisites:
 
 * [SquashFS Tools 4.3](http://squashfs.sourceforge.net/)
   - `sudo yum install squashfs-tools`
-  - `sudo apt-get install squashfs-tools`
+  - `sudo apt install squashfs-tools`
 * `gcc` or `clang`
 * GNU Make
 * [Ruby](https://www.ruby-lang.org/)
@@ -166,8 +163,6 @@ build ruby and the libraries stuffed inside rubyc which include at least:
 * yaml
 * zlib
 
-Also see the OS-specific prerequisites below.
-
 If you are unsure if your toolchain is complete then trying to build `rubyc`
 will let you know you are missing something.  Unfortunately it may tell you
 with some unfamiliar message.  Please file an issue here if this occurs.
@@ -196,22 +191,11 @@ add the `--clean-tmpdir` argument to `rubyc` for a clean rebuild.
 
 ## Authors
 
-Authors ordered by first contribution.
-
-* [pmq20](https://github.com/pmq20) - **Minqi Pan** &lt;pmq2001@gmail.com&gt;
-* [dread-uo](https://github.com/dread-uo) - **Eduardo Silva**
-* [nilsding](https://github.com/nilsding) - **Georg Gadinger** &lt;nilsding@nilsding.org&gt;
-* [drbrain](https://github.com/drbrain) -  **Eric Hodel** &lt;drbrain@segment7.net&gt;
-* [jakolehm](https://github.com/jakolehm) - **Jari Kolehmainen**
-* [yourivdlans](https://github.com/yourivdlans) - **Youri van der Lans** &lt;youri@itflows.nl&gt;
-* [SwagDevOps](https://github.com/SwagDevOps) - **Dimitri Arrigoni**
-* [monkeywithacupcake](https://github.com/monkeywithacupcake) - **Jess**
-* [bethesque](https://github.com/bethesque) - **Beth Skurrie**
-* [chanmanx](https://github.com/chanmanx)
+[Minqi Pan et al.](https://raw.githubusercontent.com/pmq20/ruby-packer/master/AUTHORS)
 
 ## License
 
-MIT
+[MIT](https://raw.githubusercontent.com/pmq20/ruby-packer/master/LICENSE)
 
 ## See Also
 
