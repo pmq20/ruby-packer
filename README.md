@@ -2,11 +2,9 @@
 
 *Packing your Ruby application into a single executable.*
 
-|                       | Architecture |                                                                CI&#160;Status                                                                           |
-|:---------------------:|:------------:|---------------------------------------------------------------------------------------------------------------------------------------------------------|
-|      **Windows**      |    x86-64    | [![Windows](https://github.com/pmq20/ruby-packer/workflows/Windows/badge.svg)](https://github.com/pmq20/ruby-packer/actions?query=workflow%3A"Windows") |
-|       **macOS**       |    x86-64    | [![macOS](https://github.com/pmq20/ruby-packer/workflows/macOS/badge.svg)](https://github.com/pmq20/ruby-packer/actions?query=workflow%3A"macOS")       |
-|       **Linux**       |    x86-64    | [![Ubuntu](https://github.com/pmq20/ruby-packer/workflows/Ubuntu/badge.svg)](https://github.com/pmq20/ruby-packer/actions?query=workflow%3A"Ubuntu")    |
+[![Windows](https://github.com/pmq20/ruby-packer/workflows/Windows/badge.svg)](https://github.com/pmq20/ruby-packer/actions?query=workflow%3A"Windows")
+[![macOS](https://github.com/pmq20/ruby-packer/workflows/macOS/badge.svg)](https://github.com/pmq20/ruby-packer/actions?query=workflow%3A"macOS")
+[![Ubuntu](https://github.com/pmq20/ruby-packer/workflows/Ubuntu/badge.svg)](https://github.com/pmq20/ruby-packer/actions?query=workflow%3A"Ubuntu")
 
 ## Features
 
