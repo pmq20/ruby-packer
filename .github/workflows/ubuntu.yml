@@ -1,4 +1,4 @@
-name: Ubuntu 16.04/18.04/20.04
+name: Ubuntu
 on:
   push:
     branches: [ master ]
@@ -41,7 +41,7 @@ jobs:
         run: |
           git config --global advice.detachedHead 0
       - uses: actions/checkout@v2
-      - run: ./tool/actions-commit-info.sh
+      - run: ./ruby/tool/actions-commit-info.sh
         id: commit_info
       - name: Fixed world writable dirs
         run: |

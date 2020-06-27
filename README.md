@@ -2,11 +2,11 @@
 
 *Packing your Ruby application into a single executable.*
 
-|                       | Architecture |                                                                                                    CI&#160;Status                                                                                                      |
-|:---------------------:|:------------:|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-|      **Windows**      |    x86-64    | [![Windows Server 2019](https://github.com/pmq20/ruby-packer/workflows/Windows%20Server%202019/badge.svg)](https://github.com/pmq20/ruby-packer/actions?query=workflow%3A"Windows%20Server%202019")                    |
-|       **macOS**       |    x86-64    | [![macOS Catalina 10.15](https://github.com/pmq20/ruby-packer/workflows/macOS%20Catalina%2010.15/badge.svg)](https://github.com/pmq20/ruby-packer/actions?query=workflow%3A"macOS%20Catalina%2010.15")                 |
-|       **Linux**       |    x86-64    | [![Ubuntu 16.04/18.04/20.04](https://github.com/pmq20/ruby-packer/workflows/Ubuntu%2016.04%2F18.04%2F20.04/badge.svg)](https://github.com/pmq20/ruby-packer/actions?query=workflow%3A"Ubuntu%2016.04%2F18.04%2F20.04") |
+|                       | Architecture |                                                                CI&#160;Status                                                                           |
+|:---------------------:|:------------:|---------------------------------------------------------------------------------------------------------------------------------------------------------|
+|      **Windows**      |    x86-64    | [![Windows](https://github.com/pmq20/ruby-packer/workflows/Windows/badge.svg)](https://github.com/pmq20/ruby-packer/actions?query=workflow%3A"Windows") |
+|       **macOS**       |    x86-64    | [![macOS](https://github.com/pmq20/ruby-packer/workflows/macOS/badge.svg)](https://github.com/pmq20/ruby-packer/actions?query=workflow%3A"macOS")       |
+|       **Linux**       |    x86-64    | [![Ubuntu](https://github.com/pmq20/ruby-packer/workflows/Ubuntu/badge.svg)](https://github.com/pmq20/ruby-packer/actions?query=workflow%3A"Ubuntu")    |
 
 ## Features
 
