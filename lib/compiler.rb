@@ -379,7 +379,7 @@ class Compiler
     @utils.chdir(@work_dir_local) do
       # bundle install
       @utils.run(@local_toolchain, @bundle, 'install')
-                 
+
       # detect Rails
       if @utils.run_allow_failures(@local_toolchain, @bundle, 'show', 'rails').exitstatus.zero?
         log '=> Detected a Rails project'
@@ -788,7 +788,7 @@ class Compiler
     }
   end
 
-  ## 
+  ##
   # Prepare /__enclose_io_memfs__/local
 
   def prepare_local

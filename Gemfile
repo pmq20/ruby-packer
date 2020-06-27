@@ -11,4 +11,3 @@ group :development, :test do
   gem 'rake', '~> 13.0', '>= 13.0.1'
   gem 'rubocop', '~> 0.85.1'
 end
-

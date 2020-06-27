@@ -144,11 +144,17 @@ class Compiler
     end
 
     def default_make_j_arg
-      possible_val = `nproc --all`.to_s.strip.to_i
-      raise 'bad value' unless possible_val.positive?
+      begin
+        possible_val = `nproc --all`.to_s.strip.to_i
+      rescue Errno::ENOENT
+        begin
+          possible_val = `sysctl -n hw.activecpu`.to_s.strip.to_i
+        rescue Errno::ENOENT
+          return 4
+        end
+      end
+      return possible_val if possible_val.positive?
 
-      possible_val
-    rescue StandardError
       4
     end
   end

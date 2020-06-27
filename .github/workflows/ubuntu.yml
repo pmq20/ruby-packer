@@ -1,4 +1,4 @@
-name: Ubuntu
+name: Ubuntu 16.04/18.04/20.04
 on:
   push:
     branches: [ master ]
@@ -41,9 +41,7 @@ jobs:
         run: |
           git config --global advice.detachedHead 0
       - uses: actions/checkout@v2
-        with:
-          path: src
-      - run: ./src/tool/actions-commit-info.sh
+      - run: ./tool/actions-commit-info.sh
         id: commit_info
       - name: Fixed world writable dirs
         run: |
@@ -62,15 +60,11 @@ jobs:
           echo '::set-env name=ENCLOSE_IO_RUBYC_TEST_ENCLOSED_RUBY::'${{ matrix.test_task }}
       - name: "[Enclose.io] Set up Ruby"
         uses: ruby/setup-ruby@v1
-        working-directory: src
       - name: "[Enclose.io] Install dependencies"
         run: bundle install
-        working-directory: src
       - name: "[Enclose.io] Run rubocop"
         run: bundle exec rubocop
-        working-directory: src
       - name: "[Enclose.io] Run tests"
         run: bundle exec rake
-        working-directory: src
         env:
           RUBY_TESTOPTS: "-q --tty=no"

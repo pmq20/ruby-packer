@@ -1,0 +1,62 @@
+name: Windows Server 2019
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+jobs:
+  make:
+    strategy:
+      matrix:
+        os: [windows-2019]
+        vs: [2019]
+        debug: ["", "--debug"]
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
+    env:
+      GITPULLOPTIONS: --no-tags origin ${{github.ref}}
+    if: "!contains(github.event.head_commit.message, '[ci skip]')"
+    steps:
+      - uses: actions/cache@v1
+        with:
+          path: C:\vcpkg\downloads
+          key: ${{ runner.os }}-vcpkg-download-${{ matrix.os }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-vcpkg-download-${{ matrix.os }}-
+            ${{ runner.os }}-vcpkg-download-
+      - name: Install libraries with vcpkg
+        run: |
+          vcpkg --triplet x64-windows install readline zlib
+      - uses: actions/cache@v1
+        with:
+          path: C:\Users\runneradmin\AppData\Local\Temp\chocolatey
+          key: ${{ runner.os }}-chocolatey-${{ matrix.os }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-chocolatey-${{ matrix.os }}-
+            ${{ runner.os }}-chocolatey-
+      - name: Install libraries with chocolatey
+        run: |
+          choco install --no-progress openssl winflexbison3
+      - name: git config
+        run: |
+          git config --system advice.detachedHead 0
+      - uses: actions/checkout@v2
+      - run: ./tool/actions-commit-info.sh
+        shell: bash
+        id: commit_info
+      - name: "[Enclose.io] Install libraries"
+        run: |
+          echo todo
+      - name: "[Enclose.io] Set ENV"
+        run: |
+          echo '::set-env name=ENCLOSE_IO_RUBYC_ADDTIONAL_ARGS::'${{ matrix.debug }}
+      - name: "[Enclose.io] Set up Ruby"
+        uses: ruby/setup-ruby@v1
+      - name: "[Enclose.io] Install dependencies"
+        run: bundle install
+      - name: "[Enclose.io] Run rubocop"
+        run: bundle exec rubocop
+      - name: "[Enclose.io] Run tests"
+        run: bundle exec rake
+        env:
+          RUBY_TESTOPTS: "-q --tty=no"

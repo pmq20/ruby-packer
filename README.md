@@ -2,20 +2,20 @@
 
 *Packing your Ruby application into a single executable.*
 
-|                       | Architecture |                                                                CI&#160;Status                                                                             |
-|:---------------------:|:------------:|-----------------------------------------------------------------------------------------------------------------------------------------------------------|
-|      **Windows**      |    x86-64    | [![CI Status](https://github.com/pmq20/ruby-packer/workflows/Windows/badge.svg)](https://github.com/pmq20/ruby-packer/actions?query=workflow%3A"Windows") |
-|       **macOS**       |    x86-64    | [![CI Status](https://github.com/pmq20/ruby-packer/workflows/macOS/badge.svg)](https://github.com/pmq20/ruby-packer/actions?query=workflow%3A"macOS")     |
-|       **Linux**       |    x86-64    | [![CI Status](https://github.com/pmq20/ruby-packer/workflows/Ubuntu/badge.svg)](https://github.com/pmq20/ruby-packer/actions?query=workflow%3A"Ubuntu")   |
+|                       | Architecture |                                                                                                    CI&#160;Status                                                                                                      |
+|:---------------------:|:------------:|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|      **Windows**      |    x86-64    | [![Windows Server 2019](https://github.com/pmq20/ruby-packer/workflows/Windows%20Server%202019/badge.svg)](https://github.com/pmq20/ruby-packer/actions?query=workflow%3A"Windows%20Server%202019")                    |
+|       **macOS**       |    x86-64    | [![macOS Catalina 10.15](https://github.com/pmq20/ruby-packer/workflows/macOS%20Catalina%2010.15/badge.svg)](https://github.com/pmq20/ruby-packer/actions?query=workflow%3A"macOS%20Catalina%2010.15")                 |
+|       **Linux**       |    x86-64    | [![Ubuntu 16.04/18.04/20.04](https://github.com/pmq20/ruby-packer/workflows/Ubuntu%2016.04%2F18.04%2F20.04/badge.svg)](https://github.com/pmq20/ruby-packer/actions?query=workflow%3A"Ubuntu%2016.04%2F18.04%2F20.04") |
 
 ## Features
 
-- Works on Linux, Mac and Windows
-- Creates a binary distribution of your application
+- Works on Windows, macOS and Linux
+- Creates a binary distribution of your Ruby and/or Rails application
 - Supports natively any form of `require` and `load`, including dynamic ones (e.g. `load(my_path + 'x.rb'`)
 - Features zero-config auto-update capabilities to make your packed project to stay up to date
+- Windows is supported directly using Windows API; no MinGW needed
 - Native C extensions are fully supported
-- Rails applications are fully supported
 - Open Source, MIT Licensed
 
 ## Download and Install
@@ -31,6 +31,22 @@ You won't need to modify a single line of code in your application, no matter ho
 |       **Linux**       |    x86-64    | http://enclose.io/rubyc/rubyc-linux-x64.gz   |
 
 For previous releases, see http://enclose.io/rubyc
+
+### Install on Windows
+
+First install the prerequisites:
+
+* [SquashFS Tools 4.3](https://github.com/pmq20/squashfuse/files/691217/sqfs43-win32.zip)
+* [Visual Studio 2015 Update 3](https://www.visualstudio.com/), all editions
+  including the Community edition (remember to select
+  "Common Tools for Visual C++ 2015" feature during installation).
+* [Ruby](https://www.ruby-lang.org/)
+
+Then download [rubyc-x64.zip](http://enclose.io/rubyc/rubyc-x64.zip),
+and this zip file contains only one executable.
+Unzip it. Optionally,
+rename it to `rubyc.exe` and put it under `C:\Windows` (or any other directory that is part of `PATH`).
+Execute `rubyc --help` from the command line.
 
 ### Install on macOS
 
@@ -65,22 +81,6 @@ Then,
     curl -L http://enclose.io/rubyc/rubyc-linux-x64.gz | gunzip > rubyc
     chmod +x rubyc
     ./rubyc --help
-
-### Install on Windows
-
-First install the prerequisites:
-
-* [SquashFS Tools 4.3](https://github.com/pmq20/squashfuse/files/691217/sqfs43-win32.zip)
-* [Visual Studio 2015 Update 3](https://www.visualstudio.com/), all editions
-  including the Community edition (remember to select
-  "Common Tools for Visual C++ 2015" feature during installation).
-* [Ruby](https://www.ruby-lang.org/)
-
-Then download [rubyc-x64.zip](http://enclose.io/rubyc/rubyc-x64.zip),
-and this zip file contains only one executable.
-Unzip it. Optionally,
-rename it to `rubyc.exe` and put it under `C:\Windows` (or any other directory that is part of `PATH`).
-Execute `rubyc --help` from the command line.
 
 ## Usage
 

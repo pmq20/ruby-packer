@@ -13,7 +13,7 @@
   - it now live streams the `STDERR` and `STDOUT` outputs of spawned `rubyc`
 - remove `ruby/vendor/bundler-1.16.1.gem` because Bundler is a part of Ruby's standard library since Ruby 2.6
 - compile with `-DRUBY_DEBUG` flag when `rubyc` was called with `--debug`
-- automatically determine the `-j` argument value of `make` by trying `nproc --all`
+- automatically determine the `-j` argument value of `make` by trying `nproc --all` and `sysctl -n hw.activecpu`
 - simply the hacks maintained in `ruby/process.c`
 - add rubocop, fix lint issues and run lint in CI
 - avoid bundle-install with `--deployment --binstubs` (which was also duplicated), as this might pollute the user's project
