@@ -792,9 +792,6 @@ class Compiler
   # Prepare /__enclose_io_memfs__/local
 
   def prepare_local
-    sources = Dir[File.join(@ruby_install1, '*')]
-    @utils.cp_r(sources, @work_dir_inner, preserve: true)
-
     if @entrance
       @utils.chdir(@root) do
         gemspecs = Dir['./*.gemspec']
@@ -844,6 +841,9 @@ class Compiler
       end
     end
 
+    sources = Dir[File.join(@ruby_install1, '*')]
+    @utils.cp_r(sources, @work_dir_inner, preserve: true)
+
     Dir["#{@work_dir_inner}/**/*.{a,dylib,so,dll,lib,bundle}"].each do |thisdl|
       @utils.rm_f(thisdl)
     end
@@ -869,6 +869,9 @@ class Compiler
 
       @utils.rm_f('enclose_io_memfs.squashfs')
       @utils.rm_f('enclose_io_memfs.c')
+
+      log "The following files are going to be packed:\n#{Dir[File.join(@work_dir, '**/*')].join("\n")}" if @options[:debug]
+
       @utils.run('mksquashfs', '-version')
       @utils.run('mksquashfs', @work_dir, 'enclose_io_memfs.squashfs')
 

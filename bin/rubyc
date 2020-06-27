@@ -6,6 +6,9 @@
 # This file is part of Ruby Packer, distributed under the MIT License
 # For full terms see the included LICENSE file
 
+require 'rubygems'
+require 'bundler/setup'
+
 $LOAD_PATH.unshift File.expand_path('../lib', __dir__)
 
 require 'compiler'

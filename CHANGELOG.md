@@ -6,7 +6,9 @@
   - will use the enclosed Ruby version as the version prefix of `rubyc`, and "a-z" as the suffix
   - this is the first release w/ enclosed "ruby 2.7.1", hence "rubyc 2.7.1a"
 - upgrade libsquash to v0.9.0
-  - intercept `execv()` for unix
+  - `enclose_io_uix.c`: intercept `execv()` for unix
+  - `enclose_io_uix.c`: rewrite `enclose_io_openat()`
+  - `enclose_io_uix.c`: fix a double-free in `enclose_io_fdopendir()` and `squash_close()`
 - simply the hacks maintained in `ruby/process.c`
 - revise `rake test:roundtrip` and use it as the main test to guarantee the quality of `rubyc`
   - it now runs `rubyc` with `Bundler.with_clean_env` so that the spawned `rubyc` is tested with a clean slate
@@ -17,7 +19,9 @@
 - automatically determine the `-j` argument value of `make` by trying `nproc --all` and `sysctl -n hw.activecpu`
 - avoid bundle-install with `--deployment --binstubs` (which was also duplicated), as this might pollute the user's project
   - instead, gracefully prefix argv with "bundle exec entrance" in runtime
-- add rubocop, fix lint issues and run lint in CI usiung GitHub Actions; #100
+- add rubocop, fix lint issues and run lint in CI 
+- fix #95: Not able to run with gems outside of Rubygems (gem "xxx", github: "xxx")
+- fix #100: run CI usiung GitHub Actions
 - update the license authorship to include all contributors
 - update the license year to 2020
 

@@ -431,16 +431,9 @@ DIR * enclose_io_fdopendir(int fd)
 	dir->nr = 0;
 	dir->filename = strdup(file->filename);
 	dir->fd = fd;
-
-	handle = (int *)(squash_global_fdtable.fds[dir->fd]->payload);
-
-	MUTEX_LOCK(&squash_global_mutex);
-	free(handle);
-	squash_global_fdtable.fds[dir->fd]->payload = (void *)dir;
-	MUTEX_UNLOCK(&squash_global_mutex);
-
 	dir->actual_nr = 0;
 	dir->loc = 0;
+
 	error = sqfs_inode_get(fs, &dir->node, sqfs_inode_root(fs));
 	if (SQFS_OK != error)
 	{
@@ -461,6 +454,14 @@ DIR * enclose_io_fdopendir(int fd)
 	{
 		goto failure;
 	}
+	
+	handle = (int *)(squash_global_fdtable.fds[dir->fd]->payload);
+
+	MUTEX_LOCK(&squash_global_mutex);
+	free(handle);
+	squash_global_fdtable.fds[dir->fd]->payload = (void *)dir;
+	MUTEX_UNLOCK(&squash_global_mutex);
+
 	return dir;
 failure:
 	if (!errno) {
@@ -1033,13 +1034,46 @@ int enclose_io_open(int nargs, const char *pathname, int flags, ...)
 	}
 }
 
-int enclose_io_openat(int nargs, int fd, const char *pathname, int flags, ...)
+int enclose_io_openat(int nargs, int dirfd, const char *pathname, int flags, ...)
 {
-	if (fd == AT_FDCWD && enclose_io_if(pathname)) {
-		return enclose_io_open(nargs, pathname, flags);
-	}
+	if (3 == nargs) {
+		// If pathname is absolute, then dirfd is ignored.
+		if (enclose_io_is_path(pathname)) {
+			return enclose_io_open(nargs, pathname, flags);
+		}
 
-	return openat(fd, pathname, flags);
+		// If the pathname given in pathname is relative,
+		// then it is interpreted relative to the directory referred to by the file descriptor dirfd
+		// (rather than relative to the current working directory of the calling process, as is done by open(2) for a relative pathname).
+		// TODO: at dirfd
+		if (dirfd == AT_FDCWD && enclose_io_cwd[0] && '/' != *pathname) {
+			return enclose_io_open(nargs, pathname, flags);
+		}
+
+		return openat(dirfd, pathname, flags);
+	} else {
+		va_list args;
+		mode_t mode;
+		assert(4 == nargs);
+		va_start(args, flags);
+		mode = va_arg(args, mode_t);
+		va_end(args);
+		
+		// If pathname is absolute, then dirfd is ignored.
+		if (enclose_io_is_path(pathname)) {
+			return enclose_io_open(nargs, pathname, flags, mode);
+		}
+
+		// If the pathname given in pathname is relative,
+		// then it is interpreted relative to the directory referred to by the file descriptor dirfd
+		// (rather than relative to the current working directory of the calling process, as is done by open(2) for a relative pathname).
+		// TODO: at dirfd
+		if (dirfd == AT_FDCWD && enclose_io_cwd[0] && '/' != *pathname) {
+			return enclose_io_open(nargs, pathname, flags, mode);
+		}
+
+		return openat(dirfd, pathname, flags, mode);
+	}
 }
 
 int enclose_io_close(int fildes)
