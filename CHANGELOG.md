@@ -7,17 +7,17 @@
   - this is the first release w/ enclosed "ruby 2.7.1", hence "rubyc 2.7.1a"
 - upgrade libsquash to v0.9.0
   - intercept `execv()` for unix
+- simply the hacks maintained in `ruby/process.c`
 - revise `rake test:roundtrip` and use it as the main test to guarantee the quality of `rubyc`
-  - (work in progress) it now runs Ruby tests inside the spawned `rubyc` binary to make sure that Ruby behaves correctly after packing
   - it now runs `rubyc` with `Bundler.with_clean_env` so that the spawned `rubyc` is tested with a clean slate
   - it now live streams the `STDERR` and `STDOUT` outputs of spawned `rubyc`
+  - WIP: it now runs the following 5 Ruby tests inside the spawned `rubyc` binary to ensure that the enclosed Ruby functions well
 - remove `ruby/vendor/bundler-1.16.1.gem` because Bundler is a part of Ruby's standard library since Ruby 2.6
 - compile with `-DRUBY_DEBUG` flag when `rubyc` was called with `--debug`
 - automatically determine the `-j` argument value of `make` by trying `nproc --all` and `sysctl -n hw.activecpu`
-- simply the hacks maintained in `ruby/process.c`
-- add rubocop, fix lint issues and run lint in CI
 - avoid bundle-install with `--deployment --binstubs` (which was also duplicated), as this might pollute the user's project
   - instead, gracefully prefix argv with "bundle exec entrance" in runtime
+- add rubocop, fix lint issues and run lint in CI usiung GitHub Actions; #100
 - update the license authorship to include all contributors
 - update the license year to 2020
 
