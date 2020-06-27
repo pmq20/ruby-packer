@@ -8,9 +8,12 @@ jobs:
   make:
     strategy:
       matrix:
-        test_task: [ "check", "test-bundler-parallel", "test-bundled-gems", "test-all TESTS=--repeat-count=2", "leaked-globals" ]
-        os: [ubuntu-20.04, ubuntu-18.04, ubuntu-16.04]
-        debug: ["", "--debug"]
+        # test_task: [ "check", "test-bundler-parallel", "test-bundled-gems", "test-all TESTS=--repeat-count=2", "leaked-globals" ]
+        test_task: [ "check" ]
+        # os: [ubuntu-20.04, ubuntu-18.04, ubuntu-16.04]
+        os: [ubuntu-20.04]
+        # debug: ["", "--debug"]
+        debug: ["--debug"]
         exclude:
           - test_task: test-bundler-parallel
             os: ubuntu-16.04
