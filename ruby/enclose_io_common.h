@@ -24,6 +24,11 @@
 #include <fcntl.h>
 #include <stdarg.h>
 #include <assert.h>
+#include <limits.h> /* PATH_MAX */
+
+#ifdef __linux__
+#include <linux/limits.h> /* PATH_MAX */
+#endif
 
 #ifdef _WIN32
 #include <direct.h>
@@ -346,6 +351,7 @@ ssize_t enclose_io_readv(int d, const struct iovec *iov, int iovcnt);
 void* enclose_io_dlopen(const char* path, int mode);
 int enclose_io_access(const char *path, int mode);
 int enclose_io_mkdir(const char *path, mode_t mode);
+int enclose_io_execv(const char *path, char *const argv[]);
 
 #endif // !_WIN32
 

@@ -41,6 +41,7 @@
 	#define dlopen(...)	enclose_io_dlopen(__VA_ARGS__)
 	#define access(...)	enclose_io_access(__VA_ARGS__)
 	#define mkdir(...)	enclose_io_mkdir(__VA_ARGS__)
+	#define execv(...)	enclose_io_execv(__VA_ARGS__)
 
 #endif // !_WIN32
 #endif //!__cplusplus

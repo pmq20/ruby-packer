@@ -101,16 +101,27 @@ main(int argc, char **argv)
 	new_argv = argv;
 	argv_memory = NULL;
 	if (NULL == getenv("ENCLOSE_IO_USE_ORIGINAL_RUBY")) {
-#ifdef ENCLOSE_IO_ENV_BUNDLE_GEMFILE
-		ret = setenv("BUNDLE_GEMFILE", ENCLOSE_IO_ENV_BUNDLE_GEMFILE, 1);
-		assert(0 == ret);
-#endif // ENCLOSE_IO_ENV_BUNDLE_GEMFILE
 #ifdef ENCLOSE_IO_RAILS
 		assert(NULL == mkdir_workdir);
 		enclose_io_mkdir_scope = "/__enclose_io_memfs__/local";
 		ret = setenv("ENCLOSE_IO_RAILS", "1", 1);
 		assert(0 == ret);
 #endif // ENCLOSE_IO_RAILS
+#ifdef ENCLOSE_IO_ENV_BUNDLE_GEMFILE
+		ret = setenv("BUNDLE_GEMFILE", ENCLOSE_IO_ENV_BUNDLE_GEMFILE, 1);
+		assert(0 == ret);
+		// prefix argv with "bundle exec entrance"
+		new_argv = (char **)malloc( (argc + 3) * sizeof(char *));
+		assert(new_argv);
+		new_argv[0] = argv[0];
+		new_argv[1] = "/__enclose_io_memfs__/bin/bundle";
+		new_argv[2] = "exec";
+		new_argv[3] = ENCLOSE_IO_ENTRANCE;
+		for (i = 1; i < argc; ++i) {
+			new_argv[4 + i - 1] = argv[i];
+		}
+		new_argc = argc + 3;
+#else // ENCLOSE_IO_ENV_BUNDLE_GEMFILE
 		new_argv = (char **)malloc( (argc + 1) * sizeof(char *));
 		assert(new_argv);
 		new_argv[0] = argv[0];
@@ -119,6 +130,7 @@ main(int argc, char **argv)
 			new_argv[2 + i - 1] = argv[i];
 		}
 		new_argc = argc + 1;
+#endif // ENCLOSE_IO_ENV_BUNDLE_GEMFILE
 		/* argv memory should be adjacent. */
 		total_argv_size = 0;
 		for (i = 0; i < new_argc; ++i) {

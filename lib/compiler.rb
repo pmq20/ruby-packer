@@ -377,12 +377,10 @@ class Compiler
     @utils.cp_r(@root, @work_dir_local) unless @options[:keep_tmpdir]
 
     @utils.chdir(@work_dir_local) do
-      # installing with --binstubs is duplicated below.  We should probably
-      # flatten the nested if below and always install with --binstubs.
-      @utils.run(@local_toolchain,
-                 @bundle, 'install',
-                 '--deployment',
-                 '--binstubs')
+      # bundle install
+      @utils.run(@local_toolchain, @bundle, 'install')
+                 
+      # detect Rails
       if @utils.run_allow_failures(@local_toolchain, @bundle, 'show', 'rails').exitstatus.zero?
         log '=> Detected a Rails project'
         @enclose_io_rails = true
@@ -394,26 +392,21 @@ class Compiler
         log '=> Not a Rails project'
       end
 
+      # determine entrance
       if File.exist?(@entrance)
         @memfs_entrance = mempath(@entrance)
       elsif File.exist?("bin/#{@entrance}")
         @memfs_entrance = "#{MEMFS}/local/bin/#{@entrance}"
+      elsif File.exist?("bin/#{File.basename(@entrance)}")
+        @entrance = File.basename(@entrance)
+        @memfs_entrance = "#{MEMFS}/local/bin/#{@entrance}"
+      elsif File.exist?("bundle/ruby/#{self.class.ruby_api_version}/bin/#{@entrance}")
+        @memfs_entrance = "#{MEMFS}/local/bundle/ruby/#{self.class.ruby_api_version}/bin/#{@entrance}"
+      elsif File.exist?("bundle/ruby/#{self.class.ruby_api_version}/bin/#{File.basename(@entrance)}")
+        @entrance = File.basename(@entrance)
+        @memfs_entrance = "#{MEMFS}/local/bundle/ruby/#{self.class.ruby_api_version}/bin/#{@entrance}"
       else
-        @utils.run(@local_toolchain,
-                   @bundle, 'install',
-                   '--deployment',
-                   '--binstubs')
-
-        if File.exist?("bin/#{@entrance}")
-          @memfs_entrance = "#{MEMFS}/local/bin/#{@entrance}"
-        elsif File.exist?("bin/#{File.basename(@entrance)}")
-          @entrance = File.basename(@entrance)
-          @memfs_entrance = "#{MEMFS}/local/bin/#{@entrance}"
-        else
-          @utils.chdir('bin') do
-            raise Error, "Cannot find entrance #{@entrance}, available entrances are #{Dir['*'].join(', ')}."
-          end
-        end
+        raise Error, "Cannot find entrance #{@entrance}"
       end
     end
   end
@@ -795,8 +788,13 @@ class Compiler
     }
   end
 
+  ## 
+  # Prepare /__enclose_io_memfs__/local
+
   def prepare_local
-    # Prepare /__enclose_io_memfs__/local
+    sources = Dir[File.join(@ruby_install1, '*')]
+    @utils.cp_r(sources, @work_dir_inner, preserve: true)
+
     if @entrance
       @utils.chdir(@root) do
         gemspecs = Dir['./*.gemspec']
@@ -845,9 +843,6 @@ class Compiler
         @utils.rm_rf(File.join(@gems_dir, 'cache'))
       end
     end
-
-    sources = Dir[File.join(@ruby_install1, '*')]
-    @utils.cp_r(sources, @work_dir_inner, preserve: true)
 
     Dir["#{@work_dir_inner}/**/*.{a,dylib,so,dll,lib,bundle}"].each do |thisdl|
       @utils.rm_f(thisdl)

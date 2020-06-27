@@ -1,0 +1,76 @@
+name: Ubuntu
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+jobs:
+  make:
+    strategy:
+      matrix:
+        test_task: [ "check", "test-bundler-parallel", "test-bundled-gems", "test-all TESTS=--repeat-count=2", "leaked-globals" ]
+        os: [ubuntu-20.04, ubuntu-18.04, ubuntu-16.04]
+        debug: ["", "--debug"]
+        exclude:
+          - test_task: test-bundler-parallel
+            os: ubuntu-16.04
+          - test_task: test-bundled-gems
+            os: ubuntu-16.04
+          - test_task: "test-all TESTS=--repeat-count=2"
+            os: ubuntu-16.04
+          - test_task: leaked-globals
+            os: ubuntu-16.04
+          - os: ubuntu-16.04
+            debug: -DRUBY_DEBUG
+          - test_task: "test-all TESTS=--repeat-count=2"
+            debug: -DRUBY_DEBUG
+          - test_task: leaked-globals
+            debug: -DRUBY_DEBUG
+      fail-fast: false
+    env:
+      GITPULLOPTIONS: --no-tags origin ${{github.ref}}
+    runs-on: ${{ matrix.os }}
+    if: "!contains(github.event.head_commit.message, '[ci skip]')"
+    steps:
+      - name: Install libraries
+        run: |
+          set -x
+          sudo apt-get update -q || :
+          sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev libgdbm-dev bison autoconf ruby
+      - name: git config
+        run: |
+          git config --global advice.detachedHead 0
+      - uses: actions/checkout@v2
+        with:
+          path: src
+      - run: ./src/tool/actions-commit-info.sh
+        id: commit_info
+      - name: Fixed world writable dirs
+        run: |
+          chmod -v go-w $HOME $HOME/.config
+          sudo chmod -R go-w /usr/share
+          sudo bash -c 'IFS=:; for d in '"$PATH"'; do chmod -v go-w $d; done' || :
+      - name: Set ENV
+        run: |
+          echo '::set-env name=JOBS::'-j$((1 + $(nproc --all)))
+      - name: "[Enclose.io] Install libraries"
+        run: |
+          sudo apt-get install --no-install-recommends -q -y squashfs-tools
+      - name: "[Enclose.io] Set ENV"
+        run: |
+          echo '::set-env name=ENCLOSE_IO_RUBYC_ADDTIONAL_ARGS::'${{ matrix.debug }}
+          echo '::set-env name=ENCLOSE_IO_RUBYC_TEST_ENCLOSED_RUBY::'${{ matrix.test_task }}
+      - name: "[Enclose.io] Set up Ruby"
+        uses: ruby/setup-ruby@v1
+        working-directory: src
+      - name: "[Enclose.io] Install dependencies"
+        run: bundle install
+        working-directory: src
+      - name: "[Enclose.io] Run rubocop"
+        run: bundle exec rubocop
+        working-directory: src
+      - name: "[Enclose.io] Run tests"
+        run: bundle exec rake
+        working-directory: src
+        env:
+          RUBY_TESTOPTS: "-q --tty=no"

@@ -278,6 +278,55 @@ int enclose_io__wmkdir(wchar_t* pathname)
 	}
 }
 #else
+int enclose_io__exec(const char *path, char *const argv[])
+{
+	int i, ret, argc;
+	char **new_argv, **argv_memory = NULL;
+	size_t exec_path_len = 2 * PATH_MAX;
+	char* exec_path = (char*)(malloc(exec_path_len));
+	int autoupdate_exepath(char*, size_t*); // from libautoupdate
+
+	ret = autoupdate_exepath(exec_path, &exec_path_len);
+	assert(0 == ret);
+
+	ret = setenv("ENCLOSE_IO_USE_ORIGINAL_RUBY", "1", 1);
+	assert(0 == ret);
+
+	argc = 1;
+	while (argv[argc]) { ++argc; }
+	new_argv = (char **)malloc( (2 + argc) * sizeof(char *));
+	assert(new_argv);
+	new_argv[0] = argv[0];
+	new_argv[1] = path;
+	for (i = 1; i < argc; ++i) {
+		new_argv[2 + i - 1] = argv[i];
+	}
+	new_argv[2 + argc - 1] = NULL;
+
+	ret = execv(exec_path, new_argv);
+
+	free(exec_path);
+	free(new_argv);
+	return ret;
+}
+
+int enclose_io_execv(const char *path, char *const argv[])
+{
+	const char* squash_extracted_path = NULL;
+
+	if (enclose_io_cwd[0] && '/' != *path) {
+		sqfs_path enclose_io_expanded;
+		size_t enclose_io_cwd_len;
+		size_t memcpy_len;
+		ENCLOSE_IO_GEN_EXPANDED_NAME(path);
+		return enclose_io__exec(enclose_io_expanded, argv);
+	} else if (enclose_io_is_path(path)) {
+		return enclose_io__exec(path, argv);
+	} else {
+		return execv(path, argv);
+	}
+}
+
 int enclose_io_lstat(const char *path, struct stat *buf)
 {
 	if (enclose_io_cwd[0] && '/' != *path) {

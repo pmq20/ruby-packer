@@ -100,4 +100,8 @@ class TestRoundTrip < Minitest::Test
   def test_unit_tests
     ruby '-e', "Dir.chdir('/__enclose_io_memfs__/local'); ARGV.replace %w[test:unit]; load '/__enclose_io_memfs__/bin/rake'"
   end
+
+  def test_enclosed_ruby
+    puts "TODO: RUN RUBY TEST FOR #{ENV['ENCLOSE_IO_RUBYC_TEST_ENCLOSED_RUBY'].inspect}"
+  end
 end

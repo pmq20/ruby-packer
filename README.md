@@ -2,6 +2,12 @@
 
 *Packing your Ruby application into a single executable.*
 
+|                       | Architecture |                                                                CI&#160;Status                                                                             |
+|:---------------------:|:------------:|-----------------------------------------------------------------------------------------------------------------------------------------------------------|
+|      **Windows**      |    x86-64    | [![CI Status](https://github.com/pmq20/ruby-packer/workflows/Windows/badge.svg)](https://github.com/pmq20/ruby-packer/actions?query=workflow%3A"Windows") |
+|       **macOS**       |    x86-64    | [![CI Status](https://github.com/pmq20/ruby-packer/workflows/macOS/badge.svg)](https://github.com/pmq20/ruby-packer/actions?query=workflow%3A"macOS")     |
+|       **Linux**       |    x86-64    | [![CI Status](https://github.com/pmq20/ruby-packer/workflows/Ubuntu/badge.svg)](https://github.com/pmq20/ruby-packer/actions?query=workflow%3A"Ubuntu")   |
+
 ## Features
 
 - Works on Linux, Mac and Windows
@@ -20,11 +26,11 @@ You won't need to modify a single line of code in your application, no matter ho
 
 |                       | Architecture |           Latest&#160;Stable                 |
 |:---------------------:|:------------:|----------------------------------------------|
+|      **Windows**      |    x86-64    | http://enclose.io/rubyc/rubyc-x64.zip        |
 |       **macOS**       |    x86-64    | http://enclose.io/rubyc/rubyc-darwin-x64.gz  |
 |       **Linux**       |    x86-64    | http://enclose.io/rubyc/rubyc-linux-x64.gz   |
-|      **Windows**      |    x86-64    | http://enclose.io/rubyc/rubyc-x64.zip        |
 
-For previous releases, cf. http://enclose.io/rubyc
+For previous releases, see http://enclose.io/rubyc
 
 ### Install on macOS
 
@@ -171,9 +177,9 @@ Once your toolchain is set up run `bundle`.  To compile your own `rubyc` run:
 
 	bundle exec rake rubyc
 
-Or:
+Or (if you want to compile with debug symbols):
 
-	rm rubyc; ruby -Ilib bin/rubyc bin/rubyc -o rubyc
+  ENCLOSE_IO_RUBYC_ADDTIONAL_ARGS=--debug bundle exec rake rubyc
 
 This will produce a single `rubyc` executable, which can
 be put inside any of your `PATH` locations, so that it can be directly

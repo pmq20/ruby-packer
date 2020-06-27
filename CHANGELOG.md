@@ -3,13 +3,21 @@
 ## v2.7.1a
 
 - upgrade the enclosed Ruby to `2.7.1`
-- use the enclosed Ruby version as the version prefix of `rubyc`
+  - will use the enclosed Ruby version as the version prefix of `rubyc`, and "a-z" as the suffix
+  - this is the first release w/ enclosed "ruby 2.7.1", hence "rubyc 2.7.1a"
+- upgrade libsquash to v0.9.0
+  - intercept `execv()` for unix
+- revise `rake test:roundtrip` and use it as the main test to guarantee the quality of `rubyc`
+  - it now runs Ruby tests inside the spawned `rubyc` binary to make sure that Ruby behaves correctly after packing
+  - it now runs `rubyc` with `Bundler.with_clean_env` so that the spawned `rubyc` is tested with a clean slate
+  - it now live streams the `STDERR` and `STDOUT` outputs of spawned `rubyc`
 - remove `ruby/vendor/bundler-1.16.1.gem` because Bundler is a part of Ruby's standard library since Ruby 2.6
 - compile with `-DRUBY_DEBUG` flag when `rubyc` was called with `--debug`
 - automatically determine the `-j` argument value of `make` by trying `nproc --all`
-- let `rake test:roundtrip` run `rubyc` with `Bundler.with_clean_env` so that `rubyc` is all on its own
-- let `rake test:roundtrip` live stream the `STDERR` and `STDOUT` outputs of spawned `rubyc`
+- simply the hacks maintained in `ruby/process.c`
 - add rubocop, fix lint issues and run lint in CI
+- avoid bundle-install with `--deployment --binstubs` (which was also duplicated), as this might pollute the user's project
+  - instead, gracefully prefix argv with "bundle exec entrance" in runtime
 - update the license authorship to include all contributors
 - update the license year to 2020
 
