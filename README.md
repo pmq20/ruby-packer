@@ -6,7 +6,8 @@
 [![macOS](https://github.com/pmq20/ruby-packer/workflows/macOS/badge.svg)](https://github.com/pmq20/ruby-packer/actions?query=workflow%3A"macOS")
 [![Ubuntu](https://github.com/pmq20/ruby-packer/workflows/Ubuntu/badge.svg)](https://github.com/pmq20/ruby-packer/actions?query=workflow%3A"Ubuntu")
 
-**MAINTENANCE STATUS** (Jun 27th, 2020): This project's original author [Minqi Pan](https://github.com/pmq20/ruby-packer/blob/master/README.md) is currently only available to maintain this project during his weekend. We are working with the goal of releasing next version `rubyc v2.7.1a` as soon as possible; please see [CHANGELOG.md](https://github.com/pmq20/ruby-packer/blob/master/CHANGELOG.md) for the details of the upcoming release. Before the release is finished, please consider using the `master` branch code instead of relying on the latest stable, as it is very old. Also, we are attending to reported issues one by one, ordered by creation time descendingly.
+> **MAINTENANCE STATUS** (Jun 27th, 2020): This project's original author [Minqi Pan](https://github.com/pmq20/ruby-packer/blob/master/README.md) is currently only available to maintain this project during his weekend. We are working with the goal of releasing next version `rubyc v2.7.1a` as soon as possible; please see [CHANGELOG.md](https://github.com/pmq20/ruby-packer/blob/master/CHANGELOG.md) for the details of the upcoming release. Before the release is finished, please consider using the `master` branch code instead of relying on the latest stable binary, as it is very old. Also, we are attending to reported issues one by one, ordered by creation time descendingly.
+
 
 ## Features
 
