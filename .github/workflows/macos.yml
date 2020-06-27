@@ -37,6 +37,10 @@ jobs:
       - name: "[Enclose.io] Install libraries"
         run: |
           sw_vers
+          uname -a
+          uname -p
+          uname -m
+          sysctl -n machdep.cpu.brand_string
           export WAITS='5 60'
           ruby/tool/travis_retry.sh brew install squashfs
       - name: "[Enclose.io] Set ENV"

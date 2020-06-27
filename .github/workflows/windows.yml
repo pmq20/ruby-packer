@@ -46,7 +46,7 @@ jobs:
         id: commit_info
       - name: "[Enclose.io] Install libraries"
         run: |
-          echo todo
+          choco install --no-progress squashfs
       - name: "[Enclose.io] Set ENV"
         run: |
           echo '::set-env name=ENCLOSE_IO_RUBYC_ADDTIONAL_ARGS::'${{ matrix.debug }}
@@ -57,6 +57,17 @@ jobs:
       - name: "[Enclose.io] Run rubocop"
         run: bundle exec rubocop
       - name: "[Enclose.io] Run tests"
-        run: bundle exec rake
+        run: |
+          call "C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          set YACC=win_bison
+          echo on
+          wmic OS get OSArchitecture
+          echo %PROCESSOR_ARCHITECTURE%
+          set
+          systeminfo
+          where nmake
+          where mksquashfs
+          bundle exec rake
+        shell: cmd
         env:
           RUBY_TESTOPTS: "-q --tty=no"

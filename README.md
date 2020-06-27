@@ -8,7 +8,6 @@
 
 > **DEVELOPMENT STATUS** (Jun 27th, 2020): The project's original author [Minqi Pan](https://github.com/pmq20) is currently only available to maintain the project during his weekend. We are working with the goal of releasing next version `rubyc v2.7.1a` as soon as possible; please see [CHANGELOG.md](https://github.com/pmq20/ruby-packer/blob/master/CHANGELOG.md) for the details of the upcoming release. Before the release is finished, please consider using the `master` branch code instead of relying on the latest stable binary, as it is very old. Also, we are attending to reported issues one by one, ordered by creation time descendingly.
 
-
 ## Features
 
 - Works on Windows, macOS and Linux
@@ -27,9 +26,9 @@ You won't need to modify a single line of code in your application, no matter ho
 
 |                       | Architecture |           Latest&#160;Stable                 |
 |:---------------------:|:------------:|----------------------------------------------|
-|      **Windows**      |    x86-64    | http://enclose.io/rubyc/rubyc-x64.zip        |
-|       **macOS**       |    x86-64    | http://enclose.io/rubyc/rubyc-darwin-x64.gz  |
-|       **Linux**       |    x86-64    | http://enclose.io/rubyc/rubyc-linux-x64.gz   |
+|      **Windows**      |      x64     | http://enclose.io/rubyc/rubyc-x64.zip        |
+|       **macOS**       |      x64     | http://enclose.io/rubyc/rubyc-darwin-x64.gz  |
+|       **Linux**       |      x64     | http://enclose.io/rubyc/rubyc-linux-x64.gz   |
 
 For previous releases, see http://enclose.io/rubyc
 

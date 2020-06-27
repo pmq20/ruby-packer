@@ -53,6 +53,11 @@ jobs:
           echo '::set-env name=JOBS::'-j$((1 + $(nproc --all)))
       - name: "[Enclose.io] Install libraries"
         run: |
+          cat /etc/issue
+          uname -a
+          uname -p
+          uname -m
+          lscpu
           sudo apt-get install --no-install-recommends -q -y squashfs-tools
       - name: "[Enclose.io] Set ENV"
         run: |

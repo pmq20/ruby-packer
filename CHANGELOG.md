@@ -10,10 +10,6 @@
   - `enclose_io_uix.c`: rewrite `enclose_io_openat()`
   - `enclose_io_uix.c`: fix a double-free in `enclose_io_fdopendir()` and `squash_close()`
 - simply the hacks maintained in `ruby/process.c`
-- revise `rake test:roundtrip` and use it as the main test to guarantee the quality of `rubyc`
-  - it now runs `rubyc` with `Bundler.with_clean_env` so that the spawned `rubyc` is tested with a clean slate
-  - it now live streams the `STDERR` and `STDOUT` outputs of spawned `rubyc`
-  - WIP: it now runs the following 5 Ruby tests inside the spawned `rubyc` binary to ensure that the enclosed Ruby functions well
 - remove `ruby/vendor/bundler-1.16.1.gem` because Bundler is a part of Ruby's standard library since Ruby 2.6
 - compile with `-DRUBY_DEBUG` flag when `rubyc` was called with `--debug`
 - automatically determine the `-j` argument value of `make` by trying `nproc --all` and `sysctl -n hw.activecpu`
@@ -22,6 +18,9 @@
 - add rubocop, fix lint issues and run lint in CI 
 - fix #95: Not able to run with gems outside of Rubygems (gem "xxx", github: "xxx")
 - fix #100: run CI usiung GitHub Actions
+- revise the `rake test:roundtrip` test
+  - runs `rubyc` with `Bundler.with_clean_env` so that the spawned `rubyc` is tested with a clean slate
+  - live stream the `STDERR` and `STDOUT` outputs of the spawned `rubyc`
 - update the license authorship to include all contributors
 - update the license year to 2020
 
