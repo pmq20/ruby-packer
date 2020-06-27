@@ -8,7 +8,7 @@
 - upgrade libsquash to v0.9.0
   - intercept `execv()` for unix
 - revise `rake test:roundtrip` and use it as the main test to guarantee the quality of `rubyc`
-  - it now runs Ruby tests inside the spawned `rubyc` binary to make sure that Ruby behaves correctly after packing
+  - (work in progress) it now runs Ruby tests inside the spawned `rubyc` binary to make sure that Ruby behaves correctly after packing
   - it now runs `rubyc` with `Bundler.with_clean_env` so that the spawned `rubyc` is tested with a clean slate
   - it now live streams the `STDERR` and `STDOUT` outputs of spawned `rubyc`
 - remove `ruby/vendor/bundler-1.16.1.gem` because Bundler is a part of Ruby's standard library since Ruby 2.6
