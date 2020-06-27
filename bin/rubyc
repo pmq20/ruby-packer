@@ -8,10 +8,9 @@
 
 require 'rubygems'
 require 'bundler/setup'
+Bundler.require(:default)
 
-$LOAD_PATH.unshift File.expand_path('../lib', __dir__)
-
-require 'compiler'
+require_relative '../lib/compiler'
 require 'optparse'
 
 USAGE = %{

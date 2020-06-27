@@ -5,10 +5,11 @@
 # This file is part of Ruby Packer, distributed under the MIT License
 # For full terms see the included LICENSE file
 
-require 'compiler/constants'
-require 'compiler/error'
-require 'compiler/utils'
-require 'compiler/gem_package'
+require_relative './compiler/constants'
+require_relative './compiler/error'
+require_relative './compiler/utils'
+require_relative './compiler/gem_package'
+
 require 'shellwords'
 require 'tmpdir'
 require 'fileutils'

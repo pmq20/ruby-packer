@@ -1,5 +1,9 @@
 # frozen_string_literal: true
 
+require 'rubygems'
+require 'bundler/setup'
+Bundler.require(:default)
+
 require 'rake/testtask'
 require 'rake/clean'
 
@@ -13,7 +17,9 @@ file 'rubyc' => rubyc_deps do
   # don't include rubyc in rubyc
   rm_f 'rubyc'
 
-  ruby_args = ['bin/rubyc', 'bin/rubyc', '-o', 'rubyc', ENV['ENCLOSE_IO_RUBYC_ADDTIONAL_ARGS']].compact
+  ruby_args = ['bin/rubyc', 'bin/rubyc', '-o', 'rubyc']
+  ruby_args << ENV['ENCLOSE_IO_RUBYC_ADDTIONAL_ARGS'] if ENV['ENCLOSE_IO_RUBYC_ADDTIONAL_ARGS'].present?
+
   warn "Will call ruby with #{ruby_args}"
   ruby(*ruby_args)
 end

@@ -5,7 +5,8 @@
 # This file is part of Node.js Compiler, distributed under the MIT License
 # For full terms see the included LICENSE file
 
-require 'compiler/error'
+require_relative './error'
+
 require 'shellwords'
 require 'tmpdir'
 require 'fileutils'

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative '../test_helper'
+
 require 'open3'
 
 class TestRoundTrip < Minitest::Test
@@ -19,39 +20,45 @@ class TestRoundTrip < Minitest::Test
   # Run original ruby inside rubyc
 
   def ruby(*args)
-    Bundler.with_unbundled_env do
-      Open3.popen3(@env, @rubyc, *args) do |stdin, stdout, stderr, wait_thr|
-        stdin.close
+    Dir.mktmpdir do |dir|
+      Dir.chdir(dir) do
+        FileUtils.cp(@rubyc, "#{dir}/rubyc")
 
-        Thread.new do
-          until (raw_line = stdout.gets).nil?
-            parsed_line = Hash[timestamp: Time.now, line: raw_line.to_s]
-            STDOUT.puts "rubyc's ruby STDOUT: #{parsed_line}"
+        Bundler.with_unbundled_env do
+          Open3.popen3(@env, "#{dir}/rubyc", *args) do |stdin, stdout, stderr, wait_thr|
+            stdin.close
+
+            Thread.new do
+              until (raw_line = stdout.gets).nil?
+                parsed_line = Hash[timestamp: Time.now, line: raw_line.to_s]
+                STDOUT.puts "rubyc's ruby STDOUT: #{parsed_line}"
+              end
+            end
+
+            Thread.new do
+              until (raw_line = stderr.gets).nil?
+                parsed_line = Hash[timestamp: Time.now, line: raw_line.to_s]
+                warn "rubyc's ruby STDERR: #{parsed_line}"
+              end
+            end
+
+            status = wait_thr.value
+
+            flunk <<~MESSAGE unless status.success?
+              failed to run ruby #{args.join ' '}
+              
+              -------- <stdout> ----------
+              #{stdout.read}
+              -------- <stdout> ----------
+              
+              -------- <stderr> ----------
+              #{stderr.read}
+              -------- <stderr> ----------
+            MESSAGE
+
+            return [stdout.read, stderr.read]
           end
         end
-
-        Thread.new do
-          until (raw_line = stderr.gets).nil?
-            parsed_line = Hash[timestamp: Time.now, line: raw_line.to_s]
-            warn "rubyc's ruby STDERR: #{parsed_line}"
-          end
-        end
-
-        status = wait_thr.value
-
-        flunk <<~MESSAGE unless status.success?
-          failed to run ruby #{args.join ' '}
-          
-          -------- <stdout> ----------
-          #{stdout.read}
-          -------- <stdout> ----------
-          
-          -------- <stderr> ----------
-          #{stderr.read}
-          -------- <stderr> ----------
-        MESSAGE
-
-        return [stdout.read, stderr.read]
       end
     end
   end
@@ -60,25 +67,31 @@ class TestRoundTrip < Minitest::Test
   # Run rubyc
 
   def rubyc(*args)
-    Bundler.with_unbundled_env do
-      Open3.popen3(@rubyc, *args) do |stdin, stdout, stderr, wait_thr|
-        stdin.close
+    Dir.mktmpdir do |dir|
+      Dir.chdir(dir) do
+        FileUtils.cp(@rubyc, "#{dir}/rubyc")
 
-        status = wait_thr.value
+        Bundler.with_unbundled_env do
+          Open3.popen3("#{dir}/rubyc", *args) do |stdin, stdout, stderr, wait_thr|
+            stdin.close
 
-        flunk <<~MESSAGE unless status.success?
-          failed to run rubyc #{args.join ' '}
-          
-          -------- <stdout> ----------
-          #{stdout.read}
-          -------- <stdout> ----------
-          
-          -------- <stderr> ----------
-          #{stderr.read}
-          -------- <stderr> ----------
-        MESSAGE
+            status = wait_thr.value
 
-        return [stdout.read, stderr.read]
+            flunk <<~MESSAGE unless status.success?
+              failed to run rubyc #{args.join ' '}
+              
+              -------- <stdout> ----------
+              #{stdout.read}
+              -------- <stdout> ----------
+              
+              -------- <stderr> ----------
+              #{stderr.read}
+              -------- <stderr> ----------
+            MESSAGE
+
+            return [stdout.read, stderr.read]
+          end
+        end
       end
     end
   end

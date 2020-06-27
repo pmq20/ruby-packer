@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 require_relative '../test_helper'
-require 'compiler'
+
+require_relative '../../lib/compiler'
 require 'tempfile'
 
 class TestCompiler < Minitest::Test
@@ -23,7 +24,6 @@ class TestCompiler < Minitest::Test
     expected_output = File.expand_path(Compiler::DEFAULT_NAME, @source_root)
 
     options = @compiler.options
-
     assert options.delete(:make_args) =~ /^-j\d+$/
     assert_equal expected_output, options.delete(:output)
     assert_match 'rubyc',         options.delete(:tmpdir)

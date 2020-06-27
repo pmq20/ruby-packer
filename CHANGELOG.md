@@ -20,6 +20,7 @@
 - fix #100: run CI usiung GitHub Actions
 - revise the `rake test:roundtrip` test
   - runs `rubyc` with `Bundler.with_clean_env` so that the spawned `rubyc` is tested with a clean slate
+  - runs `rubyc` in a temporary directory so that the spawned `rubyc` is tested with a clean slate
   - live stream the `STDERR` and `STDOUT` outputs of the spawned `rubyc`
 - update the license authorship to include all contributors
 - update the license year to 2020

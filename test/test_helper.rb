@@ -2,10 +2,9 @@
 
 require 'rubygems'
 require 'bundler/setup'
-require 'minitest/autorun'
-require 'minitest/reporters'
+Bundler.require(:default)
 
-$LOAD_PATH.unshift File.expand_path('../lib', __dir__)
+require 'minitest/autorun'
 
 # distinguish outputs by different reporters
 if ENV['ENCLOSE_IO_USE_ORIGINAL_RUBY']
