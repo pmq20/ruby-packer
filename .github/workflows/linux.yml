@@ -59,7 +59,7 @@ jobs:
         env:
           RUBY_TESTOPTS: "-q --tty=no"
       - name: "[rubyc] Create Linux Release"
-        if: ${{ github.ref == 'master' &&	matrix.os == "ubuntu-16.04" && matrix.debug == "" && success() }}
+        if: ${{ github.ref == 'master' &&	matrix.os == 'ubuntu-16.04' && matrix.debug == '' && success() }}
         id: create_linux_release
         uses: actions/create-release@v1
         env:
@@ -70,7 +70,7 @@ jobs:
           draft: false
           prerelease: false
       - name: "[rubyc] Upload Linux Release"
-        if: ${{ github.ref == 'master' &&	matrix.os == "ubuntu-16.04" && matrix.debug == "" && success() }}
+        if: ${{ github.ref == 'master' &&	matrix.os == 'ubuntu-16.04' && matrix.debug == '' && success() }}
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
