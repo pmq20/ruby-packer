@@ -13,7 +13,7 @@
 ## Features
 
 - Works on ![win](resource/win_sm.png) Windows, ![macOS](resource/apple_sm.png) macOS and ![linux](resource/linux_sm.png) Linux
-- ![win](resource/win_sm.png) Windows is supported via the native Windows API; there are no MSYS2/MinGW/Cygwin dependencies
+- Windows is supported via the native Windows API; there are no MSYS2/MinGW/Cygwin dependencies
 - Creates a binary distribution of your Ruby and/or Rails application
 - Supports natively any form of `require` and `load`, including dynamic ones (e.g. `load(my_path + '/x.rb')`)
 - Features zero-config auto-update capabilities to make your packed project to stay up to date
