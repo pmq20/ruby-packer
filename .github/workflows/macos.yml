@@ -49,7 +49,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: macos
+          tag_name: darwin-x64
           release_name: Latest macOS Build
           draft: false
           prerelease: false
@@ -61,5 +61,5 @@ jobs:
         with:
           upload_url: ${{ steps.create_macos_release.outputs.upload_url }}
           asset_path: ./rubyc
-          asset_name: rubyc-darwin-x64
+          asset_name: rubyc
           asset_content_type: application/octet-stream

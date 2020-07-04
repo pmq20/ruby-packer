@@ -44,7 +44,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: linux
+          tag_name: linux-x64
           release_name: Latest Linux Build
           draft: false
           prerelease: false
@@ -56,5 +56,5 @@ jobs:
         with:
           upload_url: ${{ steps.create_linux_release.outputs.upload_url }}
           asset_path: ./rubyc
-          asset_name: rubyc-linux-x64
+          asset_name: rubyc
           asset_content_type: application/octet-stream

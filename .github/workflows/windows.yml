@@ -58,7 +58,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: windows
+          tag_name: windows-x64
           release_name: Latest Windows Build
           draft: false
           prerelease: false

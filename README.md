@@ -26,22 +26,22 @@ It takes less than 5 minutes to compile any project with Ruby Packer.
 
 You won't need to modify a single line of code in your application, no matter how you developed it as long as it works in plain Ruby!
 
-|                                            | Arch. |                               Latest Build                                      |
-|--------------------------------------------|:-----:|---------------------------------------------------------------------------------|
-| ![win](resource/win_sm.png)  **Windows**   |  x64  | https://github.com/pmq20/ruby-packer/releases/download/latest/rubyc-x64.exe     |
-| ![macOS](resource/apple_sm.png) **macOS**  |  x64  | https://github.com/pmq20/ruby-packer/releases/download/latest/rubyc-darwin-x64  |
-| ![linux](resource/linux_sm.png) **Linux**  |  x64  | https://github.com/pmq20/ruby-packer/releases/download/latest/rubyc-linux-x64   |
+|                                            | Arch. |                               Latest Build                                    |
+|--------------------------------------------|:-----:|-------------------------------------------------------------------------------|
+| ![win](resource/win_sm.png)  **Windows**   |  x64  | https://github.com/pmq20/ruby-packer/releases/download/windows-x64/rubyc.exe  |
+| ![macOS](resource/apple_sm.png) **macOS**  |  x64  | https://github.com/pmq20/ruby-packer/releases/download/darwin-x64/rubyc       |
+| ![linux](resource/linux_sm.png) **Linux**  |  x64  | https://github.com/pmq20/ruby-packer/releases/download/linux-x64/rubyc        |
 
 ### ![win](resource/win_med.png) Install on Windows
 
 First install the prerequisites:
 
-* [SquashFS Tools](http://squashfs.sourceforge.net/): you can install it in Windows by first installing [choco](https://chocolatey.org) and then execute `choco install squashfs`.
+* [SquashFS Tools](http://squashfs.sourceforge.net/): you could install it by first installing [choco](https://chocolatey.org) and then executing `choco install squashfs`.
 * [Visual Studio](https://www.visualstudio.com/), all editions including the Community edition (remember to select "Common Tools for Visual C++" feature during installation).
-* [Ruby](https://www.ruby-lang.org/): you can install it in Windows using [RubyInstaller](https://rubyinstaller.org/).
+* [Ruby](https://www.ruby-lang.org/): you could install it using [RubyInstaller](https://rubyinstaller.org/).
 
-Then download [rubyc-x64.exe](https://github.com/pmq20/ruby-packer/releases/download/cutting-edge/rubyc-x64.exe).
-Optionally rename it to `rubyc.exe` and put it under `C:\Windows` (or any other directory that is part of `PATH`).
+Then download [rubyc.exe](https://github.com/pmq20/ruby-packer/releases/download/windows-x64/rubyc.exe).
+Optionally put it under `C:\Windows` or any other directory that is part of `PATH`.
 Execute `rubyc --help` from the command line.
 
 ### ![macOS](resource/apple_med.png) Install on macOS
@@ -57,7 +57,7 @@ First install the prerequisites:
 
 Then,
 
-    curl -L https://github.com/pmq20/ruby-packer/releases/download/latest/rubyc-darwin-x64 > rubyc
+    curl -OL https://github.com/pmq20/ruby-packer/releases/download/darwin-x64/rubyc
     chmod +x rubyc
     ./rubyc --help
 
@@ -74,7 +74,7 @@ First install the prerequisites:
 
 Then,
 
-    curl -L https://github.com/pmq20/ruby-packer/releases/download/latest/rubyc-linux-x64 > rubyc
+    curl -OL https://github.com/pmq20/ruby-packer/releases/download/linux-x64/rubyc
     chmod +x rubyc
     ./rubyc --help
 
