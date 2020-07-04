@@ -4,7 +4,7 @@
 
 - upgrade the enclosed Ruby to `2.7.1`
   - will use the enclosed Ruby version as the version prefix of `rubyc`, and "a-z" as the suffix
-  - this is the first release w/ enclosed "ruby 2.7.1", hence "rubyc 2.7.1a"
+  - this is the first release for "ruby 2.7.1", hence "rubyc 2.7.1a"
 - upgrade libsquash to v0.9.0
   - `enclose_io_uix.c`: intercept `execv()` for unix
   - `enclose_io_uix.c`: rewrite `enclose_io_openat()`
