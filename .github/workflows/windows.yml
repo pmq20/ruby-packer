@@ -42,10 +42,10 @@ jobs:
           where bundle
           bundle -v
         shell: cmd
-        env:
-          RUBY_TESTOPTS: "-q --tty=no"
       - name: "[rubyc] Run tests"
-        run: bundle exec rake
+        run: |
+          call "C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          bundle exec rake
         shell: cmd
       - name: "[rubyc] Create Windows Release"
         if: ${{ github.ref == 'refs/heads/master' &&	matrix.os == 'windows-2016' && success() }}
