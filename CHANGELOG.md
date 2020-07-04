@@ -6,9 +6,9 @@
   - will use the enclosed Ruby version as the version prefix of `rubyc`, and "a-z" as the suffix
   - this is the first release for "ruby 2.7.1", hence "rubyc 2.7.1a"
 - upgrade libsquash to v0.9.0
-  - `enclose_io_uix.c`: intercept `execv()` for unix
-  - `enclose_io_uix.c`: rewrite `enclose_io_openat()`
-  - `enclose_io_uix.c`: fix a double-free in `enclose_io_fdopendir()` and `squash_close()`
+  - `enclose_io_unix.c`: intercept `execv()` for unix
+  - `enclose_io_unix.c`: rewrite `enclose_io_openat()`
+  - `enclose_io_unix.c`: fix a double-free in `enclose_io_fdopendir()` and `squash_close()`
 - simply the hacks maintained in `ruby/process.c`
 - remove `ruby/vendor/bundler-1.16.1.gem` because Bundler is a part of Ruby's standard library since Ruby 2.6
 - compile with `-DRUBY_DEBUG` flag when `rubyc` was called with `--debug`
