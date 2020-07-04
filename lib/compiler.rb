@@ -209,7 +209,7 @@ class Compiler
     @compile_env['ENCLOSE_IO_RUBYC_1ST_PASS'] = '1'
     @compile_env['ENCLOSE_IO_RUBYC_2ND_PASS'] = nil
 
-    Dir.chdir(@build_pass1) do
+    @utils.chdir(@build_pass1) do
       @utils.run(@compile_env,
                  @ruby_configure,
                  '-C',
@@ -234,7 +234,7 @@ class Compiler
     @compile_env['ENCLOSE_IO_RUBYC_1ST_PASS'] = '1'
     @compile_env['ENCLOSE_IO_RUBYC_2ND_PASS'] = nil
 
-    Dir.chdir(@build_pass1) do
+    @utils.chdir(@build_pass1) do
       @utils.run(@compile_env,
                  'call', @ruby_configure,
                  '--target=x64-mswin64',
@@ -251,7 +251,7 @@ class Compiler
 
     log '=> Building ruby phase 2'
 
-    Dir.chdir(@build_pass2) do
+    @utils.chdir(@build_pass2) do
       baseruby = File.join(@ruby_install1_bin, 'ruby')
 
       @utils.run(@compile_env,
@@ -280,7 +280,7 @@ class Compiler
 
     log '=> Building ruby phase 2'
 
-    Dir.chdir(@build_pass2) do
+    @utils.chdir(@build_pass2) do
       @utils.run(@compile_env,
                  'call', @ruby_configure,
                  "--prefix=#{@ruby_install2}",
@@ -334,6 +334,8 @@ class Compiler
       Dir['**/*.m4'].each do |x|
         File.utime(Time.at(0), Time.at(0), x)
       end
+      File.utime(Time.at(0), Time.at(0), 'parse.y')
+      File.utime(Time.at(0), Time.at(0), 'ext/ripper/ripper.y')
     end
 
     patch_common_mk

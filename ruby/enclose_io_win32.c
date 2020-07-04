@@ -342,11 +342,13 @@ EncloseIOCreateFileW(
 					);
 				} else {
 					errno = ENOENT;
-					return enclose_io_dos_return(-1);
+                                        ENCLOSE_IO_SET_LAST_ERROR;
+                                        return INVALID_HANDLE_VALUE;
 				}
 			} else {
 				errno = ENOENT;
-				return enclose_io_dos_return(-1);
+                                ENCLOSE_IO_SET_LAST_ERROR;
+                                return INVALID_HANDLE_VALUE;
 			}
 		}
 	} else if (enclose_io_is_path_w(lpFileName)) {
@@ -413,11 +415,13 @@ EncloseIOCreateFileW(
 					);
 				} else {
 					errno = ENOENT;
-					return enclose_io_dos_return(-1);
+                                        ENCLOSE_IO_SET_LAST_ERROR;
+                                        return INVALID_HANDLE_VALUE;
 				}
 			} else {
 				errno = ENOENT;
-				return enclose_io_dos_return(-1);
+                                ENCLOSE_IO_SET_LAST_ERROR;
+                                return INVALID_HANDLE_VALUE;
 			}
 		}
 	} else {

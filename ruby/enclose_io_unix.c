@@ -89,7 +89,7 @@ static char * enclose_io_mkdir_workdir()
 				mkdir_workdir = NULL;
 				free(generic_mkdir_workdir);
 				generic_mkdir_workdir = NULL;
-				return -1;
+				return NULL;
 			}
 			if (mkdir(mkdir_workdir)) {
 				free(mkdir_workdir);
@@ -1034,48 +1034,6 @@ int enclose_io_open(int nargs, const char *pathname, int flags, ...)
 	}
 }
 
-int enclose_io_openat(int nargs, int dirfd, const char *pathname, int flags, ...)
-{
-	if (3 == nargs) {
-		// If pathname is absolute, then dirfd is ignored.
-		if (enclose_io_is_path(pathname)) {
-			return enclose_io_open(nargs, pathname, flags);
-		}
-
-		// If the pathname given in pathname is relative,
-		// then it is interpreted relative to the directory referred to by the file descriptor dirfd
-		// (rather than relative to the current working directory of the calling process, as is done by open(2) for a relative pathname).
-		// TODO: at dirfd
-		if (dirfd == AT_FDCWD && enclose_io_cwd[0] && '/' != *pathname) {
-			return enclose_io_open(nargs, pathname, flags);
-		}
-
-		return openat(dirfd, pathname, flags);
-	} else {
-		va_list args;
-		mode_t mode;
-		assert(4 == nargs);
-		va_start(args, flags);
-		mode = va_arg(args, mode_t);
-		va_end(args);
-		
-		// If pathname is absolute, then dirfd is ignored.
-		if (enclose_io_is_path(pathname)) {
-			return enclose_io_open(nargs, pathname, flags, mode);
-		}
-
-		// If the pathname given in pathname is relative,
-		// then it is interpreted relative to the directory referred to by the file descriptor dirfd
-		// (rather than relative to the current working directory of the calling process, as is done by open(2) for a relative pathname).
-		// TODO: at dirfd
-		if (dirfd == AT_FDCWD && enclose_io_cwd[0] && '/' != *pathname) {
-			return enclose_io_open(nargs, pathname, flags, mode);
-		}
-
-		return openat(dirfd, pathname, flags, mode);
-	}
-}
-
 int enclose_io_close(int fildes)
 {
 	if (SQUASH_VALID_VFD(fildes)) {
@@ -1203,5 +1161,50 @@ short enclose_io_is_relative_w(wchar_t *pathname)
 			}
 	}
 	return 1;
+}
+#endif
+
+#ifndef _WIN32
+int enclose_io_openat(int nargs, int dirfd, const char* pathname, int flags, ...)
+{
+    if (3 == nargs) {
+        // If pathname is absolute, then dirfd is ignored.
+        if (enclose_io_is_path(pathname)) {
+            return enclose_io_open(nargs, pathname, flags);
+        }
+
+        // If the pathname given in pathname is relative,
+        // then it is interpreted relative to the directory referred to by the file descriptor dirfd
+        // (rather than relative to the current working directory of the calling process, as is done by open(2) for a relative pathname).
+        // TODO: at dirfd
+        if (dirfd == AT_FDCWD && enclose_io_cwd[0] && '/' != *pathname) {
+            return enclose_io_open(nargs, pathname, flags);
+        }
+
+        return openat(dirfd, pathname, flags);
+    }
+    else {
+        va_list args;
+        mode_t mode;
+        assert(4 == nargs);
+        va_start(args, flags);
+        mode = va_arg(args, mode_t);
+        va_end(args);
+
+        // If pathname is absolute, then dirfd is ignored.
+        if (enclose_io_is_path(pathname)) {
+            return enclose_io_open(nargs, pathname, flags, mode);
+        }
+
+        // If the pathname given in pathname is relative,
+        // then it is interpreted relative to the directory referred to by the file descriptor dirfd
+        // (rather than relative to the current working directory of the calling process, as is done by open(2) for a relative pathname).
+        // TODO: at dirfd
+        if (dirfd == AT_FDCWD && enclose_io_cwd[0] && '/' != *pathname) {
+            return enclose_io_open(nargs, pathname, flags, mode);
+        }
+
+        return openat(dirfd, pathname, flags, mode);
+    }
 }
 #endif

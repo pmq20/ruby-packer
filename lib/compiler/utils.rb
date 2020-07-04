@@ -36,17 +36,7 @@ class Compiler
     end
 
     def escape(arg)
-      if Gem.win_platform?
-        if arg =~ /^"[^"]*"$/
-          arg
-        elsif arg&.include?('"')
-          raise NotImplementedError, "Cannot escape #{arg} as it contains a double quote"
-        else
-          %("#{arg}")
-        end
-      else
-        Shellwords.escape(arg)
-      end
+      Shellwords.escape(arg)
     end
 
     def run(*args)
