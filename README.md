@@ -12,7 +12,7 @@
 
 ## Features
 
-- Works on Windows, macOS and Linux
+- Works on ![win](resource/win_sm.png) Windows, ![macOS](resource/apple_sm.png) macOS and ![linux](resource/linux_sm.png) Linux
 - Windows support is implemented via native Windows API's; MSYS2/MinGW/Cygwin are NOT depended upon
 - Creates a binary distribution of your Ruby and/or Rails application
 - Supports natively any form of `require` and `load`, including dynamic ones (e.g. `load(my_path + '/x.rb')`)
@@ -26,11 +26,11 @@ It takes less than 5 minutes to compile any project with Ruby Packer.
 
 You won't need to modify a single line of code in your application, no matter how you developed it as long as it works in plain Ruby!
 
-|                                            | Arch. |                               Latest Build                                    |
-|--------------------------------------------|:-----:|-------------------------------------------------------------------------------|
-| ![win](resource/win_sm.png)  **Windows**   |  x64  | https://github.com/pmq20/ruby-packer/releases/download/windows-x64/rubyc.exe  |
-| ![macOS](resource/apple_sm.png) **macOS**  |  x64  | https://github.com/pmq20/ruby-packer/releases/download/darwin-x64/rubyc       |
-| ![linux](resource/linux_sm.png) **Linux**  |  x64  | https://github.com/pmq20/ruby-packer/releases/download/linux-x64/rubyc        |
+|               | Arch. |                               Latest Build                                    |
+|:-------------:|:-----:|-------------------------------------------------------------------------------|
+|  **Windows**  |  x64  | https://github.com/pmq20/ruby-packer/releases/download/windows-x64/rubyc.exe  |
+|   **macOS**   |  x64  | https://github.com/pmq20/ruby-packer/releases/download/darwin-x64/rubyc       |
+|   **Linux**   |  x64  | https://github.com/pmq20/ruby-packer/releases/download/linux-x64/rubyc        |
 
 ### ![win](resource/win_med.png) Install on Windows
 
