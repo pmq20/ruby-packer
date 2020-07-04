@@ -193,11 +193,11 @@ add the `--clean-tmpdir` argument to `rubyc` for a clean rebuild.
 
 ## Authors
 
-[Minqi Pan et al](https://raw.githubusercontent.com/pmq20/ruby-packer/master/AUTHORS)
+[Minqi Pan et al.](https://raw.githubusercontent.com/pmq20/ruby-packer/master/AUTHORS)
 
 ## License
 
-[MIT License](https://raw.githubusercontent.com/pmq20/ruby-packer/master/LICENSE)
+[MIT](https://raw.githubusercontent.com/pmq20/ruby-packer/master/LICENSE)
 
 ## See Also
 
