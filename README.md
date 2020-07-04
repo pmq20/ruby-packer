@@ -26,6 +26,8 @@ It takes less than 5 minutes to compile any project with Ruby Packer.
 
 You won't need to modify a single line of code in your application, no matter how you developed it as long as it works in plain Ruby!
 
+> **NEWS (Jul 4th, 2020)**: The latest builds are broken due to issues #109 and #111. Please use the old stable releases at the moment: http://enclose.io/rubyc
+
 |               | Arch. |                               Latest Build                                    |
 |:-------------:|:-----:|-------------------------------------------------------------------------------|
 |  **Windows**  |  x64  | https://github.com/pmq20/ruby-packer/releases/download/windows-x64/rubyc.exe  |
