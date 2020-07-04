@@ -9,10 +9,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-20.04, ubuntu-18.04, ubuntu-16.04]
-        debug: ["", "--debug"]
       fail-fast: false
-    env:
-      GITPULLOPTIONS: --no-tags origin ${{github.ref}}
     runs-on: ${{ matrix.os }}
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
     steps:
@@ -21,20 +18,7 @@ jobs:
           set -x
           sudo apt-get update -q || :
           sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev libgdbm-dev bison autoconf ruby
-      - name: git config
-        run: |
-          git config --global advice.detachedHead 0
       - uses: actions/checkout@v2
-      - run: ./ruby/tool/actions-commit-info.sh
-        id: commit_info
-      - name: Fixed world writable dirs
-        run: |
-          chmod -v go-w $HOME $HOME/.config
-          sudo chmod -R go-w /usr/share
-          sudo bash -c 'IFS=:; for d in '"$PATH"'; do chmod -v go-w $d; done' || :
-      - name: Set ENV
-        run: |
-          echo '::set-env name=JOBS::'-j$((1 + $(nproc --all)))
       - name: "[rubyc] Install libraries"
         run: |
           cat /etc/issue
@@ -45,9 +29,6 @@ jobs:
           sudo apt-get install --no-install-recommends -q -y squashfs-tools
           which mksquashfs
           mksquashfs -version
-      - name: "[rubyc] Set ENV"
-        run: |
-          echo '::set-env name=ENCLOSE_IO_RUBYC_ADDTIONAL_ARGS::'${{ matrix.debug }}
       - name: "[rubyc] Set up Ruby"
         uses: ruby/setup-ruby@v1
       - name: "[rubyc] Install dependencies"
@@ -56,8 +37,6 @@ jobs:
         run: bundle exec rubocop
       - name: "[rubyc] Run tests"
         run: bundle exec rake
-        env:
-          RUBY_TESTOPTS: "-q --tty=no"
       - name: "[rubyc] Create Linux Release"
         if: ${{ github.ref == 'master' &&	matrix.os == 'ubuntu-16.04' && matrix.debug == '' && success() }}
         id: create_linux_release

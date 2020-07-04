@@ -9,31 +9,20 @@ jobs:
     strategy:
       matrix:
         os: [macos-10.15]
-        debug: ["", "--debug"]
       fail-fast: false
     runs-on: ${{ matrix.os }}
-    env:
-      GITPULLOPTIONS: --no-tags origin ${{github.ref}}
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
     steps:
       - name: Disable Firewall
         run: |
           sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
           sudo /usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate
-      - name: git config
-        run: |
-          git config --global advice.detachedHead 0
       - uses: actions/checkout@v2
-      - run: ./ruby/tool/actions-commit-info.sh
-        id: commit_info
       - name: Install libraries
         run: |
           export WAITS='5 60'
           ruby/tool/travis_retry.sh brew upgrade
           ruby/tool/travis_retry.sh brew install gdbm gmp libffi openssl@1.1 zlib autoconf automake libtool readline
-      - name: Set ENV
-        run: |
-          echo '::set-env name=JOBS::'-j$((1 + $(sysctl -n hw.activecpu)))
       - name: "[rubyc] Install libraries"
         run: |
           sw_vers
@@ -45,9 +34,6 @@ jobs:
           ruby/tool/travis_retry.sh brew install squashfs
           which mksquashfs
           mksquashfs -version
-      - name: "[rubyc] Set ENV"
-        run: |
-          echo '::set-env name=ENCLOSE_IO_RUBYC_ADDTIONAL_ARGS::'${{ matrix.debug }}
       - name: "[rubyc] Set up Ruby"
         uses: ruby/setup-ruby@v1
       - name: "[rubyc] Install dependencies"
@@ -56,8 +42,6 @@ jobs:
         run: bundle exec rubocop
       - name: "[rubyc] Run tests"
         run: bundle exec rake
-        env:
-          RUBY_TESTOPTS: "-q --tty=no"
       - name: "[rubyc] Create macOS Release"
         if: ${{ github.ref == 'master' &&	matrix.os == 'macos-10.15' && matrix.debug == '' && success() }}
         id: create_macos_release

@@ -9,43 +9,23 @@ jobs:
     strategy:
       matrix:
         os: [windows-2019, windows-2016]
-        debug: ["", "--debug"]
       fail-fast: false
     runs-on: ${{ matrix.os }}
     env:
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
     steps:
-      - uses: actions/cache@v1
-        with:
-          path: C:\vcpkg\downloads
-          key: ${{ runner.os }}-vcpkg-download-${{ matrix.os }}-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-vcpkg-download-${{ matrix.os }}-
-            ${{ runner.os }}-vcpkg-download-
-      - name: Install libraries with vcpkg
-        run: |
-          vcpkg --triplet x64-windows install readline zlib
-      - name: git config
-        run: |
-          git config --system advice.detachedHead 0
       - uses: actions/checkout@v2
-      - run: ./ruby/tool/actions-commit-info.sh
-        shell: bash
-        id: commit_info
       - name: "[rubyc] Install libraries"
         run: |
           choco install --no-progress squashfs
-      - name: "[rubyc] Set ENV"
-        run: |
-          echo '::set-env name=ENCLOSE_IO_RUBYC_ADDTIONAL_ARGS::'${{ matrix.debug }}
       - name: "[rubyc] Set up Ruby"
         uses: ruby/setup-ruby@v1
       - name: "[rubyc] Install dependencies"
         run: bundle install
       - name: "[rubyc] Run rubocop"
         run: bundle exec rubocop
-      - name: "[rubyc] Run tests"
+      - name: "[rubyc] Inspect Windows Environment"
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           set YACC=win_bison
@@ -61,10 +41,12 @@ jobs:
           ruby -v
           where bundle
           bundle -v
-          bundle exec rake
         shell: cmd
         env:
           RUBY_TESTOPTS: "-q --tty=no"
+      - name: "[rubyc] Run tests"
+        run: bundle exec rake
+        shell: cmd
       - name: "[rubyc] Create Windows Release"
         if: ${{ github.ref == 'master' &&	matrix.os == 'windows-2016' && matrix.debug == '' && success() }}
         id: create_windows_release
