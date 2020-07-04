@@ -91,7 +91,7 @@ class Compiler
     init_entrance if entrance
     init_tmpdir
 
-    log "Ruby Compiler (rubyc) v#{::Compiler::VERSION}"
+    log "Ruby Packer (rubyc) v#{::Compiler::VERSION}"
     if entrance
       log "- entrance: #{@entrance}"
     else
@@ -237,6 +237,7 @@ class Compiler
     Dir.chdir(@build_pass1) do
       @utils.run(@compile_env,
                  'call', @ruby_configure,
+                 '--target=x64-mswin64',
                  '--disable-install-doc',
                  "--prefix=#{@ruby_install1}")
       @utils.run(@compile_env, "nmake #{@options[:nmake_args]}")
@@ -994,6 +995,7 @@ class Compiler
     @compile_env = if Gem.win_platform?
                      {
                        'CI' => 'true',
+                       'MAKE' => 'nmake',
                        'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1'
                      }
                    else

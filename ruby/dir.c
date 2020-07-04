@@ -127,9 +127,9 @@ char *strchr(char*,char);
 # define NORMALIZE_UTF8PATH 0
 #endif
 
-// --------- [Enclose.io Hack start] ---------
+// --------- [Hack start] ---------
 #include "enclose_io.h"
-// --------- [Enclose.io Hack end] ---------
+// --------- [Hack end] ---------
 
 #if NORMALIZE_UTF8PATH
 #include <sys/param.h>

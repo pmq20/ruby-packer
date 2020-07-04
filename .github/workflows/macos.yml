@@ -6,12 +6,12 @@ on:
     branches: [ master ]
 jobs:
   make:
-    runs-on: macos-10.15
     strategy:
       matrix:
-        test_task: [ "check", "test-bundler-parallel", "test-bundled-gems", "leaked-globals" ]
+        os: [macos-10.15]
         debug: ["", "--debug"]
       fail-fast: false
+    runs-on: ${{ matrix.os }}
     env:
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
@@ -34,7 +34,7 @@ jobs:
       - name: Set ENV
         run: |
           echo '::set-env name=JOBS::'-j$((1 + $(sysctl -n hw.activecpu)))
-      - name: "[Enclose.io] Install libraries"
+      - name: "[rubyc] Install libraries"
         run: |
           sw_vers
           uname -a
@@ -43,17 +43,39 @@ jobs:
           sysctl -n machdep.cpu.brand_string
           export WAITS='5 60'
           ruby/tool/travis_retry.sh brew install squashfs
-      - name: "[Enclose.io] Set ENV"
+          which mksquashfs
+          mksquashfs -version
+      - name: "[rubyc] Set ENV"
         run: |
           echo '::set-env name=ENCLOSE_IO_RUBYC_ADDTIONAL_ARGS::'${{ matrix.debug }}
-          echo '::set-env name=ENCLOSE_IO_RUBYC_TEST_ENCLOSED_RUBY::'${{ matrix.test_task }}
-      - name: "[Enclose.io] Set up Ruby"
+      - name: "[rubyc] Set up Ruby"
         uses: ruby/setup-ruby@v1
-      - name: "[Enclose.io] Install dependencies"
+      - name: "[rubyc] Install dependencies"
         run: bundle install
-      - name: "[Enclose.io] Run rubocop"
+      - name: "[rubyc] Run rubocop"
         run: bundle exec rubocop
-      - name: "[Enclose.io] Run tests"
+      - name: "[rubyc] Run tests"
         run: bundle exec rake
         env:
           RUBY_TESTOPTS: "-q --tty=no"
+      - name: "[rubyc] Create macOS Release"
+        if: ${{ github.ref == 'master' &&	matrix.os == "macos-10.15" && matrix.debug == "" && success() }}
+        id: create_macos_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: macos
+          release_name: Latest macOS Build
+          draft: false
+          prerelease: false
+      - name: "[rubyc] Upload macOS Release"
+        if: ${{ github.ref == 'master' &&	matrix.os == "macos-10.15" && matrix.debug == "" && success() }}
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_macos_release.outputs.upload_url }}
+          asset_path: ./rubyc
+          asset_name: rubyc-darwin-x64
+          asset_content_type: application/octet-stream

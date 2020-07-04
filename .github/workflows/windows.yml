@@ -8,8 +8,7 @@ jobs:
   make:
     strategy:
       matrix:
-        os: [windows-2019]
-        vs: [2019]
+        os: [windows-2019, windows-2016]
         debug: ["", "--debug"]
       fail-fast: false
     runs-on: ${{ matrix.os }}
@@ -27,16 +26,6 @@ jobs:
       - name: Install libraries with vcpkg
         run: |
           vcpkg --triplet x64-windows install readline zlib
-      - uses: actions/cache@v1
-        with:
-          path: C:\Users\runneradmin\AppData\Local\Temp\chocolatey
-          key: ${{ runner.os }}-chocolatey-${{ matrix.os }}-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-chocolatey-${{ matrix.os }}-
-            ${{ runner.os }}-chocolatey-
-      - name: Install libraries with chocolatey
-        run: |
-          choco install --no-progress openssl winflexbison3
       - name: git config
         run: |
           git config --system advice.detachedHead 0
@@ -44,19 +33,19 @@ jobs:
       - run: ./ruby/tool/actions-commit-info.sh
         shell: bash
         id: commit_info
-      - name: "[Enclose.io] Install libraries"
+      - name: "[rubyc] Install libraries"
         run: |
           choco install --no-progress squashfs
-      - name: "[Enclose.io] Set ENV"
+      - name: "[rubyc] Set ENV"
         run: |
           echo '::set-env name=ENCLOSE_IO_RUBYC_ADDTIONAL_ARGS::'${{ matrix.debug }}
-      - name: "[Enclose.io] Set up Ruby"
+      - name: "[rubyc] Set up Ruby"
         uses: ruby/setup-ruby@v1
-      - name: "[Enclose.io] Install dependencies"
+      - name: "[rubyc] Install dependencies"
         run: bundle install
-      - name: "[Enclose.io] Run rubocop"
+      - name: "[rubyc] Run rubocop"
         run: bundle exec rubocop
-      - name: "[Enclose.io] Run tests"
+      - name: "[rubyc] Run tests"
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           set YACC=win_bison
@@ -67,7 +56,33 @@ jobs:
           systeminfo
           where nmake
           where mksquashfs
+          mksquashfs -version
+          where ruby
+          ruby -v
+          where bundle
+          bundle -v
           bundle exec rake
         shell: cmd
         env:
           RUBY_TESTOPTS: "-q --tty=no"
+      - name: "[rubyc] Create Windows Release"
+        if: ${{ github.ref == 'master' &&	matrix.os == "windows-2016" && matrix.debug == "" && success() }}
+        id: create_windows_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: windows
+          release_name: Latest Windows Build
+          draft: false
+          prerelease: false
+      - name: "[rubyc] Upload Windows Release"
+        if: ${{ github.ref == 'master' &&	matrix.os == "windows-2016" && matrix.debug == "" && success() }}
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_windows_release.outputs.upload_url }}
+          asset_path: ./rubyc.exe
+          asset_name: rubyc.exe
+          asset_content_type: application/octet-stream

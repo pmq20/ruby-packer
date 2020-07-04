@@ -33,7 +33,7 @@
 #include <stdlib.h>
 #endif
 
-// --------- [Enclose.io Hack start] ---------
+// --------- [Hack start] ---------
 #include "enclose_io.h"
 #include "autoupdate.h"
 #ifdef _WIN32
@@ -43,12 +43,12 @@
 #endif
 extern SQUASH_OS_PATH mkdir_workdir;
 extern char *enclose_io_mkdir_scope;
-// --------- [Enclose.io Hack end] ---------
+// --------- [Hack end] ---------
 
 int
 main(int argc, char **argv)
 {
-// --------- [Enclose.io Hack start] ---------
+// --------- [Hack start] ---------
 	int autoupdate_result;
 	int ret;
 	sqfs_err enclose_io_ret;
@@ -149,7 +149,7 @@ main(int argc, char **argv)
 	}
 #endif // ENCLOSE_IO_ENTRANCE
 #endif // ifdef _WIN32
-// --------- [Enclose.io Hack end] ---------
+// --------- [Hack end] ---------
 
 #ifdef RUBY_DEBUG_ENV
     ruby_set_debug_option(getenv("RUBY_DEBUG"));

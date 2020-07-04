@@ -1,6 +1,6 @@
-// --------- [Enclose.io Hack start] ---------
+// --------- [Hack start] ---------
 #define _GNU_SOURCE
-// --------- [Enclose.io Hack end] ---------
+// --------- [Hack end] ---------
 
 /* gdbmopen.c - Open the dbm file and initialize data structures for use. */
 

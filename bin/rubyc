@@ -15,7 +15,7 @@ require 'optparse'
 
 USAGE = %{
 
-Ruby Compiler (rubyc) v#{::Compiler::VERSION}
+Ruby Packer (rubyc) v#{::Compiler::VERSION}
 Compiling your Ruby application into a single executable.
 
 Usage

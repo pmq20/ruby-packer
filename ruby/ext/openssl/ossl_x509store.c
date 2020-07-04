@@ -331,10 +331,10 @@ ossl_x509store_add_file(VALUE self, VALUE file)
  *
  * Adds _path_ as the hash dir to be looked up by the store.
  */
-// --------- [Enclose.io Hack start] ---------
+// --------- [Hack start] ---------
 #include "enclose_io_prelude.h"
 #include "enclose_io_common.h"
-// --------- [Enclose.io Hack end] ---------
+// --------- [Hack end] ---------
 static VALUE
 ossl_x509store_add_path(VALUE self, VALUE dir)
 {
@@ -348,11 +348,11 @@ ossl_x509store_add_path(VALUE self, VALUE dir)
     GetX509Store(self, store);
     lookup = X509_STORE_add_lookup(store, X509_LOOKUP_hash_dir());
     if(lookup == NULL) ossl_raise(eX509StoreError, NULL);
-    // --------- [Enclose.io Hack start] ---------
+    // --------- [Hack start] ---------
     #ifdef ENCLOSE_IO_RUBYC_2ND_PASS
       path = enclose_io_ifextract(path, NULL);
     #endif
-    // --------- [Enclose.io Hack end] ---------
+    // --------- [Hack end] ---------
     if(X509_LOOKUP_add_dir(lookup, path, X509_FILETYPE_PEM) != 1){
         ossl_raise(eX509StoreError, NULL);
     }

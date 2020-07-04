@@ -4,55 +4,51 @@
 
 [![Windows](https://github.com/pmq20/ruby-packer/workflows/Windows/badge.svg)](https://github.com/pmq20/ruby-packer/actions?query=workflow%3A"Windows")
 [![macOS](https://github.com/pmq20/ruby-packer/workflows/macOS/badge.svg)](https://github.com/pmq20/ruby-packer/actions?query=workflow%3A"macOS")
-[![Ubuntu](https://github.com/pmq20/ruby-packer/workflows/Ubuntu/badge.svg)](https://github.com/pmq20/ruby-packer/actions?query=workflow%3A"Ubuntu")
+[![Linux](https://github.com/pmq20/ruby-packer/workflows/Linux/badge.svg)](https://github.com/pmq20/ruby-packer/actions?query=workflow%3A"Linux")
 
-> **DEVELOPMENT STATUS** (Jul 4th, 2020): Due to work, the project's original author [Minqi Pan](https://github.com/pmq20) is currently only available to maintain the project during his weekend. We are working with the goal of releasing next version `rubyc v2.7.1a` as soon as possible; please see [CHANGELOG.md](https://github.com/pmq20/ruby-packer/blob/master/CHANGELOG.md) for the details of the upcoming release. Before the release is finished, please consider using the `master` branch code instead of relying on the latest stable binary, as it is very old. Also, we are attending to reported issues one by one, ordered by creation time descendingly.
+> **NEWS (Jul 4th, 2020)**: We have decided to use GitHub Actions and GitHub Releases as the auto-packing and auto-updating web services. The Latest Build links below are automatically kept up to date with the latest code in `master`, as long as the tests are passed.
+
+> **NEWS (Jun 27th, 2020)**: Due to work, the project's original author [Minqi Pan](https://github.com/pmq20) is currently only available to maintain the project during his weekend. Also, we are attending to reported issues one by one, ordered by creation time descendingly.
 
 ## Features
 
 - Works on Windows, macOS and Linux
+- Windows support is implemented via native Windows API's; MSYS2/MinGW/Cygwin are NOT depended upon
 - Creates a binary distribution of your Ruby and/or Rails application
-- Supports natively any form of `require` and `load`, including dynamic ones (e.g. `load(my_path + 'x.rb'`)
+- Supports natively any form of `require` and `load`, including dynamic ones (e.g. `load(my_path + '/x.rb')`)
 - Features zero-config auto-update capabilities to make your packed project to stay up to date
-- Windows is supported directly using Windows API; no MinGW needed
 - Native C extensions are fully supported
 - Open Source, MIT Licensed
 
 ## Download and Install
 
-It takes less than 5 minutes to compile any project with Ruby Compiler.
+It takes less than 5 minutes to compile any project with Ruby Packer.
 
 You won't need to modify a single line of code in your application, no matter how you developed it as long as it works in plain Ruby!
 
-|                       | Architecture |           Latest&#160;Stable                 |
-|:---------------------:|:------------:|----------------------------------------------|
-|      **Windows**      |      x64     | http://enclose.io/rubyc/rubyc-x64.zip        |
-|       **macOS**       |      x64     | http://enclose.io/rubyc/rubyc-darwin-x64.gz  |
-|       **Linux**       |      x64     | http://enclose.io/rubyc/rubyc-linux-x64.gz   |
+|                                       | Arch. |                               Latest Build                                      |
+|---------------------------------------|:-----:|---------------------------------------------------------------------------------|
+| ![win](res/win_sm.png)  **Windows**   |  x64  | https://github.com/pmq20/ruby-packer/releases/download/latest/rubyc-x64.exe     |
+| ![macOS](res/apple_sm.png) **macOS**  |  x64  | https://github.com/pmq20/ruby-packer/releases/download/latest/rubyc-darwin-x64  |
+| ![linux](res/linux_sm.png) **Linux**  |  x64  | https://github.com/pmq20/ruby-packer/releases/download/latest/rubyc-linux-x64   |
 
-For previous releases, see http://enclose.io/rubyc
-
-### Install on Windows
+### ![win](res/win_med.png) Install on Windows
 
 First install the prerequisites:
 
-* [SquashFS Tools 4.3](https://github.com/pmq20/squashfuse/files/691217/sqfs43-win32.zip)
-* [Visual Studio 2015 Update 3](https://www.visualstudio.com/), all editions
-  including the Community edition (remember to select
-  "Common Tools for Visual C++ 2015" feature during installation).
-* [Ruby](https://www.ruby-lang.org/)
+* [SquashFS Tools](http://squashfs.sourceforge.net/): you can install it in Windows by first installing [choco](https://chocolatey.org) and then execute `choco install squashfs`.
+* [Visual Studio](https://www.visualstudio.com/), all editions including the Community edition (remember to select "Common Tools for Visual C++" feature during installation).
+* [Ruby](https://www.ruby-lang.org/): you can install it in Windows using [RubyInstaller](https://rubyinstaller.org/).
 
-Then download [rubyc-x64.zip](http://enclose.io/rubyc/rubyc-x64.zip),
-and this zip file contains only one executable.
-Unzip it. Optionally,
-rename it to `rubyc.exe` and put it under `C:\Windows` (or any other directory that is part of `PATH`).
+Then download [rubyc-x64.exe](https://github.com/pmq20/ruby-packer/releases/download/cutting-edge/rubyc-x64.exe).
+Optionally rename it to `rubyc.exe` and put it under `C:\Windows` (or any other directory that is part of `PATH`).
 Execute `rubyc --help` from the command line.
 
-### Install on macOS
+### ![macOS](res/apple_med.png) Install on macOS
 
 First install the prerequisites:
 
-* [SquashFS Tools 4.3](http://squashfs.sourceforge.net/): `brew install squashfs`
+* [SquashFS Tools](http://squashfs.sourceforge.net/): `brew install squashfs`
 * [Xcode](https://developer.apple.com/xcode/download/)
   * You also need to install the `Command Line Tools` via Xcode. You can find
     this under the menu `Xcode -> Preferences -> Downloads`
@@ -61,15 +57,15 @@ First install the prerequisites:
 
 Then,
 
-    curl -L http://enclose.io/rubyc/rubyc-darwin-x64.gz | gunzip > rubyc
+    curl -L https://github.com/pmq20/ruby-packer/releases/download/latest/rubyc-darwin-x64 > rubyc
     chmod +x rubyc
     ./rubyc --help
 
-### Install on Linux
+### ![linux](res/linux_med.png) Install on Linux
 
 First install the prerequisites:
 
-* [SquashFS Tools 4.3](http://squashfs.sourceforge.net/)
+* [SquashFS Tools](http://squashfs.sourceforge.net/)
   - `sudo yum install squashfs-tools`
   - `sudo apt install squashfs-tools`
 * `gcc` or `clang`
@@ -78,7 +74,7 @@ First install the prerequisites:
 
 Then,
 
-    curl -L http://enclose.io/rubyc/rubyc-linux-x64.gz | gunzip > rubyc
+    curl -L https://github.com/pmq20/ruby-packer/releases/download/latest/rubyc-linux-x64 > rubyc
     chmod +x rubyc
     ./rubyc --help
 

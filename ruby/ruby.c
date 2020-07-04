@@ -2351,10 +2351,10 @@ ruby_prog_init(void)
     rb_define_hooked_variable("$PROGRAM_NAME", &rb_progname, 0, set_arg0);
 
     rb_define_module_function(rb_mProcess, "argv0", proc_argv0, 0);
-// --------- [Enclose.IO Hack start] ---------
+// --------- [Hack start] ---------
 	VALUE enclose_io_execpath(VALUE process);
 	rb_define_module_function(rb_mProcess, "enclose_io_execpath", enclose_io_execpath, 0);
-// --------- [Enclose.IO Hack end] ---------
+// --------- [Hack end] ---------
     rb_define_module_function(rb_mProcess, "setproctitle", proc_setproctitle, 1);
 
     /*
@@ -2463,7 +2463,7 @@ ruby_sysinit(int *argc, char ***argv)
     fill_standard_fds();
 }
 
-// --------- [Enclose.IO Hack start] ---------
+// --------- [Hack start] ---------
 #include "autoupdate_internal.h"
 
 #ifdef _WIN32
@@ -2489,4 +2489,4 @@ VALUE enclose_io_execpath(VALUE process)
 		return rb_orig_progname;
 	}
 }
-// --------- [Enclose.IO Hack end] ---------
+// --------- [Hack end] ---------
