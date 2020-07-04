@@ -26,13 +26,13 @@ It takes less than 5 minutes to compile any project with Ruby Packer.
 
 You won't need to modify a single line of code in your application, no matter how you developed it as long as it works in plain Ruby!
 
-|                                       | Arch. |                               Latest Build                                      |
-|---------------------------------------|:-----:|---------------------------------------------------------------------------------|
-| ![win](res/win_sm.png)  **Windows**   |  x64  | https://github.com/pmq20/ruby-packer/releases/download/latest/rubyc-x64.exe     |
-| ![macOS](res/apple_sm.png) **macOS**  |  x64  | https://github.com/pmq20/ruby-packer/releases/download/latest/rubyc-darwin-x64  |
-| ![linux](res/linux_sm.png) **Linux**  |  x64  | https://github.com/pmq20/ruby-packer/releases/download/latest/rubyc-linux-x64   |
+|                                            | Arch. |                               Latest Build                                      |
+|--------------------------------------------|:-----:|---------------------------------------------------------------------------------|
+| ![win](resource/win_sm.png)  **Windows**   |  x64  | https://github.com/pmq20/ruby-packer/releases/download/latest/rubyc-x64.exe     |
+| ![macOS](resource/apple_sm.png) **macOS**  |  x64  | https://github.com/pmq20/ruby-packer/releases/download/latest/rubyc-darwin-x64  |
+| ![linux](resource/linux_sm.png) **Linux**  |  x64  | https://github.com/pmq20/ruby-packer/releases/download/latest/rubyc-linux-x64   |
 
-### ![win](res/win_med.png) Install on Windows
+### ![win](resource/win_med.png) Install on Windows
 
 First install the prerequisites:
 
@@ -44,7 +44,7 @@ Then download [rubyc-x64.exe](https://github.com/pmq20/ruby-packer/releases/down
 Optionally rename it to `rubyc.exe` and put it under `C:\Windows` (or any other directory that is part of `PATH`).
 Execute `rubyc --help` from the command line.
 
-### ![macOS](res/apple_med.png) Install on macOS
+### ![macOS](resource/apple_med.png) Install on macOS
 
 First install the prerequisites:
 
@@ -61,7 +61,7 @@ Then,
     chmod +x rubyc
     ./rubyc --help
 
-### ![linux](res/linux_med.png) Install on Linux
+### ![linux](resource/linux_med.png) Install on Linux
 
 First install the prerequisites:
 
