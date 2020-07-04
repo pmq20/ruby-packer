@@ -43,7 +43,7 @@ jobs:
       - name: "[rubyc] Run tests"
         run: bundle exec rake
       - name: "[rubyc] Create macOS Release"
-        if: ${{ github.ref == 'master' &&	matrix.os == 'macos-10.15' && matrix.debug == '' && success() }}
+        if: ${{ github.ref == 'refs/heads/master' &&	matrix.os == 'macos-10.15' && success() }}
         id: create_macos_release
         uses: actions/create-release@v1
         env:
@@ -54,7 +54,7 @@ jobs:
           draft: false
           prerelease: false
       - name: "[rubyc] Upload macOS Release"
-        if: ${{ github.ref == 'master' &&	matrix.os == 'macos-10.15' && matrix.debug == '' && success() }}
+        if: ${{ github.ref == 'refs/heads/master' &&	matrix.os == 'macos-10.15' && success() }}
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

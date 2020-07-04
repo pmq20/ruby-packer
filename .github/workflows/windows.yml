@@ -48,7 +48,7 @@ jobs:
         run: bundle exec rake
         shell: cmd
       - name: "[rubyc] Create Windows Release"
-        if: ${{ github.ref == 'master' &&	matrix.os == 'windows-2016' && matrix.debug == '' && success() }}
+        if: ${{ github.ref == 'refs/heads/master' &&	matrix.os == 'windows-2016' && success() }}
         id: create_windows_release
         uses: actions/create-release@v1
         env:
@@ -59,7 +59,7 @@ jobs:
           draft: false
           prerelease: false
       - name: "[rubyc] Upload Windows Release"
-        if: ${{ github.ref == 'master' &&	matrix.os == 'windows-2016' && matrix.debug == '' && success() }}
+        if: ${{ github.ref == 'refs/heads/master' &&	matrix.os == 'windows-2016' && success() }}
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
