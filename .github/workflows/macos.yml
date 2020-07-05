@@ -45,7 +45,7 @@ jobs:
       - name: "[rubyc] Create macOS Release"
         if: ${{ github.ref == 'refs/heads/master' &&	matrix.os == 'macos-10.15' && success() }}
         id: create_macos_release
-        uses: actions/create-release@v1
+        uses: pmq20/create-release@delete-old-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -53,6 +53,7 @@ jobs:
           release_name: Latest macOS Build
           draft: false
           prerelease: false
+          replace_old_tag: true
       - name: "[rubyc] Upload macOS Release"
         if: ${{ github.ref == 'refs/heads/master' &&	matrix.os == 'macos-10.15' && success() }}
         uses: actions/upload-release-asset@v1

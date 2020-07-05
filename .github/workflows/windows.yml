@@ -54,7 +54,7 @@ jobs:
       - name: "[rubyc] Create Windows Release"
         if: ${{ github.ref == 'refs/heads/master' &&	matrix.os == 'windows-2016' && success() }}
         id: create_windows_release
-        uses: actions/create-release@v1
+        uses: pmq20/create-release@delete-old-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -62,6 +62,7 @@ jobs:
           release_name: Latest Windows Build
           draft: false
           prerelease: false
+          replace_old_tag: true
       - name: "[rubyc] Upload Windows Release"
         if: ${{ github.ref == 'refs/heads/master' &&	matrix.os == 'windows-2016' && success() }}
         uses: actions/upload-release-asset@v1

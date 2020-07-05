@@ -40,7 +40,7 @@ jobs:
       - name: "[rubyc] Create Linux Release"
         if: ${{ github.ref == 'refs/heads/master' &&	matrix.os == 'ubuntu-16.04' && success() }}
         id: create_linux_release
-        uses: actions/create-release@v1
+        uses: pmq20/create-release@delete-old-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -48,6 +48,7 @@ jobs:
           release_name: Latest Linux Build
           draft: false
           prerelease: false
+          replace_old_tag: true
       - name: "[rubyc] Upload Linux Release"
         if: ${{ github.ref == 'refs/heads/master' &&	matrix.os == 'ubuntu-16.04' && success() }}
         uses: actions/upload-release-asset@v1
