@@ -38,11 +38,11 @@ You won't need to modify a single line of code in your application, no matter ho
 
 First install the prerequisites:
 
-* [SquashFS Tools](http://squashfs.sourceforge.net/): you could install it by first installing [choco](https://chocolatey.org) and then executing `choco install squashfs`.
 * [Visual Studio](https://www.visualstudio.com/), all editions including the Community edition (remember to select "Common Tools for Visual C++" feature during installation).
-* [Ruby](https://www.ruby-lang.org/): you could install it using [RubyInstaller](https://rubyinstaller.org/).
-* [Perl](https://www.perl.org/): you could install it using [Strawberry Perl for Windows](http://strawberryperl.com/).
-* [Netwide Assembler](https://www.nasm.us): make sure `nasm` works from your command line.
+* [SquashFS Tools](http://squashfs.sourceforge.net/): you might want to first install [choco](https://chocolatey.org) and then execute `choco install squashfs`.
+* [Ruby](https://www.ruby-lang.org/): you might want to install it using [RubyInstaller](https://rubyinstaller.org/).
+* [Perl](https://www.perl.org/): you might want to install it using [Strawberry Perl for Windows](http://strawberryperl.com/).
+* [Netwide Assembler](https://www.nasm.us): please make sure `nasm` works from your command line.
 
 Then download [rubyc.exe](https://github.com/pmq20/ruby-packer/releases/download/windows-x64/rubyc.exe).
 Optionally put it under `C:\Windows` or any other directory that is part of `PATH`.
