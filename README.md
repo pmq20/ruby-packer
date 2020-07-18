@@ -17,6 +17,7 @@
 - Creates a binary distribution of your Ruby and/or Rails application
 - Supports natively any form of `require` and `load`, including dynamic ones (e.g. `load(my_path + '/x.rb')`)
 - Features zero-config auto-update capabilities to make your packed project to stay up to date
+- Ruby Packer is written in Ruby and is packed and distributed using Ruby Packer itself
 - Native C extensions are fully supported
 - Open Source, MIT Licensed
 
