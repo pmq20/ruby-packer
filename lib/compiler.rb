@@ -539,20 +539,20 @@ class Compiler
       end
       if Gem.win_platform?
         @utils.run(@compile_env,
-                  'perl',
-                  'Configure',
-                  'VC-WIN64A',
-                  'no-shared',
-                  "--openssldir=#{@options[:openssl_dir]}",
-                  "--prefix=#{@local_build}")
+                   'perl',
+                   'Configure',
+                   'VC-WIN64A',
+                   'no-shared',
+                   "--openssldir=#{@options[:openssl_dir]}",
+                   "--prefix=#{@local_build}")
         @utils.run(@compile_env, "nmake #{@options[:nmake_args]}")
         @utils.run(@compile_env, 'nmake install_sw')
       else
         @utils.run(@compile_env,
-                  './config',
-                  'no-shared',
-                  "--openssldir=#{@options[:openssl_dir]}",
-                  "--prefix=#{@local_build}")
+                   './config',
+                   'no-shared',
+                   "--openssldir=#{@options[:openssl_dir]}",
+                   "--prefix=#{@local_build}")
         @utils.run(@compile_env, "make #{@options[:make_args]}")
         @utils.run(@compile_env, 'make install_sw')
       end
@@ -947,16 +947,16 @@ class Compiler
 
     @compile_env = if Gem.win_platform?
                      {
-                       'CI'                           => 'true',
+                       'CI' => 'true',
                        'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1',
-                       'CL'                           => '/MP',
+                       'CL' => '/MP'
                      }
                    else
                      {
-                       'CI'                           => 'true',
+                       'CI' => 'true',
                        'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1',
-                       'CFLAGS'                       => @cflags,
-                       'LDFLAGS'                      => @ldflags,
+                       'CFLAGS' => @cflags,
+                       'LDFLAGS' => @ldflags
                      }
                    end
   end
@@ -985,17 +985,17 @@ class Compiler
 
     @compile_env = if Gem.win_platform?
                      {
-                       'CI'                           => 'true',
+                       'CI' => 'true',
                        'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1',
-                       'MAKE'                         => 'nmake',
-                       'CL'                           => '/MP',
+                       'MAKE' => 'nmake',
+                       'CL' => '/MP'
                      }
                    else
                      {
-                       'CI'                           => 'true',
+                       'CI' => 'true',
                        'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1',
-                       'CFLAGS'                       => @cflags,
-                       'LDFLAGS'                      => @ldflags,
+                       'CFLAGS' => @cflags,
+                       'LDFLAGS' => @ldflags
                      }
                    end
   end
