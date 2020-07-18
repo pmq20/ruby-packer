@@ -41,7 +41,7 @@ First install the prerequisites:
 * [SquashFS Tools](http://squashfs.sourceforge.net/): you could install it by first installing [choco](https://chocolatey.org) and then executing `choco install squashfs`.
 * [Visual Studio](https://www.visualstudio.com/), all editions including the Community edition (remember to select "Common Tools for Visual C++" feature during installation).
 * [Ruby](https://www.ruby-lang.org/): you could install it using [RubyInstaller](https://rubyinstaller.org/).
-* [Perl]: you could install it using [Strawberry Perl for Windows](http://strawberryperl.com/).
+* [Perl](https://www.perl.org/): you could install it using [Strawberry Perl for Windows](http://strawberryperl.com/).
 * [Netwide Assembler](https://www.nasm.us): make sure `nasm` works from your command line.
 
 Then download [rubyc.exe](https://github.com/pmq20/ruby-packer/releases/download/windows-x64/rubyc.exe).
