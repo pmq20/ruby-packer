@@ -949,6 +949,7 @@ class Compiler
                      {
                        'CI' => 'true',
                        'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1',
+                       'MAKE' => 'nmake',
                        'CL' => '/MP'
                      }
                    else
