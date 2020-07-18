@@ -114,7 +114,7 @@ class Compiler
     @build_pass2 = File.join(@options[:tmpdir], 'build_pass_2')
 
     @ruby_configure = (Gem.win_platform? ? "#{@ruby_source_dir}\\win32\\configure.bat" : File.join(@ruby_source_dir, 'configure'))
-    
+
     @work_dir = File.join(@options[:tmpdir], 'rubyc_work_dir')
     @work_dir_inner = File.join(@work_dir, '__enclose_io_memfs__')
     @gems_dir = File.join(@ruby_install1, 'lib', 'ruby', 'gems', self.class.ruby_api_version)
@@ -134,7 +134,7 @@ class Compiler
     @utils.rm_rf(@options[:tmpdir]) unless @options[:keep_tmpdir]
     @utils.mkdir_p(@build_pass1)
     @utils.mkdir_p(@build_pass2)
-    
+
     stuff_tmpdir
     build_ruby_pass_1 unless Dir.exist?(@ruby_install1)
     overwrite_ext_setup
