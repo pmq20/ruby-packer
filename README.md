@@ -92,7 +92,6 @@ ENTRANCE can be either a file path, or a "x" string as in bundle exec "x".
       -r, --root=DIR                   The path to the root of the application
       -o, --output=FILE                The path of the output file
       -d, --tmpdir=DIR                 The directory for temporary files
-      -c, --clean-tmpdir               Cleans temporary files before compiling
           --keep-tmpdir                Keeps all temporary files that were generated last time
           --openssl-dir                The path to openssl
           --make-args=ARGS             Extra arguments to be passed to make
@@ -192,9 +191,6 @@ Remember that rubyc includes all the files from the current directory in the
 built executable.  You must *delete the prior rubyc* or your squashfs will
 *continually grow larger* and the embedded squashfs *compile time will be
 very, very long*.
-
-If you make changes to the stuffed libraries or the compiler you may need to
-add the `--clean-tmpdir` argument to `rubyc` for a clean rebuild.
 
 ## Authors
 

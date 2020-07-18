@@ -74,10 +74,6 @@ OptionParser.new do |opts|
     options[:tmpdir] = dir
   end
 
-  opts.on('-c', '--clean-tmpdir', 'Cleans temporary files before compiling') do
-    options[:clean_tmpdir] = true
-  end
-
   opts.on('--keep-tmpdir', 'Keeps all temporary files that were generated last time') do
     options[:keep_tmpdir] = true
   end
