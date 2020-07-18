@@ -12,7 +12,7 @@
 #include "internal/cryptlib.h"
 #include <openssl/objects.h>
 #include <openssl/evp.h>
-#include "internal/evp_int.h"
+#include "crypto/evp.h"
 
 #define M_check_autoarg(ctx, arg, arglen, err) \
     if (ctx->pmeth->flags & EVP_PKEY_FLAG_AUTOARGLEN) {           \
@@ -255,7 +255,7 @@ int EVP_PKEY_derive_set_peer(EVP_PKEY_CTX *ctx, EVP_PKEY *peer)
     }
 
     /*
-     * ran@cryptocom.ru: For clarity.  The error is if parameters in peer are
+     * For clarity.  The error is if parameters in peer are
      * present (!missing) but don't match.  EVP_PKEY_cmp_parameters may return
      * 1 (match), 0 (don't match) and -2 (comparison is not defined).  -1
      * (different key types) is impossible here because it is checked earlier.

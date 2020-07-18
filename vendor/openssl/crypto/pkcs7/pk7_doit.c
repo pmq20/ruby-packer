@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2018 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2019 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the OpenSSL license (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -137,7 +137,8 @@ static int pkcs7_encode_rinfo(PKCS7_RECIP_INFO *ri,
 }
 
 static int pkcs7_decrypt_rinfo(unsigned char **pek, int *peklen,
-                               PKCS7_RECIP_INFO *ri, EVP_PKEY *pkey)
+                               PKCS7_RECIP_INFO *ri, EVP_PKEY *pkey,
+                               size_t fixlen)
 {
     EVP_PKEY_CTX *pctx = NULL;
     unsigned char *ek = NULL;
@@ -170,7 +171,9 @@ static int pkcs7_decrypt_rinfo(unsigned char **pek, int *peklen,
     }
 
     if (EVP_PKEY_decrypt(pctx, ek, &eklen,
-                         ri->enc_key->data, ri->enc_key->length) <= 0) {
+                         ri->enc_key->data, ri->enc_key->length) <= 0
+            || eklen == 0
+            || (fixlen != 0 && eklen != fixlen)) {
         ret = 0;
         PKCS7err(PKCS7_F_PKCS7_DECRYPT_RINFO, ERR_R_EVP_LIB);
         goto err;
@@ -499,13 +502,14 @@ BIO *PKCS7_dataDecode(PKCS7 *p7, EVP_PKEY *pkey, BIO *in_bio, X509 *pcert)
             for (i = 0; i < sk_PKCS7_RECIP_INFO_num(rsk); i++) {
                 ri = sk_PKCS7_RECIP_INFO_value(rsk, i);
 
-                if (pkcs7_decrypt_rinfo(&ek, &eklen, ri, pkey) < 0)
+                if (pkcs7_decrypt_rinfo(&ek, &eklen, ri, pkey,
+                        EVP_CIPHER_key_length(evp_cipher)) < 0)
                     goto err;
                 ERR_clear_error();
             }
         } else {
             /* Only exit on fatal errors, not decrypt failure */
-            if (pkcs7_decrypt_rinfo(&ek, &eklen, ri, pkey) < 0)
+            if (pkcs7_decrypt_rinfo(&ek, &eklen, ri, pkey, 0) < 0)
                 goto err;
             ERR_clear_error();
         }
@@ -809,13 +813,13 @@ int PKCS7_dataFinal(PKCS7 *p7, BIO *bio)
     ret = 1;
  err:
     EVP_MD_CTX_free(ctx_tmp);
-    return (ret);
+    return ret;
 }
 
 int PKCS7_SIGNER_INFO_sign(PKCS7_SIGNER_INFO *si)
 {
     EVP_MD_CTX *mctx;
-    EVP_PKEY_CTX *pctx;
+    EVP_PKEY_CTX *pctx = NULL;
     unsigned char *abuf = NULL;
     int alen;
     size_t siglen;
@@ -1041,7 +1045,7 @@ int PKCS7_signatureVerify(BIO *bio, PKCS7 *p7, PKCS7_SIGNER_INFO *si,
     ret = 1;
  err:
     EVP_MD_CTX_free(mdc_tmp);
-    return (ret);
+    return ret;
 }
 
 PKCS7_ISSUER_AND_SERIAL *PKCS7_get_issuer_and_serial(PKCS7 *p7, int idx)
@@ -1059,19 +1063,19 @@ PKCS7_ISSUER_AND_SERIAL *PKCS7_get_issuer_and_serial(PKCS7 *p7, int idx)
     if (rsk == NULL)
         return NULL;
     if (sk_PKCS7_RECIP_INFO_num(rsk) <= idx)
-        return (NULL);
+        return NULL;
     ri = sk_PKCS7_RECIP_INFO_value(rsk, idx);
-    return (ri->issuer_and_serial);
+    return ri->issuer_and_serial;
 }
 
 ASN1_TYPE *PKCS7_get_signed_attribute(PKCS7_SIGNER_INFO *si, int nid)
 {
-    return (get_attribute(si->auth_attr, nid));
+    return get_attribute(si->auth_attr, nid);
 }
 
 ASN1_TYPE *PKCS7_get_attribute(PKCS7_SIGNER_INFO *si, int nid)
 {
-    return (get_attribute(si->unauth_attr, nid));
+    return get_attribute(si->unauth_attr, nid);
 }
 
 static ASN1_TYPE *get_attribute(STACK_OF(X509_ATTRIBUTE) *sk, int nid)
@@ -1105,9 +1109,9 @@ int PKCS7_set_signed_attributes(PKCS7_SIGNER_INFO *p7si,
                                    X509_ATTRIBUTE_dup(sk_X509_ATTRIBUTE_value
                                                       (sk, i))))
             == NULL)
-            return (0);
+            return 0;
     }
-    return (1);
+    return 1;
 }
 
 int PKCS7_set_attributes(PKCS7_SIGNER_INFO *p7si,
@@ -1124,21 +1128,21 @@ int PKCS7_set_attributes(PKCS7_SIGNER_INFO *p7si,
                                    X509_ATTRIBUTE_dup(sk_X509_ATTRIBUTE_value
                                                       (sk, i))))
             == NULL)
-            return (0);
+            return 0;
     }
-    return (1);
+    return 1;
 }
 
 int PKCS7_add_signed_attribute(PKCS7_SIGNER_INFO *p7si, int nid, int atrtype,
                                void *value)
 {
-    return (add_attribute(&(p7si->auth_attr), nid, atrtype, value));
+    return add_attribute(&(p7si->auth_attr), nid, atrtype, value);
 }
 
 int PKCS7_add_attribute(PKCS7_SIGNER_INFO *p7si, int nid, int atrtype,
                         void *value)
 {
-    return (add_attribute(&(p7si->unauth_attr), nid, atrtype, value));
+    return add_attribute(&(p7si->unauth_attr), nid, atrtype, value);
 }
 
 static int add_attribute(STACK_OF(X509_ATTRIBUTE) **sk, int nid, int atrtype,
@@ -1176,5 +1180,5 @@ static int add_attribute(STACK_OF(X509_ATTRIBUTE) **sk, int nid, int atrtype,
         goto new_attrib;
     }
  end:
-    return (1);
+    return 1;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2002-2019 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the OpenSSL license (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -20,7 +20,7 @@ NON_EMPTY_TRANSLATION_UNIT
 # include <stdio.h>
 # include <time.h>
 # include "internal/cryptlib.h"
-# include "bn_lcl.h"
+# include "bn_local.h"
 
 BIGNUM *BN_generate_prime(BIGNUM *ret, int bits, int safe,
                           const BIGNUM *add, const BIGNUM *rem,
@@ -40,7 +40,7 @@ BIGNUM *BN_generate_prime(BIGNUM *ret, int bits, int safe,
         goto err;
 
     /* we have a prime :-) */
-    return ret;
+    return rnd;
  err:
     BN_free(rnd);
     return NULL;

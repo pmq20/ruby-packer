@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include "internal/cryptlib.h"
 #include <openssl/x509v3.h>
-#include "internal/x509_int.h"
+#include "crypto/x509.h"
 #include "ext_dat.h"
 
 static ASN1_OCTET_STRING *s2i_skey_id(X509V3_EXT_METHOD *method,
@@ -24,7 +24,7 @@ const X509V3_EXT_METHOD v3_skey_id = {
     NULL
 };
 
-char *i2s_ASN1_OCTET_STRING(X509V3_EXT_METHOD *method, 
+char *i2s_ASN1_OCTET_STRING(X509V3_EXT_METHOD *method,
                             const ASN1_OCTET_STRING *oct)
 {
     return OPENSSL_buf2hexstr(oct->data, oct->length);

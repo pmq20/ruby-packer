@@ -20,8 +20,8 @@
 
 # include <openssl/evp.h>
 # include <openssl/objects.h>
-# include "blake2_locl.h"
-# include "internal/evp_int.h"
+# include "blake2_local.h"
+# include "crypto/evp.h"
 
 static int init(EVP_MD_CTX *ctx)
 {
@@ -54,6 +54,6 @@ static const EVP_MD blake2b_md = {
 
 const EVP_MD *EVP_blake2b512(void)
 {
-    return (&blake2b_md);
+    return &blake2b_md;
 }
 #endif

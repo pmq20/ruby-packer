@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2016 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2018 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the OpenSSL license (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -12,10 +12,10 @@
 #ifndef OPENSSL_NO_DES
 # include <openssl/evp.h>
 # include <openssl/objects.h>
-# include "internal/evp_int.h"
+# include "crypto/evp.h"
 # include <openssl/des.h>
 # include <openssl/rand.h>
-# include "evp_locl.h"
+# include "evp_local.h"
 
 typedef struct {
     union {
@@ -283,7 +283,7 @@ static int des3_ctrl(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr)
 
     switch (type) {
     case EVP_CTRL_RAND_KEY:
-        if (RAND_bytes(ptr, EVP_CIPHER_CTX_key_length(ctx)) <= 0)
+        if (RAND_priv_bytes(ptr, EVP_CIPHER_CTX_key_length(ctx)) <= 0)
             return 0;
         DES_set_odd_parity(deskey);
         if (EVP_CIPHER_CTX_key_length(ctx) >= 16)

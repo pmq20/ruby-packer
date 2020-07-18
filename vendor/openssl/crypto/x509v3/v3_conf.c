@@ -10,11 +10,11 @@
 /* extension creation utilities */
 
 #include <stdio.h>
-#include <ctype.h>
+#include "crypto/ctype.h"
 #include "internal/cryptlib.h"
 #include <openssl/conf.h>
 #include <openssl/x509.h>
-#include "internal/x509_int.h"
+#include "crypto/x509.h"
 #include <openssl/x509v3.h>
 
 static int v3_check_critical(const char **value);
@@ -192,7 +192,7 @@ static int v3_check_critical(const char **value)
     if ((strlen(p) < 9) || strncmp(p, "critical,", 9))
         return 0;
     p += 9;
-    while (isspace((unsigned char)*p))
+    while (ossl_isspace(*p))
         p++;
     *value = p;
     return 1;
@@ -212,7 +212,7 @@ static int v3_check_generic(const char **value)
     } else
         return 0;
 
-    while (isspace((unsigned char)*p))
+    while (ossl_isspace(*p))
         p++;
     *value = p;
     return gen_type;

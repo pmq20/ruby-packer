@@ -15,8 +15,8 @@
 #include <openssl/engine.h>
 #include <openssl/x509.h>
 #include <openssl/asn1.h>
-#include "internal/asn1_int.h"
-#include "internal/evp_int.h"
+#include "crypto/asn1.h"
+#include "crypto/evp.h"
 
 EVP_PKEY *d2i_PrivateKey(int type, EVP_PKEY **a, const unsigned char **pp,
                          long length)
@@ -27,7 +27,7 @@ EVP_PKEY *d2i_PrivateKey(int type, EVP_PKEY **a, const unsigned char **pp,
     if ((a == NULL) || (*a == NULL)) {
         if ((ret = EVP_PKEY_new()) == NULL) {
             ASN1err(ASN1_F_D2I_PRIVATEKEY, ERR_R_EVP_LIB);
-            return (NULL);
+            return NULL;
         }
     } else {
         ret = *a;
@@ -64,11 +64,11 @@ EVP_PKEY *d2i_PrivateKey(int type, EVP_PKEY **a, const unsigned char **pp,
     *pp = p;
     if (a != NULL)
         (*a) = ret;
-    return (ret);
+    return ret;
  err:
     if (a == NULL || *a != ret)
         EVP_PKEY_free(ret);
-    return (NULL);
+    return NULL;
 }
 
 /*

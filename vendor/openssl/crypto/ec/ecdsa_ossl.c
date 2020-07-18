@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2018 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2002-2019 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the OpenSSL license (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -11,15 +11,15 @@
 #include <openssl/err.h>
 #include <openssl/obj_mac.h>
 #include <openssl/rand.h>
-#include "internal/bn_int.h"
-#include "ec_lcl.h"
+#include "crypto/bn.h"
+#include "ec_local.h"
 
 int ossl_ecdsa_sign(int type, const unsigned char *dgst, int dlen,
                     unsigned char *sig, unsigned int *siglen,
                     const BIGNUM *kinv, const BIGNUM *r, EC_KEY *eckey)
 {
     ECDSA_SIG *s;
-    RAND_seed(dgst, dlen);
+
     s = ECDSA_do_sign_ex(dgst, dlen, kinv, r, eckey);
     if (s == NULL) {
         *siglen = 0;
@@ -41,9 +41,14 @@ static int ecdsa_sign_setup(EC_KEY *eckey, BN_CTX *ctx_in,
     const EC_GROUP *group;
     int ret = 0;
     int order_bits;
+    const BIGNUM *priv_key;
 
     if (eckey == NULL || (group = EC_KEY_get0_group(eckey)) == NULL) {
         ECerr(EC_F_ECDSA_SIGN_SETUP, ERR_R_PASSED_NULL_PARAMETER);
+        return 0;
+    }
+    if ((priv_key = EC_KEY_get0_private_key(eckey)) == NULL) {
+        ECerr(EC_F_ECDSA_SIGN_SETUP, EC_R_MISSING_PRIVATE_KEY);
         return 0;
     }
 
@@ -83,15 +88,14 @@ static int ecdsa_sign_setup(EC_KEY *eckey, BN_CTX *ctx_in,
         /* get random k */
         do {
             if (dgst != NULL) {
-                if (!BN_generate_dsa_nonce(k, order,
-                                           EC_KEY_get0_private_key(eckey),
+                if (!BN_generate_dsa_nonce(k, order, priv_key,
                                            dgst, dlen, ctx)) {
                     ECerr(EC_F_ECDSA_SIGN_SETUP,
                           EC_R_RANDOM_NUMBER_GENERATION_FAILED);
                     goto err;
                 }
             } else {
-                if (!BN_rand_range(k, order)) {
+                if (!BN_priv_rand_range(k, order)) {
                     ECerr(EC_F_ECDSA_SIGN_SETUP,
                           EC_R_RANDOM_NUMBER_GENERATION_FAILED);
                     goto err;
@@ -99,45 +103,17 @@ static int ecdsa_sign_setup(EC_KEY *eckey, BN_CTX *ctx_in,
             }
         } while (BN_is_zero(k));
 
-        /*
-         * We do not want timing information to leak the length of k, so we
-         * compute G*k using an equivalent scalar of fixed bit-length.
-         *
-         * We unconditionally perform both of these additions to prevent a
-         * small timing information leakage.  We then choose the sum that is
-         * one bit longer than the order.  This guarantees the code
-         * path used in the constant time implementations elsewhere.
-         *
-         * TODO: revisit the BN_copy aiming for a memory access agnostic
-         * conditional copy.
-         */
-        if (!BN_add(r, k, order)
-            || !BN_add(X, r, order)
-            || !BN_copy(k, BN_num_bits(r) > order_bits ? r : X))
-            goto err;
-
         /* compute r the x-coordinate of generator * k */
         if (!EC_POINT_mul(group, tmp_point, k, NULL, NULL, ctx)) {
             ECerr(EC_F_ECDSA_SIGN_SETUP, ERR_R_EC_LIB);
             goto err;
         }
-        if (EC_METHOD_get_field_type(EC_GROUP_method_of(group)) ==
-            NID_X9_62_prime_field) {
-            if (!EC_POINT_get_affine_coordinates_GFp(group, tmp_point, X,
-                                                     NULL, ctx)) {
-                ECerr(EC_F_ECDSA_SIGN_SETUP, ERR_R_EC_LIB);
-                goto err;
-            }
+
+        if (!EC_POINT_get_affine_coordinates(group, tmp_point, X, NULL, ctx)) {
+            ECerr(EC_F_ECDSA_SIGN_SETUP, ERR_R_EC_LIB);
+            goto err;
         }
-#ifndef OPENSSL_NO_EC2M
-        else {                  /* NID_X9_62_characteristic_two_field */
-            if (!EC_POINT_get_affine_coordinates_GF2m(group, tmp_point, X,
-                                                      NULL, ctx)) {
-                ECerr(EC_F_ECDSA_SIGN_SETUP, ERR_R_EC_LIB);
-                goto err;
-            }
-        }
-#endif
+
         if (!BN_nnmod(r, X, order, ctx)) {
             ECerr(EC_F_ECDSA_SIGN_SETUP, ERR_R_BN_LIB);
             goto err;
@@ -145,30 +121,9 @@ static int ecdsa_sign_setup(EC_KEY *eckey, BN_CTX *ctx_in,
     } while (BN_is_zero(r));
 
     /* compute the inverse of k */
-    if (EC_GROUP_get_mont_data(group) != NULL) {
-        /*
-         * We want inverse in constant time, therefore we utilize the fact
-         * order must be prime and use Fermats Little Theorem instead.
-         */
-        if (!BN_set_word(X, 2)) {
-            ECerr(EC_F_ECDSA_SIGN_SETUP, ERR_R_BN_LIB);
-            goto err;
-        }
-        if (!BN_mod_sub(X, order, X, order, ctx)) {
-            ECerr(EC_F_ECDSA_SIGN_SETUP, ERR_R_BN_LIB);
-            goto err;
-        }
-        BN_set_flags(X, BN_FLG_CONSTTIME);
-        if (!BN_mod_exp_mont_consttime
-            (k, k, X, order, ctx, EC_GROUP_get_mont_data(group))) {
-            ECerr(EC_F_ECDSA_SIGN_SETUP, ERR_R_BN_LIB);
-            goto err;
-        }
-    } else {
-        if (!BN_mod_inverse(k, k, order, ctx)) {
-            ECerr(EC_F_ECDSA_SIGN_SETUP, ERR_R_BN_LIB);
-            goto err;
-        }
+    if (!ec_group_do_inverse_ord(group, k, k, ctx)) {
+        ECerr(EC_F_ECDSA_SIGN_SETUP, ERR_R_BN_LIB);
+        goto err;
     }
 
     /* clear old values if necessary */
@@ -187,7 +142,7 @@ static int ecdsa_sign_setup(EC_KEY *eckey, BN_CTX *ctx_in,
         BN_CTX_free(ctx);
     EC_POINT_free(tmp_point);
     BN_clear_free(X);
-    return (ret);
+    return ret;
 }
 
 int ossl_ecdsa_sign_setup(EC_KEY *eckey, BN_CTX *ctx_in, BIGNUM **kinvp,
@@ -211,8 +166,12 @@ ECDSA_SIG *ossl_ecdsa_sign_sig(const unsigned char *dgst, int dgst_len,
     group = EC_KEY_get0_group(eckey);
     priv_key = EC_KEY_get0_private_key(eckey);
 
-    if (group == NULL || priv_key == NULL) {
+    if (group == NULL) {
         ECerr(EC_F_OSSL_ECDSA_SIGN_SIG, ERR_R_PASSED_NULL_PARAMETER);
+        return NULL;
+    }
+    if (priv_key == NULL) {
+        ECerr(EC_F_OSSL_ECDSA_SIGN_SIG, EC_R_MISSING_PRIVATE_KEY);
         return NULL;
     }
 
@@ -299,7 +258,7 @@ ECDSA_SIG *ossl_ecdsa_sign_sig(const unsigned char *dgst, int dgst_len,
 
         if (BN_is_zero(s)) {
             /*
-             * if kinv and r have been supplied by the caller don't to
+             * if kinv and r have been supplied by the caller, don't
              * generate new kinv and r values
              */
             if (in_kinv != NULL && in_r != NULL) {
@@ -341,7 +300,7 @@ int ossl_ecdsa_verify(int type, const unsigned char *dgst, int dgst_len,
 
     s = ECDSA_SIG_new();
     if (s == NULL)
-        return (ret);
+        return ret;
     if (d2i_ECDSA_SIG(&s, &p, sig_len) == NULL)
         goto err;
     /* Ensure signature uses DER and doesn't have trailing garbage */
@@ -350,9 +309,9 @@ int ossl_ecdsa_verify(int type, const unsigned char *dgst, int dgst_len,
         goto err;
     ret = ECDSA_do_verify(dgst, dgst_len, s, eckey);
  err:
-    OPENSSL_clear_free(der, derlen);
+    OPENSSL_free(der);
     ECDSA_SIG_free(s);
-    return (ret);
+    return ret;
 }
 
 int ossl_ecdsa_verify_sig(const unsigned char *dgst, int dgst_len,
@@ -407,7 +366,7 @@ int ossl_ecdsa_verify_sig(const unsigned char *dgst, int dgst_len,
         goto err;
     }
     /* calculate tmp1 = inv(S) mod order */
-    if (!BN_mod_inverse(u2, sig->s, order, ctx)) {
+    if (!ec_group_do_inverse_ord(group, u2, sig->s, ctx)) {
         ECerr(EC_F_OSSL_ECDSA_VERIFY_SIG, ERR_R_BN_LIB);
         goto err;
     }
@@ -446,22 +405,12 @@ int ossl_ecdsa_verify_sig(const unsigned char *dgst, int dgst_len,
         ECerr(EC_F_OSSL_ECDSA_VERIFY_SIG, ERR_R_EC_LIB);
         goto err;
     }
-    if (EC_METHOD_get_field_type(EC_GROUP_method_of(group)) ==
-        NID_X9_62_prime_field) {
-        if (!EC_POINT_get_affine_coordinates_GFp(group, point, X, NULL, ctx)) {
-            ECerr(EC_F_OSSL_ECDSA_VERIFY_SIG, ERR_R_EC_LIB);
-            goto err;
-        }
-    }
-#ifndef OPENSSL_NO_EC2M
-    else {                      /* NID_X9_62_characteristic_two_field */
 
-        if (!EC_POINT_get_affine_coordinates_GF2m(group, point, X, NULL, ctx)) {
-            ECerr(EC_F_OSSL_ECDSA_VERIFY_SIG, ERR_R_EC_LIB);
-            goto err;
-        }
+    if (!EC_POINT_get_affine_coordinates(group, point, X, NULL, ctx)) {
+        ECerr(EC_F_OSSL_ECDSA_VERIFY_SIG, ERR_R_EC_LIB);
+        goto err;
     }
-#endif
+
     if (!BN_nnmod(u1, X, order, ctx)) {
         ECerr(EC_F_OSSL_ECDSA_VERIFY_SIG, ERR_R_BN_LIB);
         goto err;

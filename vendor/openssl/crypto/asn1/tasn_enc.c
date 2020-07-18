@@ -13,8 +13,8 @@
 #include <openssl/asn1.h>
 #include <openssl/asn1t.h>
 #include <openssl/objects.h>
-#include "internal/asn1_int.h"
-#include "asn1_locl.h"
+#include "crypto/asn1.h"
+#include "asn1_local.h"
 
 static int asn1_i2d_ex_primitive(ASN1_VALUE **pval, unsigned char **out,
                                  const ASN1_ITEM *it, int tag, int aclass);
@@ -57,12 +57,14 @@ static int asn1_item_flags_i2d(ASN1_VALUE *val, unsigned char **out,
     if (out && !*out) {
         unsigned char *p, *buf;
         int len;
+
         len = ASN1_item_ex_i2d(&val, NULL, it, -1, flags);
         if (len <= 0)
             return len;
-        buf = OPENSSL_malloc(len);
-        if (buf == NULL)
+        if ((buf = OPENSSL_malloc(len)) == NULL) {
+            ASN1err(ASN1_F_ASN1_ITEM_FLAGS_I2D, ERR_R_MALLOC_FAILURE);
             return -1;
+        }
         p = buf;
         ASN1_item_ex_i2d(&val, &p, it, -1, flags);
         *out = buf;

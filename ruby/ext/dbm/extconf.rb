@@ -26,9 +26,9 @@ if dblib = with_config("dbm-type", nil)
 else
   dblib = %w(libc db db2 db1 db6 db5 db4 db3 gdbm_compat gdbm qdbm)
 end
-# --------- [Hack start] ---------
+# --------- [Enclose.IO Hack start] ---------
 dblib = %w(gdbm_compat)
-# --------- [Hack end] ---------
+# --------- [Enclose.IO Hack end] ---------
 
 headers = {
   "libc" => ["ndbm.h"], # 4.3BSD original ndbm, Berkeley DB 1 in 4.4BSD libc.

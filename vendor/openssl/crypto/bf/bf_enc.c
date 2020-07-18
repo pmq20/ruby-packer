@@ -8,7 +8,7 @@
  */
 
 #include <openssl/blowfish.h>
-#include "bf_locl.h"
+#include "bf_local.h"
 
 /*
  * Blowfish as implemented from 'Blowfish: Springer-Verlag paper' (From
@@ -59,8 +59,6 @@ void BF_encrypt(BF_LONG *data, const BF_KEY *key)
     data[1] = l & 0xffffffffU;
     data[0] = r & 0xffffffffU;
 }
-
-#ifndef BF_DEFAULT_OPTIONS
 
 void BF_decrypt(BF_LONG *data, const BF_KEY *key)
 {
@@ -175,5 +173,3 @@ void BF_cbc_encrypt(const unsigned char *in, unsigned char *out, long length,
     tin0 = tin1 = tout0 = tout1 = xor0 = xor1 = 0;
     tin[0] = tin[1] = 0;
 }
-
-#endif

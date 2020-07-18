@@ -8,12 +8,12 @@
  */
 
 #include <openssl/idea.h>
-#include "idea_lcl.h"
+#include "idea_local.h"
 #include <openssl/opensslv.h>
 
 const char *IDEA_options(void)
 {
-    return ("idea(int)");
+    return "idea(int)";
 }
 
 void IDEA_ecb_encrypt(const unsigned char *in, unsigned char *out,

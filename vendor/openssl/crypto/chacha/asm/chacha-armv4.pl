@@ -1,5 +1,5 @@
 #! /usr/bin/env perl
-# Copyright 2016 The OpenSSL Project Authors. All Rights Reserved.
+# Copyright 2016-2020 The OpenSSL Project Authors. All Rights Reserved.
 #
 # Licensed under the OpenSSL license (the "License").  You may not use
 # this file except in compliance with the License.  You can obtain a copy
@@ -15,7 +15,7 @@
 # ====================================================================
 #
 # December 2014
-# 
+#
 # ChaCha20 for ARMv4.
 #
 # Performance in cycles per byte out of large buffer.
@@ -172,8 +172,10 @@ $code.=<<___;
 #include "arm_arch.h"
 
 .text
-#if defined(__thumb2__)
+#if defined(__thumb2__) || defined(__clang__)
 .syntax	unified
+#endif
+#if defined(__thumb2__)
 .thumb
 #else
 .code	32
@@ -720,7 +722,7 @@ ChaCha20_neon:
 	vadd.i32	$d2,$d1,$t0		@ counter+2
 	str		@t[3], [sp,#4*(16+15)]
 	mov		@t[3],#10
-	add		@x[12],@x[12],#3	@ counter+3 
+	add		@x[12],@x[12],#3	@ counter+3
 	b		.Loop_neon
 
 .align	4
@@ -1155,4 +1157,4 @@ foreach (split("\n",$code)) {
 
 	print $_,"\n";
 }
-close STDOUT;
+close STDOUT or die "error closing STDOUT: $!";

@@ -1,5 +1,5 @@
 #! /usr/bin/env perl
-# Copyright 2012-2016 The OpenSSL Project Authors. All Rights Reserved.
+# Copyright 2012-2020 The OpenSSL Project Authors. All Rights Reserved.
 #
 # Licensed under the OpenSSL license (the "License").  You may not use
 # this file except in compliance with the License.  You can obtain a copy
@@ -231,7 +231,7 @@ bus_loop1?:
 _OPENSSL_instrument_bus2:
 	.asmfunc
 	MV	A6,B0			; reassign max
-||	MV	B4,A6			; reassing sizeof(output)
+||	MV	B4,A6			; reassign sizeof(output)
 ||	MVK	0x00004030,A3
 	MV	A4,B4			; reassign output
 ||	MVK	0,A4			; return value
@@ -284,4 +284,4 @@ bus_loop2_done?:
 ___
 
 print $code;
-close STDOUT;
+close STDOUT or die "error closing STDOUT: $!";

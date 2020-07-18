@@ -19,7 +19,7 @@ jobs:
           sudo apt-get update -q || :
           sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev libgdbm-dev bison autoconf ruby
       - uses: actions/checkout@v2
-      - name: "[rubyc] Install libraries"
+      - name: "[Enclose.IO] Install libraries"
         run: |
           cat /etc/issue
           uname -a
@@ -29,15 +29,15 @@ jobs:
           sudo apt-get install --no-install-recommends -q -y squashfs-tools
           which mksquashfs
           mksquashfs -version
-      - name: "[rubyc] Set up Ruby"
+      - name: "[Enclose.IO] Set up Ruby"
         uses: ruby/setup-ruby@v1
-      - name: "[rubyc] Install dependencies"
+      - name: "[Enclose.IO] Install dependencies"
         run: bundle install
-      - name: "[rubyc] Run rubocop"
+      - name: "[Enclose.IO] Run rubocop"
         run: bundle exec rubocop
-      - name: "[rubyc] Run tests"
+      - name: "[Enclose.IO] Run tests"
         run: bundle exec rake
-      - name: "[rubyc] Create Linux Release"
+      - name: "[Enclose.IO] Create Linux Release"
         if: ${{ github.ref == 'refs/heads/master' &&	matrix.os == 'ubuntu-16.04' && success() }}
         id: create_linux_release
         uses: pmq20/create-release@delete-old-release
@@ -49,7 +49,7 @@ jobs:
           draft: false
           prerelease: false
           replace_old_tag: true
-      - name: "[rubyc] Upload Linux Release"
+      - name: "[Enclose.IO] Upload Linux Release"
         if: ${{ github.ref == 'refs/heads/master' &&	matrix.os == 'ubuntu-16.04' && success() }}
         uses: actions/upload-release-asset@v1
         env:

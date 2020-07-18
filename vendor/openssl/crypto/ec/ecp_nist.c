@@ -1,5 +1,6 @@
 /*
- * Copyright 2001-2018 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2001-2019 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright (c) 2002, Oracle and/or its affiliates. All rights reserved
  *
  * Licensed under the OpenSSL license (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -7,17 +8,11 @@
  * https://www.openssl.org/source/license.html
  */
 
-/* ====================================================================
- * Copyright 2002 Sun Microsystems, Inc. ALL RIGHTS RESERVED.
- * Portions of this software developed by SUN MICROSYSTEMS, INC.,
- * and contributed to the OpenSSL project.
- */
-
 #include <limits.h>
 
 #include <openssl/err.h>
 #include <openssl/obj_mac.h>
-#include "ec_lcl.h"
+#include "ec_local.h"
 
 const EC_METHOD *EC_GFp_nist_method(void)
 {
@@ -57,6 +52,7 @@ const EC_METHOD *EC_GFp_nist_method(void)
         ec_GFp_nist_field_mul,
         ec_GFp_nist_field_sqr,
         0 /* field_div */ ,
+        ec_GFp_simple_field_inv,
         0 /* field_encode */ ,
         0 /* field_decode */ ,
         0,                      /* field_set_to_one */
@@ -69,7 +65,11 @@ const EC_METHOD *EC_GFp_nist_method(void)
         0, /* keycopy */
         0, /* keyfinish */
         ecdh_simple_compute_key,
-        ec_GFp_simple_blind_coordinates
+        0, /* field_inverse_mod_ord */
+        ec_GFp_simple_blind_coordinates,
+        ec_GFp_simple_ladder_pre,
+        ec_GFp_simple_ladder_step,
+        ec_GFp_simple_ladder_post
     };
 
     return &ret;

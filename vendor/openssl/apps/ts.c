@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2006-2020 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the OpenSSL license (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -8,28 +8,26 @@
  */
 
 #include <openssl/opensslconf.h>
-#ifdef OPENSSL_NO_TS
-NON_EMPTY_TRANSLATION_UNIT
-#else
-# include <stdio.h>
-# include <stdlib.h>
-# include <string.h>
-# include "apps.h"
-# include <openssl/bio.h>
-# include <openssl/err.h>
-# include <openssl/pem.h>
-# include <openssl/rand.h>
-# include <openssl/ts.h>
-# include <openssl/bn.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "apps.h"
+#include "progs.h"
+#include <openssl/bio.h>
+#include <openssl/err.h>
+#include <openssl/pem.h>
+#include <openssl/rand.h>
+#include <openssl/ts.h>
+#include <openssl/bn.h>
 
 /* Request nonce length, in bits (must be a multiple of 8). */
-# define NONCE_LENGTH            64
+#define NONCE_LENGTH            64
 
 /* Name of config entry that defines the OID file. */
-# define ENV_OID_FILE            "oid_file"
+#define ENV_OID_FILE            "oid_file"
 
 /* Is |EXACTLY_ONE| of three pointers set? */
-# define EXACTLY_ONE(a, b, c) \
+#define EXACTLY_ONE(a, b, c) \
         (( a && !b && !c) || \
          ( b && !a && !c) || \
          ( c && !a && !b))
@@ -79,22 +77,21 @@ static int verify_cb(int ok, X509_STORE_CTX *ctx);
 typedef enum OPTION_choice {
     OPT_ERR = -1, OPT_EOF = 0, OPT_HELP,
     OPT_ENGINE, OPT_CONFIG, OPT_SECTION, OPT_QUERY, OPT_DATA,
-    OPT_DIGEST, OPT_RAND, OPT_TSPOLICY, OPT_NO_NONCE, OPT_CERT,
+    OPT_DIGEST, OPT_TSPOLICY, OPT_NO_NONCE, OPT_CERT,
     OPT_IN, OPT_TOKEN_IN, OPT_OUT, OPT_TOKEN_OUT, OPT_TEXT,
     OPT_REPLY, OPT_QUERYFILE, OPT_PASSIN, OPT_INKEY, OPT_SIGNER,
     OPT_CHAIN, OPT_VERIFY, OPT_CAPATH, OPT_CAFILE, OPT_UNTRUSTED,
-    OPT_MD, OPT_V_ENUM
+    OPT_MD, OPT_V_ENUM, OPT_R_ENUM
 } OPTION_CHOICE;
 
-OPTIONS ts_options[] = {
+const OPTIONS ts_options[] = {
     {"help", OPT_HELP, '-', "Display this summary"},
     {"config", OPT_CONFIG, '<', "Configuration file"},
     {"section", OPT_SECTION, 's', "Section to use within config file"},
     {"query", OPT_QUERY, '-', "Generate a TS query"},
     {"data", OPT_DATA, '<', "File to hash"},
     {"digest", OPT_DIGEST, 's', "Digest (as a hex string)"},
-    {"rand", OPT_RAND, 's',
-     "Load the file(s) into the random number generator"},
+    OPT_R_OPTIONS,
     {"tspolicy", OPT_TSPOLICY, 's', "Policy OID to use"},
     {"no_nonce", OPT_NO_NONCE, '-', "Do not include a nonce"},
     {"cert", OPT_CERT, '-', "Put cert request into query"},
@@ -114,9 +111,9 @@ OPTIONS ts_options[] = {
     {"CAfile", OPT_CAFILE, '<', "File with trusted CA certs"},
     {"untrusted", OPT_UNTRUSTED, '<', "File with untrusted certs"},
     {"", OPT_MD, '-', "Any supported digest"},
-# ifndef OPENSSL_NO_ENGINE
+#ifndef OPENSSL_NO_ENGINE
     {"engine", OPT_ENGINE, 's', "Use engine, possibly a hardware device"},
-# endif
+#endif
     {OPT_HELP_STR, 1, '-', "\nOptions specific to 'ts -verify': \n"},
     OPT_V_OPTIONS,
     {OPT_HELP_STR, 1, '-', "\n"},
@@ -137,11 +134,11 @@ static char* opt_helplist[] = {
     "          [-signer tsa_cert.pem] [-inkey private_key.pem]",
     "          [-chain certs_file.pem] [-tspolicy oid]",
     "          [-in file] [-token_in] [-out file] [-token_out]",
-# ifndef OPENSSL_NO_ENGINE
+#ifndef OPENSSL_NO_ENGINE
     "          [-text] [-engine id]",
-# else
+#else
     "          [-text]",
-# endif
+#endif
     "  or",
     "ts -verify -CApath dir -CAfile file.pem -untrusted file.pem",
     "           [-data file] [-digest hexstring]",
@@ -158,7 +155,7 @@ int ts_main(int argc, char **argv)
     const char *section = NULL;
     char **helpp;
     char *password = NULL;
-    char *data = NULL, *digest = NULL, *rnd = NULL, *policy = NULL;
+    char *data = NULL, *digest = NULL, *policy = NULL;
     char *in = NULL, *out = NULL, *queryfile = NULL, *passin = NULL;
     char *inkey = NULL, *signer = NULL, *chain = NULL, *CApath = NULL;
     const EVP_MD *md = NULL;
@@ -207,8 +204,9 @@ int ts_main(int argc, char **argv)
         case OPT_DIGEST:
             digest = opt_arg();
             break;
-        case OPT_RAND:
-            rnd = opt_arg();
+        case OPT_R_CASES:
+            if (!opt_rand(o))
+                goto end;
             break;
         case OPT_TSPOLICY:
             policy = opt_arg();
@@ -275,40 +273,26 @@ int ts_main(int argc, char **argv)
     if (mode == OPT_ERR || opt_num_rest() != 0)
         goto opthelp;
 
-    /* Seed the random number generator if it is going to be used. */
-    if (mode == OPT_QUERY && !no_nonce) {
-        if (!app_RAND_load_file(NULL, 1) && rnd == NULL)
-            BIO_printf(bio_err, "warning, not much extra random "
-                       "data, consider using the -rand option\n");
-        if (rnd != NULL)
-            BIO_printf(bio_err, "%ld semi-random bytes loaded\n",
-                       app_RAND_load_files(rnd));
-    }
-
     if (mode == OPT_REPLY && passin &&
         !app_passwd(passin, NULL, &password, NULL)) {
         BIO_printf(bio_err, "Error getting password.\n");
         goto end;
     }
 
-    conf = load_config_file(configfile);
+    if ((conf = load_config_file(configfile)) == NULL)
+        goto end;
     if (configfile != default_config_file && !app_load_modules(conf))
         goto end;
 
     /* Check parameter consistency and execute the appropriate function. */
-    switch (mode) {
-    default:
-    case OPT_ERR:
-        goto opthelp;
-    case OPT_QUERY:
+    if (mode == OPT_QUERY) {
         if (vpmtouched)
             goto opthelp;
         if ((data != NULL) && (digest != NULL))
             goto opthelp;
         ret = !query_command(data, digest, md, policy, no_nonce, cert,
                              in, out, text);
-        break;
-    case OPT_REPLY:
+    } else if (mode == OPT_REPLY) {
         if (vpmtouched)
             goto opthelp;
         if ((in != NULL) && (queryfile != NULL))
@@ -320,21 +304,22 @@ int ts_main(int argc, char **argv)
         ret = !reply_command(conf, section, engine, queryfile,
                              password, inkey, md, signer, chain, policy,
                              in, token_in, out, token_out, text);
-        break;
-    case OPT_VERIFY:
+
+    } else if (mode == OPT_VERIFY) {
         if ((in == NULL) || !EXACTLY_ONE(queryfile, data, digest))
             goto opthelp;
         ret = !verify_command(data, digest, queryfile, in, token_in,
                               CApath, CAfile, untrusted,
                               vpmtouched ? vpm : NULL);
+    } else {
+        goto opthelp;
     }
 
  end:
     X509_VERIFY_PARAM_free(vpm);
-    app_RAND_write_file(NULL);
     NCONF_free(conf);
     OPENSSL_free(password);
-    return (ret);
+    return ret;
 }
 
 /*
@@ -501,7 +486,7 @@ static int create_digest(BIO *input, const char *digest, const EVP_MD *md,
     if (md_value_len < 0)
         return 0;
 
-    if (input) {
+    if (input != NULL) {
         unsigned char buffer[4096];
         int length;
 
@@ -593,7 +578,7 @@ static int reply_command(CONF *conf, const char *section, const char *engine,
     } else {
         response = create_response(conf, section, engine, queryfile,
                                    passin, inkey, md, signer, chain, policy);
-        if (response)
+        if (response != NULL)
             BIO_printf(bio_err, "Response has been generated.\n");
         else
             BIO_printf(bio_err, "Response is not generated.\n");
@@ -694,10 +679,10 @@ static TS_RESP *create_response(CONF *conf, const char *section, const char *eng
         goto end;
     if (!TS_CONF_set_serial(conf, section, serial_cb, resp_ctx))
         goto end;
-# ifndef OPENSSL_NO_ENGINE
+#ifndef OPENSSL_NO_ENGINE
     if (!TS_CONF_set_crypto_device(conf, section, engine))
         goto end;
-# endif
+#endif
     if (!TS_CONF_set_signer_cert(conf, section, signer, resp_ctx))
         goto end;
     if (!TS_CONF_set_certs(conf, section, chain, resp_ctx))
@@ -712,6 +697,8 @@ static TS_RESP *create_response(CONF *conf, const char *section, const char *eng
             goto end;
     }
 
+    if (!TS_CONF_set_ess_cert_id_digest(conf, section, resp_ctx))
+        goto end;
     if (!TS_CONF_set_def_policy(conf, section, policy, resp_ctx))
         goto end;
     if (!TS_CONF_set_policies(conf, section, resp_ctx))
@@ -747,13 +734,14 @@ static ASN1_INTEGER *serial_cb(TS_RESP_CTX *ctx, void *data)
     const char *serial_file = (const char *)data;
     ASN1_INTEGER *serial = next_serial(serial_file);
 
-    if (!serial) {
+    if (serial == NULL) {
         TS_RESP_CTX_set_status_info(ctx, TS_STATUS_REJECTION,
                                     "Error during serial number "
                                     "generation.");
         TS_RESP_CTX_add_failure_info(ctx, TS_INFO_ADD_INFO_NOT_AVAILABLE);
-    } else
+    } else {
         save_ts_serial(serial_file, serial);
+    }
 
     return serial;
 }
@@ -916,8 +904,9 @@ static TS_VERIFY_CTX *create_verify_ctx(const char *data, const char *digest,
             goto err;
         if ((ctx = TS_REQ_to_TS_VERIFY_CTX(request, NULL)) == NULL)
             goto err;
-    } else
+    } else {
         return NULL;
+    }
 
     /* Add the signature verification flag and arguments. */
     TS_VERIFY_CTX_add_flags(ctx, f | TS_VFY_SIGNATURE);
@@ -992,4 +981,3 @@ static int verify_cb(int ok, X509_STORE_CTX *ctx)
 {
     return ok;
 }
-#endif  /* ndef OPENSSL_NO_TS */

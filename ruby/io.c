@@ -168,9 +168,9 @@ off_t __syscall(quad_t number, ...);
 #  define RUBY_PIPE_NONBLOCK_DEFAULT    (0)
 #endif
 
-// --------- [Hack start] ---------
+// --------- [Enclose.IO Hack start] ---------
 #include "enclose_io.h"
-// --------- [Hack end] ---------
+// --------- [Enclose.IO Hack end] ---------
 
 VALUE rb_cIO;
 VALUE rb_eEOFError;

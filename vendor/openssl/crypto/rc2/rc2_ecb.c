@@ -8,13 +8,12 @@
  */
 
 #include <openssl/rc2.h>
-#include "rc2_locl.h"
+#include "rc2_local.h"
 #include <openssl/opensslv.h>
 
 /*-
  * RC2 as implemented frm a posting from
  * Newsgroups: sci.crypt
- * Sender: pgut01@cs.auckland.ac.nz (Peter Gutmann)
  * Subject: Specification for Ron Rivests Cipher No.2
  * Message-ID: <4fk39f$f70@net.auckland.ac.nz>
  * Date: 11 Feb 1996 06:45:03 GMT

@@ -6,9 +6,9 @@
 [![macOS](https://github.com/pmq20/ruby-packer/workflows/macOS/badge.svg)](https://github.com/pmq20/ruby-packer/actions?query=workflow%3A"macOS")
 [![Linux](https://github.com/pmq20/ruby-packer/workflows/Linux/badge.svg)](https://github.com/pmq20/ruby-packer/actions?query=workflow%3A"Linux")
 
-> **NEWS (Jul 4th, 2020)**: We have decided to use GitHub Actions and GitHub Releases as the auto-packing and auto-updating web services. The Latest Build links below are automatically kept up to date with the latest code in `master`, as long as all the CI tests are passed.
+> **NEWS (Jun 18th, 2020)**: Due to work, the project's original author [Minqi Pan](https://github.com/pmq20) is currently only available to maintain the project during his weekend. Also, we are attending to reported issues one by one, ordered by creation time descendingly.
 
-> **NEWS (Jun 27th, 2020)**: Due to work, the project's original author [Minqi Pan](https://github.com/pmq20) is currently only available to maintain the project during his weekend. Also, we are attending to reported issues one by one, ordered by creation time descendingly.
+> **NEWS (Jul 4th, 2020)**: We have decided to use GitHub Actions and GitHub Releases as the auto-packing and auto-updating web services. The Latest Build links below are automatically kept up to date with the latest code in `master`, as long as all the CI tests are passed.
 
 ## Features
 
@@ -41,10 +41,12 @@ First install the prerequisites:
 * [SquashFS Tools](http://squashfs.sourceforge.net/): you could install it by first installing [choco](https://chocolatey.org) and then executing `choco install squashfs`.
 * [Visual Studio](https://www.visualstudio.com/), all editions including the Community edition (remember to select "Common Tools for Visual C++" feature during installation).
 * [Ruby](https://www.ruby-lang.org/): you could install it using [RubyInstaller](https://rubyinstaller.org/).
+* [Perl]: you could install it using [Strawberry Perl for Windows](http://strawberryperl.com/).
+* [Netwide Assembler](https://www.nasm.us): make sure `nasm` works from your command line.
 
 Then download [rubyc.exe](https://github.com/pmq20/ruby-packer/releases/download/windows-x64/rubyc.exe).
 Optionally put it under `C:\Windows` or any other directory that is part of `PATH`.
-Execute `rubyc --help` from the command line.
+Open Visual Studio's "x64 Native Tools Command Prompt" and execute `rubyc --help` therein.
 
 ### ![macOS](resource/apple_med.png) Install on macOS
 
@@ -207,3 +209,4 @@ add the `--clean-tmpdir` argument to `rubyc` for a clean rebuild.
 - [Libsquash](https://github.com/pmq20/libsquash): portable, user-land SquashFS that can be easily linked and embedded within your application.
 - [Libautoupdate](https://github.com/pmq20/libautoupdate): cross-platform C library to enable your application to auto-update itself in place.
 - [Squashfs Tools](https://github.com/plougher/squashfs-tools): tools to create and extract Squashfs filesystems.
+

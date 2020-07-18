@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2002-2018 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the OpenSSL license (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -7,7 +7,7 @@
  * https://www.openssl.org/source/license.html
  */
 
-#include "bn_lcl.h"
+#include "bn_local.h"
 #include "internal/cryptlib.h"
 
 #define BN_NIST_192_TOP (192+BN_BITS2-1)/BN_BITS2
@@ -254,7 +254,7 @@ static void nist_cp_bn_0(BN_ULONG *dst, const BN_ULONG *src, int top, int max)
     int i;
 
 #ifdef BN_DEBUG
-    OPENSSL_assert(top <= max);
+    (void)ossl_assert(top <= max);
 #endif
     for (i = 0; i < top; i++)
         dst[i] = src[i];

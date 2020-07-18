@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2016 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2013-2019 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the OpenSSL license (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -14,8 +14,8 @@
 #include <openssl/err.h>
 #include <openssl/cms.h>
 #include <openssl/aes.h>
-#include "cms_lcl.h"
-#include "internal/asn1_int.h"
+#include "cms_local.h"
+#include "crypto/asn1.h"
 
 /* Key Agreement Recipient Info (KARI) routines */
 
@@ -162,7 +162,7 @@ int CMS_RecipientInfo_kari_set0_pkey(CMS_RecipientInfo *ri, EVP_PKEY *pk)
     if (!pk)
         return 1;
     pctx = EVP_PKEY_CTX_new(pk, NULL);
-    if (!pctx || !EVP_PKEY_derive_init(pctx))
+    if (!pctx || EVP_PKEY_derive_init(pctx) <= 0)
         goto err;
     kari->pctx = pctx;
     return 1;
@@ -282,7 +282,7 @@ static int cms_kari_create_ephemeral_key(CMS_KeyAgreeRecipientInfo *kari,
     return rv;
 }
 
-/* Initialise a ktri based on passed certificate and key */
+/* Initialise a kari based on passed certificate and key */
 
 int cms_RecipientInfo_kari_init(CMS_RecipientInfo *ri, X509 *recip,
                                 EVP_PKEY *pk, unsigned int flags)
@@ -299,6 +299,9 @@ int cms_RecipientInfo_kari_init(CMS_RecipientInfo *ri, X509 *recip,
     kari->version = 3;
 
     rek = M_ASN1_new_of(CMS_RecipientEncryptedKey);
+    if (rek == NULL)
+        return 0;
+
     if (!sk_CMS_RecipientEncryptedKey_push(kari->recipientEncryptedKeys, rek)) {
         M_ASN1_free_of(rek, CMS_RecipientEncryptedKey);
         return 0;

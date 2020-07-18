@@ -17,7 +17,7 @@
 # include <openssl/x509.h>
 # include <openssl/md4.h>
 # include <openssl/rsa.h>
-# include "internal/evp_int.h"
+# include "crypto/evp.h"
 
 static int init(EVP_MD_CTX *ctx)
 {
@@ -50,6 +50,6 @@ static const EVP_MD md4_md = {
 
 const EVP_MD *EVP_md4(void)
 {
-    return (&md4_md);
+    return &md4_md;
 }
 #endif

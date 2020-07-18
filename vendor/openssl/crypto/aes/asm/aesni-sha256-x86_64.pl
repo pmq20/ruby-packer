@@ -1,5 +1,5 @@
 #! /usr/bin/env perl
-# Copyright 2013-2016 The OpenSSL Project Authors. All Rights Reserved.
+# Copyright 2013-2020 The OpenSSL Project Authors. All Rights Reserved.
 #
 # Licensed under the OpenSSL license (the "License").  You may not use
 # this file except in compliance with the License.  You can obtain a copy
@@ -70,7 +70,7 @@ if (!$avx && $win64 && ($flavour =~ /masm/ || $ENV{ASM} =~ /ml64/) &&
 	$avx = ($1>=10) + ($1>=12);
 }
 
-if (!$avx && `$ENV{CC} -v 2>&1` =~ /((?:^clang|LLVM) version|.*based on LLVM) ([3-9]\.[0-9]+)/) {
+if (!$avx && `$ENV{CC} -v 2>&1` =~ /((?:^clang|LLVM) version|.*based on LLVM) ([0-9]+\.[0-9]+)/) {
 	$avx = ($2>=3.0) + ($2>3.0);
 }
 
@@ -112,7 +112,7 @@ $_key="16*$SZ+3*8(%rsp)";
 $_ivp="16*$SZ+4*8(%rsp)";
 $_ctx="16*$SZ+5*8(%rsp)";
 $_in0="16*$SZ+6*8(%rsp)";
-$_rsp="16*$SZ+7*8(%rsp)";
+$_rsp="`16*$SZ+7*8`(%rsp)";
 $framesz=16*$SZ+8*8;
 
 $code=<<___;
@@ -123,6 +123,7 @@ $code=<<___;
 .type	$func,\@abi-omnipotent
 .align	16
 $func:
+.cfi_startproc
 ___
 						if ($avx) {
 $code.=<<___;
@@ -162,6 +163,7 @@ $code.=<<___;
 	ud2
 .Lprobe:
 	ret
+.cfi_endproc
 .size	$func,.-$func
 
 .align	64
@@ -342,15 +344,23 @@ $code.=<<___;
 .type	${func}_xop,\@function,6
 .align	64
 ${func}_xop:
+.cfi_startproc
 .Lxop_shortcut:
 	mov	`($win64?56:8)`(%rsp),$in0	# load 7th parameter
+	mov	%rsp,%rax		# copy %rsp
+.cfi_def_cfa_register	%rax
 	push	%rbx
+.cfi_push	%rbx
 	push	%rbp
+.cfi_push	%rbp
 	push	%r12
+.cfi_push	%r12
 	push	%r13
+.cfi_push	%r13
 	push	%r14
+.cfi_push	%r14
 	push	%r15
-	mov	%rsp,%r11		# copy %rsp
+.cfi_push	%r15
 	sub	\$`$framesz+$win64*16*10`,%rsp
 	and	\$-64,%rsp		# align stack frame
 
@@ -366,7 +376,8 @@ ${func}_xop:
 	mov	$ivp,$_ivp
 	mov	$ctx,$_ctx
 	mov	$in0,$_in0
-	mov	%r11,$_rsp
+	mov	%rax,$_rsp
+.cfi_cfa_expression	$_rsp,deref,+8
 ___
 $code.=<<___ if ($win64);
 	movaps	%xmm6,`$framesz+16*0`(%rsp)
@@ -604,6 +615,7 @@ $code.=<<___;
 
 	mov	$_ivp,$ivp
 	mov	$_rsp,%rsi
+.cfi_def_cfa	%rsi,8
 	vmovdqu	$iv,($ivp)		# output IV
 	vzeroall
 ___
@@ -620,15 +632,23 @@ $code.=<<___ if ($win64);
 	movaps	`$framesz+16*9`(%rsp),%xmm15
 ___
 $code.=<<___;
-	mov	(%rsi),%r15
-	mov	8(%rsi),%r14
-	mov	16(%rsi),%r13
-	mov	24(%rsi),%r12
-	mov	32(%rsi),%rbp
-	mov	40(%rsi),%rbx
-	lea	48(%rsi),%rsp
+	mov	-48(%rsi),%r15
+.cfi_restore	%r15
+	mov	-40(%rsi),%r14
+.cfi_restore	%r14
+	mov	-32(%rsi),%r13
+.cfi_restore	%r13
+	mov	-24(%rsi),%r12
+.cfi_restore	%r12
+	mov	-16(%rsi),%rbp
+.cfi_restore	%rbp
+	mov	-8(%rsi),%rbx
+.cfi_restore	%rbx
+	lea	(%rsi),%rsp
+.cfi_def_cfa_register	%rsp
 .Lepilogue_xop:
 	ret
+.cfi_endproc
 .size	${func}_xop,.-${func}_xop
 ___
 ######################################################################
@@ -640,15 +660,23 @@ $code.=<<___;
 .type	${func}_avx,\@function,6
 .align	64
 ${func}_avx:
+.cfi_startproc
 .Lavx_shortcut:
 	mov	`($win64?56:8)`(%rsp),$in0	# load 7th parameter
+	mov	%rsp,%rax		# copy %rsp
+.cfi_def_cfa_register	%rax
 	push	%rbx
+.cfi_push	%rbx
 	push	%rbp
+.cfi_push	%rbp
 	push	%r12
+.cfi_push	%r12
 	push	%r13
+.cfi_push	%r13
 	push	%r14
+.cfi_push	%r14
 	push	%r15
-	mov	%rsp,%r11		# copy %rsp
+.cfi_push	%r15
 	sub	\$`$framesz+$win64*16*10`,%rsp
 	and	\$-64,%rsp		# align stack frame
 
@@ -664,7 +692,8 @@ ${func}_avx:
 	mov	$ivp,$_ivp
 	mov	$ctx,$_ctx
 	mov	$in0,$_in0
-	mov	%r11,$_rsp
+	mov	%rax,$_rsp
+.cfi_cfa_expression	$_rsp,deref,+8
 ___
 $code.=<<___ if ($win64);
 	movaps	%xmm6,`$framesz+16*0`(%rsp)
@@ -855,6 +884,7 @@ $code.=<<___;
 
 	mov	$_ivp,$ivp
 	mov	$_rsp,%rsi
+.cfi_def_cfa	%rsi,8
 	vmovdqu	$iv,($ivp)		# output IV
 	vzeroall
 ___
@@ -871,15 +901,23 @@ $code.=<<___ if ($win64);
 	movaps	`$framesz+16*9`(%rsp),%xmm15
 ___
 $code.=<<___;
-	mov	(%rsi),%r15
-	mov	8(%rsi),%r14
-	mov	16(%rsi),%r13
-	mov	24(%rsi),%r12
-	mov	32(%rsi),%rbp
-	mov	40(%rsi),%rbx
-	lea	48(%rsi),%rsp
+	mov	-48(%rsi),%r15
+.cfi_restore	%r15
+	mov	-40(%rsi),%r14
+.cfi_restore	%r14
+	mov	-32(%rsi),%r13
+.cfi_restore	%r13
+	mov	-24(%rsi),%r12
+.cfi_restore	%r12
+	mov	-16(%rsi),%rbp
+.cfi_restore	%rbp
+	mov	-8(%rsi),%rbx
+.cfi_restore	%rbx
+	lea	(%rsi),%rsp
+.cfi_def_cfa_register	%rsp
 .Lepilogue_avx:
 	ret
+.cfi_endproc
 .size	${func}_avx,.-${func}_avx
 ___
 
@@ -887,7 +925,7 @@ if ($avx>1) {{
 ######################################################################
 # AVX2+BMI code path
 #
-my $a5=$SZ==4?"%esi":"%rsi";	# zap $inp 
+my $a5=$SZ==4?"%esi":"%rsi";	# zap $inp
 my $PUSH8=8*2*$SZ;
 use integer;
 
@@ -936,15 +974,23 @@ $code.=<<___;
 .type	${func}_avx2,\@function,6
 .align	64
 ${func}_avx2:
+.cfi_startproc
 .Lavx2_shortcut:
 	mov	`($win64?56:8)`(%rsp),$in0	# load 7th parameter
+	mov	%rsp,%rax		# copy %rsp
+.cfi_def_cfa_register	%rax
 	push	%rbx
+.cfi_push	%rbx
 	push	%rbp
+.cfi_push	%rbp
 	push	%r12
+.cfi_push	%r12
 	push	%r13
+.cfi_push	%r13
 	push	%r14
+.cfi_push	%r14
 	push	%r15
-	mov	%rsp,%r11		# copy %rsp
+.cfi_push	%r15
 	sub	\$`2*$SZ*$rounds+8*8+$win64*16*10`,%rsp
 	and	\$-256*$SZ,%rsp		# align stack frame
 	add	\$`2*$SZ*($rounds-8)`,%rsp
@@ -961,7 +1007,8 @@ ${func}_avx2:
 	mov	$ivp,$_ivp
 	mov	$ctx,$_ctx
 	mov	$in0,$_in0
-	mov	%r11,$_rsp
+	mov	%rax,$_rsp
+.cfi_cfa_expression	$_rsp,deref,+8
 ___
 $code.=<<___ if ($win64);
 	movaps	%xmm6,`$framesz+16*0`(%rsp)
@@ -1039,7 +1086,23 @@ $code.=<<___;
 	vmovdqa	$t0,0x00(%rsp)
 	xor	$a1,$a1
 	vmovdqa	$t1,0x20(%rsp)
+___
+$code.=<<___ if (!$win64);
+# temporarily use %rsi as frame pointer
+        mov     $_rsp,%rsi
+.cfi_def_cfa    %rsi,8
+___
+$code.=<<___;
 	lea	-$PUSH8(%rsp),%rsp
+___
+$code.=<<___ if (!$win64);
+# the frame info is at $_rsp, but the stack is moving...
+# so a second frame pointer is saved at -8(%rsp)
+# that is in the red zone
+        mov     %rsi,-8(%rsp)
+.cfi_cfa_expression     %rsp-8,deref,+8
+___
+$code.=<<___;
 	mov	$B,$a3
 	vmovdqa	$t2,0x00(%rsp)
 	xor	$C,$a3			# magic
@@ -1061,7 +1124,17 @@ my @X = @_;
 my @insns = (&$body,&$body,&$body,&$body);	# 96 instructions
 my $base = "+2*$PUSH8(%rsp)";
 
-	&lea	("%rsp","-$PUSH8(%rsp)")	if (($j%2)==0);
+	if (($j%2)==0) {
+	&lea	("%rsp","-$PUSH8(%rsp)");
+$code.=<<___ if (!$win64);
+.cfi_cfa_expression     %rsp+`$PUSH8-8`,deref,+8
+# copy secondary frame pointer to new location again at -8(%rsp)
+        pushq   $PUSH8-8(%rsp)
+.cfi_cfa_expression     %rsp,deref,+8
+        lea     8(%rsp),%rsp
+.cfi_cfa_expression     %rsp-8,deref,+8
+___
+	}
 	foreach (Xupdate_256_AVX()) {		# 29 instructions
 	    eval;
 	    eval(shift(@insns));
@@ -1187,36 +1260,47 @@ $code.=<<___;
 
 	jbe	.Loop_avx2
 	lea	(%rsp),$Tbl
+# temporarily use $Tbl as index to $_rsp
+# this avoids the need to save a secondary frame pointer at -8(%rsp)
+.cfi_cfa_expression     $Tbl+`16*$SZ+7*8`,deref,+8
 
 .Ldone_avx2:
-	lea	($Tbl),%rsp
-	mov	$_ivp,$ivp
-	mov	$_rsp,%rsi
+	mov	16*$SZ+4*8($Tbl),$ivp
+	mov	16*$SZ+7*8($Tbl),%rsi
+.cfi_def_cfa	%rsi,8
 	vmovdqu	$iv,($ivp)		# output IV
 	vzeroall
 ___
 $code.=<<___ if ($win64);
-	movaps	`$framesz+16*0`(%rsp),%xmm6
-	movaps	`$framesz+16*1`(%rsp),%xmm7
-	movaps	`$framesz+16*2`(%rsp),%xmm8
-	movaps	`$framesz+16*3`(%rsp),%xmm9
-	movaps	`$framesz+16*4`(%rsp),%xmm10
-	movaps	`$framesz+16*5`(%rsp),%xmm11
-	movaps	`$framesz+16*6`(%rsp),%xmm12
-	movaps	`$framesz+16*7`(%rsp),%xmm13
-	movaps	`$framesz+16*8`(%rsp),%xmm14
-	movaps	`$framesz+16*9`(%rsp),%xmm15
+	movaps	`$framesz+16*0`($Tbl),%xmm6
+	movaps	`$framesz+16*1`($Tbl),%xmm7
+	movaps	`$framesz+16*2`($Tbl),%xmm8
+	movaps	`$framesz+16*3`($Tbl),%xmm9
+	movaps	`$framesz+16*4`($Tbl),%xmm10
+	movaps	`$framesz+16*5`($Tbl),%xmm11
+	movaps	`$framesz+16*6`($Tbl),%xmm12
+	movaps	`$framesz+16*7`($Tbl),%xmm13
+	movaps	`$framesz+16*8`($Tbl),%xmm14
+	movaps	`$framesz+16*9`($Tbl),%xmm15
 ___
 $code.=<<___;
-	mov	(%rsi),%r15
-	mov	8(%rsi),%r14
-	mov	16(%rsi),%r13
-	mov	24(%rsi),%r12
-	mov	32(%rsi),%rbp
-	mov	40(%rsi),%rbx
-	lea	48(%rsi),%rsp
+	mov	-48(%rsi),%r15
+.cfi_restore	%r15
+	mov	-40(%rsi),%r14
+.cfi_restore	%r14
+	mov	-32(%rsi),%r13
+.cfi_restore	%r13
+	mov	-24(%rsi),%r12
+.cfi_restore	%r12
+	mov	-16(%rsi),%rbp
+.cfi_restore	%rbp
+	mov	-8(%rsi),%rbx
+.cfi_restore	%rbx
+	lea	(%rsi),%rsp
+.cfi_def_cfa_register	%rsp
 .Lepilogue_avx2:
 	ret
+.cfi_endproc
 .size	${func}_avx2,.-${func}_avx2
 ___
 }}
@@ -1285,6 +1369,7 @@ $code.=<<___;
 .type	${func}_shaext,\@function,6
 .align	32
 ${func}_shaext:
+.cfi_startproc
 	mov	`($win64?56:8)`(%rsp),$inp	# load 7th argument
 ___
 $code.=<<___ if ($win64);
@@ -1501,6 +1586,7 @@ $code.=<<___ if ($win64);
 ___
 $code.=<<___;
 	ret
+.cfi_endproc
 .size	${func}_shaext,.-${func}_shaext
 ___
 }
@@ -1573,7 +1659,6 @@ ___
 $code.=<<___;
 	mov	%rax,%rsi		# put aside Rsp
 	mov	16*$SZ+7*8(%rax),%rax	# pull $_rsp
-	lea	48(%rax),%rax
 
 	mov	-8(%rax),%rbx
 	mov	-16(%rax),%rbp
@@ -1714,4 +1799,4 @@ sub rex {
 $code =~ s/\`([^\`]*)\`/eval $1/gem;
 $code =~ s/\b(sha256[^\s]*)\s+(.*)/sha256op38($1,$2)/gem;
 print $code;
-close STDOUT;
+close STDOUT or die "error closing STDOUT: $!";

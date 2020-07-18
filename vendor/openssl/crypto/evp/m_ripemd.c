@@ -17,7 +17,7 @@
 # include <openssl/objects.h>
 # include <openssl/x509.h>
 # include <openssl/rsa.h>
-# include "internal/evp_int.h"
+# include "crypto/evp.h"
 
 static int init(EVP_MD_CTX *ctx)
 {
@@ -50,6 +50,6 @@ static const EVP_MD ripemd160_md = {
 
 const EVP_MD *EVP_ripemd160(void)
 {
-    return (&ripemd160_md);
+    return &ripemd160_md;
 }
 #endif

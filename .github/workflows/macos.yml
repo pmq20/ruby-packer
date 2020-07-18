@@ -23,7 +23,7 @@ jobs:
           export WAITS='5 60'
           ruby/tool/travis_retry.sh brew upgrade
           ruby/tool/travis_retry.sh brew install gdbm gmp libffi openssl@1.1 zlib autoconf automake libtool readline
-      - name: "[rubyc] Install libraries"
+      - name: "[Enclose.IO] Install libraries"
         run: |
           sw_vers
           uname -a
@@ -34,15 +34,15 @@ jobs:
           ruby/tool/travis_retry.sh brew install squashfs
           which mksquashfs
           mksquashfs -version
-      - name: "[rubyc] Set up Ruby"
+      - name: "[Enclose.IO] Set up Ruby"
         uses: ruby/setup-ruby@v1
-      - name: "[rubyc] Install dependencies"
+      - name: "[Enclose.IO] Install dependencies"
         run: bundle install
-      - name: "[rubyc] Run rubocop"
+      - name: "[Enclose.IO] Run rubocop"
         run: bundle exec rubocop
-      - name: "[rubyc] Run tests"
+      - name: "[Enclose.IO] Run tests"
         run: bundle exec rake
-      - name: "[rubyc] Create macOS Release"
+      - name: "[Enclose.IO] Create macOS Release"
         if: ${{ github.ref == 'refs/heads/master' &&	matrix.os == 'macos-10.15' && success() }}
         id: create_macos_release
         uses: pmq20/create-release@delete-old-release
@@ -54,7 +54,7 @@ jobs:
           draft: false
           prerelease: false
           replace_old_tag: true
-      - name: "[rubyc] Upload macOS Release"
+      - name: "[Enclose.IO] Upload macOS Release"
         if: ${{ github.ref == 'refs/heads/master' &&	matrix.os == 'macos-10.15' && success() }}
         uses: actions/upload-release-asset@v1
         env:

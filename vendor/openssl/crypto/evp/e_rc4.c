@@ -16,7 +16,7 @@
 # include <openssl/objects.h>
 # include <openssl/rc4.h>
 
-# include "internal/evp_int.h"
+# include "crypto/evp.h"
 
 typedef struct {
     RC4_KEY ks;                 /* working key */
@@ -58,12 +58,12 @@ static const EVP_CIPHER r4_40_cipher = {
 
 const EVP_CIPHER *EVP_rc4(void)
 {
-    return (&r4_cipher);
+    return &r4_cipher;
 }
 
 const EVP_CIPHER *EVP_rc4_40(void)
 {
-    return (&r4_40_cipher);
+    return &r4_40_cipher;
 }
 
 static int rc4_init_key(EVP_CIPHER_CTX *ctx, const unsigned char *key,

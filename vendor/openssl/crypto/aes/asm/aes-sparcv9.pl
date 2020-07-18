@@ -1,5 +1,5 @@
 #! /usr/bin/env perl
-# Copyright 2005-2016 The OpenSSL Project Authors. All Rights Reserved.
+# Copyright 2005-2020 The OpenSSL Project Authors. All Rights Reserved.
 #
 # Licensed under the OpenSSL license (the "License").  You may not use
 # this file except in compliance with the License.  You can obtain a copy
@@ -8,7 +8,7 @@
 
 #
 # ====================================================================
-# Written by Andy Polyakov <appro@fy.chalmers.se> for the OpenSSL
+# Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
 # project. Rights for redistribution and usage in source and binary
 # forms are granted according to the OpenSSL license.
 # ====================================================================
@@ -1189,4 +1189,4 @@ ___
 $code =~ s/fmovs.*$//gm;
 
 print $code;
-close STDOUT;	# ensure flush
+close STDOUT or die "error closing STDOUT: $!";	# ensure flush

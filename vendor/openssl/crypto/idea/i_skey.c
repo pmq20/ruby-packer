@@ -8,7 +8,7 @@
  */
 
 #include <openssl/idea.h>
-#include "idea_lcl.h"
+#include "idea_local.h"
 
 static IDEA_INT inverse(unsigned int xin);
 void IDEA_set_encrypt_key(const unsigned char *key, IDEA_KEY_SCHEDULE *ks)
@@ -108,5 +108,5 @@ static IDEA_INT inverse(unsigned int xin)
             }
         } while (r != 0);
     }
-    return ((IDEA_INT) b2);
+    return (IDEA_INT)b2;
 }

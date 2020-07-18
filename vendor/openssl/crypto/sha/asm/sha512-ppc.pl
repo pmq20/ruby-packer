@@ -1,5 +1,5 @@
 #! /usr/bin/env perl
-# Copyright 2006-2016 The OpenSSL Project Authors. All Rights Reserved.
+# Copyright 2006-2020 The OpenSSL Project Authors. All Rights Reserved.
 #
 # Licensed under the OpenSSL license (the "License").  You may not use
 # this file except in compliance with the License.  You can obtain a copy
@@ -26,7 +26,7 @@
 #
 # (*)	64-bit code in 32-bit application context, which actually is
 #	on TODO list. It should be noted that for safe deployment in
-#	32-bit *mutli-threaded* context asyncronous signals should be
+#	32-bit *multi-threaded* context asynchronous signals should be
 #	blocked upon entry to SHA512 block routine. This is because
 #	32-bit signaling procedure invalidates upper halves of GPRs.
 #	Context switch procedure preserves them, but not signaling:-(
@@ -796,4 +796,4 @@ ___
 
 $code =~ s/\`([^\`]*)\`/eval $1/gem;
 print $code;
-close STDOUT;
+close STDOUT or die "error closing STDOUT: $!";

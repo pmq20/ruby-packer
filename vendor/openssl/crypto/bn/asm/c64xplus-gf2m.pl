@@ -1,5 +1,5 @@
 #! /usr/bin/env perl
-# Copyright 2012-2016 The OpenSSL Project Authors. All Rights Reserved.
+# Copyright 2012-2020 The OpenSSL Project Authors. All Rights Reserved.
 #
 # Licensed under the OpenSSL license (the "License").  You may not use
 # this file except in compliance with the License.  You can obtain a copy
@@ -43,7 +43,7 @@ $code.=<<___;
 	SHRU	$A,16,   $Ahi		; smash $A to two halfwords
 ||	EXTU	$A,16,16,$Alo
 
-	XORMPY	$Alo,$B_2,$Alox2	; 16x8 bits muliplication
+	XORMPY	$Alo,$B_2,$Alox2	; 16x8 bits multiplication
 ||	XORMPY	$Ahi,$B_2,$Ahix2
 ||	EXTU	$B,16,24,$B_1
 	XORMPY	$Alo,$B_0,$Alox0
@@ -157,4 +157,4 @@ $code.=<<___;
 ___
 
 print $code;
-close STDOUT;
+close STDOUT or die "error closing STDOUT: $!";

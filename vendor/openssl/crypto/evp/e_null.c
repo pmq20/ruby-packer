@@ -11,7 +11,7 @@
 #include "internal/cryptlib.h"
 #include <openssl/evp.h>
 #include <openssl/objects.h>
-#include "internal/evp_int.h"
+#include "crypto/evp.h"
 
 static int null_init_key(EVP_CIPHER_CTX *ctx, const unsigned char *key,
                          const unsigned char *iv, int enc);
@@ -32,7 +32,7 @@ static const EVP_CIPHER n_cipher = {
 
 const EVP_CIPHER *EVP_enc_null(void)
 {
-    return (&n_cipher);
+    return &n_cipher;
 }
 
 static int null_init_key(EVP_CIPHER_CTX *ctx, const unsigned char *key,

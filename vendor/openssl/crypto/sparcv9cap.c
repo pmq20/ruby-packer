@@ -1,5 +1,5 @@
 /*
- * Copyright 2005-2016 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2005-2020 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the OpenSSL license (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -15,6 +15,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <openssl/bn.h>
+#include "internal/cryptlib.h"
 
 #include "sparc_arch.h"
 
@@ -98,7 +99,7 @@ unsigned long _sparcv9_random(void);
 size_t _sparcv9_vis1_instrument_bus(unsigned int *, size_t);
 size_t _sparcv9_vis1_instrument_bus2(unsigned int *, size_t, size_t);
 
-unsigned long OPENSSL_rdtsc(void)
+uint32_t OPENSSL_rdtsc(void)
 {
     if (OPENSSL_sparcv9cap_P[0] & SPARCV9_TICK_PRIVILEGED)
 #if defined(__sun) && defined(__SVR4)
@@ -267,7 +268,7 @@ void OPENSSL_cpuid_setup(void)
 
     /*
      * In wait for better solution _sparcv9_rdcfr is masked by
-     * VIS3 flag, because it goes to uninterruptable endless
+     * VIS3 flag, because it goes to uninterruptible endless
      * loop on UltraSPARC II running Solaris. Things might be
      * different on Linux...
      */

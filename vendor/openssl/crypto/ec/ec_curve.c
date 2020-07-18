@@ -1,5 +1,6 @@
 /*
- * Copyright 2002-2018 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2002-2019 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright (c) 2002, Oracle and/or its affiliates. All rights reserved
  *
  * Licensed under the OpenSSL license (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -7,26 +8,12 @@
  * https://www.openssl.org/source/license.html
  */
 
-/* ====================================================================
- * Copyright 2002 Sun Microsystems, Inc. ALL RIGHTS RESERVED.
- *
- * Portions of the attached software ("Contribution") are developed by
- * SUN MICROSYSTEMS, INC., and are contributed to the OpenSSL project.
- *
- * The Contribution is licensed pursuant to the OpenSSL open source
- * license provided above.
- *
- * The elliptic curve binary polynomial software is originally written by
- * Sheueling Chang Shantz and Douglas Stebila of Sun Microsystems Laboratories.
- *
- */
-
 #include <string.h>
-#include "ec_lcl.h"
+#include "ec_local.h"
 #include <openssl/err.h>
 #include <openssl/obj_mac.h>
 #include <openssl/opensslconf.h>
-#include "e_os.h"
+#include "internal/nelem.h"
 
 typedef struct {
     int field_type,             /* either NID_X9_62_prime_field or
@@ -2217,7 +2204,7 @@ static const struct {
 #endif
 
 /*
- * These curves were added by Annie Yousar <a.yousar@informatik.hu-berlin.de>
+ * These curves were added by Annie Yousar.
  * For the definition of RFC 5639 curves see
  * http://www.ietf.org/rfc/rfc5639.txt These curves are generated verifiable
  * at random, nevertheless the seed is omitted as parameter because the
@@ -2764,6 +2751,45 @@ static const struct {
     }
 };
 
+#ifndef OPENSSL_NO_SM2
+static const struct {
+    EC_CURVE_DATA h;
+    unsigned char data[0 + 32 * 6];
+} _EC_sm2p256v1 = {
+    {
+       NID_X9_62_prime_field, 0, 32, 1
+    },
+    {
+        /* no seed */
+
+        /* p */
+        0xff, 0xff, 0xff, 0xfe, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00,
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+        /* a */
+        0xff, 0xff, 0xff, 0xfe, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00,
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfc,
+        /* b */
+        0x28, 0xe9, 0xfa, 0x9e, 0x9d, 0x9f, 0x5e, 0x34, 0x4d, 0x5a, 0x9e, 0x4b,
+        0xcf, 0x65, 0x09, 0xa7, 0xf3, 0x97, 0x89, 0xf5, 0x15, 0xab, 0x8f, 0x92,
+        0xdd, 0xbc, 0xbd, 0x41, 0x4d, 0x94, 0x0e, 0x93,
+        /* x */
+        0x32, 0xc4, 0xae, 0x2c, 0x1f, 0x19, 0x81, 0x19, 0x5f, 0x99, 0x04, 0x46,
+        0x6a, 0x39, 0xc9, 0x94, 0x8f, 0xe3, 0x0b, 0xbf, 0xf2, 0x66, 0x0b, 0xe1,
+        0x71, 0x5a, 0x45, 0x89, 0x33, 0x4c, 0x74, 0xc7,
+        /* y */
+        0xbc, 0x37, 0x36, 0xa2, 0xf4, 0xf6, 0x77, 0x9c, 0x59, 0xbd, 0xce, 0xe3,
+        0x6b, 0x69, 0x21, 0x53, 0xd0, 0xa9, 0x87, 0x7c, 0xc6, 0x2a, 0x47, 0x40,
+        0x02, 0xdf, 0x32, 0xe5, 0x21, 0x39, 0xf0, 0xa0,
+        /* order */
+        0xff, 0xff, 0xff, 0xfe, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+        0xff, 0xff, 0xff, 0xff, 0x72, 0x03, 0xdf, 0x6b, 0x21, 0xc6, 0x05, 0x2b,
+        0x53, 0xbb, 0xf4, 0x09, 0x39, 0xd5, 0x41, 0x23,
+    }
+};
+#endif /* OPENSSL_NO_SM2 */
+
 typedef struct _ec_list_element_st {
     int nid;
     const EC_CURVE_DATA *data;
@@ -2973,6 +2999,10 @@ static const ec_list_element curve_list[] = {
      "RFC 5639 curve over a 512 bit prime field"},
     {NID_brainpoolP512t1, &_EC_brainpoolP512t1.h, 0,
      "RFC 5639 curve over a 512 bit prime field"},
+#ifndef OPENSSL_NO_SM2
+    {NID_sm2, &_EC_sm2p256v1.h, 0,
+     "SM2 curve over a 256 bit prime field"},
+#endif
 };
 
 #define curve_list_length OSSL_NELEM(curve_list)
@@ -3048,7 +3078,7 @@ static EC_GROUP *ec_group_new_from_data(const ec_list_element curve)
         ECerr(EC_F_EC_GROUP_NEW_FROM_DATA, ERR_R_BN_LIB);
         goto err;
     }
-    if (!EC_POINT_set_affine_coordinates_GFp(group, P, x, y, ctx)) {
+    if (!EC_POINT_set_affine_coordinates(group, P, x, y, ctx)) {
         ECerr(EC_F_EC_GROUP_NEW_FROM_DATA, ERR_R_EC_LIB);
         goto err;
     }
@@ -3166,4 +3196,116 @@ int EC_curve_nist2nid(const char *name)
             return nist_curves[i].nid;
     }
     return NID_undef;
+}
+
+#define NUM_BN_FIELDS 6
+/*
+ * Validates EC domain parameter data for known named curves.
+ * This can be used when a curve is loaded explicitly (without a curve
+ * name) or to validate that domain parameters have not been modified.
+ *
+ * Returns: The nid associated with the found named curve, or NID_undef
+ *          if not found. If there was an error it returns -1.
+ */
+int ec_curve_nid_from_params(const EC_GROUP *group, BN_CTX *ctx)
+{
+    int ret = -1, nid, len, field_type, param_len;
+    size_t i, seed_len;
+    const unsigned char *seed, *params_seed, *params;
+    unsigned char *param_bytes = NULL;
+    const EC_CURVE_DATA *data;
+    const EC_POINT *generator = NULL;
+    const EC_METHOD *meth;
+    const BIGNUM *cofactor = NULL;
+    /* An array of BIGNUMs for (p, a, b, x, y, order) */
+    BIGNUM *bn[NUM_BN_FIELDS] = {NULL, NULL, NULL, NULL, NULL, NULL};
+
+    meth = EC_GROUP_method_of(group);
+    if (meth == NULL)
+        return -1;
+    /* Use the optional named curve nid as a search field */
+    nid = EC_GROUP_get_curve_name(group);
+    field_type = EC_METHOD_get_field_type(meth);
+    seed_len = EC_GROUP_get_seed_len(group);
+    seed = EC_GROUP_get0_seed(group);
+    cofactor = EC_GROUP_get0_cofactor(group);
+
+    BN_CTX_start(ctx);
+
+    /*
+     * The built-in curves contains data fields (p, a, b, x, y, order) that are
+     * all zero-padded to be the same size. The size of the padding is
+     * determined by either the number of bytes in the field modulus (p) or the
+     * EC group order, whichever is larger.
+     */
+    param_len = BN_num_bytes(group->order);
+    len = BN_num_bytes(group->field);
+    if (len > param_len)
+        param_len = len;
+
+    /* Allocate space to store the padded data for (p, a, b, x, y, order)  */
+    param_bytes = OPENSSL_malloc(param_len * NUM_BN_FIELDS);
+    if (param_bytes == NULL)
+        goto end;
+
+    /* Create the bignums */
+    for (i = 0; i < NUM_BN_FIELDS; ++i) {
+        if ((bn[i] = BN_CTX_get(ctx)) == NULL)
+            goto end;
+    }
+    /*
+     * Fill in the bn array with the same values as the internal curves
+     * i.e. the values are p, a, b, x, y, order.
+     */
+    /* Get p, a & b */
+    if (!(EC_GROUP_get_curve(group, bn[0], bn[1], bn[2], ctx)
+        && ((generator = EC_GROUP_get0_generator(group)) != NULL)
+        /* Get x & y */
+        && EC_POINT_get_affine_coordinates(group, generator, bn[3], bn[4], ctx)
+        /* Get order */
+        && EC_GROUP_get_order(group, bn[5], ctx)))
+        goto end;
+
+   /*
+     * Convert the bignum array to bytes that are joined together to form
+     * a single buffer that contains data for all fields.
+     * (p, a, b, x, y, order) are all zero padded to be the same size.
+     */
+    for (i = 0; i < NUM_BN_FIELDS; ++i) {
+        if (BN_bn2binpad(bn[i], &param_bytes[i*param_len], param_len) <= 0)
+            goto end;
+    }
+
+    for (i = 0; i < curve_list_length; i++) {
+        const ec_list_element curve = curve_list[i];
+
+        data = curve.data;
+        /* Get the raw order byte data */
+        params_seed = (const unsigned char *)(data + 1); /* skip header */
+        params = params_seed + data->seed_len;
+
+        /* Look for unique fields in the fixed curve data */
+        if (data->field_type == field_type
+            && param_len == data->param_len
+            && (nid <= 0 || nid == curve.nid)
+            /* check the optional cofactor (ignore if its zero) */
+            && (BN_is_zero(cofactor)
+                || BN_is_word(cofactor, (const BN_ULONG)curve.data->cofactor))
+            /* Check the optional seed (ignore if its not set) */
+            && (data->seed_len == 0 || seed_len == 0
+                || ((size_t)data->seed_len == seed_len
+                     && memcmp(params_seed, seed, seed_len) == 0))
+            /* Check that the groups params match the built-in curve params */
+            && memcmp(param_bytes, params, param_len * NUM_BN_FIELDS)
+                             == 0) {
+            ret = curve.nid;
+            goto end;
+        }
+    }
+    /* Gets here if the group was not found */
+    ret = NID_undef;
+end:
+    OPENSSL_free(param_bytes);
+    BN_CTX_end(ctx);
+    return ret;
 }

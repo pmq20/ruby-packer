@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2018 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2019 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the OpenSSL license (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -7,14 +7,12 @@
  * https://www.openssl.org/source/license.html
  */
 
-/* Original version from Steven Schoch <schoch@sheba.arc.nasa.gov> */
-
 #include <stdio.h>
 #include "internal/cryptlib.h"
-#include "internal/bn_int.h"
+#include "crypto/bn.h"
 #include <openssl/bn.h>
 #include <openssl/sha.h>
-#include "dsa_locl.h"
+#include "dsa_local.h"
 #include <openssl/asn1.h>
 
 static DSA_SIG *dsa_do_sign(const unsigned char *dgst, int dlen, DSA *dsa);
@@ -74,6 +72,10 @@ static DSA_SIG *dsa_do_sign(const unsigned char *dgst, int dlen, DSA *dsa)
         reason = DSA_R_MISSING_PARAMETERS;
         goto err;
     }
+    if (dsa->priv_key == NULL) {
+        reason = DSA_R_MISSING_PRIVATE_KEY;
+        goto err;
+    }
 
     ret = DSA_SIG_new();
     if (ret == NULL)
@@ -119,8 +121,8 @@ static DSA_SIG *dsa_do_sign(const unsigned char *dgst, int dlen, DSA *dsa)
 
     /* Generate a blinding value */
     do {
-        if (!BN_rand(blind, BN_num_bits(dsa->q) - 1, BN_RAND_TOP_ANY,
-                     BN_RAND_BOTTOM_ANY))
+        if (!BN_priv_rand(blind, BN_num_bits(dsa->q) - 1,
+                          BN_RAND_TOP_ANY, BN_RAND_BOTTOM_ANY))
             goto err;
     } while (BN_is_zero(blind));
     BN_set_flags(blind, BN_FLG_CONSTTIME);
@@ -192,6 +194,16 @@ static int dsa_sign_setup(DSA *dsa, BN_CTX *ctx_in,
         return 0;
     }
 
+    /* Reject obviously invalid parameters */
+    if (BN_is_zero(dsa->p) || BN_is_zero(dsa->q) || BN_is_zero(dsa->g)) {
+        DSAerr(DSA_F_DSA_SIGN_SETUP, DSA_R_INVALID_PARAMETERS);
+        return 0;
+    }
+    if (dsa->priv_key == NULL) {
+        DSAerr(DSA_F_DSA_SIGN_SETUP, DSA_R_MISSING_PRIVATE_KEY);
+        return 0;
+    }
+
     k = BN_new();
     l = BN_new();
     if (k == NULL || l == NULL)
@@ -220,7 +232,7 @@ static int dsa_sign_setup(DSA *dsa, BN_CTX *ctx_in,
             if (!BN_generate_dsa_nonce(k, dsa->q, dsa->priv_key, dgst,
                                        dlen, ctx))
                 goto err;
-        } else if (!BN_rand_range(k, dsa->q))
+        } else if (!BN_priv_rand_range(k, dsa->q))
             goto err;
     } while (BN_is_zero(k));
 
@@ -244,7 +256,7 @@ static int dsa_sign_setup(DSA *dsa, BN_CTX *ctx_in,
      * one bit longer than the modulus.
      *
      * There are some concerns about the efficacy of doing this.  More
-     * specificly refer to the discussion starting with:
+     * specifically refer to the discussion starting with:
      *     https://github.com/openssl/openssl/pull/7486#discussion_r228323705
      * The fix is to rework BN so these gymnastics aren't required.
      */
@@ -386,19 +398,19 @@ static int dsa_do_verify(const unsigned char *dgst, int dgst_len,
     BN_free(u1);
     BN_free(u2);
     BN_free(t1);
-    return (ret);
+    return ret;
 }
 
 static int dsa_init(DSA *dsa)
 {
     dsa->flags |= DSA_FLAG_CACHE_MONT_P;
-    return (1);
+    return 1;
 }
 
 static int dsa_finish(DSA *dsa)
 {
     BN_MONT_CTX_free(dsa->method_mont_p);
-    return (1);
+    return 1;
 }
 
 /*

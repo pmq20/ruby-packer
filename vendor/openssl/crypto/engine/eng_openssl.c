@@ -1,5 +1,6 @@
 /*
- * Copyright 2001-2016 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2001-2020 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright (c) 2002, Oracle and/or its affiliates. All rights reserved
  *
  * Licensed under the OpenSSL license (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -7,16 +8,10 @@
  * https://www.openssl.org/source/license.html
  */
 
-/* ====================================================================
- * Copyright 2002 Sun Microsystems, Inc. ALL RIGHTS RESERVED.
- * ECDH support in OpenSSL originally developed by
- * SUN MICROSYSTEMS, INC., and contributed to the OpenSSL project.
- */
-
 #include <stdio.h>
 #include <openssl/crypto.h>
 #include "internal/cryptlib.h"
-#include <internal/engine.h>
+#include "crypto/engine.h"
 #include <openssl/pem.h>
 #include <openssl/evp.h>
 #include <openssl/rand.h>
@@ -34,12 +29,14 @@
  */
 #define TEST_ENG_OPENSSL_RC4
 #ifndef OPENSSL_NO_STDIO
-#define TEST_ENG_OPENSSL_PKEY
+# define TEST_ENG_OPENSSL_PKEY
 #endif
 /* #define TEST_ENG_OPENSSL_HMAC */
 /* #define TEST_ENG_OPENSSL_HMAC_INIT */
 /* #define TEST_ENG_OPENSSL_RC4_OTHERS */
-#define TEST_ENG_OPENSSL_RC4_P_INIT
+#ifndef OPENSSL_NO_STDIO
+# define TEST_ENG_OPENSSL_RC4_P_INIT
+#endif
 /* #define TEST_ENG_OPENSSL_RC4_P_CIPHER */
 #define TEST_ENG_OPENSSL_SHA
 /* #define TEST_ENG_OPENSSL_SHA_OTHERS */
@@ -170,7 +167,7 @@ static int bind_fn(ENGINE *e, const char *id)
 }
 
 IMPLEMENT_DYNAMIC_CHECK_FN()
-    IMPLEMENT_DYNAMIC_BIND_FN(bind_fn)
+IMPLEMENT_DYNAMIC_BIND_FN(bind_fn)
 #endif                          /* ENGINE_DYNAMIC_SUPPORT */
 #ifdef TEST_ENG_OPENSSL_RC4
 /*-
@@ -436,9 +433,10 @@ static int ossl_hmac_init(EVP_PKEY_CTX *ctx)
 {
     OSSL_HMAC_PKEY_CTX *hctx;
 
-    hctx = OPENSSL_zalloc(sizeof(*hctx));
-    if (hctx == NULL)
+    if ((hctx = OPENSSL_zalloc(sizeof(*hctx))) == NULL) {
+        ENGINEerr(ENGINE_F_OSSL_HMAC_INIT, ERR_R_MALLOC_FAILURE);
         return 0;
+    }
     hctx->ktmp.type = V_ASN1_OCTET_STRING;
     hctx->ctx = HMAC_CTX_new();
     if (hctx->ctx == NULL) {

@@ -1,5 +1,5 @@
 #! /usr/bin/env perl
-# Copyright 2014-2016 The OpenSSL Project Authors. All Rights Reserved.
+# Copyright 2014-2020 The OpenSSL Project Authors. All Rights Reserved.
 #
 # Licensed under the OpenSSL license (the "License").  You may not use
 # this file except in compliance with the License.  You can obtain a copy
@@ -26,6 +26,7 @@
 # Denver	2.13			3.97 (+0%)(**)
 # X-Gene				8.80 (+200%)
 # Mongoose	2.05			6.50 (+160%)
+# Kryo		1.88			8.00 (+90%)
 #
 # (*)	Software results are presented mostly for reference purposes.
 # (**)	Keep in mind that Denver relies on binary translation, which
@@ -360,4 +361,4 @@ foreach(split("\n",$code)) {
 	print $_,"\n";
 }
 
-close STDOUT;
+close STDOUT or die "error closing STDOUT: $!";

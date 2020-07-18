@@ -20,16 +20,16 @@ jobs:
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
     steps:
       - uses: actions/checkout@v2
-      - name: "[rubyc] Install libraries"
+      - name: "[Enclose.IO] Install libraries"
         run: |
           choco install --no-progress squashfs
-      - name: "[rubyc] Set up Ruby"
+      - name: "[Enclose.IO] Set up Ruby"
         uses: ruby/setup-ruby@v1
-      - name: "[rubyc] Install dependencies"
+      - name: "[Enclose.IO] Install dependencies"
         run: bundle install
-      - name: "[rubyc] Run rubocop"
+      - name: "[Enclose.IO] Run rubocop"
         run: bundle exec rubocop
-      - name: "[rubyc] Inspect Windows Environment"
+      - name: "[Enclose.IO] Inspect Windows Environment"
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           set YACC=win_bison
@@ -46,12 +46,12 @@ jobs:
           where bundle
           bundle -v
         shell: cmd
-      - name: "[rubyc] Run tests"
+      - name: "[Enclose.IO] Run tests"
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           bundle exec rake
         shell: cmd
-      - name: "[rubyc] Create Windows Release"
+      - name: "[Enclose.IO] Create Windows Release"
         if: ${{ github.ref == 'refs/heads/master' &&	matrix.os == 'windows-2016' && success() }}
         id: create_windows_release
         uses: pmq20/create-release@delete-old-release
@@ -63,7 +63,7 @@ jobs:
           draft: false
           prerelease: false
           replace_old_tag: true
-      - name: "[rubyc] Upload Windows Release"
+      - name: "[Enclose.IO] Upload Windows Release"
         if: ${{ github.ref == 'refs/heads/master' &&	matrix.os == 'windows-2016' && success() }}
         uses: actions/upload-release-asset@v1
         env:

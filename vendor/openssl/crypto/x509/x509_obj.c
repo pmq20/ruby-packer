@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2016 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2017 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the OpenSSL license (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -9,11 +9,10 @@
 
 #include <stdio.h>
 #include "internal/cryptlib.h"
-#include <openssl/lhash.h>
 #include <openssl/objects.h>
 #include <openssl/x509.h>
 #include <openssl/buffer.h>
-#include "internal/x509_int.h"
+#include "crypto/x509.h"
 
 /*
  * Limit to ensure we don't overflow: much greater than
@@ -173,10 +172,10 @@ char *X509_NAME_oneline(const X509_NAME *a, char *buf, int len)
         p = buf;
     if (i == 0)
         *p = '\0';
-    return (p);
+    return p;
  err:
     X509err(X509_F_X509_NAME_ONELINE, ERR_R_MALLOC_FAILURE);
  end:
     BUF_MEM_free(b);
-    return (NULL);
+    return NULL;
 }

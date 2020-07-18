@@ -1,5 +1,5 @@
 #! /usr/bin/env perl
-# Copyright 2011-2016 The OpenSSL Project Authors. All Rights Reserved.
+# Copyright 2011-2020 The OpenSSL Project Authors. All Rights Reserved.
 #
 # Licensed under the OpenSSL license (the "License").  You may not use
 # this file except in compliance with the License.  You can obtain a copy
@@ -20,7 +20,7 @@
 # in bn_gf2m.c. It's kind of low-hanging mechanical port from C for
 # the time being... gcc 4.3 appeared to generate poor code, therefore
 # the effort. And indeed, the module delivers 55%-90%(*) improvement
-# on haviest ECDSA verify and ECDH benchmarks for 163- and 571-bit
+# on heaviest ECDSA verify and ECDH benchmarks for 163- and 571-bit
 # key lengths on z990, 30%-55%(*) - on z10, and 70%-110%(*) - on z196.
 # This is for 64-bit build. In 32-bit "highgprs" case improvement is
 # even higher, for example on z990 it was measured 80%-150%. ECDSA
@@ -198,7 +198,7 @@ $code.=<<___;
 	xgr	$hi,@r[1]
 	xgr	$lo,@r[0]
 	xgr	$hi,@r[2]
-	xgr	$lo,@r[3]	
+	xgr	$lo,@r[3]
 	xgr	$hi,@r[3]
 	xgr	$lo,$hi
 	stg	$hi,16($rp)
@@ -225,4 +225,4 @@ ___
 
 $code =~ s/\`([^\`]*)\`/eval($1)/gem;
 print $code;
-close STDOUT;
+close STDOUT or die "error closing STDOUT: $!";

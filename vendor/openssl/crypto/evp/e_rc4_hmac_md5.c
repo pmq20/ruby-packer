@@ -19,7 +19,7 @@
 # include <openssl/objects.h>
 # include <openssl/rc4.h>
 # include <openssl/md5.h>
-# include "internal/evp_int.h"
+# include "crypto/evp.h"
 
 typedef struct {
     RC4_KEY ks;
@@ -257,6 +257,6 @@ static EVP_CIPHER r4_hmac_md5_cipher = {
 
 const EVP_CIPHER *EVP_rc4_hmac_md5(void)
 {
-    return (&r4_hmac_md5_cipher);
+    return &r4_hmac_md5_cipher;
 }
 #endif

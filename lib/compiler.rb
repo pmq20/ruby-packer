@@ -156,7 +156,7 @@ class Compiler
   end
 
   def init_options
-    @options[:make_args] ||= "-j#{@utils.default_make_j_arg}"
+    @options[:make_args] ||= "-j#{@utils.default_make_j_arg}" unless Gem.win_platform?
     @options[:output] ||= DEFAULT_NAME
     @options[:output] = File.expand_path(@options[:output])
     @options[:tmpdir] ||= File.expand_path('rubyc', Dir.tmpdir)
@@ -239,6 +239,7 @@ class Compiler
                  'call', @ruby_configure,
                  '--target=x64-mswin64',
                  '--disable-install-doc',
+                 "--with-openssl-dir=#{@local_build}",
                  "--prefix=#{@ruby_install1}")
       @utils.run(@compile_env, "nmake #{@options[:nmake_args]}")
       @utils.run(@compile_env, 'nmake install')
@@ -529,8 +530,6 @@ class Compiler
   end
 
   def stuff_openssl
-    return if Gem.win_platform? # TODO
-
     stuff 'openssl' do
       Dir['**/configure.ac'].each do |x|
         File.utime(Time.at(0), Time.at(0), x)
@@ -538,13 +537,25 @@ class Compiler
       Dir['**/*.m4'].each do |x|
         File.utime(Time.at(0), Time.at(0), x)
       end
-      @utils.run(@compile_env,
-                 './config',
-                 'no-shared',
-                 "--openssldir=#{@options[:openssl_dir]}",
-                 "--prefix=#{@local_build}")
-      @utils.run(@compile_env, "make #{@options[:make_args]}")
-      @utils.run(@compile_env, 'make install_sw')
+      if Gem.win_platform?
+        @utils.run(@compile_env,
+                  'perl',
+                  'Configure',
+                  'VC-WIN64A',
+                  'no-shared',
+                  "--openssldir=#{@options[:openssl_dir]}",
+                  "--prefix=#{@local_build}")
+        @utils.run(@compile_env, "nmake #{@options[:nmake_args]}")
+        @utils.run(@compile_env, 'nmake install_sw')
+      else
+        @utils.run(@compile_env,
+                  './config',
+                  'no-shared',
+                  "--openssldir=#{@options[:openssl_dir]}",
+                  "--prefix=#{@local_build}")
+        @utils.run(@compile_env, "make #{@options[:make_args]}")
+        @utils.run(@compile_env, 'make install_sw')
+      end
     end
   end
 
@@ -747,29 +758,6 @@ class Compiler
     end
   end
 
-  ##
-  # TODO make those win32 ext work
-
-  def patch_unsupported_extensions_windows
-    ext_dir = File.join @ruby_source_dir, 'ext'
-
-    @utils.chdir ext_dir do
-      @utils.rm_rf('dbm')
-      @utils.rm_rf('digest')
-      @utils.rm_rf('etc')
-      @utils.rm_rf('fiddle')
-      @utils.rm_rf('gdbm')
-      @utils.rm_rf('mathn')
-      @utils.rm_rf('openssl')
-      @utils.rm_rf('pty')
-      @utils.rm_rf('readline')
-      @utils.rm_rf('ripper')
-      @utils.rm_rf('socket')
-      @utils.rm_rf('win32')
-      @utils.rm_rf('win32ole')
-    end
-  end
-
   def prepare_work_dir
     # Prepare /__enclose_io_memfs__
     @work_dir = File.join(@options[:tmpdir], 'rubyc_work_dir')
@@ -959,23 +947,24 @@ class Compiler
 
     @compile_env = if Gem.win_platform?
                      {
-                       'CI' => 'true',
-                       'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1'
+                       'CI'                           => 'true',
+                       'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1',
+                       'CL'                           => '/MP',
                      }
                    else
                      {
-                       'CI' => 'true',
+                       'CI'                           => 'true',
                        'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1',
-                       'CFLAGS' => @cflags,
-                       'LDFLAGS' => @ldflags
+                       'CFLAGS'                       => @cflags,
+                       'LDFLAGS'                      => @ldflags,
                      }
                    end
   end
 
   def prepare_flags2
     if Gem.win_platform?
-      @ldflags += " -libpath:#{@utils.escape File.join(@options[:tmpdir], 'zlib').gsub('/', '\\')} #{@utils.escape File.join(@options[:tmpdir], 'zlib', 'zlib.lib')} "
-      @cflags += " -I#{@utils.escape File.join(@options[:tmpdir], 'zlib')} "
+      @ldflags += " -libpath:#{@utils.escape File.join(@options[:tmpdir], 'zlib').gsub('/', '\\')} #{@utils.escape File.join(@options[:tmpdir], 'zlib', 'zlib.lib')} Advapi32.lib "
+      @cflags += " -I#{@utils.escape File.join(@options[:tmpdir], 'zlib')} -I#{@utils.escape @ruby_source_dir} "
     else
       lib   = File.join @local_build, 'lib'
       lib64 = File.join @local_build, 'lib64'
@@ -996,16 +985,17 @@ class Compiler
 
     @compile_env = if Gem.win_platform?
                      {
-                       'CI' => 'true',
-                       'MAKE' => 'nmake',
-                       'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1'
+                       'CI'                           => 'true',
+                       'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1',
+                       'MAKE'                         => 'nmake',
+                       'CL'                           => '/MP',
                      }
                    else
                      {
-                       'CI' => 'true',
+                       'CI'                           => 'true',
                        'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1',
-                       'CFLAGS' => @cflags,
-                       'LDFLAGS' => @ldflags
+                       'CFLAGS'                       => @cflags,
+                       'LDFLAGS'                      => @ldflags,
                      }
                    end
   end

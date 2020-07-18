@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2016 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2020 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the OpenSSL license (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -11,13 +11,13 @@
 #include "internal/cryptlib.h"
 #include <openssl/asn1t.h>
 #include <openssl/x509.h>
-#include "internal/x509_int.h"
+#include "crypto/x509.h"
 #include <openssl/x509v3.h>
-#include "x509_lcl.h"
+#include "x509_local.h"
 
 static int X509_REVOKED_cmp(const X509_REVOKED *const *a,
                             const X509_REVOKED *const *b);
-static void setup_idp(X509_CRL *crl, ISSUING_DIST_POINT *idp);
+static int setup_idp(X509_CRL *crl, ISSUING_DIST_POINT *idp);
 
 ASN1_SEQUENCE(X509_REVOKED) = {
         ASN1_EMBED(X509_REVOKED,serialNumber, ASN1_INTEGER),
@@ -155,9 +155,21 @@ static int crl_cb(int operation, ASN1_VALUE **pval, const ASN1_ITEM *it,
     X509_CRL *crl = (X509_CRL *)*pval;
     STACK_OF(X509_EXTENSION) *exts;
     X509_EXTENSION *ext;
-    int idx;
+    int idx, i;
 
     switch (operation) {
+    case ASN1_OP_D2I_PRE:
+        if (crl->meth->crl_free) {
+            if (!crl->meth->crl_free(crl))
+                return 0;
+        }
+        AUTHORITY_KEYID_free(crl->akid);
+        ISSUING_DIST_POINT_free(crl->idp);
+        ASN1_INTEGER_free(crl->crl_number);
+        ASN1_INTEGER_free(crl->base_crl_number);
+        sk_GENERAL_NAMES_pop_free(crl->issuers, GENERAL_NAMES_free);
+        /* fall thru */
+
     case ASN1_OP_NEW_POST:
         crl->idp = NULL;
         crl->akid = NULL;
@@ -172,23 +184,35 @@ static int crl_cb(int operation, ASN1_VALUE **pval, const ASN1_ITEM *it,
         break;
 
     case ASN1_OP_D2I_POST:
-        X509_CRL_digest(crl, EVP_sha1(), crl->sha1_hash, NULL);
+        if (!X509_CRL_digest(crl, EVP_sha1(), crl->sha1_hash, NULL))
+            crl->flags |= EXFLAG_INVALID;
         crl->idp = X509_CRL_get_ext_d2i(crl,
-                                        NID_issuing_distribution_point, NULL,
+                                        NID_issuing_distribution_point, &i,
                                         NULL);
-        if (crl->idp)
-            setup_idp(crl, crl->idp);
+        if (crl->idp != NULL) {
+            if (!setup_idp(crl, crl->idp))
+                crl->flags |= EXFLAG_INVALID;
+        }
+        else if (i != -1) {
+            crl->flags |= EXFLAG_INVALID;
+        }
 
         crl->akid = X509_CRL_get_ext_d2i(crl,
-                                         NID_authority_key_identifier, NULL,
+                                         NID_authority_key_identifier, &i,
                                          NULL);
+        if (crl->akid == NULL && i != -1)
+            crl->flags |= EXFLAG_INVALID;
 
         crl->crl_number = X509_CRL_get_ext_d2i(crl,
-                                               NID_crl_number, NULL, NULL);
+                                               NID_crl_number, &i, NULL);
+        if (crl->crl_number == NULL && i != -1)
+            crl->flags |= EXFLAG_INVALID;
 
         crl->base_crl_number = X509_CRL_get_ext_d2i(crl,
-                                                    NID_delta_crl, NULL,
+                                                    NID_delta_crl, &i,
                                                     NULL);
+        if (crl->base_crl_number == NULL && i != -1)
+            crl->flags |= EXFLAG_INVALID;
         /* Delta CRLs must have CRL number */
         if (crl->base_crl_number && !crl->crl_number)
             crl->flags |= EXFLAG_INVALID;
@@ -247,9 +271,10 @@ static int crl_cb(int operation, ASN1_VALUE **pval, const ASN1_ITEM *it,
 
 /* Convert IDP into a more convenient form */
 
-static void setup_idp(X509_CRL *crl, ISSUING_DIST_POINT *idp)
+static int setup_idp(X509_CRL *crl, ISSUING_DIST_POINT *idp)
 {
     int idp_only = 0;
+
     /* Set various flags according to IDP */
     crl->idp_flags |= IDP_PRESENT;
     if (idp->onlyuser > 0) {
@@ -280,7 +305,7 @@ static void setup_idp(X509_CRL *crl, ISSUING_DIST_POINT *idp)
         crl->idp_reasons &= CRLDP_ALL_REASONS;
     }
 
-    DIST_POINT_set_dpname(idp->distpoint, X509_CRL_get_issuer(crl));
+    return DIST_POINT_set_dpname(idp->distpoint, X509_CRL_get_issuer(crl));
 }
 
 ASN1_SEQUENCE_ref(X509_CRL, crl_cb) = {
@@ -309,6 +334,7 @@ static int X509_REVOKED_cmp(const X509_REVOKED *const *a,
 int X509_CRL_add0_revoked(X509_CRL *crl, X509_REVOKED *rev)
 {
     X509_CRL_INFO *inf;
+
     inf = &crl->crl;
     if (inf->revoked == NULL)
         inf->revoked = sk_X509_REVOKED_new(X509_REVOKED_cmp);
@@ -382,8 +408,11 @@ static int def_crl_lookup(X509_CRL *crl,
                           X509_NAME *issuer)
 {
     X509_REVOKED rtmp, *rev;
-    int idx;
-    rtmp.serialNumber = *serial;
+    int idx, num;
+
+    if (crl->crl.revoked == NULL)
+        return 0;
+
     /*
      * Sort revoked into serial number order if not already sorted. Do this
      * under a lock to avoid race condition.
@@ -393,11 +422,12 @@ static int def_crl_lookup(X509_CRL *crl,
         sk_X509_REVOKED_sort(crl->crl.revoked);
         CRYPTO_THREAD_unlock(crl->lock);
     }
+    rtmp.serialNumber = *serial;
     idx = sk_X509_REVOKED_find(crl->crl.revoked, &rtmp);
     if (idx < 0)
         return 0;
     /* Need to look for matching name */
-    for (; idx < sk_X509_REVOKED_num(crl->crl.revoked); idx++) {
+    for (num = sk_X509_REVOKED_num(crl->crl.revoked); idx < num; idx++) {
         rev = sk_X509_REVOKED_value(crl->crl.revoked, idx);
         if (ASN1_INTEGER_cmp(&rev->serialNumber, serial))
             return 0;
@@ -429,10 +459,12 @@ X509_CRL_METHOD *X509_CRL_METHOD_new(int (*crl_init) (X509_CRL *crl),
                                      int (*crl_verify) (X509_CRL *crl,
                                                         EVP_PKEY *pk))
 {
-    X509_CRL_METHOD *m;
-    m = OPENSSL_malloc(sizeof(*m));
-    if (m == NULL)
+    X509_CRL_METHOD *m = OPENSSL_malloc(sizeof(*m));
+
+    if (m == NULL) {
+        X509err(X509_F_X509_CRL_METHOD_NEW, ERR_R_MALLOC_FAILURE);
         return NULL;
+    }
     m->crl_init = crl_init;
     m->crl_free = crl_free;
     m->crl_lookup = crl_lookup;

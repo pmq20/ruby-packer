@@ -30,9 +30,9 @@
 const char ruby_hexdigits[] = "0123456789abcdef0123456789ABCDEF";
 #define hexdigit ruby_hexdigits
 
-// --------- [Hack start] ---------
+// --------- [Enclose.IO Hack start] ---------
 #include "enclose_io.h"
-// --------- [Hack end] ---------
+// --------- [Enclose.IO Hack end] ---------
 
 unsigned long
 ruby_scan_oct(const char *start, size_t len, size_t *retlen)
