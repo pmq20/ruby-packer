@@ -21,6 +21,10 @@ jobs:
     steps:
       - uses: ilammy/setup-nasm@v1
       - uses: actions/checkout@v2
+      - name: "[Enclose.IO] Set up Perl"
+        run: |
+          choco install strawberryperl
+          echo "##[add-path]C:\strawberry\c\bin;C:\strawberry\perl\site\bin;C:\strawberry\perl\bin"
       - name: "[Enclose.IO] Install libraries"
         run: |
           choco install --no-progress squashfs
@@ -39,6 +43,8 @@ jobs:
           echo %PROCESSOR_ARCHITECTURE%
           set
           systeminfo
+          where perl
+          perl -V
           where nmake
           where mksquashfs
           mksquashfs -version
