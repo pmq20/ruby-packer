@@ -109,48 +109,51 @@ class Compiler
 
     # prefix for stuffed libraries
     @local_build = File.join(@options[:tmpdir], 'local')
-  end
-
-  def run!
-    clean_env
-
-    stuff_tmpdir
 
     @build_pass1 = File.join(@options[:tmpdir], 'build_pass_1')
     @build_pass2 = File.join(@options[:tmpdir], 'build_pass_2')
+
+    @ruby_configure = (Gem.win_platform? ? "#{@ruby_source_dir}\\win32\\configure.bat" : File.join(@ruby_source_dir, 'configure'))
+    
+    @work_dir = File.join(@options[:tmpdir], 'rubyc_work_dir')
+    @work_dir_inner = File.join(@work_dir, '__enclose_io_memfs__')
+    @gems_dir = File.join(@ruby_install1, 'lib', 'ruby', 'gems', self.class.ruby_api_version)
+    @path_env = "#{File.join(@ruby_install1, 'bin')}:#{ENV['PATH']}"
+    @local_toolchain = {
+      'CI' => 'true',
+      'PATH' => @path_env,
+      'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1',
+      'ENCLOSE_IO_RUBYC_1ST_PASS' => '1',
+      'ENCLOSE_IO_RUBYC_2ND_PASS' => nil
+    }
+
+    clean_env
+  end
+
+  def run!
+    @utils.rm_rf(@options[:tmpdir]) unless @options[:keep_tmpdir]
     @utils.mkdir_p(@build_pass1)
     @utils.mkdir_p(@build_pass2)
+    
+    stuff_tmpdir
+    build_ruby_pass_1 unless Dir.exist?(@ruby_install1)
+    overwrite_ext_setup
+    prepare_work_dir unless Dir.exist?(@work_dir)
+    build_ruby_pass_2
+  end
 
+  def build_ruby_pass_1
     if Gem.win_platform?
-      @ruby_configure = "#{@ruby_source_dir}\\win32\\configure.bat"
-
       build_ruby_pass_1_windows
+    else
+      build_ruby_pass_1_unix
+    end
+  end
 
-      patch_ext
-      patch_makefile
-
-      # enclose_io_memfs.o - 2nd pass
-      prepare_work_dir
-      prepare_local
-
-      @utils.rm_f('include/enclose_io.h')
-      @utils.rm_f('enclose_io_memfs.c')
-
+  def build_ruby_pass_2
+    if Gem.win_platform?
       build_ruby_pass_2_windows
     else
-      @ruby_configure = File.join(@ruby_source_dir, 'configure')
-
-      build_ruby_pass_1_unix
-
-      patch_ext
-
-      # enclose_io_memfs.o - 2nd pass
-      prepare_work_dir
-      prepare_local
-
-      @utils.rm_f('include/enclose_io.h')
-      @utils.rm_f('enclose_io_memfs.c')
-
       build_ruby_pass_2_unix
     end
   end
@@ -202,8 +205,6 @@ class Compiler
   end
 
   def build_ruby_pass_1_unix
-    return if Dir.exist? @ruby_install1
-
     log '=> Building ruby phase 1'
 
     @compile_env['ENCLOSE_IO_RUBYC_1ST_PASS'] = '1'
@@ -216,7 +217,6 @@ class Compiler
                  '--prefix', @ruby_install1,
                  '--enable-bundled-libyaml',
                  '--without-gmp',
-                 '--disable-dtrace',
                  '--enable-debug-env',
                  '--disable-install-rdoc')
       @utils.run(@compile_env, "make #{@options[:make_args]}")
@@ -227,8 +227,6 @@ class Compiler
   end
 
   def build_ruby_pass_1_windows
-    return if Dir.exist? @ruby_install1
-
     log '=> Building ruby phase 1'
 
     @compile_env['ENCLOSE_IO_RUBYC_1ST_PASS'] = '1'
@@ -244,6 +242,77 @@ class Compiler
       @utils.run(@compile_env, "nmake #{@options[:nmake_args]}")
       @utils.run(@compile_env, 'nmake install')
     end
+  end
+
+  def overwrite_ext_setup
+    File.open(File.join(@ruby_source_dir, 'ext', 'Setup'), 'w') do |f|
+      f.puts 'option nodynamic'
+    end
+  end
+
+  def prepare_work_dir
+    # Prepare /__enclose_io_memfs__
+    @utils.mkdir_p(@work_dir)
+    @utils.mkdir @work_dir_inner
+
+    # Prepare /__enclose_io_memfs__/local
+    if @entrance
+      @utils.chdir(@root) do
+        gemspecs = Dir['./*.gemspec']
+        gemfiles = Dir['./gems.rb', './Gemfile']
+        gems = Dir['./*.gem']
+
+        @gem    = File.join(@ruby_install1_bin, 'gem')
+        @bundle = File.join(@ruby_install1_bin, 'bundle')
+
+        log '=> gem env'
+        @utils.run @local_toolchain, @gem, 'env'
+
+        if !gemspecs.empty?
+          raise 'Multiple gemspecs detected' unless gemspecs.size == 1
+
+          install_from_gemspec gemspecs.first, gemfiles
+        elsif !gemfiles.empty?
+          raise 'Multiple Gemfiles detected' unless gemfiles.size == 1
+
+          install_from_gemfile gemfiles.first
+        elsif !gems.empty?
+          raise 'Multiple gem files detected' unless gems.size == 1
+
+          install_from_gem gems.first
+        else
+          install_from_local
+        end
+
+        if @work_dir_local
+          @utils.chdir(@work_dir_local) do
+            if Dir.exist?('.git')
+              log `git status`
+              @utils.rm_rf('.git')
+            end
+            if File.exist?('a.exe')
+              log `dir a.exe`
+              @utils.rm_rf('a.exe')
+            end
+            if File.exist?('a.out')
+              log `ls -l a.out`
+              @utils.rm_rf('a.out')
+            end
+          end
+        end
+
+        @utils.rm_rf(File.join(@gems_dir, 'cache'))
+      end
+    end
+
+    sources = Dir[File.join(@ruby_install1, '*')]
+    @utils.cp_r(sources, @work_dir_inner, preserve: true)
+
+    Dir["#{@work_dir_inner}/**/*.{a,dylib,so,dll,lib,bundle}"].each do |thisdl|
+      @utils.rm_f(thisdl)
+    end
+
+    ignore_files_from_build
   end
 
   def build_ruby_pass_2_unix
@@ -262,7 +331,6 @@ class Compiler
                  "--with-baseruby=#{baseruby}",
                  '--enable-bundled-libyaml',
                  '--without-gmp',
-                 '--disable-dtrace',
                  '--enable-debug-env',
                  '--disable-install-rdoc',
                  '--with-static-linked-ext')
@@ -293,12 +361,76 @@ class Compiler
       make_enclose_io_memfs
       make_enclose_io_vars
 
-      @utils.run_allow_failures(@compile_env, "nmake #{@options[:nmake_args]}")
-      @utils.run(@compile_env, %(nmake #{@options[:nmake_args]} -f enc.mk V="0" UNICODE_HDR_DIR="./enc/unicode/9.0.0"  RUBY=".\\miniruby.exe -I./lib -I. " MINIRUBY=".\\miniruby.exe -I./lib -I. " -l libenc))
-      @utils.run(@compile_env, %(nmake #{@options[:nmake_args]} -f enc.mk V="0" UNICODE_HDR_DIR="./enc/unicode/9.0.0"  RUBY=".\\miniruby.exe -I./lib -I. " MINIRUBY=".\\miniruby.exe -I./lib -I. " -l libtrans))
       @utils.run(@compile_env, "nmake #{@options[:nmake_args]}")
       @utils.run(@compile_env, "nmake #{@options[:nmake_args]} ruby_static.exe")
       @utils.cp('ruby_static.exe', @options[:output])
+    end
+  end
+
+  def make_enclose_io_memfs
+    @utils.chdir(@ruby_source_dir) do
+      log '=> making squashfs'
+
+      @utils.rm_f('enclose_io_memfs.squashfs')
+      @utils.rm_f('enclose_io_memfs.c')
+
+      log "The following files are going to be packed:\n#{Dir[File.join(@work_dir, '**/*')].join("\n")}" if @options[:debug]
+
+      @utils.run('mksquashfs', '-version')
+      @utils.run('mksquashfs', @work_dir, 'enclose_io_memfs.squashfs')
+
+      squashfs_to_c 'enclose_io_memfs.squashfs', 'enclose_io_memfs.c'
+      log '=> squashfs complete'
+    end
+  end
+
+  def make_enclose_io_vars
+    @utils.chdir(@ruby_source_dir) do
+      File.open('enclose_io.h', 'w') do |f|
+        # remember to change libsquash's sample/enclose_io.h as well
+        # might need to remove some object files at the 2nd pass
+        f.puts '#ifndef ENCLOSE_IO_H_999BC1DA'
+        f.puts '#define ENCLOSE_IO_H_999BC1DA'
+        f.puts ''
+        f.puts '#include "enclose_io_prelude.h"'
+        f.puts '#include "enclose_io_common.h"'
+        f.puts '#include "enclose_io_win32.h"'
+        f.puts '#include "enclose_io_unix.h"'
+        f.puts ''
+        f.puts "#define ENCLOSE_IO_ENV_BUNDLE_GEMFILE #{@env_bundle_gemfile.inspect}" if @env_bundle_gemfile
+        f.puts "#define ENCLOSE_IO_ENTRANCE #{@memfs_entrance.inspect}" if @entrance
+        f.puts '#define ENCLOSE_IO_RAILS 1' if @enclose_io_rails
+        if @options[:auto_update_url] && @options[:auto_update_base]
+          f.puts '#define ENCLOSE_IO_AUTO_UPDATE 1'
+          f.puts "#define ENCLOSE_IO_AUTO_UPDATE_BASE #{@options[:auto_update_base].inspect}"
+          urls = URI.split(@options[:auto_update_url])
+          raise 'logic error' unless urls.length == 9
+
+          port = urls[3]
+          if port.nil?
+            port = if urls[0] == 'https'
+                     443
+                   else
+                     80
+                   end
+          end
+          f.puts "#define ENCLOSE_IO_AUTO_UPDATE_URL_Scheme #{urls[0].inspect}" if urls[0]
+          f.puts "#define ENCLOSE_IO_AUTO_UPDATE_URL_Userinfo #{urls[1].inspect}" if urls[1]
+          f.puts "#define ENCLOSE_IO_AUTO_UPDATE_URL_Host #{urls[2].inspect}" if urls[2]
+          if Gem.win_platform?
+            f.puts "#define ENCLOSE_IO_AUTO_UPDATE_URL_Port #{port.to_s.inspect}"
+          else
+            f.puts "#define ENCLOSE_IO_AUTO_UPDATE_URL_Port #{port}"
+          end
+          f.puts "#define ENCLOSE_IO_AUTO_UPDATE_URL_Registry #{urls[4].inspect}" if urls[4]
+          f.puts "#define ENCLOSE_IO_AUTO_UPDATE_URL_Path #{urls[5].inspect}" if urls[5]
+          f.puts "#define ENCLOSE_IO_AUTO_UPDATE_URL_Opaque #{urls[6].inspect}" if urls[6]
+          f.puts "#define ENCLOSE_IO_AUTO_UPDATE_URL_Query #{urls[7].inspect}" if urls[7]
+          f.puts "#define ENCLOSE_IO_AUTO_UPDATE_URL_Fragment #{urls[8].inspect}" if urls[8]
+        end
+        f.puts '#endif'
+        f.puts ''
+      end
     end
   end
 
@@ -379,7 +511,7 @@ class Compiler
 
     @env_bundle_gemfile = "/__enclose_io_memfs__/local/#{gemfile}"
 
-    @utils.cp_r(@root, @work_dir_local) unless @options[:keep_tmpdir]
+    @utils.cp_r(@root, @work_dir_local)
 
     @utils.chdir(@work_dir_local) do
       # bundle install
@@ -710,26 +842,6 @@ class Compiler
     raise "Failed to patch CFLAGS and LDFLAGS of #{target}" unless found == 2
   end
 
-  def patch_makefile
-    # PATCH win32\Makefile.sub for 2nd pass
-    target = File.join(@ruby_source_dir, 'win32', 'Makefile.sub')
-    target_content = File.read(target)
-    found = 0
-
-    File.open(target, 'w') do |f|
-      target_content.each_line do |line|
-        if found.zero? && (line =~ /^#define LOAD_RELATIVE 1$/)
-          found = 1
-          f.puts ''
-        else
-          f.print line
-        end
-      end
-    end
-
-    raise "Failed to patch CFLAGS and LDFLAGS of #{target}" unless found == 1
-  end
-
   def patch_common_mk
     target = File.join(@ruby_source_dir, 'common.mk')
     target_content = File.read(target)
@@ -750,99 +862,6 @@ class Compiler
     raise "Failed to patch INCFLAGS of #{target}" unless found
   end
 
-  def patch_ext
-    ext_setup = File.join(@ruby_source_dir, 'ext', 'Setup')
-
-    File.open(ext_setup, 'w') do |f|
-      f.puts 'option nodynamic'
-    end
-  end
-
-  def prepare_work_dir
-    # Prepare /__enclose_io_memfs__
-    @work_dir = File.join(@options[:tmpdir], 'rubyc_work_dir')
-    @utils.rm_rf(@work_dir) unless @options[:keep_tmpdir]
-    @utils.mkdir_p(@work_dir)
-
-    @work_dir_inner = File.join(@work_dir, '__enclose_io_memfs__')
-    @utils.mkdir @work_dir_inner
-
-    @gems_dir =
-      File.join(@ruby_install1, 'lib', 'ruby', 'gems', self.class.ruby_api_version)
-
-    @path_env = "#{File.join(@ruby_install1, 'bin')}:#{ENV['PATH']}"
-    @local_toolchain = {
-      'CI' => 'true',
-      'PATH' => @path_env,
-      'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1',
-      'ENCLOSE_IO_RUBYC_1ST_PASS' => '1',
-      'ENCLOSE_IO_RUBYC_2ND_PASS' => nil
-    }
-  end
-
-  ##
-  # Prepare /__enclose_io_memfs__/local
-
-  def prepare_local
-    if @entrance
-      @utils.chdir(@root) do
-        gemspecs = Dir['./*.gemspec']
-        gemfiles = Dir['./gems.rb', './Gemfile']
-        gems = Dir['./*.gem']
-
-        @gem    = File.join(@ruby_install1_bin, 'gem')
-        @bundle = File.join(@ruby_install1_bin, 'bundle')
-
-        log '=> gem env'
-        @utils.run @local_toolchain, @gem, 'env'
-
-        if !gemspecs.empty?
-          raise 'Multiple gemspecs detected' unless gemspecs.size == 1
-
-          install_from_gemspec gemspecs.first, gemfiles
-        elsif !gemfiles.empty?
-          raise 'Multiple Gemfiles detected' unless gemfiles.size == 1
-
-          install_from_gemfile gemfiles.first
-        elsif !gems.empty?
-          raise 'Multiple gem files detected' unless gems.size == 1
-
-          install_from_gem gems.first
-        else
-          install_from_local
-        end
-
-        if @work_dir_local
-          @utils.chdir(@work_dir_local) do
-            if Dir.exist?('.git')
-              log `git status`
-              @utils.rm_rf('.git')
-            end
-            if File.exist?('a.exe')
-              log `dir a.exe`
-              @utils.rm_rf('a.exe')
-            end
-            if File.exist?('a.out')
-              log `ls -l a.out`
-              @utils.rm_rf('a.out')
-            end
-          end
-        end
-
-        @utils.rm_rf(File.join(@gems_dir, 'cache'))
-      end
-    end
-
-    sources = Dir[File.join(@ruby_install1, '*')]
-    @utils.cp_r(sources, @work_dir_inner, preserve: true)
-
-    Dir["#{@work_dir_inner}/**/*.{a,dylib,so,dll,lib,bundle}"].each do |thisdl|
-      @utils.rm_f(thisdl)
-    end
-
-    ignore_files_from_build
-  end
-
   def ignore_files_from_build
     return if !@work_dir_local || !@options[:ignore_file].is_a?(Array)
 
@@ -851,73 +870,6 @@ class Compiler
         next unless File.exist?(ignored_file)
 
         @utils.rm_rf(ignored_file)
-      end
-    end
-  end
-
-  def make_enclose_io_memfs
-    @utils.chdir(@ruby_source_dir) do
-      log '=> making squashfs'
-
-      @utils.rm_f('enclose_io_memfs.squashfs')
-      @utils.rm_f('enclose_io_memfs.c')
-
-      log "The following files are going to be packed:\n#{Dir[File.join(@work_dir, '**/*')].join("\n")}" if @options[:debug]
-
-      @utils.run('mksquashfs', '-version')
-      @utils.run('mksquashfs', @work_dir, 'enclose_io_memfs.squashfs')
-
-      squashfs_to_c 'enclose_io_memfs.squashfs', 'enclose_io_memfs.c'
-      log '=> squashfs complete'
-    end
-  end
-
-  def make_enclose_io_vars
-    @utils.chdir(@ruby_source_dir) do
-      File.open('enclose_io.h', 'w') do |f|
-        # remember to change libsquash's sample/enclose_io.h as well
-        # might need to remove some object files at the 2nd pass
-        f.puts '#ifndef ENCLOSE_IO_H_999BC1DA'
-        f.puts '#define ENCLOSE_IO_H_999BC1DA'
-        f.puts ''
-        f.puts '#include "enclose_io_prelude.h"'
-        f.puts '#include "enclose_io_common.h"'
-        f.puts '#include "enclose_io_win32.h"'
-        f.puts '#include "enclose_io_unix.h"'
-        f.puts ''
-        f.puts "#define ENCLOSE_IO_ENV_BUNDLE_GEMFILE #{@env_bundle_gemfile.inspect}" if @env_bundle_gemfile
-        f.puts "#define ENCLOSE_IO_ENTRANCE #{@memfs_entrance.inspect}" if @entrance
-        f.puts '#define ENCLOSE_IO_RAILS 1' if @enclose_io_rails
-        if @options[:auto_update_url] && @options[:auto_update_base]
-          f.puts '#define ENCLOSE_IO_AUTO_UPDATE 1'
-          f.puts "#define ENCLOSE_IO_AUTO_UPDATE_BASE #{@options[:auto_update_base].inspect}"
-          urls = URI.split(@options[:auto_update_url])
-          raise 'logic error' unless urls.length == 9
-
-          port = urls[3]
-          if port.nil?
-            port = if urls[0] == 'https'
-                     443
-                   else
-                     80
-                   end
-          end
-          f.puts "#define ENCLOSE_IO_AUTO_UPDATE_URL_Scheme #{urls[0].inspect}" if urls[0]
-          f.puts "#define ENCLOSE_IO_AUTO_UPDATE_URL_Userinfo #{urls[1].inspect}" if urls[1]
-          f.puts "#define ENCLOSE_IO_AUTO_UPDATE_URL_Host #{urls[2].inspect}" if urls[2]
-          if Gem.win_platform?
-            f.puts "#define ENCLOSE_IO_AUTO_UPDATE_URL_Port #{port.to_s.inspect}"
-          else
-            f.puts "#define ENCLOSE_IO_AUTO_UPDATE_URL_Port #{port}"
-          end
-          f.puts "#define ENCLOSE_IO_AUTO_UPDATE_URL_Registry #{urls[4].inspect}" if urls[4]
-          f.puts "#define ENCLOSE_IO_AUTO_UPDATE_URL_Path #{urls[5].inspect}" if urls[5]
-          f.puts "#define ENCLOSE_IO_AUTO_UPDATE_URL_Opaque #{urls[6].inspect}" if urls[6]
-          f.puts "#define ENCLOSE_IO_AUTO_UPDATE_URL_Query #{urls[7].inspect}" if urls[7]
-          f.puts "#define ENCLOSE_IO_AUTO_UPDATE_URL_Fragment #{urls[8].inspect}" if urls[8]
-        end
-        f.puts '#endif'
-        f.puts ''
       end
     end
   end
