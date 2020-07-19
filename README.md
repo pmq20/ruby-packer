@@ -90,10 +90,10 @@ Then,
 
 ## Usage
 
-  rubyc [OPTION]... [ENTRANCE_FILE]
+    rubyc [OPTION]... [ENTRANCE_FILE]
 
-  ENTRANCE_FILE refers to the path of an executable ruby script from your project, e.g. "bin/rails".
-  If ENTRANCE_FILE was not provided, a single raw Ruby interpreter executable would be produced.
+    ENTRANCE_FILE refers to the path of an executable ruby script from your project, e.g. "bin/rails".
+    If ENTRANCE_FILE was not provided, a single raw Ruby interpreter executable would be produced.
 
     -r, --root=DIR                   The path to the root of your application
     -o, --output=FILE                The path of the output file
