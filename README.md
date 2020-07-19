@@ -21,13 +21,18 @@
 - Native C extensions are fully supported
 - Open Source, MIT Licensed
 
+### Known Limitations
+
+- Some gems that use C extensions that use libc IO to load files from your Rails application will not work with rubyc.  Notably, [bootsnap will not work with rubyc](https://github.com/pmq20/ruby-packer/issues/30#issuecomment-387893082)
+- On macOS and Linux, DTrace is currently disabled, see https://github.com/pmq20/ruby-packer/issues/114
+
 ## Download and Install
 
 It takes less than 5 minutes to compile any project with Ruby Packer.
 
 You won't need to modify a single line of code in your application, no matter how you developed it as long as it works in plain Ruby!
 
-> **NEWS (Jul 4th, 2020)**: The following latest builds are broken due to issues [#109](https://github.com/pmq20/ruby-packer/issues/109) and [#111](https://github.com/pmq20/ruby-packer/issues/111). Please use the old stable releases at the moment: http://enclose.io/rubyc
+> **NEWS (Jul 4th, 2020)**: The following latest builds are broken due to issues [#109](https://github.com/pmq20/ruby-packer/issues/109) and [#111](https://github.com/pmq20/ruby-packer/issues/111). Please uses the old stable releases at the moment: http://enclose.io/rubyc
 
 |               | Arch. |                               Latest Build                                    |
 |:-------------:|:-----:|-------------------------------------------------------------------------------|
@@ -85,25 +90,27 @@ Then,
 
 ## Usage
 
-If ENTRANCE was not provided, then a single portable Ruby interpreter executable will be produced.
-ENTRANCE can be either a file path, or a "x" string as in bundle exec "x".
+  rubyc [OPTION]... [ENTRANCE_FILE]
 
-    rubyc [OPTION]... [ENTRANCE]
-      -r, --root=DIR                   The path to the root of the application
-      -o, --output=FILE                The path of the output file
-      -d, --tmpdir=DIR                 The directory for temporary files
-          --keep-tmpdir                Keeps all temporary files that were generated last time
-          --openssl-dir                The path to openssl
-          --make-args=ARGS             Extra arguments to be passed to make
-          --nmake-args=ARGS            Extra arguments to be passed to nmake
-          --auto-update-url=URL        Enables auto-update and specifies the URL to get the latest version
-          --auto-update-base=STRING    Enables auto-update and specifies the base version string
-          --debug                      Enable debug mode
-      -i, --ignore-file                Ignore file(s) from build
-      -v, --version                    Prints the version of rubyc and exit
-          --ruby-version               Prints the version of the Ruby runtime and exit
-          --ruby-api-version           Prints the version of the Ruby API and exit
-      -h, --help                       Prints this help and exit
+  ENTRANCE_FILE refers to the path of an executable ruby script from your project, e.g. "bin/rails".
+  If ENTRANCE_FILE was not provided, a single raw Ruby interpreter executable would be produced.
+
+    -r, --root=DIR                   The path to the root of your application
+    -o, --output=FILE                The path of the output file
+    -d, --tmpdir=DIR                 The directory for temporary files
+        --keep-tmpdir                Keeps all temporary files that were generated last time
+        --openssl-dir                The path to openssl
+        --make-args=ARGS             Extra arguments to be passed to make
+        --nmake-args=ARGS            Extra arguments to be passed to nmake
+        --auto-update-url=URL        Enables auto-update and specifies the URL to get the latest version
+        --auto-update-base=STRING    Enables auto-update and specifies the base version string
+    -i, --ignore-file=STRING         Ignore file(s) from build
+        --debug                      Enable debug mode
+        --quiet                      Enable quiet mode
+    -v, --version                    Prints the version of rubyc and exit
+    -V, --ruby-version               Prints the version of the Ruby runtime and exit
+        --ruby-api-version           Prints the version of the Ruby API and exit
+    -h, --help                       Prints this help and exit
 
 ### The `--openssl-dir` Option
 
@@ -140,15 +147,6 @@ Taking Ruby Packer itself as an example of the CLI utility to pack:
 	cd ruby-packer
 	rubyc bin/rubyc
 	./a.out (or a.exe on Windows)
-
-### Packing a Gem
-
-	rubyc --gem=bundler --gem-version=1.15.4 bundle
-	./a.out (or a.exe on Windows)
-
-Note that some gems that use C extensions that use libc IO to load files from
-your Rails application will not work with rubyc.  Notably, [bootsnap will not
-work with rubyc](https://github.com/pmq20/ruby-packer/issues/30#issuecomment-387893082).
 
 ### Packing a Rails Application
 

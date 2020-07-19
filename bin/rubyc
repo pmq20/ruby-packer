@@ -19,10 +19,9 @@ Ruby Packer (rubyc) v#{::Compiler::VERSION}
 Compiling your Ruby application into a single executable.
 
 Usage
-  rubyc [OPTION]... [ENTRANCE]
-  If ENTRANCE was not provided, then a single Ruby interpreter executable will be produced.
-  ENTRANCE can be either a file path, or a "x" string as in bundle exec "x".
-
+  rubyc [OPTION]... [ENTRANCE_FILE]
+  ENTRANCE_FILE refers to the path of an executable ruby script from your project, e.g. "bin/rails".
+  If ENTRANCE_FILE was not provided, a single raw Ruby interpreter executable would be produced.
 }.strip
 
 EXAMPLES = %{
@@ -43,12 +42,7 @@ Examples
     rails new yours
     cd yours
     rubyc bin/rails
-    ./a.out (or a.exe on Windows)
-
-  Compiling a Gem:
-    rubyc --gem=bundler --gem-version=1.15.4 bundle
-    ./a.out (or a.exe on Windows)
-
+    ./a.out server (or a.exe server on Windows)
 }.strip
 
 options = {}
@@ -62,7 +56,7 @@ end
 OptionParser.new do |opts|
   opts.banner = USAGE
 
-  opts.on('-rDIR', '--root=DIR', 'The path to the root of the application') do |dir|
+  opts.on('-rDIR', '--root=DIR', 'The path to the root of your application') do |dir|
     options[:root] = dir
   end
 
@@ -88,14 +82,6 @@ OptionParser.new do |opts|
 
   opts.on('--nmake-args=ARGS', 'Extra arguments to be passed to nmake') do |args|
     options[:nmake_args] = args
-  end
-
-  opts.on('--gem=NAME', 'Downloads and compiles the specified gem') do |name|
-    options[:gem] = name
-  end
-
-  opts.on('--gem-version=VER', 'Downloads and compiles the specified version of the gem') do |ver|
-    options[:gem_version] = ver
   end
 
   opts.on('--auto-update-url=URL', 'Enables auto-update and specifies the URL to get the latest version') do |url|
