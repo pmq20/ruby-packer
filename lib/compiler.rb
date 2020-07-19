@@ -91,16 +91,16 @@ class Compiler
 
     @ldflags = ''
     @cflags = if Gem.win_platform?
-                 if @options[:debug]
-                   ' -MD /DEBUG:FULL /Od -Zi '
-                 else
-                   ' -MD /Ox '
-                 end
-               elsif @options[:debug]
-                 ' -DRUBY_DEBUG -fPIC -g -O0 -pipe '
-               else
-                 ' -DRUBY_DEBUG -fPIC -O3 -fno-fast-math -ggdb3 -Os -fdata-sections -ffunction-sections -pipe '
-               end
+                if @options[:debug]
+                  ' -MD /DEBUG:FULL /Od -Zi '
+                else
+                  ' -MD /Ox '
+                end
+              elsif @options[:debug]
+                ' -DRUBY_DEBUG -fPIC -g -O0 -pipe '
+              else
+                ' -DRUBY_DEBUG -fPIC -O3 -fno-fast-math -ggdb3 -Os -fdata-sections -ffunction-sections -pipe '
+              end
 
     @ruby_install1 = File.join(@options[:tmpdir], 'ruby_install1')
     @ruby_install1_bin = File.join(@ruby_install1, 'bin')
@@ -126,14 +126,14 @@ class Compiler
   def init_entrance(entrance)
     @entrance = File.expand_path(entrance)
     unless File.exist?(@entrance)
-      STDERR.puts "You specified \"#{entrance}\" as the ENTRANCE. However, file #{@entrance} does not appear to exist." 
+      warn "You specified \"#{entrance}\" as the ENTRANCE. However, file #{@entrance} does not appear to exist."
       exit 1
     end
 
     if @options[:root]
       @root = File.expand_path(@options[:root])
       unless Dir.exist?(@root)
-        STDERR.puts "You specified \"#{@options[:root]}\" as the root of your application. However, directory #{@root} does not appear to exist." 
+        warn "You specified \"#{@options[:root]}\" as the root of your application. However, directory #{@root} does not appear to exist."
         exit 2
       end
     else
@@ -150,7 +150,7 @@ class Compiler
       log "-> Project root not supplied, #{@root} assumed."
     end
 
-    @root_gemfile_exists = (File.exists?(File.join(@root, 'Gemfile')))
+    @root_gemfile_exists = File.exist?(File.join(@root, 'Gemfile'))
     @memfs_entrance = mempath(@entrance)
   end
 
@@ -261,7 +261,7 @@ class Compiler
     @utils.mkdir_p(@work_dir)
     @utils.mkdir_p(@work_dir_inner)
     @utils.cp_r(@root, @work_dir_local) if @root
-    
+
     return unless @root_gemfile_exists
 
     @utils.chdir(@work_dir_local) do
@@ -294,7 +294,7 @@ class Compiler
       @utils.rm_f(thisdl)
     end
 
-    return unless Dir.exists?(@work_dir_local)
+    return unless Dir.exist?(@work_dir_local)
 
     @utils.chdir(@work_dir_local) do
       if Dir.exist?('.git')
@@ -311,12 +311,13 @@ class Compiler
       end
     end
 
-    if @options[:ignore_file].is_a?(Array)
-      @utils.chdir(@work_dir_local) do
-        Dir["{#{@options[:ignore_file].join(',')}}"].each do |ignored_file|
-          next unless File.exist?(ignored_file)
-          @utils.rm_rf(ignored_file)
-        end
+    return unless @options[:ignore_file].is_a?(Array)
+
+    @utils.chdir(@work_dir_local) do
+      Dir["{#{@options[:ignore_file].join(',')}}"].each do |ignored_file|
+        next unless File.exist?(ignored_file)
+
+        @utils.rm_rf(ignored_file)
       end
     end
   end
@@ -765,19 +766,19 @@ class Compiler
       }
     end
   end
-  
+
   def compile_pass1_env
     compile_env.merge({
-      'ENCLOSE_IO_RUBYC_1ST_PASS' => 'true',
-      'ENCLOSE_IO_RUBYC_2ND_PASS' => nil,
-    })
+                        'ENCLOSE_IO_RUBYC_1ST_PASS' => 'true',
+                        'ENCLOSE_IO_RUBYC_2ND_PASS' => nil
+                      })
   end
 
   def compile_pass2_env
     compile_env.merge({
-      'ENCLOSE_IO_RUBYC_1ST_PASS' => nil,
-      'ENCLOSE_IO_RUBYC_2ND_PASS' => 'true',
-    })
+                        'ENCLOSE_IO_RUBYC_1ST_PASS' => nil,
+                        'ENCLOSE_IO_RUBYC_2ND_PASS' => 'true'
+                      })
   end
 
   def local_toolchain_env
