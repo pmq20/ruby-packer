@@ -55,6 +55,7 @@ GEM
     zeitwerk (2.4.0)
 
 PLATFORMS
+  mswin64
   ruby
   x64-mingw32
 

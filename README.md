@@ -6,7 +6,7 @@
 [![macOS](https://github.com/pmq20/ruby-packer/workflows/macOS/badge.svg)](https://github.com/pmq20/ruby-packer/actions?query=workflow%3A"macOS")
 [![Linux](https://github.com/pmq20/ruby-packer/workflows/Linux/badge.svg)](https://github.com/pmq20/ruby-packer/actions?query=workflow%3A"Linux")
 
-> **NEWS (Jul 18th, 2020)**: Due to work, the project's original author [Minqi Pan](https://github.com/pmq20) is currently only available to maintain the project during his weekend. Also, we are attending to reported issues one by one, ordered by creation time descendingly.
+> **NEWS (Jul 25th, 2020)**: Due to work, the project's original author [Minqi Pan](https://github.com/pmq20) is currently only available to maintain the project during his weekend. Also, we are attending to reported issues one by one, ordered by creation time descendingly.
 
 > **NEWS (Jul 4th, 2020)**: We have decided to use GitHub Actions and GitHub Releases as the auto-packing and auto-updating web services. The Latest Build links below are automatically kept up to date with the latest code in `master`, as long as all the CI tests are passed.
 

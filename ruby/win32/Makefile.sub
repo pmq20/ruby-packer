@@ -1090,7 +1090,7 @@ miniruby$(EXEEXT):
 		@echo $(LIBS)
 		$(ECHO) linking $(@:\=/)
 		$(Q) $(PURIFY) $(CC) $(CFLAGS) $(MAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(LIBS) -Fe$@ \
-			..\zlib\zlib.lib \
+			..\zlib\zlib.lib enclose_io_memfs.res \
 			-link $(LDFLAGS)
 		@$(RM) miniruby.lib miniruby.exp
 		$(Q) miniruby.exe -v
@@ -1104,29 +1104,46 @@ ruby_static.exe:	$(MAINOBJ) $(LIBRUBY_SO) $(RUBY_INSTALL_NAME).res
 		$(ECHO) linking $(@:\=/)
 		$(Q) $(PURIFY) $(CC) $(CFLAGS) $(MAINOBJ) $(RUBY_INSTALL_NAME).res \
 			$(OUTFLAG)$@ $(LIBRUBY_A) $(LIBS) enc\*.obj enc\*.lib ext\extinit.obj \
-			ext\bigdecimal\bigdecimal.lib \
-			ext\cgi\escape\escape.lib \
-			ext\continuation\continuation.lib \
-			ext\coverage\coverage.lib \
-			ext\date\date_core.lib \
-			ext\fcntl\fcntl.lib \
-			ext\fiber\fiber.lib \
-			ext\io\console\console.lib \
-			ext\io\nonblock\nonblock.lib \
-			ext\io\wait\wait.lib \
-			ext\json\generator\generator.lib \
-			ext\json\parser\parser.lib \
-			ext\nkf\nkf.lib \
-			ext\objspace\objspace.lib \
-			ext\pathname\pathname.lib \
-			ext\psych\psych.lib \
-			ext\racc\cparse\cparse.lib \
-			ext\rbconfig\sizeof\sizeof.lib \
-			ext\sdbm\sdbm.lib \
-			ext\stringio\stringio.lib \
-			ext\strscan\strscan.lib \
-			ext\zlib\zlib.lib \
+			ext\bigdecimal\*.lib \
+			ext\cgi\*.lib ext\cgi\escape\*.lib \
+			ext\continuation\*.lib \
+			ext\coverage\*.lib \
+			ext\date\*.lib \
+			ext\dbm\*.lib \
+			ext\digest\*.lib ext\digest\bubblebabble\*.lib ext\digest\md5\*.lib ext\digest\rmd160\*.lib ext\digest\sha1\*.lib ext\digest\sha2\*.lib \
+			ext\etc\*.lib \
+			ext\fcntl\*.lib \
+			ext\fiber\*.lib \
+			ext\fiddle\*.lib ext\fiddle\libffi-3.2.1\.libs\*.lib \
+			ext\gdbm\*.lib \
+			ext\io\*.lib ext\io\console\*.lib ext\io\nonblock\*.lib ext\io\wait\*.lib \
+			ext\json\*.lib ext\json\generator\*.lib ext\json\parser\*.lib \
+			ext\monitor\*.lib \
+			ext\nkf\*.lib \
+			ext\objspace\*.lib \
+			ext\openssl\*.lib \
+			ext\pathname\*.lib \
+			ext\psych\*.lib \
+			ext\pty\*.lib \
+			ext\racc\*.lib ext\racc\cparse\*.lib \
+			ext\rbconfig\*.lib ext\rbconfig\sizeof\*.lib \
+			ext\readline\*.lib \
+			ext\ripper\*.lib \
+			ext\rubyvm\*.lib \
+			ext\sdbm\*.lib \
+			ext\socket\*.lib \
+			ext\stringio\*.lib \
+			ext\strscan\*.lib \
+			ext\syslog\*.lib \
+			ext\-test-\*.lib \
+			ext\win32\*.lib ext\win32\resolv\*.lib \
+			ext\win32ole\*.lib \
+			ext\zlib\*.lib \
 			..\zlib\zlib.lib \
+			..\local\lib\*.lib \
+			OleAut32.lib \
+			Crypt32.lib \
+			enclose_io_memfs.res \
 			-link $(LDFLAGS) $(XLDFLAGS)
 		$(Q) $(LDSHARED_0)
 		$(Q) $(LDSHARED_1)
@@ -1135,7 +1152,7 @@ ruby_static.exe:	$(MAINOBJ) $(LIBRUBY_SO) $(RUBY_INSTALL_NAME).res
 !if "$(PROGRAM)" != ""
 $(PROGRAM):	$(MAINOBJ) $(LIBRUBY_SO) $(RUBY_INSTALL_NAME).res
 		$(ECHO) linking $(@:\=/)
-		$(Q) $(PURIFY) $(CC) $(CFLAGS) $(MAINOBJ) $(EXTOBJS) enclose_io_unix.obj enclose_io_memfs.obj squash_fd.obj Shell32.lib $(RUBY_INSTALL_NAME).res \
+		$(Q) $(PURIFY) $(CC) $(CFLAGS) $(MAINOBJ) $(EXTOBJS) enclose_io_unix.obj enclose_io_memfs.res squash_fd.obj Shell32.lib $(RUBY_INSTALL_NAME).res \
 			$(OUTFLAG)$@ $(LIBRUBYARG) -link $(LDFLAGS) $(XLDFLAGS)
 		$(Q) $(LDSHARED_0)
 		$(Q) $(LDSHARED_1)
@@ -1145,7 +1162,7 @@ $(PROGRAM):	$(MAINOBJ) $(LIBRUBY_SO) $(RUBY_INSTALL_NAME).res
 !if "$(WPROGRAM)" != ""
 $(WPROGRAM):	$(MAINOBJ) $(WINMAINOBJ) $(LIBRUBY_SO) $(RUBYW_INSTALL_NAME).res
 		$(ECHO) linking $(@:\=/)
-		$(Q) $(PURIFY) $(CC) $(CFLAGS) $(MAINOBJ) enclose_io_unix.obj enclose_io_memfs.obj squash_fd.obj Shell32.lib $(WINMAINOBJ) \
+		$(Q) $(PURIFY) $(CC) $(CFLAGS) $(MAINOBJ) enclose_io_unix.obj enclose_io_memfs.res squash_fd.obj Shell32.lib $(WINMAINOBJ) \
 			$(RUBYW_INSTALL_NAME).res $(OUTFLAG)$@ $(LIBRUBYARG) \
 			-link $(LDFLAGS) $(XLDFLAGS) -subsystem:Windows
 		$(Q) $(LDSHARED_0)

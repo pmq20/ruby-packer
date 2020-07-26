@@ -106,7 +106,6 @@ COMMONOBJS    = autoupdate_autoupdate.$(OBJEXT) \
 		squash_table.$(OBJEXT) \
 		squash_traverse.$(OBJEXT) \
 		squash_util.$(OBJEXT) \
-		enclose_io_memfs.$(OBJEXT) \
 		enclose_io_unix.$(OBJEXT) \
 		enclose_io_win32.$(OBJEXT) \
 		array.$(OBJEXT) \
@@ -379,7 +378,7 @@ $(LIBRUBY_EXTS):
 
 $(STATIC_RUBY)$(EXEEXT): $(MAINOBJ) $(DLDOBJS) $(EXTOBJS) $(LIBRUBY_A)
 	$(Q)$(RM) $@
-	$(PURIFY) $(CC) $(MAINOBJ) $(DLDOBJS) $(LIBRUBY_A) $(MAINLIBS) $(EXTLIBS) $(LIBS) $(OUTFLAG)$@ $(LDFLAGS) $(XLDFLAGS)
+	$(PURIFY) $(CC) $(MAINOBJ) $(DLDOBJS) $(LIBRUBY_A) $(MAINLIBS) $(EXTLIBS) $(LIBS) $(OUTFLAG)$@ $(LDFLAGS) $(XLDFLAGS) enclose_io_memfs.$(OBJEXT)
 
 ruby.imp: $(COMMONOBJS)
 	$(Q){ \

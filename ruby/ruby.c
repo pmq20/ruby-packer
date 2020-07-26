@@ -54,6 +54,10 @@
 
 #include "mjit.h"
 
+// --------- [Enclose.IO Hack start] ---------
+#include "enclose_io.h"
+// --------- [Enclose.IO Hack end] ---------
+
 void Init_ruby_description(void);
 
 #ifndef HAVE_STDLIB_H
@@ -584,6 +588,9 @@ ruby_init_loadpath(void)
     VALUE load_path, archlibdir = 0;
     ID id_initial_load_path_mark;
     const char *paths = ruby_initial_load_paths;
+// --------- [Enclose.IO Hack start] ---------
+#ifndef ENCLOSE_IO_RUBYC_BUILD_PASS2
+// --------- [Enclose.IO Hack end] ---------
 #if defined LOAD_RELATIVE
 #if !defined ENABLE_MULTIARCH
 # define RUBY_ARCH_PATH ""
@@ -653,6 +660,16 @@ ruby_init_loadpath(void)
 #define RUBY_RELATIVE(path, len) rubylib_path_new((path), (len))
 #define PREFIX_PATH() RUBY_RELATIVE(ruby_exec_prefix, exec_prefix_len)
 #endif
+// --------- [Enclose.IO Hack start] ---------
+#else // ifndef ENCLOSE_IO_RUBYC_BUILD_PASS2
+#define PREFIX_PATH() rb_str_new("/__enclose_io_memfs__", 21)
+#ifdef _WIN32
+#define RUBY_RELATIVE(path, len) rb_str_buf_cat(rb_str_buf_cat(rb_str_buf_new(21+(len)), "/__enclose_io_memfs__", 21), (path), (len))
+#else // ifdef _WIN32
+#define RUBY_RELATIVE(path, len) rubylib_path_new((path), (len))
+#endif // ifdef _WIN32
+#endif // ifndef ENCLOSE_IO_RUBYC_BUILD_PASS2
+// --------- [Enclose.IO Hack end] ---------
     rb_gc_register_address(&ruby_prefix_path);
     ruby_prefix_path = PREFIX_PATH();
     OBJ_FREEZE_RAW(ruby_prefix_path);

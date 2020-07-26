@@ -1156,6 +1156,35 @@ EncloseIOCreateProcessW(
 	);
 }
 
+BOOL
+EncloseIOGetFileInformationByHandle(
+	HANDLE hFile,
+	LPBY_HANDLE_FILE_INFORMATION lpFileInformation
+)
+{
+	struct squash_file *sqf = squash_find_entry((void *)hFile);
+	struct stat st;
+	if (sqf) {
+		st = sqf->st;
+		lpFileInformation->dwFileAttributes = EncloseIOGetFileAttributesHelper(&st);
+		EncloseIOUnixtimeToFiletime(st.st_ctime, &lpFileInformation->ftCreationTime);
+		EncloseIOUnixtimeToFiletime(st.st_atime, &lpFileInformation->ftLastAccessTime);
+		EncloseIOUnixtimeToFiletime(st.st_mtime, &lpFileInformation->ftLastWriteTime);
+		lpFileInformation->dwVolumeSerialNumber = 0; // TODO
+		lpFileInformation->nFileSizeHigh = 0;
+		lpFileInformation->nFileSizeLow = st.st_size;
+		lpFileInformation->nNumberOfLinks = st.st_nlink;
+		lpFileInformation->nFileIndexHigh = 0;
+		lpFileInformation->nFileIndexLow = st.st_ino;
+		return 1;
+	} else {
+		return GetFileInformationByHandle(
+			hFile,
+			lpFileInformation
+		);
+	}
+}
+
 #ifndef RUBY_EXPORT
 NTSTATUS
 EncloseIOpNtQueryInformationFile(
@@ -1166,7 +1195,7 @@ EncloseIOpNtQueryInformationFile(
 	FILE_INFORMATION_CLASS FileInformationClass)
 {
 	struct squash_file *sqf = squash_find_entry((void *)FileHandle);
-        struct stat st;
+	struct stat st;
 	if (sqf) {
 		st = sqf->st;
 		IoStatusBlock->Status = STATUS_NOT_IMPLEMENTED;

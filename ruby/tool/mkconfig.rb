@@ -128,20 +128,16 @@ File.foreach "config.status" do |line|
     end
     v = "  CONFIG[\"#{name}\"] #{eq} #{val}\n"
 
+    # --------- [Enclose.IO Hack start] ---------
     if ENV['ENCLOSE_IO_RUBYC_2ND_PASS']
-      v_head_comp = "  CONFIG[\"prefix\"] #{eq} "
-      if v_head_comp == v[0...(v_head_comp.length)]
-        if win32
-          v = "#{v[0...(v_head_comp.length)]}CONFIG[\"RUBY_EXEC_PREFIX\"] = '/__enclose_io_memfs__'\n"
-        else
-          v = "#{v[0...(v_head_comp.length)]}'/__enclose_io_memfs__'\n"
-        end
-      end
-      v_head_comp = "  CONFIG[\"RUBY_EXEC_PREFIX\"] #{eq} "
-      if v_head_comp == v[0...(v_head_comp.length)]
-        v = "#{v[0...(v_head_comp.length)]}'/__enclose_io_memfs__'\n"
+      [
+        "  CONFIG[\"prefix\"] #{eq} ",
+        "  CONFIG[\"RUBY_EXEC_PREFIX\"] #{eq} "
+      ].each do |v_head_comp|
+        v = "#{v[0...(v_head_comp.length)]}'/__enclose_io_memfs__'\n" if v_head_comp == v[0...(v_head_comp.length)]
       end
     end
+    # --------- [Enclose.IO Hack end] ---------
 
     if fast[name]
       v_fast << v

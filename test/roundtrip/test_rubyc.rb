@@ -6,13 +6,13 @@ require 'open3'
 
 class TestRoundTrip < Minitest::Test
   def setup
-    @rubyc = File.expand_path '../../rubyc', __dir__
+    @rubyc = File.expand_path (Gem.win_platform? ? '../../rubyc.exe' : '../../rubyc'), __dir__
 
     assert File.exist?(@rubyc),
-           "could not find `rubyc` at #{@rubyc}, did you run `rake test:round-trip`?"
+           "Cannot find rubyc at #{@rubyc}, did you run `rake test:roundtrip`?"
 
     @env = {
-      'ENCLOSE_IO_USE_ORIGINAL_RUBY' => '1'
+      'ENCLOSE_IO_USE_ORIGINAL_RUBY' => 'true'
     }
   end
 
@@ -22,10 +22,10 @@ class TestRoundTrip < Minitest::Test
   def ruby(*args)
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
-        FileUtils.cp(@rubyc, "#{dir}/rubyc")
+        FileUtils.cp(@rubyc, (Gem.win_platform? ? "#{dir}/rubyc.exe" : "#{dir}/rubyc"))
 
         Bundler.with_unbundled_env do
-          Open3.popen3(@env, "#{dir}/rubyc", *args) do |stdin, stdout, stderr, wait_thr|
+          Open3.popen3(@env, (Gem.win_platform? ? "#{dir}/rubyc.exe" : "#{dir}/rubyc"), *args) do |stdin, stdout, stderr, wait_thr|
             stdin.close
 
             Thread.new do
@@ -69,10 +69,10 @@ class TestRoundTrip < Minitest::Test
   def rubyc(*args)
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
-        FileUtils.cp(@rubyc, "#{dir}/rubyc")
+        FileUtils.cp(@rubyc, (Gem.win_platform? ? "#{dir}/rubyc.exe" : "#{dir}/rubyc"))
 
         Bundler.with_unbundled_env do
-          Open3.popen3("#{dir}/rubyc", *args) do |stdin, stdout, stderr, wait_thr|
+          Open3.popen3((Gem.win_platform? ? "#{dir}/rubyc.exe" : "#{dir}/rubyc"), *args) do |stdin, stdout, stderr, wait_thr|
             stdin.close
 
             status = wait_thr.value
@@ -115,6 +115,6 @@ class TestRoundTrip < Minitest::Test
   end
 
   def test_enclosed_ruby
-    puts "TODO: RUN RUBY TEST FOR #{ENV['ENCLOSE_IO_RUBYC_TEST_ENCLOSED_RUBY'].inspect}"
+    # TODO: RUN RUBY TESTS
   end
 end

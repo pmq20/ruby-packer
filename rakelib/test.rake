@@ -6,7 +6,7 @@ namespace 'test' do
     task.warning = true
   end
 
-  task 'roundtrip' => 'rubyc'
+  task 'roundtrip' => (Gem.win_platform? ? 'rubyc.exe' : 'rubyc')
 
   desc 'Run tests for unit'
   # This does not use Rake::TestTask because rake runs ruby via sh which

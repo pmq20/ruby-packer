@@ -289,7 +289,7 @@ int enclose_io__exec(const char *path, char *const argv[])
 	ret = autoupdate_exepath(exec_path, &exec_path_len);
 	assert(0 == ret);
 
-	ret = setenv("ENCLOSE_IO_USE_ORIGINAL_RUBY", "1", 1);
+	ret = setenv("ENCLOSE_IO_USE_ORIGINAL_RUBY", "true", 1);
 	assert(0 == ret);
 
 	argc = 1;
@@ -878,6 +878,37 @@ EncloseIOGetCurrentDirectoryW(
 		);
 	}
 }
+
+DWORD
+EncloseIOGetFullPathNameW(
+	LPCWSTR lpFileName,
+	DWORD nBufferLength,
+	LPWSTR lpBuffer,
+	LPWSTR* lpFilePart
+)
+{
+	DWORD retval = 0;
+	
+	retval = GetFullPathNameW(
+		lpFileName,
+		nBufferLength,
+		lpBuffer,
+		lpFilePart
+	);
+
+	if (0 == retval || retval > nBufferLength) {
+		return retval;
+	}
+
+	if (0 == wcsncmp(lpBuffer + 1, L":\\__enclose_io_memfs__", 22)) {
+		assert(NULL == lpFilePart); // TODO
+		memmove(lpBuffer, lpBuffer + 2, (retval - 2) * sizeof(wchar_t));
+		return retval - 2;
+	}
+	
+	return retval;
+}
+
 #endif // _WIN32
 
 int enclose_io_stat(const char *path, struct stat *buf)

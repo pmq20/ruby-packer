@@ -44,7 +44,6 @@
 
 extern sqfs *enclose_io_fs;
 extern sqfs_path enclose_io_cwd;
-extern const uint8_t enclose_io_memfs[];
 
 #define ENCLOSE_IO_PP_NARG(...) \
     ENCLOSE_IO_PP_NARG_(__VA_ARGS__,ENCLOSE_IO_PP_RSEQ_N())
@@ -325,14 +324,27 @@ EncloseIOSetCurrentDirectoryW(
 	LPCWSTR lpPathName
 );
 
-
 DWORD
 EncloseIOGetCurrentDirectoryW(
 	DWORD nBufferLength,
 	LPWSTR lpBuffer
 );
 
-#else
+DWORD
+EncloseIOGetFullPathNameW(
+	LPCWSTR lpFileName,
+	DWORD nBufferLength,
+	LPWSTR lpBuffer,
+	LPWSTR* lpFilePart
+);
+
+BOOL
+EncloseIOGetFileInformationByHandle(
+	HANDLE hFile,
+	LPBY_HANDLE_FILE_INFORMATION lpFileInformation
+);
+
+#else // ifdef _WIN32
 int enclose_io_lstat(const char *path, struct stat *buf);
 ssize_t enclose_io_readlink(const char *path, char *buf, size_t bufsize);
 DIR * enclose_io_opendir(const char *filename);
@@ -353,6 +365,6 @@ int enclose_io_access(const char *path, int mode);
 int enclose_io_mkdir(const char *path, mode_t mode);
 int enclose_io_execv(const char *path, char *const argv[]);
 
-#endif // !_WIN32
+#endif // ifdef _WIN32
 
 #endif
