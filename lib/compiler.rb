@@ -166,7 +166,7 @@ class Compiler
     @options[:make_args] ||= "-j#{@utils.default_make_j_arg}" unless Gem.win_platform?
     @options[:output] ||= DEFAULT_NAME
     @options[:output] = File.expand_path(@options[:output])
-    @options[:output] += '.exe' if Gem.win_platform? && !(@options[:output].ends_with?('.exe'))
+    @options[:output] += '.exe' if Gem.win_platform? && !@options[:output].ends_with?('.exe')
     @options[:tmpdir] ||= File.expand_path('rubyc', Dir.tmpdir)
     @options[:tmpdir] = File.expand_path(@options[:tmpdir])
     @options[:openssl_dir] ||= '/usr/local/etc/openssl/'
@@ -430,7 +430,7 @@ class Compiler
         f.puts '#include "enclose_io_win32.h"'
         f.puts '#include "enclose_io_unix.h"'
         f.puts ''
-        f.puts "#define ENCLOSE_IO_RUBYC_BUILD_PASS2 1"
+        f.puts '#define ENCLOSE_IO_RUBYC_BUILD_PASS2 1'
         f.puts "#define ENCLOSE_IO_ENTRANCE #{@memfs_entrance.inspect}" if @entrance
         f.puts '#define ENCLOSE_IO_GEMFILE 1' if @root_gemfile_exists
         f.puts '#define ENCLOSE_IO_RAILS 1' if @enclose_io_rails

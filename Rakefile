@@ -11,7 +11,7 @@ task default: %w[test]
 rubyc_deps = FileList[File.expand_path('**/*', __dir__)] - [File.expand_path(((Gem.win_platform? ? 'rubyc.exe' : 'rubyc')), __dir__)]
 
 desc "build #{(Gem.win_platform? ? 'rubyc.exe' : 'rubyc')}"
-file (Gem.win_platform? ? 'rubyc.exe' : 'rubyc') => rubyc_deps do
+file((Gem.win_platform? ? 'rubyc.exe' : 'rubyc') => rubyc_deps) do
   warn "Rebuilding #{(Gem.win_platform? ? 'rubyc.exe' : 'rubyc')}..."
 
   # don't include rubyc in rubyc
