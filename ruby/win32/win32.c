@@ -7041,6 +7041,7 @@ rb_w32_read(int fd, void *buf, size_t size)
     }
 
 // --------- [Enclose.IO Hack start] ---------
+// TODO: https://github.com/pmq20/ruby-packer/issues/118
     if (SQUASH_VALID_VFD(fd) || (_osfile(fd) & FTEXT)) {
 // --------- [Enclose.IO Hack end] ---------
 	return _read(fd, buf, size);
