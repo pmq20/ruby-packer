@@ -56,11 +56,9 @@
 #include "id.h"
 #include "internal.h"
 #include "encindex.h"
-
 // --------- [Enclose.IO Hack start] ---------
 #include "enclose_io.h"
 // --------- [Enclose.IO Hack end] ---------
-
 #define isdirsep(x) ((x) == '/' || (x) == '\\')
 
 #if defined _MSC_VER && _MSC_VER <= 1200
@@ -851,11 +849,11 @@ static int w32_cmdvector(const WCHAR *, char ***, UINT, rb_encoding *);
 void
 rb_w32_sysinit(int *argc, char ***argv)
 {
+// --------- [Enclose.IO Hack start] ---------
     int new_argc;
     char **new_argv;
-    UINT cp;
     size_t i;
-
+// --------- [Enclose.IO Hack end] ---------
 #if RUBY_MSVCRT_VERSION >= 80
     static void set_pioinfo_extra(void);
 
@@ -873,28 +871,25 @@ rb_w32_sysinit(int *argc, char ***argv)
     //
     *argc = w32_cmdvector(GetCommandLineW(), argv, CP_UTF8, &OnigEncodingUTF_8);
 
-    // --------- [Enclose.IO Hack start] ---------
-    #ifdef ENCLOSE_IO_ENTRANCE
-    new_argc = *argc;
-    new_argv = *argv;
-    cp = CP_UTF8;
-    if (NULL == getenv("ENCLOSE_IO_USE_ORIGINAL_RUBY")) {
-        new_argv = (char **)malloc( (*argc + 1) * sizeof(char *));
-        assert(new_argv);
-        new_argv[0] = (*argv)[0];
-        new_argv[1] = ENCLOSE_IO_ENTRANCE;
-        for (i = 1; i < *argc; ++i) {
-               new_argv[2 + i - 1] = (*argv)[i];
-        }
-        new_argc = *argc + 1;
+// --------- [Enclose.IO Hack start] ---------
+#ifdef ENCLOSE_IO_ENTRANCE
+		new_argc = *argc;
+		new_argv = *argv;
+		if (NULL == getenv("ENCLOSE_IO_USE_ORIGINAL_RUBY")) {
+				new_argv = (char **)malloc( (*argc + 1) * sizeof(char *));
+				assert(new_argv);
+				new_argv[0] = (*argv)[0];
+				new_argv[1] = ENCLOSE_IO_ENTRANCE;
+				for (i = 1; i < *argc; ++i) {
+					new_argv[2 + i - 1] = (*argv)[i];
+				}
+				new_argc = *argc + 1;
 
-        *argc = new_argc;
-        *argv = new_argv;
-    }
-    #endif
-    // --------- [Enclose.IO Hack end] ---------
-
-
+				*argc = new_argc;
+				*argv = new_argv;
+		}
+#endif
+// --------- [Enclose.IO Hack end] ---------
     //
     // Now set up the correct time stuff
     //
@@ -1896,9 +1891,9 @@ w32_cmdvector(const WCHAR *cmd, char ***vec, UINT cp, rb_encoding *enc)
 	curr = (NtCmdLineElement *)calloc(sizeof(NtCmdLineElement), 1);
 	if (!curr) goto do_nothing;
 	curr->str = rb_w32_wstr_to_mbstr(cp, base, len, &curr->len);
-	if (curr->str && (curr->str = realloc(curr->str, curr->len + 1))) {
-	    curr->str[curr->len] = '\0';
-	}
+// --------- [Enclose.IO Hack start] ---------
+  if (curr->str && (curr->str = realloc(curr->str, curr->len + 1))) { curr->str[curr->len] = '\0'; }
+// --------- [Enclose.IO Hack end] ---------
 	curr->flags |= NTMALLOC;
 
 	if (globbing && (tail = cmdglob(curr, cmdtail, cp, enc))) {
@@ -6368,9 +6363,18 @@ w32_wopen(const WCHAR *file, int oflag, int pmode)
 
     /* allocate a C Runtime file handle */
     RUBY_CRITICAL {
+// --------- [Enclose.IO Hack start] ---------
+	if (enclose_io_if(file)) {
+		h = CreateFileW(file, access, FILE_SHARE_READ | FILE_SHARE_WRITE | share_delete, &sec, create, attr, NULL);
+		fd = *((int*)h);
+	} else {
+// --------- [Enclose.IO Hack end] ---------
 	h = CreateFile("NUL", 0, 0, NULL, OPEN_ALWAYS, 0, NULL);
 	fd = _open_osfhandle((intptr_t)h, 0);
 	CloseHandle(h);
+// --------- [Enclose.IO Hack start] ---------
+	}
+// --------- [Enclose.IO Hack end] ---------
     }
     if (fd == -1) {
 	errno = EMFILE;
@@ -6381,7 +6385,9 @@ w32_wopen(const WCHAR *file, int oflag, int pmode)
 	_set_osfhnd(fd, (intptr_t)INVALID_HANDLE_VALUE);
 	_set_osflags(fd, 0);
 
-	h = CreateFileW(file, access, FILE_SHARE_READ | FILE_SHARE_WRITE | share_delete, &sec, create, attr, NULL);
+// --------- [Enclose.IO Hack start] ---------
+	if (!enclose_io_if(file)) { h = CreateFileW(file, access, FILE_SHARE_READ | FILE_SHARE_WRITE | share_delete, &sec, create, attr, NULL); }
+// --------- [Enclose.IO Hack end] ---------
 	if (h == INVALID_HANDLE_VALUE) {
 	    DWORD e = GetLastError();
 	    if (e != ERROR_ACCESS_DENIED || !check_if_wdir(file))
@@ -7034,12 +7040,9 @@ rb_w32_read(int fd, void *buf, size_t size)
 	return -1;
     }
 
-    if (SQUASH_VALID_VFD(fd)) {
-	// TODO how about Binary Mode File I/O?
-	return _read(fd, buf, size);
-    }
-
-    if (_osfile(fd) & FTEXT) {
+// --------- [Enclose.IO Hack start] ---------
+    if (SQUASH_VALID_VFD(fd) || (_osfile(fd) & FTEXT)) {
+// --------- [Enclose.IO Hack end] ---------
 	return _read(fd, buf, size);
     }
 

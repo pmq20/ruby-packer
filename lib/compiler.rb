@@ -369,6 +369,7 @@ class Compiler
       @utils.run(compile_pass2_env, 'rc enclose_io_memfs.rc')
       @utils.run(compile_pass2_env,
                  'call', @ruby_configure,
+                 '--target=x64-mswin64',
                  "--prefix=#{@ruby_install2}",
                  '--enable-bundled-libyaml',\
                  '--enable-debug-env',
