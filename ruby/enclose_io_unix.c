@@ -791,6 +791,17 @@ char *enclose_io_getwd(char *buf)
 }
 
 #ifdef _WIN32
+short enclose_io_if_w(const wchar_t* path)
+{
+	if (enclose_io_cwd[0] && enclose_io_is_relative_w(path)) {
+		return 1;
+	} else if (enclose_io_is_path_w(path)) {
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
 BOOL
 EncloseIOSetCurrentDirectoryW(
 	LPCWSTR lpPathName

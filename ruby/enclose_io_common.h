@@ -160,6 +160,7 @@ off_t enclose_io_lseek(int fildes, off_t offset, int whence);
 
 #include "enclose_io_winapi.h"
 
+short enclose_io_if_w(const wchar_t* path);
 int enclose_io__open(const char *pathname, int flags);
 int enclose_io__wopen(const wchar_t *pathname, int flags, int mode);
 int enclose_io__wmkdir(wchar_t* pathname);

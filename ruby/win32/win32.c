@@ -852,6 +852,7 @@ rb_w32_sysinit(int *argc, char ***argv)
 // --------- [Enclose.IO Hack start] ---------
     int new_argc;
     char **new_argv;
+		UINT cp = CP_UTF8;
     size_t i;
 // --------- [Enclose.IO Hack end] ---------
 #if RUBY_MSVCRT_VERSION >= 80
@@ -6364,7 +6365,7 @@ w32_wopen(const WCHAR *file, int oflag, int pmode)
     /* allocate a C Runtime file handle */
     RUBY_CRITICAL {
 // --------- [Enclose.IO Hack start] ---------
-	if (enclose_io_if(file)) {
+	if (enclose_io_if_w(file)) {
 		h = CreateFileW(file, access, FILE_SHARE_READ | FILE_SHARE_WRITE | share_delete, &sec, create, attr, NULL);
 		fd = *((int*)h);
 	} else {
@@ -6386,7 +6387,7 @@ w32_wopen(const WCHAR *file, int oflag, int pmode)
 	_set_osflags(fd, 0);
 
 // --------- [Enclose.IO Hack start] ---------
-	if (!enclose_io_if(file)) { h = CreateFileW(file, access, FILE_SHARE_READ | FILE_SHARE_WRITE | share_delete, &sec, create, attr, NULL); }
+	if (!enclose_io_if_w(file)) { h = CreateFileW(file, access, FILE_SHARE_READ | FILE_SHARE_WRITE | share_delete, &sec, create, attr, NULL); }
 // --------- [Enclose.IO Hack end] ---------
 	if (h == INVALID_HANDLE_VALUE) {
 	    DWORD e = GetLastError();
