@@ -6257,7 +6257,10 @@ w32_wopen(const WCHAR *file, int oflag, int pmode)
 
     share_delete = oflag & O_SHARE_DELETE ? FILE_SHARE_DELETE : 0;
     oflag &= ~O_SHARE_DELETE;
-    if ((oflag & O_TEXT) || !(oflag & O_BINARY)) {
+// --------- [Enclose.IO Hack start] ---------
+// TODO: https://github.com/pmq20/ruby-packer/issues/118
+    if (enclose_io_if_w(file) || (oflag & O_TEXT) || !(oflag & O_BINARY)) {
+// --------- [Enclose.IO Hack end] ---------
 	fd = _wopen(file, oflag, pmode);
 	if (fd == -1) {
 	    switch (errno) {
@@ -6364,18 +6367,9 @@ w32_wopen(const WCHAR *file, int oflag, int pmode)
 
     /* allocate a C Runtime file handle */
     RUBY_CRITICAL {
-// --------- [Enclose.IO Hack start] ---------
-	if (enclose_io_if_w(file)) {
-		h = CreateFileW(file, access, FILE_SHARE_READ | FILE_SHARE_WRITE | share_delete, &sec, create, attr, NULL);
-		fd = *((int*)h);
-	} else {
-// --------- [Enclose.IO Hack end] ---------
 	h = CreateFile("NUL", 0, 0, NULL, OPEN_ALWAYS, 0, NULL);
 	fd = _open_osfhandle((intptr_t)h, 0);
 	CloseHandle(h);
-// --------- [Enclose.IO Hack start] ---------
-	}
-// --------- [Enclose.IO Hack end] ---------
     }
     if (fd == -1) {
 	errno = EMFILE;
@@ -6386,9 +6380,7 @@ w32_wopen(const WCHAR *file, int oflag, int pmode)
 	_set_osfhnd(fd, (intptr_t)INVALID_HANDLE_VALUE);
 	_set_osflags(fd, 0);
 
-// --------- [Enclose.IO Hack start] ---------
-	if (!enclose_io_if_w(file)) { h = CreateFileW(file, access, FILE_SHARE_READ | FILE_SHARE_WRITE | share_delete, &sec, create, attr, NULL); }
-// --------- [Enclose.IO Hack end] ---------
+	h = CreateFileW(file, access, FILE_SHARE_READ | FILE_SHARE_WRITE | share_delete, &sec, create, attr, NULL);
 	if (h == INVALID_HANDLE_VALUE) {
 	    DWORD e = GetLastError();
 	    if (e != ERROR_ACCESS_DENIED || !check_if_wdir(file))

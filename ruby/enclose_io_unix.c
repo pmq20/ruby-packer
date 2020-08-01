@@ -793,6 +793,10 @@ char *enclose_io_getwd(char *buf)
 #ifdef _WIN32
 short enclose_io_if_w(const wchar_t* path)
 {
+	if (L'N' == path[0] && L'U' == path[1] && L'L' == path[2] && 0 == path[3]) {
+		return 0;
+	}
+
 	if (enclose_io_cwd[0] && enclose_io_is_relative_w(path)) {
 		return 1;
 	} else if (enclose_io_is_path_w(path)) {
