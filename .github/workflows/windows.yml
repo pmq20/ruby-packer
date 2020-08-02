@@ -11,8 +11,6 @@ jobs:
         include:
           - os: windows-2019
             vs: 2019
-          - os: windows-2016
-            vs: 2017
       fail-fast: false
     runs-on: ${{ matrix.os }}
     env:
@@ -60,7 +58,7 @@ jobs:
           bundle exec rake
         shell: cmd
       - name: "[Enclose.IO] Create Windows Release"
-        if: ${{ github.ref == 'refs/heads/master' &&	matrix.os == 'windows-2016' && success() }}
+        if: ${{ github.ref == 'refs/heads/master' && success() }}
         id: create_windows_release
         uses: pmq20/create-release@delete-old-release
         env:
@@ -72,7 +70,7 @@ jobs:
           prerelease: false
           replace_old_tag: true
       - name: "[Enclose.IO] Upload Windows Release"
-        if: ${{ github.ref == 'refs/heads/master' &&	matrix.os == 'windows-2016' && success() }}
+        if: ${{ github.ref == 'refs/heads/master' && success() }}
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

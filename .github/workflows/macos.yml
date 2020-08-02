@@ -43,7 +43,7 @@ jobs:
       - name: "[Enclose.IO] Run tests"
         run: bundle exec rake
       - name: "[Enclose.IO] Create macOS Release"
-        if: ${{ github.ref == 'refs/heads/master' &&	matrix.os == 'macos-10.15' && success() }}
+        if: ${{ github.ref == 'refs/heads/master' && success() }}
         id: create_macos_release
         uses: pmq20/create-release@delete-old-release
         env:
@@ -55,7 +55,7 @@ jobs:
           prerelease: false
           replace_old_tag: true
       - name: "[Enclose.IO] Upload macOS Release"
-        if: ${{ github.ref == 'refs/heads/master' &&	matrix.os == 'macos-10.15' && success() }}
+        if: ${{ github.ref == 'refs/heads/master' && success() }}
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

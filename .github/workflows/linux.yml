@@ -8,7 +8,7 @@ jobs:
   make:
     strategy:
       matrix:
-        os: [ubuntu-20.04, ubuntu-18.04, ubuntu-16.04]
+        os: [ubuntu-20.04]
       fail-fast: false
     runs-on: ${{ matrix.os }}
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
@@ -38,7 +38,7 @@ jobs:
       - name: "[Enclose.IO] Run tests"
         run: bundle exec rake
       - name: "[Enclose.IO] Create Linux Release"
-        if: ${{ github.ref == 'refs/heads/master' &&	matrix.os == 'ubuntu-16.04' && success() }}
+        if: ${{ github.ref == 'refs/heads/master' && success() }}
         id: create_linux_release
         uses: pmq20/create-release@delete-old-release
         env:
@@ -50,7 +50,7 @@ jobs:
           prerelease: false
           replace_old_tag: true
       - name: "[Enclose.IO] Upload Linux Release"
-        if: ${{ github.ref == 'refs/heads/master' &&	matrix.os == 'ubuntu-16.04' && success() }}
+        if: ${{ github.ref == 'refs/heads/master' && success() }}
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
