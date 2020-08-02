@@ -236,7 +236,12 @@ class Compiler
   def build_pass1_unix
     @utils.chdir(@build_pass1) do
       @utils.cp('../dummy.squashfs', 'enclose_io_memfs.squashfs')
-      @utils.run(compile_pass1_env, 'ld -r -b binary -o enclose_io_memfs.o enclose_io_memfs.squashfs')
+      if RUBY_PLATFORM =~ /darwin/
+        squashfs_to_c 'enclose_io_memfs.squashfs', 'enclose_io_memfs.c'
+        @utils.run(compile_pass1_env, 'cc -c -o enclose_io_memfs.o enclose_io_memfs.c')
+      else
+        @utils.run(compile_pass1_env, 'ld -r -b binary -o enclose_io_memfs.o enclose_io_memfs.squashfs')
+      end
       @utils.run(compile_pass1_env,
                  @ruby_configure,
                  '-C',
@@ -344,7 +349,12 @@ class Compiler
   def build_pass2_unix
     @utils.chdir(@build_pass2) do
       @utils.cp('../enclose_io_memfs.squashfs', 'enclose_io_memfs.squashfs')
-      @utils.run(compile_pass1_env, 'ld -r -b binary -o enclose_io_memfs.o enclose_io_memfs.squashfs')
+      if RUBY_PLATFORM =~ /darwin/
+        squashfs_to_c 'enclose_io_memfs.squashfs', 'enclose_io_memfs.c'
+        @utils.run(compile_pass1_env, 'cc -c -o enclose_io_memfs.o enclose_io_memfs.c')
+      else
+        @utils.run(compile_pass1_env, 'ld -r -b binary -o enclose_io_memfs.o enclose_io_memfs.squashfs')
+      end
       @utils.run(compile_pass2_env,
                  @ruby_configure,
                  '-C',
@@ -814,5 +824,25 @@ class Compiler
       'ENCLOSE_IO_RUBYC_1ST_PASS' => 'true',
       'ENCLOSE_IO_RUBYC_2ND_PASS' => nil
     }
+  end
+
+  def squashfs_to_c(squashfs_file, c_file)
+    File.open squashfs_file, 'rb' do |squashfs|
+      File.open(c_file, 'w') do |c|
+        c.puts '#include <stdint.h>'
+        c.puts '#include <stddef.h>'
+        c.puts
+
+        byte = squashfs.read(1).bytes.first
+        c.puts "uint8_t _binary_enclose_io_memfs_squashfs_start[#{squashfs.size}] = { #{byte}"
+
+        while (chunk = squashfs.read(101))
+          c.puts ",#{chunk.bytes.join ','}"
+        end
+
+        c.puts '};'
+        c.puts
+      end
+    end
   end
 end

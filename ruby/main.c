@@ -42,8 +42,6 @@
 #else // ifdef _WIN32
 #include <unistd.h>
 extern uint8_t _binary_enclose_io_memfs_squashfs_start[];
-extern uint8_t _binary_enclose_io_memfs_squashfs_end;
-extern uint8_t _binary_enclose_io_memfs_squashfs_size;
 #endif // ifdef _WIN32
 extern SQUASH_OS_PATH mkdir_workdir;
 extern char *enclose_io_mkdir_scope;

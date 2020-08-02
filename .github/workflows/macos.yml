@@ -40,7 +40,6 @@ jobs:
         run: bundle install
       - name: "[Enclose.IO] Run rubocop"
         run: bundle exec rubocop
-      - uses: mxschmitt/action-tmate@v2
       - name: "[Enclose.IO] Run tests"
         run: bundle exec rake
       - name: "[Enclose.IO] Create macOS Release"
