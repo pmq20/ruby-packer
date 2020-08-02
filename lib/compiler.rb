@@ -668,13 +668,16 @@ class Compiler
       Dir['**/*.m4'].each do |x|
         File.utime(Time.at(0), Time.at(0), x)
       end
-      @utils.run(compile_env,
+      # ** Regarding -P **
+      # Ncurses fails to build with gcc-5.2.1 in OpenSuSE Leap
+      # https://trac.sagemath.org/ticket/19762
+      @utils.run(compile_env.merge({ 'CPPFLAGS' => '-P' }),
                  './configure',
                  '--without-shared',
                  '--without-cxx-shared',
                  "--prefix=#{@local_build}")
-      @utils.run(compile_env, "make #{@options[:make_args]}")
-      @utils.run(compile_env, 'make install.libs')
+      @utils.run(compile_env.merge({ 'CPPFLAGS' => '-P' }), "make #{@options[:make_args]}")
+      @utils.run(compile_env.merge({ 'CPPFLAGS' => '-P' }), 'make install.libs')
     end
   end
 
