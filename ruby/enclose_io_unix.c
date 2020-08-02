@@ -899,13 +899,38 @@ EncloseIOGetFullPathNameW(
 )
 {
 	DWORD retval = 0;
-	
-	retval = GetFullPathNameW(
-		lpFileName,
-		nBufferLength,
-		lpBuffer,
-		lpFilePart
-	);
+
+	if (enclose_io_cwd[0] && enclose_io_is_relative_w(lpFileName)) {
+		sqfs_path enclose_io_expanded;
+		size_t enclose_io_cwd_len;
+		size_t memcpy_len;
+		sqfs_path enclose_io_converted_storage;
+		char *enclose_io_converted;
+		char *enclose_io_i;
+		size_t enclose_io_converted_length;
+
+		wchar_t enclose_io_expanded_w[SQUASHFS_PATH_LEN + 1];
+
+		W_ENCLOSE_IO_PATH_CONVERT(lpFileName);
+		ENCLOSE_IO_GEN_EXPANDED_NAME(enclose_io_converted);
+
+		mbstowcs(enclose_io_expanded_w, enclose_io_expanded, SQUASHFS_PATH_LEN);
+		enclose_io_expanded_w[SQUASHFS_PATH_LEN] = 0;
+
+		retval = GetFullPathNameW(
+			enclose_io_expanded_w,
+			nBufferLength,
+			lpBuffer,
+			lpFilePart
+		);
+	} else {
+		retval = GetFullPathNameW(
+			lpFileName,
+			nBufferLength,
+			lpBuffer,
+			lpFilePart
+		);
+	}
 
 	if (0 == retval || retval > nBufferLength) {
 		return retval;

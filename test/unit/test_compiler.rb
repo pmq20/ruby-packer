@@ -24,7 +24,7 @@ class TestCompiler < Minitest::Test
     expected_output = File.expand_path(Compiler::DEFAULT_NAME, @source_root)
 
     options = @compiler.options
-    assert options.delete(:make_args) =~ /^-j\d+$/
+    assert options.delete(:make_args) =~ /^-j\d+$/ unless Gem.win_platform?
     assert_equal expected_output, options.delete(:output)
     assert_match 'rubyc',         options.delete(:tmpdir)
   end
