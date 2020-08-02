@@ -30,15 +30,13 @@ It takes less than 5 minutes to compile any project with Ruby Packer.
 
 You won't need to modify a single line of code in your application, no matter how you developed it as long as it works in plain Ruby!
 
-> **NEWS (Aug 1st, 2020)**: We have decided to use GitHub Actions and GitHub Releases as the auto-packing and auto-updating web services. The Latest Build links below are automatically kept up to date with the latest code in `master`, as long as all the CI tests are passed. However, currently the following latest builds might be broken due to issues [#109](https://github.com/pmq20/ruby-packer/issues/109). Please use the old stable releases at the moment: http://enclose.io/rubyc
-
 |               | Arch. |                               Latest Build                                    |
 |:-------------:|:-----:|-------------------------------------------------------------------------------|
 |  **Windows**  |  x64  | https://github.com/pmq20/ruby-packer/releases/download/windows-x64/rubyc.exe  |
 |   **macOS**   |  x64  | https://github.com/pmq20/ruby-packer/releases/download/darwin-x64/rubyc       |
 |   **Linux**   |  x64  | https://github.com/pmq20/ruby-packer/releases/download/linux-x64/rubyc        |
 
-Old releases: http://enclose.io/rubyc
+Old stable releases: http://enclose.io/rubyc
 
 ### ![win](resource/win_med.png) Install on Windows
 
