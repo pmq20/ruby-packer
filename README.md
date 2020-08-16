@@ -1,6 +1,6 @@
 # Ruby Packer
 
-https://enclose.io/rubyc
+http://enclose.io/rubyc
 
 *Packing your Ruby application into a single executable.*
 
