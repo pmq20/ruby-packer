@@ -6,7 +6,7 @@
 # For full terms see the included LICENSE file
 
 class Compiler
-  VERSION = '2.7.1a' # TODO: Display the build time as part of the version string #108
+  VERSION = '2.7.1.dev'
   PRJ_ROOT = File.expand_path('../..', __dir__)
   VENDOR_DIR = File.expand_path('vendor', PRJ_ROOT)
   MEMFS = '/__enclose_io_memfs__'

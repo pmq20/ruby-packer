@@ -1,12 +1,14 @@
 # Ruby Packer
 
+https://enclose.io/rubyc
+
 *Packing your Ruby application into a single executable.*
 
 [![Windows](https://github.com/pmq20/ruby-packer/workflows/Windows/badge.svg)](https://github.com/pmq20/ruby-packer/actions?query=workflow%3A"Windows")
 [![macOS](https://github.com/pmq20/ruby-packer/workflows/macOS/badge.svg)](https://github.com/pmq20/ruby-packer/actions?query=workflow%3A"macOS")
 [![Linux](https://github.com/pmq20/ruby-packer/workflows/Linux/badge.svg)](https://github.com/pmq20/ruby-packer/actions?query=workflow%3A"Linux")
 
-> **NEWS (Aug 1st, 2020)**: Due to work, the original author [Minqi Pan](https://github.com/pmq20) is currently only available to maintain the project during his weekend. Also, we are attending to reported issues one by one, ordered by creation time descendingly.
+> **NEWS (Aug 15, 2020)**: Due to work, the original author [Minqi Pan](https://github.com/pmq20) is currently only available to maintain the project during his weekend. Also, we are attending to reported issues one by one, ordered by creation time descendingly.
 
 ## Features
 

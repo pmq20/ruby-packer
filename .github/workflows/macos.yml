@@ -13,25 +13,19 @@ jobs:
     runs-on: ${{ matrix.os }}
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
     steps:
-      - name: Disable Firewall
-        run: |
-          sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
-          sudo /usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate
       - uses: actions/checkout@v2
-      - name: Install libraries
+      - name: "[Enclose.IO] Install dependencies"
         run: |
           export WAITS='5 60'
           ruby/tool/travis_retry.sh brew upgrade
-          ruby/tool/travis_retry.sh brew install gdbm gmp libffi openssl@1.1 zlib autoconf automake libtool readline
-      - name: "[Enclose.IO] Install libraries"
+          ruby/tool/travis_retry.sh brew install squashfs
+      - name: "[Enclose.IO] Check dependencies"
         run: |
           sw_vers
           uname -a
           uname -p
           uname -m
           sysctl -n machdep.cpu.brand_string
-          export WAITS='5 60'
-          ruby/tool/travis_retry.sh brew install squashfs
           which mksquashfs
           mksquashfs -version
       - name: "[Enclose.IO] Set up Ruby"

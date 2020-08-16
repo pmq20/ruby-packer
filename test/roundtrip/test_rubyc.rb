@@ -107,7 +107,7 @@ class TestRoundTrip < Minitest::Test
   def test_ruby_version
     out_itself, = rubyc '--version'
     out, = rubyc '--ruby-version'
-    assert_match out_itself.strip[0..-2], out.strip, 'incorrect ruby version'
+    assert_match out_itself.strip.split('.')[0..-2].join('.'), out.strip, 'incorrect ruby version'
   end
 
   def test_unit_tests

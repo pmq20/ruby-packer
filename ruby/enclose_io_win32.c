@@ -741,6 +741,7 @@ EncloseIOFindFirstFileHelper(
         char *parent = incoming + strlen(incoming);
         SQUASH_DIR *dirp;
         struct SQUASH_DIRENT *mydirent;
+				struct SQUASH_DIRENT dummy_dirent;
         char *current_path_tail;
         char *current_path;
         size_t mbstowcs_size;
@@ -769,7 +770,22 @@ EncloseIOFindFirstFileHelper(
         do {
         	mydirent = squash_readdir(dirp);
                 if (NULL == mydirent) {
-                        break;
+									// try to determine
+									// either this dir is empty
+									// or the dir is not empty and we run out of possible matches
+									if (dirp->actual_nr == 0) {
+										// this dir is empty
+										// so just return a "." to match the original Windows behavior
+										current_path_tail[0] = '.';
+										current_path_tail[1] = 0; // we are sure that this will make true==PathMatchSpecA(current_path, dup_incoming)
+										dummy_dirent.d_namlen = 1;
+										dummy_dirent.d_ino = dirp->node.base.inode_number;
+										dummy_dirent.d_name[0] = '.';
+										dummy_dirent.d_name[1] = 0;
+										dummy_dirent.d_type = DT_DIR;
+										mydirent = &dummy_dirent;
+									}
+									break;
                 }
                 memcpy(current_path_tail, mydirent->d_name, strlen(mydirent->d_name) + 1);
         } while (!PathMatchSpecA(current_path, dup_incoming));
