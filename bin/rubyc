@@ -72,7 +72,7 @@ OptionParser.new do |opts|
     options[:keep_tmpdir] = true
   end
 
-  opts.on('--openssl-dir', 'The path to openssl') do |dir|
+  opts.on('--openssl-dir=DIR', 'The path to openssl') do |dir|
     options[:openssl_dir] = dir
   end
 
