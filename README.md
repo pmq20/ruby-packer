@@ -1,14 +1,12 @@
 # Ruby Packer
 
-http://enclose.io/rubyc
+https://enclose.io/rubyc
 
 *Packing your Ruby application into a single executable.*
 
 [![Windows](https://github.com/pmq20/ruby-packer/workflows/Windows/badge.svg)](https://github.com/pmq20/ruby-packer/actions?query=workflow%3A"Windows")
 [![macOS](https://github.com/pmq20/ruby-packer/workflows/macOS/badge.svg)](https://github.com/pmq20/ruby-packer/actions?query=workflow%3A"macOS")
 [![Linux](https://github.com/pmq20/ruby-packer/workflows/Linux/badge.svg)](https://github.com/pmq20/ruby-packer/actions?query=workflow%3A"Linux")
-
-> **NEWS (Aug 15, 2020)**: Due to work, the original author [Minqi Pan](https://github.com/pmq20) is currently only available to maintain the project during his weekend. Also, we are attending to reported issues one by one, ordered by creation time descendingly.
 
 ## Features
 
@@ -37,8 +35,6 @@ You won't need to modify a single line of code in your application, no matter ho
 |  **Windows**  |  x64  | https://github.com/pmq20/ruby-packer/releases/download/windows-x64/rubyc.exe  |
 |   **macOS**   |  x64  | https://github.com/pmq20/ruby-packer/releases/download/darwin-x64/rubyc       |
 |   **Linux**   |  x64  | https://github.com/pmq20/ruby-packer/releases/download/linux-x64/rubyc        |
-
-Old stable releases: http://enclose.io/rubyc
 
 ### ![win](resource/win_med.png) Install on Windows
 

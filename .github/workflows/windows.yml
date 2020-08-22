@@ -15,7 +15,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       ENCLOSE_IO_RUBYC_ADDTIONAL_ARGS: --tmpdir=C:\rubyc_tmp
-    if: "!contains(github.event.head_commit.message, '[ci skip]')"
     steps:
       - uses: ilammy/setup-nasm@v1
       - uses: actions/checkout@v2
@@ -35,7 +34,6 @@ jobs:
       - name: "[Enclose.IO] Inspect Windows Environment"
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          set YACC=win_bison
           echo on
           wmic OS get OSArchitecture
           echo %PROCESSOR_ARCHITECTURE%
@@ -51,7 +49,7 @@ jobs:
           where bundle
           bundle -v
         shell: cmd
-      - name: "[Enclose.IO] Run tests"
+      - name: "[Enclose.IO] Rake"
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           mkdir C:\rubyc_tmp
