@@ -31,7 +31,7 @@ class TestRoundTrip < Minitest::Test
             Thread.new do
               until (raw_line = stdout.gets).nil?
                 parsed_line = Hash[timestamp: Time.now, line: raw_line.to_s]
-                STDOUT.puts "rubyc's ruby STDOUT: #{parsed_line}"
+                $stdout.puts "rubyc's ruby STDOUT: #{parsed_line}"
               end
             end
 

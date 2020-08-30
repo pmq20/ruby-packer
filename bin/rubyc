@@ -124,9 +124,9 @@ OptionParser.new do |opts|
   end
 
   opts.on('-h', '--help', 'Prints this help and exit') do
-    usage.call(STDOUT)
-    STDOUT.puts
-    STDOUT.puts EXAMPLES
+    usage.call($stdout)
+    $stdout.puts
+    $stdout.puts EXAMPLES
     exit 0
   end
 

@@ -12,7 +12,7 @@ namespace 'test' do
   # This does not use Rake::TestTask because rake runs ruby via sh which
   # and can't determine the correct way to run ruby from inside rubyc
   task 'unit' do
-    require_relative '../test/unit/test_compiler.rb'
+    require_relative '../test/unit/test_compiler'
     Minitest.autorun
   end
 end

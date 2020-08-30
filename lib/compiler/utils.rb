@@ -77,9 +77,9 @@ class Compiler
       status
     end
 
-    def chdir(path)
+    def chdir(path, &block)
       warn "-> cd #{path}" unless @options[:quiet]
-      Dir.chdir(path) { yield }
+      Dir.chdir(path, &block)
       warn "-> cd #{Dir.pwd}" unless @options[:quiet]
     end
 

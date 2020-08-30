@@ -72,8 +72,7 @@ class Compiler
     end
   end
 
-  attr_reader :entrance
-  attr_reader :options
+  attr_reader :entrance, :options
 
   DEFAULT_NAME =
     if Gem.win_platform?
@@ -519,7 +518,7 @@ class Compiler
     warn message
   end
 
-  def stuff(library)
+  def stuff(library, &block)
     source = File.join PRJ_ROOT, 'vendor', library
     target = File.join @options[:tmpdir], library
 
@@ -530,9 +529,7 @@ class Compiler
     log "=> Stuffing #{library}..."
 
     @utils.capture_run_io "stuff_#{library}" do
-      @utils.chdir(target) do
-        yield
-      end
+      @utils.chdir(target, &block)
     end
 
     log "=> Stuffed #{library}"
