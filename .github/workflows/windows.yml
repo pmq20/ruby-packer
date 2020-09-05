@@ -9,8 +9,8 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: windows-2019
-            vs: 2019
+          - os: windows-2016
+            vs: 2017
       fail-fast: false
     runs-on: ${{ matrix.os }}
     env:
