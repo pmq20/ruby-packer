@@ -5,7 +5,7 @@ https://enclose.io/rubyc
 *Packing your Ruby application into a single executable.*
 
 [![Windows](https://github.com/pmq20/ruby-packer/workflows/Windows/badge.svg)](https://github.com/pmq20/ruby-packer/actions?query=workflow%3A"Windows")
-[![macOS](https://travis-ci.org/pmq20/ruby-packer.svg?branch=master)](https://travis-ci.org/pmq20/ruby-packer)
+[![macOS](https://github.com/pmq20/ruby-packer/workflows/macOS/badge.svg)](https://github.com/pmq20/ruby-packer/actions?query=workflow%3A"macOS")
 [![Linux](https://github.com/pmq20/ruby-packer/workflows/Linux/badge.svg)](https://github.com/pmq20/ruby-packer/actions?query=workflow%3A"Linux")
 
 ## Features
