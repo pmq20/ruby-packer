@@ -42,6 +42,8 @@ Whenever the `master` branch CI succeeded, a Ruby Packer pre-release binary woul
 
 ### Stable Releases
 
+For the list of all previous stable releases, see https://enclose.io/rubyc
+
 Here is the latest stable Ruby Packer release:
 
 |    OS     | Arch. |                                              Executable                                                      |
@@ -49,8 +51,6 @@ Here is the latest stable Ruby Packer release:
 |  Windows  |  x64  | https://gw.alipayobjects.com/os/rmsportal/WxwlPrUTTReYNVVxJMtR.zip                                           |
 |   macOS   |  x64  | https://gw.alipayobjects.com/os/enclose-prod/b812fa0f-d52b-44f1-8233-65ab8707cf1f/rubyc-v0.4.0-darwin-x64.gz |
 |   Linux   |  x64  | https://gw.alipayobjects.com/os/enclose-prod/1fd23e6b-d48f-4ed0-94dd-f0f539960253/rubyc-v0.4.0-linux-x64.gz  |
-
-For a list of all previous stable releases, see https://enclose.io/rubyc
 
 ## Install
 
