@@ -1,6 +1,6 @@
 # Ruby Packer
 
-https://enclose.io/rubyc
+https://enclose.io/
 
 *Packing your Ruby application into a single executable.*
 
@@ -9,6 +9,10 @@ https://enclose.io/rubyc
 [![Linux](https://github.com/pmq20/ruby-packer/workflows/Linux/badge.svg)](https://github.com/pmq20/ruby-packer/actions?query=workflow%3A"Linux")
 
 ## Features
+
+It takes less than 5 minutes to compile any project with Ruby Packer.
+
+You won't need to modify a single line of code in your application, no matter how you developed it as long as it works in plain Ruby!
 
 - Works on ![win](resource/win_sm.png) Windows, ![macOS](resource/apple_sm.png) macOS and ![linux](resource/linux_sm.png) Linux
 - Windows is supported via the native Windows API; there are no MSYS2/MinGW/Cygwin dependencies
@@ -24,17 +28,31 @@ https://enclose.io/rubyc
 - Some gems that use C extensions that use libc IO to load files from your Rails application will not work with rubyc.  Notably, [bootsnap will not work with rubyc](https://github.com/pmq20/ruby-packer/issues/30#issuecomment-387893082)
 - On macOS and Linux, DTrace is currently disabled, see https://github.com/pmq20/ruby-packer/issues/114
 
-## Download and Install
+## Download
 
-It takes less than 5 minutes to compile any project with Ruby Packer.
+### Unstable Pre-release
 
-You won't need to modify a single line of code in your application, no matter how you developed it as long as it works in plain Ruby!
+Whenever the `master` branch CI succeeded, a Ruby Packer pre-release binary would be automatically generated. Here is the latest unstable pre-release build:
 
-|               | Arch. |                               Latest Build                                    |
-|:-------------:|:-----:|-------------------------------------------------------------------------------|
-|  **Windows**  |  x64  | https://github.com/pmq20/ruby-packer/releases/download/windows-x64/rubyc.exe  |
-|   **macOS**   |  x64  | https://github.com/pmq20/ruby-packer/releases/download/darwin-x64/rubyc       |
-|   **Linux**   |  x64  | https://github.com/pmq20/ruby-packer/releases/download/linux-x64/rubyc        |
+|    OS     | Arch. |                               Executable                                      |
+|:---------:|:-----:|-------------------------------------------------------------------------------|
+|  Windows  |  x64  | https://github.com/pmq20/ruby-packer/releases/download/windows-x64/rubyc.exe  |
+|   macOS   |  x64  | https://github.com/pmq20/ruby-packer/releases/download/darwin-x64/rubyc       |
+|   Linux   |  x64  | https://github.com/pmq20/ruby-packer/releases/download/linux-x64/rubyc        |
+
+### Stable Releases
+
+Here is the latest stable Ruby Packer release:
+
+|    OS     | Arch. |                                              Executable                                                      |
+|:---------:|:-----:|--------------------------------------------------------------------------------------------------------------|
+|  Windows  |  x64  | https://gw.alipayobjects.com/os/rmsportal/WxwlPrUTTReYNVVxJMtR.zip                                           |
+|   macOS   |  x64  | https://gw.alipayobjects.com/os/enclose-prod/b812fa0f-d52b-44f1-8233-65ab8707cf1f/rubyc-v0.4.0-darwin-x64.gz |
+|   Linux   |  x64  | https://gw.alipayobjects.com/os/enclose-prod/1fd23e6b-d48f-4ed0-94dd-f0f539960253/rubyc-v0.4.0-linux-x64.gz  |
+
+For a list of all previous stable releases, see https://enclose.io/rubyc
+
+## Install
 
 ### ![win](resource/win_med.png) Install on Windows
 
@@ -46,8 +64,8 @@ First install the prerequisites:
 * [Perl](https://www.perl.org/): you might want to install it using [Strawberry Perl for Windows](http://strawberryperl.com/).
 * [Netwide Assembler](https://www.nasm.us): please make sure `nasm` works from your command line.
 
-Then download [rubyc.exe](https://github.com/pmq20/ruby-packer/releases/download/windows-x64/rubyc.exe).
-Optionally put it under `C:\Windows` or any other directory that is part of `PATH`.
+Then download `rubyc.exe` from either [Unstable Pre-release](#unstable-pre-release) or [Stable Releases](#stable-releases).
+Optionally, put it under `C:\Windows` or any other `PATH` directories.
 Open Visual Studio's "x64 Native Tools Command Prompt" and execute `rubyc --help` therein.
 
 ### ![macOS](resource/apple_med.png) Install on macOS
@@ -61,11 +79,8 @@ First install the prerequisites:
   * This step will install `gcc` and the related toolchain containing `make`
 * [Ruby](https://www.ruby-lang.org/)
 
-Then,
-
-    curl -OL https://github.com/pmq20/ruby-packer/releases/download/darwin-x64/rubyc
-    chmod +x rubyc
-    ./rubyc --help
+Then download `rubyc` from either [Unstable Pre-release](#unstable-pre-release) or [Stable Releases](#stable-releases).
+Run `chmod +x` to give it execution permissions and execute `./rubyc --help`.
 
 ### ![linux](resource/linux_med.png) Install on Linux
 
@@ -78,11 +93,8 @@ First install the prerequisites:
 * GNU Make
 * [Ruby](https://www.ruby-lang.org/)
 
-Then,
-
-    curl -OL https://github.com/pmq20/ruby-packer/releases/download/linux-x64/rubyc
-    chmod +x rubyc
-    ./rubyc --help
+Then download `rubyc` from either [Unstable Pre-release](#unstable-pre-release) or [Stable Releases](#stable-releases).
+Run `chmod +x` to give it execution permissions and execute `./rubyc --help`.
 
 ## Usage
 
