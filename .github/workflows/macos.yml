@@ -44,7 +44,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: darwin-x64
-          release_name: Latest macOS Build
+          release_name: Latest macOS Pre-release
           draft: false
           prerelease: false
           replace_old_tag: true

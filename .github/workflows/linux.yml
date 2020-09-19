@@ -44,7 +44,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: linux-x64
-          release_name: Latest Linux Build
+          release_name: Latest Linux Pre-release
           draft: false
           prerelease: false
           replace_old_tag: true
