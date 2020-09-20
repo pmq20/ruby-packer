@@ -67,7 +67,7 @@ jobs:
           tag_name: windows-x64
           release_name: Latest Windows Pre-release
           draft: false
-          prerelease: false
+          prerelease: true
           replace_old_tag: true
       - name: "[Enclose.IO] Upload Windows Release"
         if: ${{ github.ref == 'refs/heads/master' && success() }}

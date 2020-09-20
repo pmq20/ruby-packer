@@ -133,7 +133,6 @@ class Compiler
     @work_dir_dummy = File.join(@options[:tmpdir], 'rubyc_work_dir_dummy')
     @work_dir_dummy_squashfs = File.join(@options[:tmpdir], 'dummy.squashfs')
     @build_pass2 = File.join(@options[:tmpdir], 'build_pass2')
-    @ruby_install2 = File.join(@options[:tmpdir], 'ruby_install2')
   end
 
   def init_entrance(entrance)
@@ -201,6 +200,7 @@ class Compiler
     patch_win32_makefile_sub if Gem.win_platform?
     prepare_work_dir_dummy_squashfs unless File.exist?(@work_dir_dummy_squashfs)
     build_pass1 unless Dir.exist?(@ruby_install)
+
     prepare_work_dir unless Dir.exist?(@work_dir)
     ext_setup
     prepare_work_dir_squashfs unless File.exist?(@work_dir_squashfs)
@@ -357,7 +357,6 @@ class Compiler
       @utils.run(compile_pass2_env,
                  @ruby_configure,
                  '-C',
-                 '--prefix', @ruby_install2,
                  "--with-baseruby=#{File.join(@ruby_install_bin, 'ruby')}",
                  '--enable-bundled-libyaml',
                  '--without-gmp',
@@ -379,7 +378,6 @@ class Compiler
       @utils.run(compile_pass2_env,
                  'call', @ruby_configure,
                  '--target=x64-mswin64',
-                 "--prefix=#{@ruby_install2}",
                  '--enable-bundled-libyaml',\
                  '--enable-debug-env',
                  '--disable-install-doc',
