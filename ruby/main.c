@@ -35,7 +35,6 @@
 
 // --------- [Enclose.IO Hack start] ---------
 #include "enclose_io.h"
-#include "autoupdate.h"
 #ifdef _WIN32
 #include <direct.h>
 #include <windows.h>
@@ -52,7 +51,6 @@ main(int argc, char **argv)
 {
 // --------- [Enclose.IO Hack start] ---------
 	const uint8_t *enclose_io_memfs = NULL;
-	int autoupdate_result;
 	int ret;
 	sqfs_err enclose_io_ret;
 #ifdef _WIN32
@@ -66,18 +64,6 @@ main(int argc, char **argv)
 	size_t i;
 	size_t total_argv_size;
 #endif // ifdef _WIN32
-
-#if ENCLOSE_IO_AUTO_UPDATE
-	autoupdate_result = autoupdate(
-		argc,
-		argv,
-		ENCLOSE_IO_AUTO_UPDATE_URL_Host,
-		ENCLOSE_IO_AUTO_UPDATE_URL_Port,
-		ENCLOSE_IO_AUTO_UPDATE_URL_Path,
-		ENCLOSE_IO_AUTO_UPDATE_BASE,
-		0
-	);
-#endif
 
 #ifdef _WIN32
 	myResource = FindResource(NULL, MAKEINTRESOURCE(101), RT_RCDATA);

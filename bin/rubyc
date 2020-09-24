@@ -84,14 +84,6 @@ OptionParser.new do |opts|
     options[:nmake_args] = args
   end
 
-  opts.on('--auto-update-url=URL', 'Enables auto-update and specifies the URL to get the latest version') do |url|
-    options[:auto_update_url] = url
-  end
-
-  opts.on('--auto-update-base=STRING', 'Enables auto-update and specifies the base version string') do |string|
-    options[:auto_update_base] = string
-  end
-
   opts.on('-i', '--ignore-file=STRING', 'Ignore file(s) from build') do |string|
     if options[:ignore_file].is_a?(Array)
       options[:ignore_file] << string

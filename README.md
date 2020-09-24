@@ -18,7 +18,6 @@ You won't need to modify a single line of code in your application, no matter ho
 - Windows is supported via the native Windows API; there are no MSYS2/MinGW/Cygwin dependencies
 - Creates a binary distribution of your Ruby and/or Rails application
 - Supports natively any form of `require` and `load`, including dynamic ones (e.g. `load(my_path + '/x.rb')`)
-- Features zero-config auto-update capabilities to make your packed project to stay up to date
 - Ruby Packer is written in Ruby and is packed and distributed using Ruby Packer itself
 - Native C extensions are fully supported
 - Open Source, MIT Licensed
@@ -110,8 +109,6 @@ Run `chmod +x` to give it execution permissions and execute `./rubyc --help`.
         --openssl-dir                The path to openssl
         --make-args=ARGS             Extra arguments to be passed to make
         --nmake-args=ARGS            Extra arguments to be passed to nmake
-        --auto-update-url=URL        Enables auto-update and specifies the URL to get the latest version
-        --auto-update-base=STRING    Enables auto-update and specifies the base version string
     -i, --ignore-file=STRING         Ignore file(s) from build
         --debug                      Enable debug mode
         --quiet                      Enable quiet mode
@@ -210,6 +207,5 @@ very, very long*.
 
 - [RubyConf 2017 (New Orleans, LA) presentation video: Packing your Ruby application into a single executable](https://www.youtube.com/watch?v=1mme7HiLqzA).
 - [Libsquash](https://github.com/pmq20/libsquash): portable, user-land SquashFS that can be easily linked and embedded within your application.
-- [Libautoupdate](https://github.com/pmq20/libautoupdate): cross-platform C library to enable your application to auto-update itself in place.
 - [Squashfs Tools](https://github.com/plougher/squashfs-tools): tools to create and extract Squashfs filesystems.
 
