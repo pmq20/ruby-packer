@@ -288,6 +288,7 @@ class Compiler
     @utils.chdir(@work_dir_local) do
       log '=> gem env'
       @utils.run local_toolchain_env, @gem, 'env'
+      @utils.run local_toolchain_env, @bundle, 'env'
       @utils.run(local_toolchain_env, @bundle, 'install')
       # detect Rails
       if @utils.run_allow_failures(local_toolchain_env, @bundle, 'show', 'rails').exitstatus.zero?
