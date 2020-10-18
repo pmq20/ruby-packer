@@ -787,6 +787,7 @@ class Compiler
   def local_toolchain_env
     {
       'CI' => 'true',
+      'GEM_PATH' => File.join(@ruby_install, 'lib', 'ruby', 'gems', self.class.ruby_api_version),
       'PATH' => "#{File.join(@ruby_install, 'bin')}:#{ENV['PATH']}",
       'ENCLOSE_IO_USE_ORIGINAL_RUBY' => 'true',
       'ENCLOSE_IO_RUBYC_1ST_PASS' => 'true',
