@@ -46,11 +46,11 @@ class TestRoundTrip < Minitest::Test
 
             flunk <<~MESSAGE unless status.success?
               failed to run ruby #{args.join ' '}
-              
+
               -------- <stdout> ----------
               #{stdout.read}
               -------- <stdout> ----------
-              
+
               -------- <stderr> ----------
               #{stderr.read}
               -------- <stderr> ----------
@@ -79,11 +79,11 @@ class TestRoundTrip < Minitest::Test
 
             flunk <<~MESSAGE unless status.success?
               failed to run rubyc #{args.join ' '}
-              
+
               -------- <stdout> ----------
               #{stdout.read}
               -------- <stdout> ----------
-              
+
               -------- <stderr> ----------
               #{stderr.read}
               -------- <stderr> ----------
