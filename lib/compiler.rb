@@ -288,6 +288,7 @@ class Compiler
     @utils.chdir(@work_dir_local) do
       log '=> gem env'
       @utils.run local_toolchain_env, @gem, 'env'
+      @utils.run local_toolchain_env, @bundle, 'env'
       @utils.run(local_toolchain_env, @bundle, 'install')
       # detect Rails
       if @utils.run_allow_failures(local_toolchain_env, @bundle, 'show', 'rails').exitstatus.zero?
@@ -787,6 +788,7 @@ class Compiler
   def local_toolchain_env
     {
       'CI' => 'true',
+      'GEM_PATH' => File.join(@ruby_install, 'lib', 'ruby', 'gems', self.class.ruby_api_version),
       'PATH' => "#{File.join(@ruby_install, 'bin')}:#{ENV['PATH']}",
       'ENCLOSE_IO_USE_ORIGINAL_RUBY' => 'true',
       'ENCLOSE_IO_RUBYC_1ST_PASS' => 'true',
