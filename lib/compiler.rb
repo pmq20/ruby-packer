@@ -164,7 +164,7 @@ class Compiler
     @options[:make_args] ||= "-j#{@utils.default_make_j_arg}" unless Gem.win_platform?
     @options[:output] ||= DEFAULT_NAME
     @options[:output] = File.expand_path(@options[:output])
-    @options[:output] += '.exe' if Gem.win_platform? && !@options[:output].ends_with?('.exe')
+    @options[:output] += '.exe' if Gem.win_platform? && !@options[:output].end_with?('.exe')
     @options[:tmpdir] ||= File.expand_path('rubyc', Dir.tmpdir)
     @options[:tmpdir] = File.expand_path(@options[:tmpdir])
     @options[:openssl_dir] ||= '/usr/local/etc/openssl/'
