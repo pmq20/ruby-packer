@@ -678,14 +678,14 @@ class Compiler
       target_content.each_line do |line|
         if found.zero? && (line =~ /^CFLAGS = (.*)$/)
           found = 1
-          if Regexp.last_match(1).ends_with?(" #{@cflags}")
+          if Regexp.last_match(1).end_with?(" #{@cflags}")
             f.puts line
           else
             f.puts "CFLAGS = #{Regexp.last_match(1)} #{@cflags}"
           end
         elsif found == 1 && (line =~ /^LDFLAGS = (.*)$/)
           found = 2
-          if Regexp.last_match(1).ends_with?(" #{@ldflags}")
+          if Regexp.last_match(1).end_with?(" #{@ldflags}")
             f.puts line
           else
             f.puts "LDFLAGS = #{Regexp.last_match(1)} #{@ldflags}"
@@ -709,7 +709,7 @@ class Compiler
       target_content.each_line do |line|
         if !found && (line =~ /^INCFLAGS = (.*)$/)
           found = true
-          if Regexp.last_match(1).ends_with?(" #{@cflags}")
+          if Regexp.last_match(1).end_with?(" #{@cflags}")
             f.puts line
           else
             f.puts "INCFLAGS = #{Regexp.last_match(1)} #{@cflags}"
