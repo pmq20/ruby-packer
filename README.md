@@ -1,7 +1,5 @@
 # Ruby Packer
 
-https://enclose.io/
-
 *Packing your Ruby application into a single executable.*
 
 [![Windows](https://github.com/pmq20/ruby-packer/workflows/Windows/badge.svg)](https://github.com/pmq20/ruby-packer/actions?query=workflow%3A"Windows")
@@ -40,8 +38,6 @@ Whenever the `master` branch CI succeeded, a Ruby Packer pre-release binary woul
 |   Linux   |  x64  | https://github.com/pmq20/ruby-packer/releases/download/linux-x64/rubyc        |
 
 ### Stable Releases
-
-For the list of all previous stable releases, see https://enclose.io/rubyc
 
 Here is the latest stable Ruby Packer release:
 
