@@ -27,16 +27,6 @@ You won't need to modify a single line of code in your application, no matter ho
 
 ## Download
 
-### Unstable Pre-release
-
-Whenever the `master` branch CI succeeded, a Ruby Packer pre-release binary would be automatically generated. Here is the latest unstable pre-release build:
-
-|    OS     | Arch. |                               Executable                                      |
-|:---------:|:-----:|-------------------------------------------------------------------------------|
-|  Windows  |  x64  | https://github.com/pmq20/ruby-packer/releases/download/windows-x64/rubyc.exe  |
-|   macOS   |  x64  | https://github.com/pmq20/ruby-packer/releases/download/darwin-x64/rubyc       |
-|   Linux   |  x64  | https://github.com/pmq20/ruby-packer/releases/download/linux-x64/rubyc        |
-
 ### Stable Releases
 
 Here is the latest stable Ruby Packer release:
@@ -46,6 +36,16 @@ Here is the latest stable Ruby Packer release:
 |  Windows  |  x64  | https://gw.alipayobjects.com/os/rmsportal/WxwlPrUTTReYNVVxJMtR.zip                                           |
 |   macOS   |  x64  | https://gw.alipayobjects.com/os/enclose-prod/b812fa0f-d52b-44f1-8233-65ab8707cf1f/rubyc-v0.4.0-darwin-x64.gz |
 |   Linux   |  x64  | https://gw.alipayobjects.com/os/enclose-prod/1fd23e6b-d48f-4ed0-94dd-f0f539960253/rubyc-v0.4.0-linux-x64.gz  |
+
+### Unstable Pre-release
+
+Whenever the `master` branch CI succeeded, a Ruby Packer pre-release binary would be automatically generated. Here is the latest unstable pre-release build:
+
+|    OS     | Arch. |                               Executable                                      |
+|:---------:|:-----:|-------------------------------------------------------------------------------|
+|  Windows  |  x64  | https://github.com/pmq20/ruby-packer/releases/download/windows-x64/rubyc.exe  |
+|   macOS   |  x64  | https://github.com/pmq20/ruby-packer/releases/download/darwin-x64/rubyc       |
+|   Linux   |  x64  | https://github.com/pmq20/ruby-packer/releases/download/linux-x64/rubyc        |
 
 ## Install
 
