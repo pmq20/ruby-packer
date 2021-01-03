@@ -178,7 +178,7 @@ Once your toolchain is set up run `bundle`.  To compile your own `rubyc` run:
 
 Or (if you want to compile with debug symbols):
 
-  ENCLOSE_IO_RUBYC_ADDTIONAL_ARGS=--debug bundle exec rake rubyc
+	ENCLOSE_IO_RUBYC_ADDTIONAL_ARGS=--debug bundle exec rake rubyc
 
 This will produce a single `rubyc` executable, which can
 be put inside any of your `PATH` locations, so that it can be directly
