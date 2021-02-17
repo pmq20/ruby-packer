@@ -90,7 +90,7 @@ class Compiler
 
     def cp_r(from, to, options = {})
       warn "-> cp -r #{from.inspect} #{to.inspect}" unless @options[:quiet]
-      FileUtils.cp_r(from, to, options)
+      FileUtils.cp_r(from, to, **options)
     end
 
     def rm(path)
