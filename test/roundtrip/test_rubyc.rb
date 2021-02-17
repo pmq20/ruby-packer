@@ -30,14 +30,14 @@ class TestRoundTrip < Minitest::Test
 
             Thread.new do
               until (raw_line = stdout.gets).nil?
-                parsed_line = Hash[timestamp: Time.now, line: raw_line.to_s]
+                parsed_line = { timestamp: Time.now, line: raw_line.to_s }
                 $stdout.puts "rubyc's ruby STDOUT: #{parsed_line}"
               end
             end
 
             Thread.new do
               until (raw_line = stderr.gets).nil?
-                parsed_line = Hash[timestamp: Time.now, line: raw_line.to_s]
+                parsed_line = { timestamp: Time.now, line: raw_line.to_s }
                 warn "rubyc's ruby STDERR: #{parsed_line}"
               end
             end
