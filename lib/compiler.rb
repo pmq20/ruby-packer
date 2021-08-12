@@ -168,7 +168,7 @@ class Compiler
     @options[:tmpdir] ||= File.expand_path('rubyc', Dir.tmpdir)
     @options[:tmpdir] = File.expand_path(@options[:tmpdir])
     @options[:openssl_dir] ||= '/usr/local/etc/openssl/'
-    @options[:ignore_file].concat(File.readlines('.rubycignore').map(&:strip)) if File.exist?('.rubycignore')
+    @options[:ignore_file] = File.readlines('.rubycignore').map(&:strip) if File.exist?('.rubycignore')
   end
 
   def init_tmpdir
@@ -201,9 +201,26 @@ class Compiler
 
     prepare_work_dir unless Dir.exist?(@work_dir)
     ext_setup
+    replace_linked_extensions
     prepare_work_dir_squashfs unless File.exist?(@work_dir_squashfs)
     prepare_enclose_io_vars
     build_pass2
+  end
+
+  def replace_linked_extensions
+    ext_path = File.join(PRJ_ROOT, 'ext')
+
+    Dir[ext_path + '/*.{bundle,so}'].each do |lib|
+      filename = lib.split('/').last
+
+      Dir[@work_dir + '/**/*' + filename].sort_by(&:length).reverse.each_with_index do |path, index|
+        if index.zero?
+          @utils.cp(lib, path)
+        else
+          @utils.rm(path)
+        end
+      end
+    end
   end
 
   def build_pass1
@@ -312,9 +329,9 @@ class Compiler
   end
 
   def local_toolchain_clean
-    Dir["#{@work_dir_inner}/**/*.{a,dylib,so,dll,lib,bundle}"].each do |thisdl|
-      @utils.rm_f(thisdl)
-    end
+    # Dir["#{@work_dir_inner}/**/*.{a,dylib,so,dll,lib,bundle}"].each do |thisdl|
+    #   @utils.rm_f(thisdl)
+    # end
 
     return unless Dir.exist?(@work_dir_local)
 
