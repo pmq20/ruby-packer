@@ -54,7 +54,7 @@ Whenever the `master` branch CI succeeded, a Ruby Packer pre-release binary woul
 First install the prerequisites:
 
 * [Visual Studio](https://www.visualstudio.com/), all editions including the Community edition (remember to select "Common Tools for Visual C++" feature during installation).
-* [SquashFS Tools](http://squashfs.sourceforge.net/): you might want to first install [choco](https://chocolatey.org) and then execute `choco install squashfs`.
+* [SquashFS Tools](https://github.com/plougher/squashfs-tools): you might want to first install [choco](https://chocolatey.org) and then execute `choco install squashfs`.
 * [Ruby](https://www.ruby-lang.org/): you might want to install it using [RubyInstaller](https://rubyinstaller.org/).
 * [Perl](https://www.perl.org/): you might want to install it using [Strawberry Perl for Windows](http://strawberryperl.com/).
 * [Netwide Assembler](https://www.nasm.us): please make sure `nasm` works from your command line.
@@ -67,7 +67,7 @@ Open Visual Studio's "x64 Native Tools Command Prompt" and execute `rubyc --help
 
 First install the prerequisites:
 
-* [SquashFS Tools](http://squashfs.sourceforge.net/): `brew install squashfs`
+* [SquashFS Tools](https://github.com/plougher/squashfs-tools): `brew install squashfs`
 * [Xcode](https://developer.apple.com/xcode/download/)
   * You also need to install the `Command Line Tools` via Xcode. You can find
     this under the menu `Xcode -> Preferences -> Downloads`
@@ -81,7 +81,7 @@ Run `chmod +x` to give it execution permissions and execute `./rubyc --help`.
 
 First install the prerequisites:
 
-* [SquashFS Tools](http://squashfs.sourceforge.net/)
+* [SquashFS Tools](https://github.com/plougher/squashfs-tools)
   - `sudo yum install squashfs-tools`
   - `sudo apt install squashfs-tools`
 * `gcc` or `clang`
