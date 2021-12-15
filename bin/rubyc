@@ -6,10 +6,6 @@
 # This file is part of Ruby Packer, distributed under the MIT License
 # For full terms see the included LICENSE file
 
-require 'rubygems'
-require 'bundler/setup'
-Bundler.require(:default)
-
 require_relative '../lib/compiler'
 require 'optparse'
 

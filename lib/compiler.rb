@@ -78,7 +78,7 @@ class Compiler
     if Gem.win_platform?
       'a.exe'
     else
-      'a.out'
+      `uname -m`.delete("\n")
     end
 
   def initialize(entrance, options = {})
@@ -110,7 +110,7 @@ class Compiler
               elsif @options[:debug]
                 ' -DRUBY_DEBUG -fPIC -g -O0 -pipe '
               else
-                ' -DRUBY_DEBUG -fPIC -O3 -fno-fast-math -ggdb3 -Os -fdata-sections -ffunction-sections -pipe '
+                ' -DRUBY_DEBUG -fPIC -O3 -fno-fast-math -ggdb3 -Os -fdata-sections -ffunction-sections -pipe -Wno-error=implicit-function-declaration '
               end
 
     # install prefix for stuffed libraries
@@ -561,6 +561,28 @@ class Compiler
                    "--prefix=#{@local_build}")
         @utils.run(compile_env, "nmake #{@options[:nmake_args]}")
         @utils.run(compile_env, 'nmake install_sw')
+      elsif `uname -m`.start_with?('arm64')
+        @utils.run(compile_env,
+                   './Configure',
+                   'darwin64-arm64-cc',
+                   'shared',
+                   'enable-rc5',
+                   'zlib',
+                   'no-asm',
+                   "--openssldir=#{@options[:openssl_dir]}",
+                   "--prefix=#{@local_build}")
+        @utils.run(compile_env, "make #{@options[:nmake_args]}")
+        @utils.run(compile_env, 'make install_sw')
+      elsif `uname -m`.start_with?('aarch64')
+        @utils.run(compile_env,
+                   'perl',
+                   'Configure',
+                   'linux-aarch64',
+                   'shared',
+                   "--openssldir=#{@options[:openssl_dir]}",
+                   "--prefix=#{@local_build}")
+        @utils.run(compile_env, "make #{@options[:nmake_args]}")
+        @utils.run(compile_env, 'make install_sw')
       else
         @utils.run(compile_env,
                    './config',
@@ -630,6 +652,7 @@ class Compiler
         File.utime(Time.at(0), Time.at(0), x)
       end
 
+      @utils.run(compile_env, './autogen.sh')
       @utils.run(compile_env,
                  './configure',
                  '--with-pic',
@@ -766,7 +789,7 @@ class Compiler
 
       @cflags += " -I#{@utils.escape @ruby_source_dir} "
       @cflags += " -I#{@utils.escape File.join(@local_build, 'include')} "
-      @cflags += " -I#{@utils.escape File.join(lib, 'libffi-3.2.1', 'include')} "
+      @cflags += " -I#{@utils.escape File.join(lib, 'libffi-3.4.2', 'include')} "
     end
   end
 
