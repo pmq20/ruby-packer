@@ -489,6 +489,9 @@ class Compiler
     source = File.join(PRJ_ROOT, 'ruby')
     @utils.cp_r(source, @ruby_source_dir, preserve: true)
     @utils.chdir(@ruby_source_dir) do
+      @utils.run(compile_env, 'autoconf')
+      @utils.run(compile_env, './configure')
+
       Dir['**/configure.ac'].each do |x|
         File.utime(Time.at(0), Time.at(0), x)
       end
