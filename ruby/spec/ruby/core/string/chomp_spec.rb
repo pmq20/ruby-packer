@@ -6,11 +6,13 @@ describe "String#chomp" do
   describe "when passed no argument" do
     before do
       # Ensure that $/ is set to the default value
+      @verbose, $VERBOSE = $VERBOSE, nil
       @dollar_slash, $/ = $/, "\n"
     end
 
     after do
       $/ = @dollar_slash
+      $VERBOSE = @verbose
     end
 
     it "does not modify a String with no trailing carriage return or newline" do
@@ -44,14 +46,27 @@ describe "String#chomp" do
       end
     end
 
-    it "returns subclass instances when called on a subclass" do
-      str = StringSpecs::MyString.new("hello\n").chomp
-      str.should be_an_instance_of(StringSpecs::MyString)
+    ruby_version_is ''...'3.0' do
+      it "returns subclass instances when called on a subclass" do
+        str = StringSpecs::MyString.new("hello\n").chomp
+        str.should be_an_instance_of(StringSpecs::MyString)
+      end
+    end
+
+    ruby_version_is '3.0' do
+      it "returns String instances when called on a subclass" do
+        str = StringSpecs::MyString.new("hello\n").chomp
+        str.should be_an_instance_of(String)
+      end
     end
 
     it "removes trailing characters that match $/ when it has been assigned a value" do
       $/ = "cdef"
       "abcdef".chomp.should == "ab"
+    end
+
+    it "removes one trailing newline for string with invalid encoding" do
+      "\xa0\xa1\n".chomp.should == "\xa0\xa1"
     end
   end
 
@@ -105,6 +120,10 @@ describe "String#chomp" do
 
     it "returns an empty String when self is empty" do
       "".chomp("").should == ""
+    end
+
+    it "removes one trailing newline for string with invalid encoding" do
+      "\xa0\xa1\n".chomp("").should == "\xa0\xa1"
     end
   end
 
@@ -179,11 +198,13 @@ describe "String#chomp!" do
   describe "when passed no argument" do
     before do
       # Ensure that $/ is set to the default value
+      @verbose, $VERBOSE = $VERBOSE, nil
       @dollar_slash, $/ = $/, "\n"
     end
 
     after do
       $/ = @dollar_slash
+      $VERBOSE = @verbose
     end
 
     it "modifies self" do
@@ -332,29 +353,31 @@ describe "String#chomp!" do
     end
   end
 
-  it "raises a #{frozen_error_class} on a frozen instance when it is modified" do
+  it "raises a FrozenError on a frozen instance when it is modified" do
     a = "string\n\r"
     a.freeze
 
-    -> { a.chomp! }.should raise_error(frozen_error_class)
+    -> { a.chomp! }.should raise_error(FrozenError)
   end
 
   # see [ruby-core:23666]
-  it "raises a #{frozen_error_class} on a frozen instance when it would not be modified" do
+  it "raises a FrozenError on a frozen instance when it would not be modified" do
     a = "string\n\r"
     a.freeze
-    -> { a.chomp!(nil) }.should raise_error(frozen_error_class)
-    -> { a.chomp!("x") }.should raise_error(frozen_error_class)
+    -> { a.chomp!(nil) }.should raise_error(FrozenError)
+    -> { a.chomp!("x") }.should raise_error(FrozenError)
   end
 end
 
 describe "String#chomp" do
   before :each do
+    @verbose, $VERBOSE = $VERBOSE, nil
     @before_separator = $/
   end
 
   after :each do
     $/ = @before_separator
+    $VERBOSE = @verbose
   end
 
   it "does not modify a multi-byte character" do
@@ -379,11 +402,13 @@ end
 
 describe "String#chomp!" do
   before :each do
+    @verbose, $VERBOSE = $VERBOSE, nil
     @before_separator = $/
   end
 
   after :each do
     $/ = @before_separator
+    $VERBOSE = @verbose
   end
 
   it "returns nil when the String is not modified" do

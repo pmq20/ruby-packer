@@ -496,7 +496,7 @@ class Compiler
         File.utime(Time.at(0), Time.at(0), x)
       end
       File.utime(Time.at(0), Time.at(0), 'parse.y')
-      File.utime(Time.at(0), Time.at(0), 'ext/ripper/ripper.y')
+      # File.utime(Time.at(0), Time.at(0), 'ext/ripper/ripper.y')
     end
   end
 

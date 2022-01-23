@@ -1,7 +1,7 @@
 # frozen_string_literal: true
-require 'rubygems/command'
-require 'rubygems/version_option'
-require 'rubygems/uninstaller'
+require_relative '../command'
+require_relative '../version_option'
+require_relative '../uninstaller'
 require 'fileutils'
 
 ##
@@ -10,7 +10,6 @@ require 'fileutils'
 # See `gem help uninstall`
 
 class Gem::Commands::UninstallCommand < Gem::Command
-
   include Gem::VersionOption
 
   def initialize
@@ -82,7 +81,7 @@ class Gem::Commands::UninstallCommand < Gem::Command
                'Uninstall gem from the vendor directory.',
                'Only for use by gem repackagers.') do |value, options|
       unless Gem.vendor_dir
-        raise OptionParser::InvalidOption.new 'your platform is not supported'
+        raise Gem::OptionParser::InvalidOption.new 'your platform is not supported'
       end
 
       alert_warning 'Use your OS package manager to uninstall vendor gems'
@@ -136,14 +135,14 @@ that is a dependency of an existing gem.  You can use the
   end
 
   def uninstall_all
-    specs = Gem::Specification.reject { |spec| spec.default_gem? }
+    specs = Gem::Specification.reject {|spec| spec.default_gem? }
 
     specs.each do |spec|
       options[:version] = spec.version
       uninstall_gem spec.name
     end
 
-    alert "Uninstalled all gems in #{options[:install_dir]}"
+    alert "Uninstalled all gems in #{options[:install_dir] || Gem.dir}"
   end
 
   def uninstall_specific
@@ -195,5 +194,4 @@ that is a dependency of an existing gem.  You can use the
   def uninstall(gem_name)
     Gem::Uninstaller.new(gem_name, options).uninstall
   end
-
 end

@@ -11,16 +11,26 @@
 
 **********************************************************************/
 
-#include "ruby/encoding.h"
-#include "ruby/re.h"
-#include "internal.h"
-#include "id.h"
+#include "ruby/internal/config.h"
+
 #include <math.h>
 #include <stdarg.h>
 
 #ifdef HAVE_IEEEFP_H
-#include <ieeefp.h>
+# include <ieeefp.h>
 #endif
+
+#include "id.h"
+#include "internal.h"
+#include "internal/error.h"
+#include "internal/hash.h"
+#include "internal/numeric.h"
+#include "internal/object.h"
+#include "internal/sanitizers.h"
+#include "internal/symbol.h"
+#include "ruby/encoding.h"
+#include "ruby/re.h"
+#include "ruby/util.h"
 
 #define BIT_DIGITS(N)   (((N)*146)/485 + 1)  /* log2(10) =~ 146/485 */
 
@@ -247,7 +257,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     blen = 0;
     bsiz = 120;
     result = rb_str_buf_new(bsiz);
-    rb_enc_copy(result, fmt);
+    rb_enc_associate(result, enc);
     buf = RSTRING_PTR(result);
     memset(buf, 0, bsiz);
     ENC_CODERANGE_SET(result, coderange);
@@ -865,7 +875,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		double fval;
 
 		fval = RFLOAT_VALUE(rb_Float(val));
-		if (isnan(fval) || isinf(fval)) {
+		if (!isfinite(fval)) {
 		    const char *expr;
 		    int need;
 		    int elen;
@@ -964,14 +974,12 @@ fmt_setup(char *buf, size_t size, int c, int flags, int width, int prec)
 #undef ferror
 #undef clearerr
 #undef fileno
-#if SIZEOF_LONG < SIZEOF_VOIDP
-# if  SIZEOF_LONG_LONG == SIZEOF_VOIDP
-#  define _HAVE_SANE_QUAD_
-#  define _HAVE_LLP64_
-#  define quad_t LONG_LONG
-#  define u_quad_t unsigned LONG_LONG
+#if SIZEOF_LONG < SIZEOF_LONG_LONG
+# if SIZEOF_LONG_LONG == SIZEOF_VOIDP
+/* actually this doesn't mean a pointer is strictly 64bit, but just
+ * quad_t size */
+#   define _HAVE_LLP64_
 # endif
-#elif SIZEOF_LONG != SIZEOF_LONG_LONG && SIZEOF_LONG_LONG == 8
 # define _HAVE_SANE_QUAD_
 # define quad_t LONG_LONG
 # define u_quad_t unsigned LONG_LONG
@@ -984,10 +992,6 @@ fmt_setup(char *buf, size_t size, int c, int flags, int width, int prec)
 #endif
 #define lower_hexdigits (ruby_hexdigits+0)
 #define upper_hexdigits (ruby_hexdigits+16)
-#if defined RUBY_USE_SETJMPEX && RUBY_USE_SETJMPEX
-# undef MAYBE_UNUSED
-# define MAYBE_UNUSED(x) x = 0
-#endif
 #include "vsnprintf.c"
 
 static char *
@@ -1117,7 +1121,7 @@ ruby__sfvextra(rb_printf_buffer *fp, size_t valsize, void *valp, long *sz, int s
     else if (SYMBOL_P(value)) {
 	value = rb_sym2str(value);
 	if (sign == ' ' && !rb_str_symname_p(value)) {
-	    value = rb_str_inspect(value);
+	    value = rb_str_escape(value);
 	}
     }
     else {

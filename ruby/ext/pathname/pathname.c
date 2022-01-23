@@ -138,7 +138,7 @@ path_freeze(VALUE self)
 static VALUE
 path_taint(VALUE self)
 {
-    rb_warning("Pathname#taint is deprecated and will be removed in Ruby 3.2.");
+    rb_warn("Pathname#taint is deprecated and will be removed in Ruby 3.2.");
     return self;
 }
 
@@ -151,7 +151,7 @@ path_taint(VALUE self)
 static VALUE
 path_untaint(VALUE self)
 {
-    rb_warning("Pathname#untaint is deprecated and will be removed in Ruby 3.2.");
+    rb_warn("Pathname#untaint is deprecated and will be removed in Ruby 3.2.");
     return self;
 }
 
@@ -360,10 +360,10 @@ path_each_line(int argc, VALUE *argv, VALUE self)
     args[0] = get_strpath(self);
     n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
     if (rb_block_given_p()) {
-        return rb_block_call(rb_cFile, id_foreach, 1+n, args, 0, 0);
+        return rb_block_call_kw(rb_cFile, id_foreach, 1+n, args, 0, 0, RB_PASS_CALLED_KEYWORDS);
     }
     else {
-        return rb_funcallv(rb_cFile, id_foreach, 1+n, args);
+        return rb_funcallv_kw(rb_cFile, id_foreach, 1+n, args, RB_PASS_CALLED_KEYWORDS);
     }
 }
 
@@ -554,7 +554,7 @@ path_mtime(VALUE self)
 
 /*
  * call-seq:
- *   pathname.chmod	-> integer
+ *   pathname.chmod(mode_int)	-> integer
  *
  * Changes file permissions.
  *
@@ -568,7 +568,7 @@ path_chmod(VALUE self, VALUE mode)
 
 /*
  * call-seq:
- *   pathname.lchmod	-> integer
+ *   pathname.lchmod(mode_int)	-> integer
  *
  * Same as Pathname.chmod, but does not follow symbolic links.
  *
@@ -582,7 +582,7 @@ path_lchmod(VALUE self, VALUE mode)
 
 /*
  * call-seq:
- *   pathname.chown	-> integer
+ *   pathname.chown(owner_int, group_int)	-> integer
  *
  * Change owner and group of the file.
  *
@@ -596,7 +596,7 @@ path_chown(VALUE self, VALUE owner, VALUE group)
 
 /*
  * call-seq:
- *   pathname.lchown	-> integer
+ *   pathname.lchown(owner_int, group_int)	-> integer
  *
  * Same as Pathname.chown, but does not follow symbolic links.
  *
@@ -610,8 +610,8 @@ path_lchown(VALUE self, VALUE owner, VALUE group)
 
 /*
  * call-seq:
- *    pathname.fnmatch(pattern, [flags])        -> string
- *    pathname.fnmatch?(pattern, [flags])       -> string
+ *    pathname.fnmatch(pattern, [flags])        -> true or false
+ *    pathname.fnmatch?(pattern, [flags])       -> true or false
  *
  * Return +true+ if the receiver matches the given pattern.
  *
@@ -657,6 +657,13 @@ path_make_link(VALUE self, VALUE old)
 }
 
 /*
+ * call-seq:
+ *   pathname.open()
+ *   pathname.open(mode="r" [, opt])                        -> file
+ *   pathname.open([mode [, perm]] [, opt])                 -> file
+ *   pathname.open(mode="r" [, opt]) {|file| block }        -> obj
+ *   pathname.open([mode [, perm]] [, opt]) {|file| block } -> obj
+ *
  * Opens the file for reading or writing.
  *
  * See File.open.
@@ -827,7 +834,7 @@ path_split(VALUE self)
     VALUE str = get_strpath(self);
     VALUE ary, dirname, basename;
     ary = rb_funcall(rb_cFile, id_split, 1, str);
-    ary = rb_check_array_type(ary);
+    Check_Type(ary, T_ARRAY);
     dirname = rb_ary_entry(ary, 0);
     basename = rb_ary_entry(ary, 1);
     dirname = rb_class_new_instance(1, &dirname, rb_obj_class(self));
@@ -1482,6 +1489,8 @@ path_f_pathname(VALUE self, VALUE str)
  * - #binread(*args)
  * - #readlines(*args)
  * - #sysopen(*args)
+ * - #write(*args)
+ * - #binwrite(*args)
  *
  * === Utilities
  *
@@ -1503,6 +1512,10 @@ path_f_pathname(VALUE self, VALUE str)
 void
 Init_pathname(void)
 {
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
+    rb_ext_ractor_safe(true);
+#endif
+
     InitVM(pathname);
 
     rb_cPathname = rb_define_class("Pathname", rb_cObject);
