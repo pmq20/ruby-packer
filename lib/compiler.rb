@@ -78,7 +78,7 @@ class Compiler
     if Gem.win_platform?
       'a.exe'
     else
-      `uname -m`.delete("\n")
+      [`uname`.delete("\n"), `uname -m`.delete("\n")].join('-')
     end
 
   def initialize(entrance, options = {})
@@ -208,6 +208,8 @@ class Compiler
   end
 
   def replace_linked_extensions
+    return if `uname -m`.start_with?('aarch64')
+
     ext_path = File.join(PRJ_ROOT, 'ext')
 
     Dir[ext_path + '/*.{bundle,so}'].each do |lib|
