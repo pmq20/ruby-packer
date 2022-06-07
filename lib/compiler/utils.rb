@@ -77,9 +77,9 @@ class Compiler
       status
     end
 
-    def chdir(path, &block)
+    def chdir(path, &)
       warn "-> cd #{path}" unless @options[:quiet]
-      Dir.chdir(path, &block)
+      Dir.chdir(path, &)
       warn "-> cd #{Dir.pwd}" unless @options[:quiet]
     end
 
@@ -90,7 +90,7 @@ class Compiler
 
     def cp_r(from, to, options = {})
       warn "-> cp -r #{from.inspect} #{to.inspect}" unless @options[:quiet]
-      FileUtils.cp_r(from, to, options)
+      FileUtils.cp_r(from, to, **options)
     end
 
     def rm(path)

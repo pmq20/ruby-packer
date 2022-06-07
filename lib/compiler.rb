@@ -487,7 +487,7 @@ class Compiler
     warn message
   end
 
-  def stuff(library, &block)
+  def stuff(library, &)
     source = File.join PRJ_ROOT, 'vendor', library
     target = File.join @options[:tmpdir], library
 
@@ -498,7 +498,7 @@ class Compiler
     log "=> Stuffing #{library}..."
 
     @utils.capture_run_io "stuff_#{library}" do
-      @utils.chdir(target, &block)
+      @utils.chdir(target, &)
     end
 
     log "=> Stuffed #{library}"
@@ -789,7 +789,7 @@ class Compiler
     {
       'CI' => 'true',
       'GEM_PATH' => File.join(@ruby_install, 'lib', 'ruby', 'gems', self.class.ruby_api_version),
-      'PATH' => "#{File.join(@ruby_install, 'bin')}:#{ENV['PATH']}",
+      'PATH' => "#{File.join(@ruby_install, 'bin')}:#{ENV.fetch('PATH', nil)}",
       'ENCLOSE_IO_USE_ORIGINAL_RUBY' => 'true',
       'ENCLOSE_IO_RUBYC_1ST_PASS' => 'true',
       'ENCLOSE_IO_RUBYC_2ND_PASS' => nil
