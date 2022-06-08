@@ -2,8 +2,6 @@
 require 'test/unit'
 
 class TestString < Test::Unit::TestCase
-  ENUMERATOR_WANTARRAY = RUBY_VERSION >= "3.0.0"
-
   WIDE_ENCODINGS = [
      Encoding::UTF_16BE, Encoding::UTF_16LE,
      Encoding::UTF_32BE, Encoding::UTF_32LE,
@@ -101,6 +99,16 @@ class TestString < Test::Unit::TestCase
   def test_initialize_memory_leak
     assert_no_memory_leak([], <<-PREP, <<-CODE, rss: true)
 code = proc {('x'*100000).__send__(:initialize, '')}
+1_000.times(&code)
+PREP
+100_000.times(&code)
+CODE
+  end
+
+  # Bug #18154
+  def test_initialize_nofree_memory_leak
+    assert_no_memory_leak([], <<-PREP, <<-CODE, rss: true)
+code = proc {0.to_s.__send__(:initialize, capacity: 10000)}
 1_000.times(&code)
 PREP
 100_000.times(&code)
@@ -257,6 +265,7 @@ CODE
 
     assert_not_equal(S("CAT"), S('cat'))
     assert_not_equal(S("CaT"), S('cAt'))
+    assert_not_equal(S("cat\0""dog"), S("cat\0"))
 
     o = Object.new
     def o.to_str; end
@@ -387,6 +396,8 @@ CODE
   end
 
   def test_chomp
+    verbose, $VERBOSE = $VERBOSE, nil
+
     assert_equal(S("hello"), S("hello").chomp("\n"))
     assert_equal(S("hello"), S("hello\n").chomp("\n"))
     save = $/
@@ -452,9 +463,12 @@ CODE
     assert_equal("foo", s.chomp("\n"))
   ensure
     $/ = save
+    $VERBOSE = verbose
   end
 
   def test_chomp!
+    verbose, $VERBOSE = $VERBOSE, nil
+
     a = S("hello")
     a.chomp!(S("\n"))
 
@@ -511,6 +525,7 @@ CODE
 
     s = S("").freeze
     assert_raise_with_message(FrozenError, /frozen/) {s.chomp!}
+    $VERBOSE = nil # EnvUtil.suppress_warning resets $VERBOSE to the original state
 
     s = S("ax")
     o = Struct.new(:s).new(s)
@@ -519,6 +534,7 @@ CODE
       "x"
     end
     assert_raise_with_message(FrozenError, /frozen/) {s.chomp!(o)}
+    $VERBOSE = nil # EnvUtil.suppress_warning resets $VERBOSE to the original state
 
     s = S("hello")
     assert_equal("hel", s.chomp!('lo'))
@@ -569,6 +585,7 @@ CODE
     assert_equal("foo", s.chomp!("\n"))
   ensure
     $/ = save
+    $VERBOSE = verbose
   end
 
   def test_chop
@@ -688,6 +705,7 @@ CODE
 
     @cls == String and
       assert_no_memory_leak([], "s = ''; salt_proc = proc{#{(crypt_supports_des_crypt? ? '..' : good_salt).inspect}}", "#{<<~"begin;"}\n#{<<~'end;'}")
+
     begin;
       1000.times { s.crypt(-salt_proc.call).clear  }
     end;
@@ -751,6 +769,7 @@ CODE
     assert_equal(S("hello"), S("hello").downcase)
     assert_equal(S("hello"), S("HELLO").downcase)
     assert_equal(S("abc hello 123"), S("abc HELLO 123").downcase)
+    assert_equal(S("h\0""ello"), S("h\0""ELLO").downcase)
   end
 
   def test_downcase!
@@ -763,6 +782,12 @@ CODE
     a=S("hello")
     assert_nil(a.downcase!)
     assert_equal(S("hello"), a)
+
+    a = S("h\0""ELLO")
+    b = a.dup
+    assert_equal(S("h\0""ello"), a.downcase!)
+    assert_equal(S("h\0""ello"), a)
+    assert_equal(S("h\0""ELLO"), b)
   end
 
   def test_dump
@@ -859,6 +884,8 @@ CODE
   end
 
   def test_each
+    verbose, $VERBOSE = $VERBOSE, nil
+
     save = $/
     $/ = "\n"
     res=[]
@@ -878,6 +905,7 @@ CODE
     assert_equal(S("world"),  res[1])
   ensure
     $/ = save
+    $VERBOSE = verbose
   end
 
   def test_each_byte
@@ -896,21 +924,15 @@ CODE
     s = S("ABC")
     assert_equal [65, 66, 67], s.bytes
 
-    if ENUMERATOR_WANTARRAY
-      assert_warn(/block not used/) {
-        assert_equal [65, 66, 67], s.bytes {}
-      }
-    else
-      res = []
-      assert_equal s.object_id, s.bytes {|x| res << x }.object_id
-      assert_equal(65, res[0])
-      assert_equal(66, res[1])
-      assert_equal(67, res[2])
-      s = S("ABC")
-      res = []
-      assert_same s, s.bytes {|x| res << x }
-      assert_equal [65, 66, 67], res
-    end
+    res = []
+    assert_equal s.object_id, s.bytes {|x| res << x }.object_id
+    assert_equal(65, res[0])
+    assert_equal(66, res[1])
+    assert_equal(67, res[2])
+    s = S("ABC")
+    res = []
+    assert_same s, s.bytes {|x| res << x }
+    assert_equal [65, 66, 67], res
   end
 
   def test_each_codepoint
@@ -935,21 +957,15 @@ CODE
     s = S("\u3042\u3044\u3046")
     assert_equal [0x3042, 0x3044, 0x3046], s.codepoints
 
-    if ENUMERATOR_WANTARRAY
-      assert_warn(/block not used/) {
-        assert_equal [0x3042, 0x3044, 0x3046], s.codepoints {}
-      }
-    else
-      res = []
-      assert_equal s.object_id, s.codepoints {|x| res << x }.object_id
-      assert_equal(0x3042, res[0])
-      assert_equal(0x3044, res[1])
-      assert_equal(0x3046, res[2])
-      s = S("ABC")
-      res = []
-      assert_same s, s.codepoints {|x| res << x }
-      assert_equal [65, 66, 67], res
-    end
+    res = []
+    assert_equal s.object_id, s.codepoints {|x| res << x }.object_id
+    assert_equal(0x3042, res[0])
+    assert_equal(0x3044, res[1])
+    assert_equal(0x3046, res[2])
+    s = S("ABC")
+    res = []
+    assert_same s, s.codepoints {|x| res << x }
+    assert_equal [65, 66, 67], res
   end
 
   def test_each_char
@@ -968,17 +984,11 @@ CODE
     s = S("ABC")
     assert_equal ["A", "B", "C"], s.chars
 
-    if ENUMERATOR_WANTARRAY
-      assert_warn(/block not used/) {
-        assert_equal ["A", "B", "C"], s.chars {}
-      }
-    else
-      res = []
-      assert_equal s.object_id, s.chars {|x| res << x }.object_id
-      assert_equal("A", res[0])
-      assert_equal("B", res[1])
-      assert_equal("C", res[2])
-    end
+    res = []
+    assert_equal s.object_id, s.chars {|x| res << x }.object_id
+    assert_equal("A", res[0])
+    assert_equal("B", res[1])
+    assert_equal("C", res[2])
   end
 
   def test_each_grapheme_cluster
@@ -1039,22 +1049,18 @@ CODE
     end
     assert_equal ["a", "b", "c"], "abc".b.grapheme_clusters
 
-    if ENUMERATOR_WANTARRAY
-      assert_warn(/block not used/) {
-        assert_equal ["A", "B", "C"], "ABC".grapheme_clusters {}
-      }
-    else
-      s = "ABC".b
-      res = []
-      assert_same s, s.grapheme_clusters {|x| res << x }
-      assert_equal(3, res.size)
-      assert_equal("A", res[0])
-      assert_equal("B", res[1])
-      assert_equal("C", res[2])
-    end
+    s = "ABC".b
+    res = []
+    assert_same s, s.grapheme_clusters {|x| res << x }
+    assert_equal(3, res.size)
+    assert_equal("A", res[0])
+    assert_equal("B", res[1])
+    assert_equal("C", res[2])
   end
 
   def test_each_line
+    verbose, $VERBOSE = $VERBOSE, nil
+
     save = $/
     $/ = "\n"
     res=[]
@@ -1101,6 +1107,7 @@ CODE
     end
   ensure
     $/ = save
+    $VERBOSE = verbose
   end
 
   def test_each_line_chomp
@@ -1158,16 +1165,10 @@ CODE
     assert_equal ["hello\n", "world"], s.lines
     assert_equal ["hello\nworld"], s.lines(nil)
 
-    if ENUMERATOR_WANTARRAY
-      assert_warn(/block not used/) {
-        assert_equal ["hello\n", "world"], s.lines {}
-      }
-    else
-      res = []
-      assert_equal s.object_id, s.lines {|x| res << x }.object_id
-      assert_equal(S("hello\n"), res[0])
-      assert_equal(S("world"),  res[1])
-    end
+    res = []
+    assert_equal s.object_id, s.lines {|x| res << x }.object_id
+    assert_equal(S("hello\n"), res[0])
+    assert_equal(S("world"),  res[1])
   end
 
   def test_empty?
@@ -1179,6 +1180,8 @@ CODE
     assert_send([S("hello"), :end_with?, S("llo")])
     assert_not_send([S("hello"), :end_with?, S("ll")])
     assert_send([S("hello"), :end_with?, S("el"), S("lo")])
+    assert_send([S("hello"), :end_with?, S("")])
+    assert_not_send([S("hello"), :end_with?])
 
     bug5536 = '[ruby-core:40623]'
     assert_raise(TypeError, bug5536) {S("str").end_with? :not_convertible_to_string}
@@ -1331,6 +1334,8 @@ CODE
 
     assert_nil("foo".index(//, -100))
     assert_nil($~)
+
+    assert_equal(2, S("abcdbce").index(/b\Kc/))
   end
 
   def test_insert
@@ -1503,6 +1508,8 @@ CODE
 
     assert_equal(3, "foo".rindex(//))
     assert_equal([3, 3], $~.offset(0))
+
+    assert_equal(5, S("abcdbce").rindex(/b\Kc/))
   end
 
   def test_rjust
@@ -1594,8 +1601,10 @@ CODE
     a = S("FooBar")
     if @aref_slicebang_silent
       assert_nil( a.slice!(6) )
+      assert_nil( a.slice!(6r) )
     else
       assert_raise(IndexError) { a.slice!(6) }
+      assert_raise(IndexError) { a.slice!(6r) }
     end
     assert_equal(S("FooBar"), a)
 
@@ -1768,13 +1777,6 @@ CODE
       GC.start
       assert_equal([], "".split, bug)
     end;
-
-    begin
-      fs = $;
-      assert_warn(/`\$;' is deprecated/) {$; = " "}
-    ensure
-      EnvUtil.suppress_warning {$; = fs}
-    end
   end
 
   def test_split_encoding
@@ -1814,6 +1816,11 @@ CODE
     s = "abc"
     s.split("b", 1).map(&:upcase!)
     assert_equal("abc", s)
+  end
+
+  def test_split_lookbehind
+    assert_equal([S("ab"), S("d")], S("abcd").split(/(?<=b)c/))
+    assert_equal([S("ab"), S("d")], S("abcd").split(/b\Kc/))
   end
 
   def test_squeeze
@@ -1858,6 +1865,7 @@ CODE
   def test_strip
     assert_equal(S("x"), S("      x        ").strip)
     assert_equal(S("x"), S(" \n\r\t     x  \t\r\n\n      ").strip)
+    assert_equal(S("x"), S("\x00x\x00").strip)
 
     assert_equal("0b0 ".force_encoding("UTF-16BE"),
                  "\x00 0b0 ".force_encoding("UTF-16BE").strip)
@@ -1873,6 +1881,10 @@ CODE
     assert_equal(S("      x        "), b)
 
     a = S(" \n\r\t     x  \t\r\n\n      ")
+    assert_equal(S("x"), a.strip!)
+    assert_equal(S("x"), a)
+
+    a = S("\x00x\x00")
     assert_equal(S("x"), a.strip!)
     assert_equal(S("x"), a)
 
@@ -2095,6 +2107,8 @@ CODE
 
   def test_swapcase
     assert_equal(S("hi&LOW"), S("HI&low").swapcase)
+    s = S("")
+    assert_not_same(s, s.swapcase)
   end
 
   def test_swapcase!
@@ -2330,6 +2344,7 @@ CODE
     assert_equal(S("HELLO"), S("hello").upcase)
     assert_equal(S("HELLO"), S("HELLO").upcase)
     assert_equal(S("ABC HELLO 123"), S("abc HELLO 123").upcase)
+    assert_equal(S("H\0""ELLO"), S("H\0""ello").upcase)
   end
 
   def test_upcase!
@@ -2342,6 +2357,12 @@ CODE
     a = S("HELLO")
     assert_nil(a.upcase!)
     assert_equal(S("HELLO"), a)
+
+    a = S("H\0""ello")
+    b = a.dup
+    assert_equal(S("H\0""ELLO"), a.upcase!)
+    assert_equal(S("H\0""ELLO"), a)
+    assert_equal(S("H\0""ello"), b)
   end
 
   def test_upto
@@ -2567,6 +2588,10 @@ CODE
     hello = "hello"
     hello.partition("hi").map(&:upcase!)
     assert_equal("hello", hello, bug)
+
+    assert_equal(["", "", "foo"], "foo".partition(/^=*/))
+
+    assert_equal([S("ab"), S("c"), S("dbce")], S("abcdbce").partition(/b\Kc/))
   end
 
   def test_rpartition
@@ -2591,6 +2616,8 @@ CODE
     hello = "hello"
     hello.rpartition("hi").map(&:upcase!)
     assert_equal("hello", hello, bug)
+
+    assert_equal([S("abcdb"), S("c"), S("e")], S("abcdbce").rpartition(/b\Kc/))
   end
 
   def test_setter
@@ -2658,6 +2685,7 @@ CODE
     assert_equal(1, "FoO".casecmp("BaR"))
     assert_equal(-1, "baR".casecmp("FoO"))
     assert_equal(1, "\u3042B".casecmp("\u3042a"))
+    assert_equal(-1, "foo".casecmp("foo\0"))
 
     assert_nil("foo".casecmp(:foo))
     assert_nil("foo".casecmp(Object.new))
@@ -2672,6 +2700,7 @@ CODE
     assert_equal(false, 'FoO'.casecmp?('BaR'))
     assert_equal(false, 'baR'.casecmp?('FoO'))
     assert_equal(true, 'äöü'.casecmp?('ÄÖÜ'))
+    assert_equal(false, "foo".casecmp?("foo\0"))
 
     assert_nil("foo".casecmp?(:foo))
     assert_nil("foo".casecmp?(Object.new))
@@ -2692,6 +2721,7 @@ CODE
   def test_rstrip
     assert_equal("  hello", "  hello  ".rstrip)
     assert_equal("\u3042", "\u3042   ".rstrip)
+    assert_equal("\u3042", "\u3042\u0000".rstrip)
     assert_raise(Encoding::CompatibilityError) { "\u3042".encode("ISO-2022-JP").rstrip }
   end
 
@@ -2712,12 +2742,17 @@ CODE
     assert_equal(nil, s4.rstrip!)
     assert_equal("\u3042", s4)
 
+    s5 = S("\u3042\u0000")
+    assert_equal("\u3042", s5.rstrip!)
+    assert_equal("\u3042", s5)
+
     assert_raise(Encoding::CompatibilityError) { "\u3042".encode("ISO-2022-JP").rstrip! }
   end
 
   def test_lstrip
     assert_equal("hello  ", "  hello  ".lstrip)
     assert_equal("\u3042", "   \u3042".lstrip)
+    assert_equal("hello  ", "\x00hello  ".lstrip)
   end
 
   def test_lstrip_bang
@@ -2736,6 +2771,11 @@ CODE
     s4 = S("\u3042")
     assert_equal(nil, s4.lstrip!)
     assert_equal("\u3042", s4)
+
+    s5 = S("\u0000\u3042")
+    assert_equal("\u3042", s5.lstrip!)
+    assert_equal("\u3042", s5)
+
   end
 
   def test_delete_prefix
@@ -3139,6 +3179,22 @@ CODE
 
     bar = %w(b a r).join('')
     assert_same(str, -bar, "uminus deduplicates [Feature #13077]")
+  end
+
+  def test_uminus_frozen
+    # embedded
+    str1 = ("foobar" * 3).freeze
+    str2 = ("foobar" * 3).freeze
+    assert_not_same str1, str2
+    assert_same str1, -str1
+    assert_same str1, -str2
+
+    # regular
+    str1 = ("foobar" * 4).freeze
+    str2 = ("foobar" * 4).freeze
+    assert_not_same str1, str2
+    assert_same str1, -str1
+    assert_same str1, -str2
   end
 
   def test_uminus_no_freeze_not_bare

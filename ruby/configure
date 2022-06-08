@@ -909,7 +909,6 @@ infodir
 docdir
 oldincludedir
 includedir
-runstatedir
 localstatedir
 sharedstatedir
 sysconfdir
@@ -1045,7 +1044,6 @@ datadir='${datarootdir}'
 sysconfdir='${prefix}/etc'
 sharedstatedir='${prefix}/com'
 localstatedir='${prefix}/var'
-runstatedir='${localstatedir}/run'
 includedir='${prefix}/include'
 oldincludedir='/usr/include'
 docdir='${datarootdir}/doc/${PACKAGE}'
@@ -1298,15 +1296,6 @@ do
   | -silent | --silent | --silen | --sile | --sil)
     silent=yes ;;
 
-  -runstatedir | --runstatedir | --runstatedi | --runstated \
-  | --runstate | --runstat | --runsta | --runst | --runs \
-  | --run | --ru | --r)
-    ac_prev=runstatedir ;;
-  -runstatedir=* | --runstatedir=* | --runstatedi=* | --runstated=* \
-  | --runstate=* | --runstat=* | --runsta=* | --runst=* | --runs=* \
-  | --run=* | --ru=* | --r=*)
-    runstatedir=$ac_optarg ;;
-
   -sbindir | --sbindir | --sbindi | --sbind | --sbin | --sbi | --sb)
     ac_prev=sbindir ;;
   -sbindir=* | --sbindir=* | --sbindi=* | --sbind=* | --sbin=* \
@@ -1444,7 +1433,7 @@ fi
 for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
 		oldincludedir docdir infodir htmldir dvidir pdfdir psdir \
-		libdir localedir mandir runstatedir
+		libdir localedir mandir
 do
   eval ac_val=\$$ac_var
   # Remove trailing slashes.
@@ -1597,7 +1586,6 @@ Fine tuning of the installation directories:
   --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
   --sharedstatedir=DIR    modifiable architecture-independent data [PREFIX/com]
   --localstatedir=DIR     modifiable single-machine data [PREFIX/var]
-  --runstatedir=DIR       modifiable per-process data [LOCALSTATEDIR/run]
   --libdir=DIR            object code libraries [EPREFIX/lib]
   --includedir=DIR        C header files [PREFIX/include]
   --oldincludedir=DIR     C header files for non-gcc [/usr/include]
@@ -6312,6 +6300,14 @@ else
 fi
 
 
+
+    # if $CC is in /usr/lib/ccache/$CC, search original $CC (disable ccache)
+    if echo $RUBY_DEBUG | grep ci > /dev/null &&
+           echo $MJIT_CC | grep ^/usr/lib/ccache > /dev/null; then :
+
+           PATH=`echo $PATH | sed "s/\/usr\/lib\/ccache://"` MJIT_CC=`which $CC`
+fi
+
     case $target_os in #(
   *mingw*) :
     command -v cygpath > /dev/null && MJIT_CC=`cygpath -ma $MJIT_CC` ;; #(
@@ -8395,6 +8391,68 @@ else
     rpathflag=`echo "$RPATHFLAG" | sed 's/%.*//'`
 
 fi
+
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether -fdeclspec is accepted as CFLAGS" >&5
+$as_echo_n "checking whether -fdeclspec is accepted as CFLAGS... " >&6; }
+    save_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS $rb_cv_warnflags"
+if test "${ac_c_werror_flag+set}"; then :
+
+  rb_c_werror_flag="$ac_c_werror_flag"
+
+else
+
+  unset rb_c_werror_flag
+
+fi
+ac_c_werror_flag=yes
+
+    CFLAGS="$CFLAGS -fdeclspec"
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  # RUBY_APPEND_OPTIONS(XCFLAGS)
+	for rb_opt in -fdeclspec; do
+	case " ${XCFLAGS-} " in #(
+  *" ${rb_opt} "*) :
+     ;; #(
+  '  ') :
+     XCFLAGS="${rb_opt}" ;; #(
+  *) :
+     XCFLAGS="$XCFLAGS ${rb_opt}" ;;
+esac
+	done
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+    $as_echo "${msg_result_yes}yes${msg_reset}" >&6 ; }
+else
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+    $as_echo "${msg_result_no}no${msg_reset}" >&6 ; }
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+CFLAGS="$save_CFLAGS"
+save_CFLAGS=
+if test "${rb_c_werror_flag+set}"; then :
+
+  ac_c_werror_flag="$rb_c_werror_flag"
+
+else
+
+  unset ac_c_werror_flag
+
+fi
+
 
 case $RUBY_PATCHLEVEL in #(
   -*) :
@@ -11730,6 +11788,18 @@ fi
 
 done
 
+for ac_header in x86intrin.h
+do :
+  ac_fn_c_check_header_mongrel "$LINENO" "x86intrin.h" "ac_cv_header_x86intrin_h" "$ac_includes_default"
+if test "x$ac_cv_header_x86intrin_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_X86INTRIN_H 1
+_ACEOF
+
+fi
+
+done
+
 
 
 # Check whether --with-gmp was given.
@@ -11982,7 +12052,7 @@ else
     We can't simply define LARGE_OFF_T to be 9223372036854775807,
     since some C++ compilers masquerading as C compilers
     incorrectly reject 9223372036854775807.  */
-#define LARGE_OFF_T ((((off_t) 1 << 31) << 31) - 1 + (((off_t) 1 << 31) << 31))
+#define LARGE_OFF_T (((off_t) 1 << 62) - 1 + ((off_t) 1 << 62))
   int off_t_is_large[(LARGE_OFF_T % 2147483629 == 721
 		       && LARGE_OFF_T % 2147483647 == 1)
 		      ? 1 : -1];
@@ -12028,7 +12098,7 @@ else
     We can't simply define LARGE_OFF_T to be 9223372036854775807,
     since some C++ compilers masquerading as C compilers
     incorrectly reject 9223372036854775807.  */
-#define LARGE_OFF_T ((((off_t) 1 << 31) << 31) - 1 + (((off_t) 1 << 31) << 31))
+#define LARGE_OFF_T (((off_t) 1 << 62) - 1 + ((off_t) 1 << 62))
   int off_t_is_large[(LARGE_OFF_T % 2147483629 == 721
 		       && LARGE_OFF_T % 2147483647 == 1)
 		      ? 1 : -1];
@@ -12052,7 +12122,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
     We can't simply define LARGE_OFF_T to be 9223372036854775807,
     since some C++ compilers masquerading as C compilers
     incorrectly reject 9223372036854775807.  */
-#define LARGE_OFF_T ((((off_t) 1 << 31) << 31) - 1 + (((off_t) 1 << 31) << 31))
+#define LARGE_OFF_T (((off_t) 1 << 62) - 1 + ((off_t) 1 << 62))
   int off_t_is_large[(LARGE_OFF_T % 2147483629 == 721
 		       && LARGE_OFF_T % 2147483647 == 1)
 		      ? 1 : -1];
@@ -12097,7 +12167,7 @@ else
     We can't simply define LARGE_OFF_T to be 9223372036854775807,
     since some C++ compilers masquerading as C compilers
     incorrectly reject 9223372036854775807.  */
-#define LARGE_OFF_T ((((off_t) 1 << 31) << 31) - 1 + (((off_t) 1 << 31) << 31))
+#define LARGE_OFF_T (((off_t) 1 << 62) - 1 + ((off_t) 1 << 62))
   int off_t_is_large[(LARGE_OFF_T % 2147483629 == 721
 		       && LARGE_OFF_T % 2147483647 == 1)
 		      ? 1 : -1];
@@ -12121,7 +12191,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
     We can't simply define LARGE_OFF_T to be 9223372036854775807,
     since some C++ compilers masquerading as C compilers
     incorrectly reject 9223372036854775807.  */
-#define LARGE_OFF_T ((((off_t) 1 << 31) << 31) - 1 + (((off_t) 1 << 31) << 31))
+#define LARGE_OFF_T (((off_t) 1 << 62) - 1 + ((off_t) 1 << 62))
   int off_t_is_large[(LARGE_OFF_T % 2147483629 == 721
 		       && LARGE_OFF_T % 2147483647 == 1)
 		      ? 1 : -1];
@@ -18667,8 +18737,15 @@ $as_echo_n "checking for function name string predefined identifier... " >&6; }
 if ${rb_cv_function_name_string+:} false; then :
   $as_echo_n "(cached) " >&6
 else
-  rb_cv_function_name_string=no
-    save_CFLAGS="$CFLAGS"
+  case "$target_os" in #(
+  openbsd*) :
+
+      rb_cv_function_name_string=__func__
+      ;; #(
+  *) :
+
+     rb_cv_function_name_string=no
+      save_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS $rb_cv_warnflags"
 if test "${ac_c_werror_flag+set}"; then :
 
@@ -18681,8 +18758,8 @@ else
 fi
 ac_c_werror_flag=yes
 
-	for func in __func__ __FUNCTION__; do
-	    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+        for func in __func__ __FUNCTION__; do
+            cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <stdio.h>
 int
@@ -18695,11 +18772,11 @@ puts($func);
 _ACEOF
 if ac_fn_c_try_link "$LINENO"; then :
   rb_cv_function_name_string=$func
-			break
+            break
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
-	done
+        done
 
 CFLAGS="$save_CFLAGS"
 save_CFLAGS=
@@ -18711,7 +18788,8 @@ else
 
   unset ac_c_werror_flag
 
-fi
+fi ;;
+esac
 
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $rb_cv_function_name_string" >&5

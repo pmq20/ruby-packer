@@ -26,7 +26,7 @@ RSpec.describe Bundler::Fetcher do
     context "when Gem.configuration specifies http_proxy " do
       let(:proxy) { "http://proxy-example2.com" }
       before do
-        allow(Bundler.rubygems.configuration).to receive(:[]).with(:http_proxy).and_return(proxy)
+        allow(Gem.configuration).to receive(:[]).with(:http_proxy).and_return(proxy)
       end
       it "consider Gem.configuration when determine proxy" do
         expect(fetcher.http_proxy).to match("http://proxy-example2.com")
@@ -113,7 +113,7 @@ RSpec.describe Bundler::Fetcher do
 
     context "when gem ssl configuration is set" do
       before do
-        allow(Bundler.rubygems.configuration).to receive_messages(
+        allow(Gem.configuration).to receive_messages(
           :http_proxy => nil,
           :ssl_client_cert => "cert",
           :ssl_ca_cert => "ca"
@@ -150,9 +150,10 @@ RSpec.describe Bundler::Fetcher do
       end
 
       it "from many CI" do
-        with_env_vars("TRAVIS" => "foo", "CI_NAME" => "my_ci") do
+        with_env_vars("TRAVIS" => "foo", "GITLAB_CI" => "gitlab", "CI_NAME" => "my_ci") do
           ci_part = fetcher.user_agent.split(" ").find {|x| x.start_with?("ci/") }
           expect(ci_part).to match("travis")
+          expect(ci_part).to match("gitlab")
           expect(ci_part).to match("my_ci")
         end
       end

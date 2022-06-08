@@ -2,13 +2,7 @@ require_relative '../../spec_helper'
 require_relative 'shared/arithmetic_coerce'
 
 describe "Integer#+" do
-  ruby_version_is "2.4"..."2.5" do
-    it_behaves_like :integer_arithmetic_coerce_rescue, :+
-  end
-
-  ruby_version_is "2.5" do
-    it_behaves_like :integer_arithmetic_coerce_not_rescue, :+
-  end
+  it_behaves_like :integer_arithmetic_coerce_not_rescue, :+
 
   context "fixnum" do
     it "returns self plus the given Integer" do
@@ -45,5 +39,20 @@ describe "Integer#+" do
       -> { @bignum + "10" }.should raise_error(TypeError)
       -> { @bignum + :symbol}.should raise_error(TypeError)
     end
+  end
+
+  it "can be redefined" do
+    code = <<~RUBY
+      class Integer
+        alias_method :old_plus, :+
+        def +(other)
+          self - other
+        end
+      end
+      result = 1 + 2
+      Integer.alias_method :+, :old_plus
+      print result
+    RUBY
+    ruby_exe(code).should == "-1"
   end
 end

@@ -20,18 +20,37 @@
 #define YYLTYPE rb_code_location_t
 #define YYLTYPE_IS_DECLARED 1
 
-#include "ruby/ruby.h"
-#include "ruby/st.h"
-#include "ruby/encoding.h"
+#include "ruby/config.h"
+
+#include <ctype.h>
+#include <errno.h>
+#include <stdio.h>
+
 #include "internal.h"
+#include "internal/compile.h"
+#include "internal/complex.h"
+#include "internal/error.h"
+#include "internal/hash.h"
+#include "internal/imemo.h"
+#include "internal/io.h"
+#include "internal/numeric.h"
+#include "internal/parse.h"
+#include "internal/rational.h"
+#include "internal/re.h"
+#include "internal/symbol.h"
+#include "internal/thread.h"
+#include "internal/util.h"
+#include "internal/variable.h"
 #include "node.h"
 #include "parse.h"
-#include "symbol.h"
-#include "regenc.h"
-#include <stdio.h>
-#include <errno.h>
-#include <ctype.h>
 #include "probes.h"
+#include "regenc.h"
+#include "ruby/encoding.h"
+#include "ruby/regex.h"
+#include "ruby/ruby.h"
+#include "ruby/st.h"
+#include "ruby/util.h"
+#include "symbol.h"
 
 #ifndef WARN_PAST_SCOPE
 # define WARN_PAST_SCOPE 0
@@ -296,7 +315,6 @@ struct parser_params {
     unsigned int do_loop: 1;
     unsigned int do_chomp: 1;
     unsigned int do_split: 1;
-    unsigned int warn_location: 1;
 
     NODE *eval_tree_begin;
     NODE *eval_tree;
@@ -1461,6 +1479,7 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 command_asgn	: lhs '=' command_rhs
 		    {
 #if 0
+			value_expr($3);
 			$$ = node_assign(p, $1, $3, &@$);
 #endif
 			{VALUE v1,v2,v3;v1=$1;v2=$3;v3=dispatch2(assign,v1,v2);$$=v3;}
@@ -1468,6 +1487,7 @@ command_asgn	: lhs '=' command_rhs
 		| var_lhs tOP_ASGN command_rhs
 		    {
 #if 0
+			value_expr($3);
 			$$ = new_op_assign(p, $1, $2, $3, &@$);
 #endif
 			{VALUE v1,v2,v3,v4;v1=$1;v2=$2;v3=$3;v4=dispatch3(opassign,v1,v2,v3);$$=v4;}
@@ -1475,6 +1495,7 @@ command_asgn	: lhs '=' command_rhs
 		| primary_value '[' opt_call_args rbracket tOP_ASGN command_rhs
 		    {
 #if 0
+			value_expr($6);
 			$$ = new_ary_op_assign(p, $1, $3, $5, $6, &@3, &@$);
 #endif
 			{VALUE v1,v2,v3,v4,v5,v6,v7;v1=$1;v2=escape_Qundef($3);v3=dispatch2(aref_field,v1,v2);v4=v3;v5=$5;v6=$6;v7=dispatch3(opassign,v4,v5,v6);$$=v7;}
@@ -1483,6 +1504,7 @@ command_asgn	: lhs '=' command_rhs
 		| primary_value call_op tIDENTIFIER tOP_ASGN command_rhs
 		    {
 #if 0
+			value_expr($5);
 			$$ = new_attr_op_assign(p, $1, $2, $3, $4, $5, &@$);
 #endif
 			{VALUE v1,v2,v3,v4,v5,v6,v7,v8;v1=$1;v2=$2;v3=$3;v4=dispatch3(field,v1,v2,v3);v5=v4;v6=$4;v7=$5;v8=dispatch3(opassign,v5,v6,v7);$$=v8;}
@@ -1490,6 +1512,7 @@ command_asgn	: lhs '=' command_rhs
 		| primary_value call_op tCONSTANT tOP_ASGN command_rhs
 		    {
 #if 0
+			value_expr($5);
 			$$ = new_attr_op_assign(p, $1, $2, $3, $4, $5, &@$);
 #endif
 			{VALUE v1,v2,v3,v4,v5,v6,v7,v8;v1=$1;v2=$2;v3=$3;v4=dispatch3(field,v1,v2,v3);v5=v4;v6=$4;v7=$5;v8=dispatch3(opassign,v5,v6,v7);$$=v8;}
@@ -1505,6 +1528,7 @@ command_asgn	: lhs '=' command_rhs
 		| primary_value tCOLON2 tIDENTIFIER tOP_ASGN command_rhs
 		    {
 #if 0
+			value_expr($5);
 			$$ = new_attr_op_assign(p, $1, ID2VAL(idCOLON2), $3, $4, $5, &@$);
 #endif
 			{VALUE v1,v2,v3,v4,v5,v6,v7,v8;v1=$1;v2=ID2VAL(idCOLON2);v3=$3;v4=dispatch3(field,v1,v2,v3);v5=v4;v6=$4;v7=$5;v8=dispatch3(opassign,v5,v6,v7);$$=v8;}
@@ -3937,19 +3961,12 @@ p_expr_basic	: p_value
 			$$ = new_array_pattern_tail(p, Qnone, 0, 0, Qnone, &@$);
 			$$ = new_array_pattern(p, Qnone, Qnone, $$, &@$);
 		    }
-		| tLBRACE
-		    {
-			$<tbl>$ = push_pktbl(p);
-			$<num>1 = p->in_kwarg;
-			p->in_kwarg = 0;
-		    }
-		  p_kwargs rbrace
+		| tLBRACE {$<tbl>$ = push_pktbl(p);} p_kwargs '}'
 		    {
 			pop_pktbl(p, $<tbl>2);
-			p->in_kwarg = $<num>1;
 			$$ = new_hash_pattern(p, Qnone, $3, &@$);
 		    }
-		| tLBRACE rbrace
+		| tLBRACE '}'
 		    {
 			$$ = new_hash_pattern_tail(p, Qnone, 0, &@$);
 			$$ = new_hash_pattern(p, Qnone, $$, &@$);
@@ -4057,10 +4074,6 @@ p_kwargs	: p_kwarg ',' p_kwrest
 			$$ =  new_hash_pattern_tail(p, new_unique_key_hash(p, $1, &@$), $3, &@$);
 		    }
 		| p_kwarg
-		    {
-			$$ =  new_hash_pattern_tail(p, new_unique_key_hash(p, $1, &@$), 0, &@$);
-		    }
-		| p_kwarg ','
 		    {
 			$$ =  new_hash_pattern_tail(p, new_unique_key_hash(p, $1, &@$), 0, &@$);
 		    }
@@ -5409,9 +5422,6 @@ rparen		: opt_nl ')'
 rbracket	: opt_nl ']'
 		;
 
-rbrace		: opt_nl '}'
-		;
-
 trailer		: /* none */
 		| '\n'
 		| ','
@@ -5538,9 +5548,6 @@ ripper_dispatch_delayed_token(struct parser_params *p, enum yytokentype t)
 #define dispatch_delayed_token(p, t) ripper_dispatch_delayed_token(p, t)
 #define has_delayed_token(p) (!NIL_P(p->delayed.token))
 #endif /* RIPPER */
-
-#include "ruby/regex.h"
-#include "ruby/util.h"
 
 static inline int
 is_identchar(const char *ptr, const char *MAYBE_UNUSED(ptr_end), rb_encoding *enc)
@@ -5847,7 +5854,7 @@ vtable_free_gen(struct parser_params *p, int line, const char *name,
 	if (tbl->tbl) {
 	    ruby_sized_xfree(tbl->tbl, tbl->capa * sizeof(ID));
 	}
-	ruby_sized_xfree(tbl, sizeof(tbl));
+	ruby_sized_xfree(tbl, sizeof(*tbl));
     }
 }
 #define vtable_free(tbl) vtable_free_gen(p, __LINE__, #tbl, tbl)
@@ -9909,19 +9916,6 @@ past_dvar_p(struct parser_params *p, ID id)
 }
 # endif
 
-/* As Ripper#warn does not have arguments for the location, so the
- * following messages cannot be separated */
-#define WARN_LOCATION(type) do { \
-    if (p->warn_location) { \
-	int line; \
-	VALUE file = rb_source_location(&line); \
-	rb_warn3(type" in eval may not return location in binding;" \
-		 " use Binding#source_location instead\n" \
-		 "%"PRIsWARN":%d: warning: in `%"PRIsWARN"'", \
-		 file, WARN_I(line), rb_id2str(rb_frame_this_func())); \
-    } \
-} while (0)
-
 static int
 numparam_nested_p(struct parser_params *p)
 {
@@ -9955,7 +9949,6 @@ gettable(struct parser_params *p, ID id, const YYLTYPE *loc)
       case keyword_false:
 	return NEW_FALSE(loc);
       case keyword__FILE__:
-	WARN_LOCATION("__FILE__");
 	{
 	    VALUE file = p->ruby_sourcefile_string;
 	    if (NIL_P(file))
@@ -9967,7 +9960,6 @@ gettable(struct parser_params *p, ID id, const YYLTYPE *loc)
 	}
 	return node;
       case keyword__LINE__:
-	WARN_LOCATION("__LINE__");
 	return NEW_LIT(INT2FIX(p->tokline), loc);
       case keyword__ENCODING__:
         node = NEW_LIT(rb_enc_from_encoding(p->enc), loc);
@@ -11248,7 +11240,7 @@ negate_lit(struct parser_params *p, VALUE lit)
 	lit = rb_big_norm(lit);
 	break;
       case T_RATIONAL:
-	RRATIONAL_SET_NUM(lit, negate_lit(p, RRATIONAL(lit)->num));
+	RATIONAL_SET_NUM(lit, negate_lit(p, RRATIONAL(lit)->num));
 	break;
       case T_COMPLEX:
 	RCOMPLEX_SET_REAL(lit, negate_lit(p, RCOMPLEX(lit)->real));
@@ -12049,7 +12041,7 @@ dvar_defined_ref(struct parser_params *p, ID id, ID **vidrefp)
 	if (used) used = used->prev;
     }
 
-    if (vars == DVARS_INHERIT) {
+    if (vars == DVARS_INHERIT && !NUMPARAM_ID_P(id)) {
         return rb_dvar_defined(id, p->parent_iseq);
     }
 
@@ -12242,14 +12234,6 @@ rb_parser_set_options(VALUE vparser, int print, int loop, int chomp, int split)
     p->do_loop = loop;
     p->do_chomp = chomp;
     p->do_split = split;
-}
-
-void
-rb_parser_warn_location(VALUE vparser, int warn)
-{
-    struct parser_params *p;
-    TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, p);
-    p->warn_location = warn;
 }
 
 static NODE *

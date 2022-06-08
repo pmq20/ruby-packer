@@ -3,16 +3,17 @@
 
  sources: ./ast, ./gc, ./io, ./pack, ./trace_point, ./warning, ./prelude, ./gem_prelude
 */
-#include "ruby/ruby.h"
 #include "internal.h"
-#include "vm_core.h"
+#include "internal/warnings.h"
 #include "iseq.h"
+#include "ruby/ruby.h"
+#include "vm_core.h"
 
 
 static const char prelude_name0[] = "<internal:ast>";
 static const struct {
-    char L0[505]; /* 1..104 */
-    char L104[361]; /* 105..145 */
+    char L0[507]; /* 1..106 */
+    char L106[361]; /* 107..147 */
 } prelude_code0 = {
 #line 1 "ast.rb"
 "\n"/* for ast.c */
@@ -100,7 +101,9 @@ static const struct {
 "\n"/*  */
 "\n"/*    root = RubyVM::AbstractSyntaxTree.parse(\"x = 1 + 2\") */
 "\n"/*    root.type # => :SCOPE */
-"\n"/*    call = root.children[2] */
+"\n"/*    lasgn = root.children[2] */
+"\n"/*    lasgn.type # => :LASGN */
+"\n"/*    call = lasgn.children[1] */
 "\n"/*    call.type # => :OPCALL */
 "      def type\n"
 "        __builtin_ast_node_type\n"
@@ -120,7 +123,7 @@ static const struct {
 "\n"/*  The column number in the source code where this AST's text began. */
 "      def first_column\n"
 ,
-#line 105 "ast.rb"
+#line 107 "ast.rb"
 "        __builtin_ast_node_first_column\n"
 "      end\n"
 "\n"
@@ -161,14 +164,14 @@ static const struct {
 "    end\n"
 "  end\n"
 "end\n"
-#line 165 "miniprelude.c"
+#line 168 "miniprelude.c"
 };
 
 static const char prelude_name1[] = "<internal:gc>";
 static const struct {
     char L0[506]; /* 1..71 */
-    char L71[463]; /* 72..163 */
-    char L163[204]; /* 164..170 */
+    char L71[471]; /* 72..171 */
+    char L171[204]; /* 172..178 */
 } prelude_code1 = {
 #line 1 "gc.rb"
 "\n"/* for gc.c */
@@ -315,6 +318,10 @@ static const struct {
 "\n"/*  The contents of the hash are implementation specific and may be changed in */
 "\n"/*  the future. */
 "\n"/*  */
+"\n"/*  If the optional argument, hash, is given, */
+"\n"/*  it is overwritten and returned. */
+"\n"/*  This is intended to avoid probe effect. */
+"\n"/*  */
 "\n"/*  This method is only expected to work on C Ruby. */
 "  def self.stat hash_or_key = nil\n"
 "    __builtin_gc_stat hash_or_key\n"
@@ -326,6 +333,10 @@ static const struct {
 "\n"/*     GC.latest_gc_info(:major_by) -> :malloc */
 "\n"/*  */
 "\n"/*  Returns information about the most recent garbage collection. */
+"\n"/*  */
+"\n"/* If the optional argument, hash, is given, */
+"\n"/* it is overwritten and returned. */
+"\n"/* This is intended to avoid probe effect. */
 "  def self.latest_gc_info hash_or_key = nil\n"
 "    __builtin_gc_latest_gc_info hash_or_key\n"
 "  end\n"
@@ -337,14 +348,14 @@ static const struct {
 "\n"
 "module ObjectSpace\n"
 ,
-#line 164 "gc.rb"
+#line 172 "gc.rb"
 "  def garbage_collect full_mark: true, immediate_mark: true, immediate_sweep: true\n"
 "    __builtin_gc_start_internal full_mark, immediate_mark, immediate_sweep\n"
 "  end\n"
 "\n"
 "  module_function :garbage_collect\n"
 "end\n"
-#line 348 "miniprelude.c"
+#line 359 "miniprelude.c"
 };
 
 static const char prelude_name2[] = "<internal:io>";
@@ -475,7 +486,7 @@ static const struct {
 "    __builtin_io_write_nonblock(buf, exception)\n"
 "  end\n"
 "end\n"
-#line 479 "miniprelude.c"
+#line 490 "miniprelude.c"
 };
 
 static const char prelude_name3[] = "<internal:pack>";
@@ -766,7 +777,7 @@ static const struct {
 "    __builtin_pack_unpack1(fmt)\n"
 "  end\n"
 "end\n"
-#line 770 "miniprelude.c"
+#line 781 "miniprelude.c"
 };
 
 static const char prelude_name4[] = "<internal:trace_point>";
@@ -962,7 +973,7 @@ static const struct {
 "\n"/*    t.enable(target: method(:m1)) */
 "\n"/*  */
 "\n"/*    m1 */
-"\n"/*    # prints #<TracePoint:line@test.rb:5 in `m1'> */
+"\n"/*    # prints #<TracePoint:line@test.rb:4 in `m1'> */
 "\n"/*    m2 */
 "\n"/*    # prints nothing */
 "\n"/*  */
@@ -1131,7 +1142,7 @@ static const struct {
 "    __builtin_tracepoint_attr_instruction_sequence\n"
 "  end\n"
 "end\n"
-#line 1135 "miniprelude.c"
+#line 1146 "miniprelude.c"
 };
 
 static const char prelude_name5[] = "<internal:warning>";
@@ -1140,7 +1151,7 @@ static const struct {
 } prelude_code5 = {
 #line 1 "warning.rb"
 "\n"/* encoding: utf-8 */
-"\n"/* fronzen-string-literal: true */
+"\n"/* frozen-string-literal: true */
 "\n"
 "module Kernel\n"
 "  module_function\n"
@@ -1184,7 +1195,7 @@ static const struct {
 "    __builtin_rb_warn_m(msgs, uplevel)\n"
 "  end\n"
 "end\n"
-#line 1188 "miniprelude.c"
+#line 1199 "miniprelude.c"
 };
 
 static const char prelude_name6[] = "<internal:prelude>";
@@ -1229,7 +1240,7 @@ static const struct {
 "\n"
 "  private :pp\n"
 "end\n"
-#line 1233 "miniprelude.c"
+#line 1244 "miniprelude.c"
 };
 
 static const char prelude_name7[] = "<internal:gem_prelude>";
@@ -1239,7 +1250,7 @@ static const struct {
 #line 1 "gem_prelude.rb"
 "require 'rubygems.rb' if defined?(Gem)\n"
 "require 'did_you_mean' if defined?(DidYouMean)\n"
-#line 1243 "miniprelude.c"
+#line 1254 "miniprelude.c"
 };
 
 #define PRELUDE_NAME(n) rb_usascii_str_new_static(prelude_name##n, sizeof(prelude_name##n)-1)

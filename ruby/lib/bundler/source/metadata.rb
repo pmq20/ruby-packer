@@ -25,17 +25,13 @@ module Bundler
             s.loaded_from = File.expand_path("..", __FILE__)
           end
 
-          if local_spec = Bundler.rubygems.find_name("bundler").find {|s| s.version.to_s == VERSION }
+          if local_spec = Bundler.rubygems.find_bundler(VERSION)
             idx << local_spec
           end
 
           idx.each {|s| s.source = self }
         end
       end
-
-      def cached!; end
-
-      def remote!; end
 
       def options
         {}
