@@ -3,8 +3,13 @@
 // auto-generated file
 //   by ./tool/mk_builtin_loader.rb
 //   with warning.rb
+#include "internal/compilers.h"     /* for MAYBE_UNUSED */
+#include "internal/warnings.h"      /* for COMPILER_WARNING_PUSH */
+#include "ruby/ruby.h"              /* for VALUE */
+#include "builtin.h"                /* for RB_BUILTIN_FUNCTION */
+struct rb_execution_context_struct; /* in vm_core.h */
 
-static void load_warning(void)
+void Init_builtin_warning(void)
 {
   // table definition
   static const struct rb_builtin_function warning_table[] = {

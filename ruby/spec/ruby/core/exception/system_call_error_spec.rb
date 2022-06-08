@@ -31,7 +31,7 @@ describe "SystemCallError.new" do
     -> { SystemCallError.new }.should raise_error(ArgumentError)
   end
 
-  it "accepts single Fixnum argument as errno" do
+  it "accepts single Integer argument as errno" do
     SystemCallError.new(-2**24).errno.should == -2**24
     SystemCallError.new(-1).errno.should == -1
     SystemCallError.new(0).errno.should == 0
@@ -126,5 +126,18 @@ describe "SystemCallError#message" do
   it "returns the message given as an argument to new" do
     SystemCallError.new("message", 1).message.should =~ /message/
     SystemCallError.new("XXX").message.should =~ /XXX/
+  end
+end
+
+describe "SystemCallError#dup" do
+  it "copies the errno" do
+    dup_sce = SystemCallError.new("message", 42).dup
+    dup_sce.errno.should == 42
+  end
+end
+
+describe "SystemCallError#backtrace" do
+  it "is nil if not raised" do
+    SystemCallError.new("message", 42).backtrace.should == nil
   end
 end
