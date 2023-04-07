@@ -212,10 +212,10 @@ class Compiler
 
     ext_path = File.join(PRJ_ROOT, 'ext')
 
-    Dir[ext_path + '/*.{bundle,so}'].each do |lib|
+    Dir["#{ext_path}/*.{bundle,so}"].each do |lib|
       filename = lib.split('/').last
 
-      Dir[@work_dir + '/**/*' + filename].sort_by(&:length).reverse.each_with_index do |path, index|
+      Dir["#{@work_dir}/**/*#{filename}"].sort_by(&:length).reverse.each_with_index do |path, index|
         if index.zero?
           @utils.cp(lib, path)
         else
@@ -509,7 +509,7 @@ class Compiler
     warn message
   end
 
-  def stuff(library, &block)
+  def stuff(library, &)
     source = File.join PRJ_ROOT, 'vendor', library
     target = File.join @options[:tmpdir], library
 
@@ -520,7 +520,7 @@ class Compiler
     log "=> Stuffing #{library}..."
 
     @utils.capture_run_io "stuff_#{library}" do
-      @utils.chdir(target, &block)
+      @utils.chdir(target, &)
     end
 
     log "=> Stuffed #{library}"
