@@ -1,13 +1,14 @@
+#--
 #
-# $Id: 63bd084db2dce8a2c9760318faae6104717cead7 $
+#
 #
 # Copyright (c) 1999-2006 Minero Aoki
 #
 # This program is free software.
-# You can distribute/modify this program under the terms of
-# the GNU LGPL, Lesser General Public License version 2.1.
-# For details of the GNU LGPL, see the file "COPYING".
+# You can distribute/modify this program under the same terms of ruby.
+# see the file "COPYING".
 #
+#++
 
 require 'racc'
 require 'racc/compat'
@@ -259,9 +260,9 @@ module Racc
       _, *blocks = *@scanner.epilogue.split(/^----/)
       blocks.each do |block|
         header, *body = block.lines.to_a
-        label0, pathes = *header.sub(/\A-+/, '').split('=', 2)
+        label0, paths = *header.sub(/\A-+/, '').split('=', 2)
         label = canonical_label(label0)
-        (pathes ? pathes.strip.split(' ') : []).each do |path|
+        (paths ? paths.strip.split(' ') : []).each do |path|
           add_user_code label, SourceText.new(File.read(path), path, 1)
         end
         add_user_code label, SourceText.new(body.join(''), @filename, line + 1)
@@ -286,7 +287,7 @@ module Racc
     end
 
     def add_user_code(label, src)
-      @result.params.send(USER_CODE_LABELS[label]).push src
+      @result.params.public_send(USER_CODE_LABELS[label]).push src
     end
 
   end
@@ -427,7 +428,7 @@ module Racc
     $raccs_print_type = false
 
     def scan_action
-      buf = ''
+      buf = String.new
       nest = 1
       pre = nil
       @in_block = 'action'

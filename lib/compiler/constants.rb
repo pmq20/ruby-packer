@@ -6,7 +6,7 @@
 # For full terms see the included LICENSE file
 
 class Compiler
-  VERSION = '2.7.1.dev'
+  VERSION = '3.1.0.dev'
   PRJ_ROOT = File.expand_path('../..', __dir__)
   VENDOR_DIR = File.expand_path('vendor', PRJ_ROOT)
   MEMFS = '/__enclose_io_memfs__'

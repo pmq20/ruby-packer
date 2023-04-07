@@ -1,5 +1,5 @@
 #! /usr/bin/env perl
-# Copyright 2015-2018 The OpenSSL Project Authors. All Rights Reserved.
+# Copyright 2015-2021 The OpenSSL Project Authors. All Rights Reserved.
 #
 # Licensed under the OpenSSL license (the "License").  You may not use
 # this file except in compliance with the License.  You can obtain a copy
@@ -15,7 +15,7 @@ use OpenSSL::Test qw/:DEFAULT srctop_file/;
 
 setup("test_req");
 
-plan tests => 12;
+plan tests => 14;
 
 require_ok(srctop_file('test','recipes','tconversion.pl'));
 
@@ -47,7 +47,7 @@ ok(!run(app([@addext_args, "-addext", $val, "-addext", $val3])));
 ok(!run(app([@addext_args, "-addext", $val2, "-addext", $val3])));
 
 subtest "generating certificate requests with RSA" => sub {
-    plan tests => 2;
+    plan tests => 6;
 
     SKIP: {
         skip "RSA is not supported by this OpenSSL build", 2
@@ -63,6 +63,29 @@ subtest "generating certificate requests with RSA" => sub {
                     "-config", srctop_file("test", "test.cnf"),
                     "-verify", "-in", "testreq.pem", "-noout"])),
            "Verifying signature on request");
+
+        ok(run(app(["openssl", "req",
+                    "-config", srctop_file("test", "test.cnf"),
+                    "-new", "-out", "testreq_withattrs_pem.pem", "-utf8",
+                    "-key", srctop_file("test", "testrsa_withattrs.pem")])),
+           "Generating request from a key with extra attributes - PEM");
+
+        ok(run(app(["openssl", "req",
+                    "-config", srctop_file("test", "test.cnf"),
+                    "-verify", "-in", "testreq_withattrs_pem.pem", "-noout"])),
+           "Verifying signature on request from a key with extra attributes - PEM");
+
+        ok(run(app(["openssl", "req",
+                    "-config", srctop_file("test", "test.cnf"),
+                    "-new", "-out", "testreq_withattrs_der.pem", "-utf8",
+                    "-key", srctop_file("test", "testrsa_withattrs.der"),
+	            "-keyform", "DER"])),
+           "Generating request from a key with extra attributes - PEM");
+
+        ok(run(app(["openssl", "req",
+                    "-config", srctop_file("test", "test.cnf"),
+                    "-verify", "-in", "testreq_withattrs_der.pem", "-noout"])),
+           "Verifying signature on request from a key with extra attributes - PEM");
     }
 };
 
@@ -106,6 +129,46 @@ subtest "generating certificate requests with ECDSA" => sub {
     }
 };
 
+subtest "generating certificate requests with Ed25519" => sub {
+    plan tests => 2;
+
+    SKIP: {
+        skip "Ed25519 is not supported by this OpenSSL build", 2
+            if disabled("ec");
+
+        ok(run(app(["openssl", "req",
+                    "-config", srctop_file("test", "test.cnf"),
+                    "-new", "-out", "testreq.pem", "-utf8",
+                    "-key", srctop_file("test", "tested25519.pem")])),
+           "Generating request");
+
+        ok(run(app(["openssl", "req",
+                    "-config", srctop_file("test", "test.cnf"),
+                    "-verify", "-in", "testreq.pem", "-noout"])),
+           "Verifying signature on request");
+    }
+};
+
+subtest "generating certificate requests with Ed448" => sub {
+    plan tests => 2;
+
+    SKIP: {
+        skip "Ed448 is not supported by this OpenSSL build", 2
+            if disabled("ec");
+
+        ok(run(app(["openssl", "req",
+                    "-config", srctop_file("test", "test.cnf"),
+                    "-new", "-out", "testreq.pem", "-utf8",
+                    "-key", srctop_file("test", "tested448.pem")])),
+           "Generating request");
+
+        ok(run(app(["openssl", "req",
+                    "-config", srctop_file("test", "test.cnf"),
+                    "-verify", "-in", "testreq.pem", "-noout"])),
+           "Verifying signature on request");
+    }
+};
+
 subtest "generating certificate requests" => sub {
     plan tests => 2;
 
@@ -125,7 +188,7 @@ run_conversion('req conversions',
 run_conversion('req conversions -- testreq2',
                srctop_file("test", "testreq2.pem"));
 
-unlink "testkey.pem", "testreq.pem";
+unlink "testkey.pem", "testreq.pem", "testreq_withattrs_pem.pem", "testreq_withattrs_der.pem";
 
 sub run_conversion {
     my $title = shift;

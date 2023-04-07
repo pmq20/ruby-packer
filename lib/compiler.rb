@@ -78,7 +78,7 @@ class Compiler
     if Gem.win_platform?
       'a.exe'
     else
-      'a.out'
+      [`uname`.delete("\n"), `uname -m`.delete("\n")].join('-')
     end
 
   def initialize(entrance, options = {})
@@ -110,7 +110,7 @@ class Compiler
               elsif @options[:debug]
                 ' -DRUBY_DEBUG -fPIC -g -O0 -pipe '
               else
-                ' -DRUBY_DEBUG -fPIC -O3 -fno-fast-math -ggdb3 -Os -fdata-sections -ffunction-sections -pipe '
+                ' -DRUBY_DEBUG -fPIC -O3 -fno-fast-math -ggdb3 -Os -fdata-sections -ffunction-sections -pipe -Wno-error=implicit-function-declaration '
               end
 
     # install prefix for stuffed libraries
@@ -168,7 +168,7 @@ class Compiler
     @options[:tmpdir] ||= File.expand_path('rubyc', Dir.tmpdir)
     @options[:tmpdir] = File.expand_path(@options[:tmpdir])
     @options[:openssl_dir] ||= '/usr/local/etc/openssl/'
-    @options[:ignore_file].concat(File.readlines('.rubycignore').map(&:strip)) if File.exist?('.rubycignore')
+    @options[:ignore_file] = File.readlines('.rubycignore').map(&:strip) if File.exist?('.rubycignore')
   end
 
   def init_tmpdir
@@ -201,9 +201,28 @@ class Compiler
 
     prepare_work_dir unless Dir.exist?(@work_dir)
     ext_setup
+    replace_linked_extensions
     prepare_work_dir_squashfs unless File.exist?(@work_dir_squashfs)
     prepare_enclose_io_vars
     build_pass2
+  end
+
+  def replace_linked_extensions
+    return if `uname -m`.start_with?('aarch64')
+
+    ext_path = File.join(PRJ_ROOT, 'ext')
+
+    Dir[ext_path + '/*.{bundle,so}'].each do |lib|
+      filename = lib.split('/').last
+
+      Dir[@work_dir + '/**/*' + filename].sort_by(&:length).reverse.each_with_index do |path, index|
+        if index.zero?
+          @utils.cp(lib, path)
+        else
+          @utils.rm(path)
+        end
+      end
+    end
   end
 
   def build_pass1
@@ -312,9 +331,9 @@ class Compiler
   end
 
   def local_toolchain_clean
-    Dir["#{@work_dir_inner}/**/*.{a,dylib,so,dll,lib,bundle}"].each do |thisdl|
-      @utils.rm_f(thisdl)
-    end
+    # Dir["#{@work_dir_inner}/**/*.{a,dylib,so,dll,lib,bundle}"].each do |thisdl|
+    #   @utils.rm_f(thisdl)
+    # end
 
     return unless Dir.exist?(@work_dir_local)
 
@@ -470,6 +489,9 @@ class Compiler
     source = File.join(PRJ_ROOT, 'ruby')
     @utils.cp_r(source, @ruby_source_dir, preserve: true)
     @utils.chdir(@ruby_source_dir) do
+      @utils.run(compile_env, 'autoconf')
+      @utils.run(compile_env, './configure')
+
       Dir['**/configure.ac'].each do |x|
         File.utime(Time.at(0), Time.at(0), x)
       end
@@ -477,7 +499,7 @@ class Compiler
         File.utime(Time.at(0), Time.at(0), x)
       end
       File.utime(Time.at(0), Time.at(0), 'parse.y')
-      File.utime(Time.at(0), Time.at(0), 'ext/ripper/ripper.y')
+      # File.utime(Time.at(0), Time.at(0), 'ext/ripper/ripper.y')
     end
   end
 
@@ -544,6 +566,28 @@ class Compiler
                    "--prefix=#{@local_build}")
         @utils.run(compile_env, "nmake #{@options[:nmake_args]}")
         @utils.run(compile_env, 'nmake install_sw')
+      elsif `uname -m`.start_with?('arm64')
+        @utils.run(compile_env,
+                   './Configure',
+                   'darwin64-arm64-cc',
+                   'shared',
+                   'enable-rc5',
+                   'zlib',
+                   'no-asm',
+                   "--openssldir=#{@options[:openssl_dir]}",
+                   "--prefix=#{@local_build}")
+        @utils.run(compile_env, "make #{@options[:nmake_args]}")
+        @utils.run(compile_env, 'make install_sw')
+      elsif `uname -m`.start_with?('aarch64')
+        @utils.run(compile_env,
+                   'perl',
+                   'Configure',
+                   'linux-aarch64',
+                   'shared',
+                   "--openssldir=#{@options[:openssl_dir]}",
+                   "--prefix=#{@local_build}")
+        @utils.run(compile_env, "make #{@options[:nmake_args]}")
+        @utils.run(compile_env, 'make install_sw')
       else
         @utils.run(compile_env,
                    './config',
@@ -613,6 +657,7 @@ class Compiler
         File.utime(Time.at(0), Time.at(0), x)
       end
 
+      @utils.run(compile_env, './autogen.sh')
       @utils.run(compile_env,
                  './configure',
                  '--with-pic',
@@ -749,7 +794,7 @@ class Compiler
 
       @cflags += " -I#{@utils.escape @ruby_source_dir} "
       @cflags += " -I#{@utils.escape File.join(@local_build, 'include')} "
-      @cflags += " -I#{@utils.escape File.join(lib, 'libffi-3.2.1', 'include')} "
+      @cflags += " -I#{@utils.escape File.join(lib, 'libffi-3.4.2', 'include')} "
     end
   end
 

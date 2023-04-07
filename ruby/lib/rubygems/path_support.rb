@@ -5,7 +5,6 @@
 # to the rest of RubyGems.
 #
 class Gem::PathSupport
-
   ##
   # The default system path for managing Gems.
   attr_reader :home
@@ -89,12 +88,7 @@ class Gem::PathSupport
 
   # Return the default Gem path
   def default_path
-    gem_path = Gem.default_path + [@home]
-
-    if defined?(APPLE_GEM_HOME)
-      gem_path << APPLE_GEM_HOME
-    end
-    gem_path
+    Gem.default_path + [@home]
   end
 
   def expand(path)
@@ -104,5 +98,4 @@ class Gem::PathSupport
       path
     end
   end
-
 end

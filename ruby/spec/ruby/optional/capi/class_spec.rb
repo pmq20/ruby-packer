@@ -1,5 +1,6 @@
 require_relative 'spec_helper'
 require_relative 'fixtures/class'
+require_relative '../../core/module/fixtures/classes'
 
 load_extension("class")
 compile_extension("class_under_autoload")
@@ -11,6 +12,7 @@ autoload :ClassIdUnderAutoload, "#{object_path}/class_id_under_autoload_spec"
 describe :rb_path_to_class, shared: true do
   it "returns a class or module from a scoped String" do
     @s.send(@method, "CApiClassSpecs::A::B").should equal(CApiClassSpecs::A::B)
+    @s.send(@method, "CApiClassSpecs::A::M").should equal(CApiClassSpecs::A::M)
   end
 
   it "resolves autoload constants" do
@@ -26,7 +28,9 @@ describe :rb_path_to_class, shared: true do
   end
 
   it "raises a TypeError if the constant is not a class or module" do
-    -> { @s.send(@method, "CApiClassSpecs::A::C") }.should raise_error(TypeError)
+    -> {
+      @s.send(@method, "CApiClassSpecs::A::C")
+    }.should raise_error(TypeError, 'CApiClassSpecs::A::C does not refer to class/module')
   end
 
   it "raises an ArgumentError even if a constant in the path exists on toplevel" do
@@ -37,6 +41,69 @@ end
 describe "C-API Class function" do
   before :each do
     @s = CApiClassSpecs.new
+  end
+
+  describe "rb_class_instance_methods" do
+    it "returns the public and protected methods of self and its ancestors" do
+      methods = @s.rb_class_instance_methods(ModuleSpecs::Basic)
+      methods.should include(:protected_module, :public_module)
+
+      methods = @s.rb_class_instance_methods(ModuleSpecs::Basic, true)
+      methods.should include(:protected_module, :public_module)
+    end
+
+    it "when passed false as a parameter, returns the instance methods of the class" do
+      methods = @s.rb_class_instance_methods(ModuleSpecs::Child, false)
+      methods.should include(:protected_child, :public_child)
+    end
+  end
+
+  describe "rb_class_public_instance_methods" do
+    it "returns a list of public methods in module and its ancestors" do
+      methods = @s.rb_class_public_instance_methods(ModuleSpecs::CountsChild)
+      methods.should include(:public_3)
+      methods.should include(:public_2)
+      methods.should include(:public_1)
+
+      methods = @s.rb_class_public_instance_methods(ModuleSpecs::CountsChild, true)
+      methods.should include(:public_3)
+      methods.should include(:public_2)
+      methods.should include(:public_1)
+    end
+
+    it "when passed false as a parameter, should return only methods defined in that module" do
+      @s.rb_class_public_instance_methods(ModuleSpecs::CountsChild, false).should == [:public_1]
+    end
+  end
+
+  describe "rb_class_protected_instance_methods" do
+    it "returns a list of protected methods in module and its ancestors" do
+      methods = @s.rb_class_protected_instance_methods(ModuleSpecs::CountsChild)
+      methods.should include(:protected_3)
+      methods.should include(:protected_2)
+      methods.should include(:protected_1)
+
+      methods = @s.rb_class_protected_instance_methods(ModuleSpecs::CountsChild, true)
+      methods.should include(:protected_3)
+      methods.should include(:protected_2)
+      methods.should include(:protected_1)
+    end
+
+    it "when passed false as a parameter, should return only methods defined in that module" do
+      @s.rb_class_public_instance_methods(ModuleSpecs::CountsChild, false).should == [:public_1]
+    end
+  end
+
+  describe "rb_class_private_instance_methods" do
+    it "returns a list of private methods in module and its ancestors" do
+      @s.rb_class_private_instance_methods(ModuleSpecs::CountsChild).should == ModuleSpecs::CountsChild.private_instance_methods
+      @s.rb_class_private_instance_methods(ModuleSpecs::CountsChild, true).should == ModuleSpecs::CountsChild.private_instance_methods
+    end
+
+    it "when passed false as a parameter, should return only methods defined in that module" do
+      methods = @s.rb_class_private_instance_methods(ModuleSpecs::CountsChild, false)
+      methods.should == [:private_1]
+    end
   end
 
   describe "rb_class_new_instance" do
@@ -338,7 +405,7 @@ describe "C-API Class function" do
   end
 
   describe "rb_class_new" do
-    it "returns an new subclass of the superclass" do
+    it "returns a new subclass of the superclass" do
       subclass = @s.rb_class_new(CApiClassSpecs::NewClass)
       CApiClassSpecs::NewClass.should be_ancestor_of(subclass)
     end

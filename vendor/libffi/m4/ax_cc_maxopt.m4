@@ -1,5 +1,5 @@
 # ===========================================================================
-#       http://www.gnu.org/software/autoconf-archive/ax_cc_maxopt.html
+#       https://www.gnu.org/software/autoconf-archive/ax_cc_maxopt.html
 # ===========================================================================
 #
 # SYNOPSIS
@@ -40,7 +40,7 @@
 #   Public License for more details.
 #
 #   You should have received a copy of the GNU General Public License along
-#   with this program. If not, see <http://www.gnu.org/licenses/>.
+#   with this program. If not, see <https://www.gnu.org/licenses/>.
 #
 #   As a special exception, the respective Autoconf Macro's copyright owner
 #   gives unlimited permission to copy, distribute and modify the configure
@@ -55,7 +55,7 @@
 #   modified version of the Autoconf Macro, you may extend this special
 #   exception to the GPL to apply to your modified version as well.
 
-#serial 13
+#serial 18
 
 AC_DEFUN([AX_CC_MAXOPT],
 [
@@ -68,19 +68,18 @@ AC_ARG_ENABLE(portable-binary, [AS_HELP_STRING([--enable-portable-binary], [disa
 
 # Try to determine "good" native compiler flags if none specified via CFLAGS
 if test "$ac_test_CFLAGS" != "set"; then
-  CFLAGS=""
   case $ax_cv_c_compiler_vendor in
-    dec) CFLAGS="-newc -w0 -O5 -ansi_alias -ansi_args -fp_reorder -tune host"
+    dec) CFLAGS="$CFLAGS -newc -w0 -O5 -ansi_alias -ansi_args -fp_reorder -tune host"
 	 if test "x$acx_maxopt_portable" = xno; then
            CFLAGS="$CFLAGS -arch host"
          fi;;
 
-    sun) CFLAGS="-native -fast -xO5 -dalign"
+    sun) CFLAGS="$CFLAGS -native -fast -xO5 -dalign"
 	 if test "x$acx_maxopt_portable" = xyes; then
 	   CFLAGS="$CFLAGS -xarch=generic"
          fi;;
 
-    hp)  CFLAGS="+Oall +Optrs_ansi +DSnative"
+    hp)  CFLAGS="$CFLAGS +Oall +Optrs_ansi +DSnative"
 	 if test "x$acx_maxopt_portable" = xyes; then
 	   CFLAGS="$CFLAGS +DAportable"
 	 fi;;
@@ -91,8 +90,8 @@ if test "$ac_test_CFLAGS" != "set"; then
            xlc_opt="-qtune=auto"
 	 fi
          AX_CHECK_COMPILE_FLAG($xlc_opt,
-		CFLAGS="-O3 -qansialias -w $xlc_opt",
-               [CFLAGS="-O3 -qansialias -w"
+		CFLAGS="$CFLAGS -O3 -qansialias -w $xlc_opt",
+               [CFLAGS="$CFLAGS -O3 -qansialias -w"
                 echo "******************************************************"
                 echo "*  You seem to have the IBM  C compiler.  It is      *"
                 echo "*  recommended for best performance that you use:    *"
@@ -105,7 +104,7 @@ if test "$ac_test_CFLAGS" != "set"; then
                 echo "******************************************************"])
          ;;
 
-    intel) CFLAGS="-O3 -ansi_alias"
+    intel) CFLAGS="$CFLAGS -O3 -ansi_alias"
 	if test "x$acx_maxopt_portable" = xno; then
 	  icc_archflag=unknown
 	  icc_flags=""
@@ -115,11 +114,19 @@ if test "$ac_test_CFLAGS" != "set"; then
 	      AX_GCC_X86_CPUID(0)
               AX_GCC_X86_CPUID(1)
 	      case $ax_cv_gcc_x86_cpuid_0 in # see AX_GCC_ARCHFLAG
-                *:756e6547:*:*) # Intel
+                *:756e6547:6c65746e:49656e69) # Intel
                   case $ax_cv_gcc_x86_cpuid_1 in
-                    *6a?:*[[234]]:*:*|*6[[789b]]?:*:*:*) icc_flags="-xK";;
-                    *f3[[347]]:*:*:*|*f4[1347]:*:*:*) icc_flags="-xP -xN -xW -xK";;
-                    *f??:*:*:*) icc_flags="-xN -xW -xK";;
+		    *0?6[[78ab]]?:*:*:*|?6[[78ab]]?:*:*:*|6[[78ab]]?:*:*:*) icc_flags="-xK" ;;
+		    *0?6[[9d]]?:*:*:*|?6[[9d]]?:*:*:*|6[[9d]]?:*:*:*|*1?65?:*:*:*) icc_flags="-xSSE2 -xB -xK" ;;
+		    *0?6e?:*:*:*|?6e?:*:*:*|6e?:*:*:*) icc_flags="-xSSE3 -xP -xO -xB -xK" ;;
+		    *0?6f?:*:*:*|?6f?:*:*:*|6f?:*:*:*|*1?66?:*:*:*) icc_flags="-xSSSE3 -xT -xB -xK" ;;
+		    *1?6[[7d]]?:*:*:*) icc_flags="-xSSE4.1 -xS -xT -xB -xK" ;;
+		    *1?6[[aef]]?:*:*:*|*2?6[[5cef]]?:*:*:*) icc_flags="-xSSE4.2 -xS -xT -xB -xK" ;;
+		    *2?6[[ad]]?:*:*:*) icc_flags="-xAVX -SSE4.2 -xS -xT -xB -xK" ;;
+		    *3?6[[ae]]?:*:*:*) icc_flags="-xCORE-AVX-I -xAVX -SSE4.2 -xS -xT -xB -xK" ;;
+		    *3?6[[cf]]?:*:*:*|*4?6[[56]]?:*:*:*) icc_flags="-xCORE-AVX2 -xCORE-AVX-I -xAVX -SSE4.2 -xS -xT -xB -xK" ;;
+		    *000?f[[346]]?:*:*:*|?f[[346]]?:*:*:*|f[[346]]?:*:*:*) icc_flags="-xSSE3 -xP -xO -xN -xW -xK" ;;
+		    *00??f??:*:*:*|??f??:*:*:*|?f??:*:*:*|f??:*:*:*) icc_flags="-xSSE2 -xN -xW -xK" ;;
                   esac ;;
               esac ;;
           esac
@@ -138,10 +145,10 @@ if test "$ac_test_CFLAGS" != "set"; then
 
     gnu)
      # default optimization flags for gcc on all systems
-     CFLAGS="-O3 -fomit-frame-pointer"
+     CFLAGS="$CFLAGS -O3 -fomit-frame-pointer"
 
      # -malign-double for x86 systems
-     # LIBFFI -- DON'T DO THIS - CHANGES ABI
+     # libffi local change -- don't align double, as it changes the ABI
      # AX_CHECK_COMPILE_FLAG(-malign-double, CFLAGS="$CFLAGS -malign-double")
 
      #  -fstrict-aliasing for gcc-2.95+
@@ -153,6 +160,11 @@ if test "$ac_test_CFLAGS" != "set"; then
 
      AX_GCC_ARCHFLAG($acx_maxopt_portable)
      ;;
+
+    microsoft)
+     # default optimization flags for MSVC opt builds
+     CFLAGS="$CFLAGS -O2"
+     ;;
   esac
 
   if test -z "$CFLAGS"; then
@@ -163,7 +175,7 @@ if test "$ac_test_CFLAGS" != "set"; then
 	echo "* (otherwise, a default of CFLAGS=-O3 will be used)    *"
 	echo "********************************************************"
 	echo ""
-        CFLAGS="-O3"
+        CFLAGS="$CFLAGS -O3"
   fi
 
   AX_CHECK_COMPILE_FLAG($CFLAGS, [], [
@@ -174,7 +186,6 @@ if test "$ac_test_CFLAGS" != "set"; then
         echo "* Use ./configure CFLAGS=... to specify your own flags *"
         echo "********************************************************"
         echo ""
-        CFLAGS=""
   ])
 
 fi

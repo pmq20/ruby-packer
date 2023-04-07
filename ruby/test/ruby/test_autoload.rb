@@ -66,6 +66,8 @@ p Foo::Bar
   end
 
   def test_autoload_with_unqualified_file_name # [ruby-core:69206]
+    Object.send(:remove_const, :A) if Object.const_defined?(:A)
+
     lp = $LOAD_PATH.dup
     lf = $LOADED_FEATURES.dup
 
@@ -425,8 +427,25 @@ p Foo::Bar
     end
   end
 
-  def test_no_leak
-    assert_no_memory_leak([], '', <<~'end;', 'many autoloads', timeout: 60)
+  def test_source_location
+    bug = "Bug16764"
+    Dir.mktmpdir('autoload') do |tmpdir|
+      path = "#{tmpdir}/test-#{bug}.rb"
+      File.write(path, "C::#{bug} = __FILE__\n")
+      assert_separately(%W[-I #{tmpdir}], "#{<<-"begin;"}\n#{<<-"end;"}")
+      begin;
+        class C; end
+        C.autoload(:Bug16764, #{path.dump})
+        assert_equal [__FILE__, __LINE__-1], C.const_source_location(#{bug.dump})
+        assert_equal #{path.dump}, C.const_get(#{bug.dump})
+        assert_equal [#{path.dump}, 1], C.const_source_location(#{bug.dump})
+      end;
+    end
+  end
+
+  def test_no_memory_leak
+    assert_no_memory_leak([], '', "#{<<~"begin;"}\n#{<<~'end;'}", 'many autoloads', timeout: 60)
+    begin;
       200000.times do |i|
         m = Module.new
         m.instance_eval do
@@ -437,6 +456,31 @@ p Foo::Bar
     end;
   end
 
+  def test_autoload_after_failed_and_removed_from_loaded_features
+    Dir.mktmpdir('autoload') do |tmpdir|
+      autoload_path = File.join(tmpdir, "test-bug-15790.rb")
+      File.write(autoload_path, '')
+
+      assert_separately(%W[-I #{tmpdir}], <<-RUBY)
+        path = #{File.realpath(autoload_path).inspect}
+        autoload :X, path
+        assert_equal(path, Object.autoload?(:X))
+
+        assert_raise(NameError){X}
+        assert_nil(Object.autoload?(:X))
+        assert_equal(false, Object.const_defined?(:X))
+
+        $LOADED_FEATURES.delete(path)
+        assert_equal(false, Object.const_defined?(:X))
+        assert_nil(Object.autoload?(:X))
+
+        assert_raise(NameError){X}
+        assert_equal(false, Object.const_defined?(:X))
+        assert_nil(Object.autoload?(:X))
+      RUBY
+    end
+  end
+
   def add_autoload(path)
     (@autoload_paths ||= []) << path
     ::Object.class_eval {autoload(:AutoloadTest, path)}
@@ -444,6 +488,7 @@ p Foo::Bar
 
   def remove_autoload_constant
     $".replace($" - @autoload_paths)
-    ::Object.class_eval {remove_const(:AutoloadTest)}
+    ::Object.class_eval {remove_const(:AutoloadTest)} if defined? Object::AutoloadTest
+    TestAutoload.class_eval {remove_const(:AutoloadTest)} if defined? TestAutoload::AutoloadTest
   end
 end
