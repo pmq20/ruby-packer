@@ -15,7 +15,7 @@ require 'optparse'
 
 USAGE = %{
 
-Ruby Packer (rubyc) v#{::Compiler::VERSION}
+Ruby Packer (rubyc) v#{Compiler::VERSION}
 Compiling your Ruby application into a single executable.
 
 Usage
@@ -101,17 +101,17 @@ OptionParser.new do |opts|
   end
 
   opts.on('-v', '--version', 'Prints the version of rubyc and exit') do
-    puts ::Compiler::VERSION
+    puts CompilerVERSION
     exit 0
   end
 
   opts.on('-V', '--ruby-version', 'Prints the version of the Ruby runtime and exit') do
-    puts ::Compiler.ruby_version
+    puts Compiler.ruby_version
     exit 0
   end
 
   opts.on('--ruby-api-version', 'Prints the version of the Ruby API and exit') do
-    puts ::Compiler.ruby_api_version
+    puts Compiler.ruby_api_version
     exit 0
   end
 
@@ -128,9 +128,9 @@ end.parse!
 entrance = ARGV[-1]
 
 begin
-  instance = ::Compiler.new entrance, options
+  instance = Compiler.new entrance, options
   instance.run!
-rescue ::Compiler::Error => e
+rescue Compiler::Error => e
   warn e.message
   exit 1
 end

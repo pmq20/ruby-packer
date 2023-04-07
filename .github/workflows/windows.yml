@@ -18,7 +18,7 @@ jobs:
       ENCLOSE_IO_RUBYC_ADDTIONAL_ARGS: --tmpdir=C:\rubyc_tmp
     steps:
       - uses: ilammy/setup-nasm@v1
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: "[Enclose.IO] Install libraries"
         run: |
           choco install --no-progress squashfs
@@ -30,10 +30,10 @@ jobs:
         run: rubocop
       - name: "[Enclose.IO] Install dependencies"
         run: bundle install
-      - name: "[Enclose.IO] Set up Perl"
-        run: |
-          choco install strawberryperl
-          echo "##[add-path]C:\strawberry\c\bin;C:\strawberry\perl\site\bin;C:\strawberry\perl\bin"
+      # - name: "[Enclose.IO] Set up Perl"
+      #   run: |
+      #     choco install strawberryperl
+      #     echo "##[add-path]C:\strawberry\c\bin;C:\strawberry\perl\site\bin;C:\strawberry\perl\bin"
       - name: "[Enclose.IO] Inspect Windows Environment"
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"

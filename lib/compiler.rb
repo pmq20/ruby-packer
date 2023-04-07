@@ -377,7 +377,7 @@ class Compiler
       @utils.run(compile_pass2_env,
                  'call', @ruby_configure,
                  '--target=x64-mswin64',
-                 '--enable-bundled-libyaml',\
+                 '--enable-bundled-libyaml',
                  '--enable-debug-env',
                  '--disable-install-doc',
                  '--with-static-linked-ext',
@@ -789,7 +789,7 @@ class Compiler
     {
       'CI' => 'true',
       'GEM_PATH' => File.join(@ruby_install, 'lib', 'ruby', 'gems', self.class.ruby_api_version),
-      'PATH' => "#{File.join(@ruby_install, 'bin')}:#{ENV['PATH']}",
+      'PATH' => "#{File.join(@ruby_install, 'bin')}:#{ENV.fetch['PATH']}",
       'ENCLOSE_IO_USE_ORIGINAL_RUBY' => 'true',
       'ENCLOSE_IO_RUBYC_1ST_PASS' => 'true',
       'ENCLOSE_IO_RUBYC_2ND_PASS' => nil
