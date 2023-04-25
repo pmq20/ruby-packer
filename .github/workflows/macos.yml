@@ -10,7 +10,8 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest]
-        ruby: ['2.4','2.6','2.7', '3.0', '3.1', '3.2']
+        # ruby: ['2.4','2.6','2.7', '3.0', '3.1', '3.2']
+        ruby: ['3.1']
       fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
@@ -36,8 +37,8 @@ jobs:
         run: gem install rubocop
       # - name: "[Enclose.IO] Run rubocop"
       #   run: rubocop
-      # - name: "[Enclose.IO] Install dependencies"
-      #   run: bundle install
+      - name: "[Enclose.IO] Install dependencies"
+        run: bundle install
       - name: "[Enclose.IO] Rake"
         run: bundle exec rake
       # - name: "[Enclose.IO] Create macOS Release"
