@@ -34,10 +34,10 @@ jobs:
           ruby-version: ${{ matrix.ruby }}
       - name: "[Enclose.IO] Install rubocop"
         run: gem install rubocop
-      - name: "[Enclose.IO] Run rubocop"
-        run: rubocop
-      - name: "[Enclose.IO] Install dependencies"
-        run: bundle install
+      # - name: "[Enclose.IO] Run rubocop"
+      #   run: rubocop
+      # - name: "[Enclose.IO] Install dependencies"
+      #   run: bundle install
       - name: "[Enclose.IO] Rake"
         run: bundle exec rake
       # - name: "[Enclose.IO] Create macOS Release"

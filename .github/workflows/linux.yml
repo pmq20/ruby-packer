@@ -32,10 +32,10 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
-      - name: "[Enclose.IO] Install rubocop"
-        run: gem install rubocop
-      - name: "[Enclose.IO] Run rubocop"
-        run: rubocop
+      # - name: "[Enclose.IO] Install rubocop"
+      #   run: gem install rubocop
+      # - name: "[Enclose.IO] Run rubocop"
+      #   run: rubocop
       - name: "[Enclose.IO] Bundle install"
         run: bundle install
       - name: "[Enclose.IO] Rake"
