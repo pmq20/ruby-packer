@@ -2,8 +2,6 @@
 
 source 'https://rubygems.org'
 
-ruby '3.1.0'
-
 gem 'activesupport', '~> 6.0', '>= 6.0.3.2', require: 'active_support/all'
 gem 'minitest', '~> 5.18', '>= 5.18.0'
 gem 'minitest-reporters', '~> 1.6'
