@@ -42,8 +42,5 @@ DEPENDENCIES
   pry (~> 0.13.1)
   rake (~> 13.0, >= 13.0.1)
 
-RUBY VERSION
-   ruby 3.1.0p0
-
 BUNDLED WITH
    2.1.4
