@@ -70,3 +70,20 @@ cd tmp.....
 /usr/bin/clang-10 -shared -o tiny_tds.so client.o result.o tiny_tds_ext.o /workspaces/freetds-1.3.3/src/dblib/.libs/libsybdb.a -L. -L/usr/local/rvm/rubies/ruby-3.1.0/lib -Wl,-rpath,/usr/local/rvm/rubies/ruby-3.1.0/lib -L/opt/local/lib -Wl,-rpath,/opt/local/lib -L/opt/local/lib/freetds -Wl,-rpath,/opt/local/lib/freetds -L/usr/local/lib -Wl,-rpath,/usr/local/lib -L/usr/local/lib/freetds -Wl,-rpath,/usr/local/lib/freetds -L. -fstack-protector-strong -rdynamic -Wl,-export-dynamic -Wl,--no-as-needed -Wl,--compress-debug-sections=zlib    -Wl,-rpath,/usr/local/rvm/rubies/ruby-3.1.0/lib -L/usr/local/rvm/rubies/ruby-3.1.0/lib -lssl
 ```
 
+
+## libssl
+
+### arm64 linux
+
+with ruby 3.1 docker image
+
+```
+wget https://www.openssl.org/source/openssl-1.1.1o.tar.gz && \
+    tar -xvf openssl-1.1.1o.tar.gz && \
+    cd openssl-1.1.1o && \
+    ./config && \
+    make && \
+    make test || true && \
+    make install && \
+    find / -name libssl.so.1.1
+```

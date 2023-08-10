@@ -9,4 +9,5 @@
 /ruby-packer/
 /rubyc
 /rubyc.exe
-
+linux-arm64-ruby
+rubyc-arm64

@@ -340,7 +340,7 @@ class Compiler
 
     @utils.chdir(@work_dir_local) do
       if Dir.exist?('.git')
-        log `git status`
+        # log `git status` # removed so user doesnt need git installed
         @utils.rm_rf('.git')
       end
       if File.exist?('a.exe')
@@ -684,15 +684,15 @@ class Compiler
       # Ncurses fails to build with gcc-5.2.1 in OpenSuSE Leap
       # https://trac.sagemath.org/ticket/19762
       # if gem platform is linux add the std=c++14 flag
-      if Gem::Platform.local.os == 'linux'
-        @utils.run(compile_env.merge({ 'CPPFLAGS' => '-P -std=c++14' }),
-        './configure',
-        '--without-shared',
-        '--without-cxx-shared',
-        "--prefix=#{@local_build}")
-        @utils.run(compile_env.merge({ 'CPPFLAGS' => '-P -std=c++14' }), "make #{@options[:make_args]}")
-        @utils.run(compile_env.merge({ 'CPPFLAGS' => '-P -std=c++14' }), 'make install.libs')
-      elsif Gem::Platform.local.os == 'darwin'
+      # if Gem::Platform.local.os == 'linux'
+      #   @utils.run(compile_env.merge({ 'CPPFLAGS' => '-P -std=c++14' }),
+      #   './configure',
+      #   '--without-shared',
+      #   '--without-cxx-shared',
+      #   "--prefix=#{@local_build}")
+      #   @utils.run(compile_env.merge({ 'CPPFLAGS' => '-P -std=c++14' }), "make #{@options[:make_args]}")
+      #   @utils.run(compile_env.merge({ 'CPPFLAGS' => '-P -std=c++14' }), 'make install.libs')
+      # elsif Gem::Platform.local.os == 'darwin'
         @utils.run(compile_env.merge({ 'CPPFLAGS' => '-P' }),
         './configure',
         '--without-shared',
@@ -700,7 +700,7 @@ class Compiler
         "--prefix=#{@local_build}")
         @utils.run(compile_env.merge({ 'CPPFLAGS' => '-P' }), "make #{@options[:make_args]}")
         @utils.run(compile_env.merge({ 'CPPFLAGS' => '-P' }), 'make install.libs')    
-      end
+      # end
 
     end
   end

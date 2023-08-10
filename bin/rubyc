@@ -97,7 +97,7 @@ OptionParser.new do |opts|
   end
 
   opts.on('-v', '--version', 'Prints the version of rubyc and exit') do
-    puts CompilerVERSION
+    puts Compiler::VERSION
     exit 0
   end
 
