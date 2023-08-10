@@ -264,6 +264,7 @@ class Compiler
                  '--prefix', @ruby_install,
                  '--enable-bundled-libyaml',
                  '--without-gmp',
+                 "--with-openssl-dir=#{@local_build}",
                  '--disable-dtrace',
                  '--enable-debug-env',
                  '--disable-install-rdoc')
@@ -834,7 +835,9 @@ class Compiler
     {
       'CI' => 'true',
       'GEM_PATH' => File.join(@ruby_install, 'lib', 'ruby', 'gems', self.class.ruby_api_version),
-      'PATH' => "#{File.join(@ruby_install, 'bin')}:#{ENV.fetch['PATH']}",
+      # TODO:- `fetch': wrong number of arguments (given 0, expected 1..2) (ArgumentError)
+      #'PATH' => "#{File.join(@ruby_install, 'bin')}:#{ENV.fetch['PATH']}",
+      'PATH' => "#{File.join(@ruby_install, 'bin')}",
       'ENCLOSE_IO_USE_ORIGINAL_RUBY' => 'true',
       'ENCLOSE_IO_RUBYC_1ST_PASS' => 'true',
       'ENCLOSE_IO_RUBYC_2ND_PASS' => nil

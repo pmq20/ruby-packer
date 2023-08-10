@@ -23,7 +23,7 @@ GEM
     pry (0.13.1)
       coderay (~> 1.1)
       method_source (~> 1.0)
-    rake (13.0.1)
+    rake (13.0.6)
     ruby-progressbar (1.13.0)
     thread_safe (0.3.6)
     tzinfo (1.2.7)
@@ -40,7 +40,7 @@ DEPENDENCIES
   minitest (~> 5.18, >= 5.18.0)
   minitest-reporters (~> 1.6)
   pry (~> 0.13.1)
-  rake (~> 13.0, >= 13.0.1)
+  rake (~> 13.0, >= 13.0.6)
 
 BUNDLED WITH
    2.1.4
