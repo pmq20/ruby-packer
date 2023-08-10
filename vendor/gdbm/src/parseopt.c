@@ -252,8 +252,8 @@ print_option_descr (const char *descr, size_t lmargin, size_t rmargin)
 }
 
 char *parseopt_program_name;
-char *parseopt_program_doc;
-char *parseopt_program_args;
+extern char *parseopt_program_doc;
+extern char *parseopt_program_args;
 const char *program_bug_address = "<" PACKAGE_BUGREPORT ">";
 void (*parseopt_help_hook) (FILE *stream);
 

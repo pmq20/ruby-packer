@@ -683,13 +683,25 @@ class Compiler
       # ** Regarding -P **
       # Ncurses fails to build with gcc-5.2.1 in OpenSuSE Leap
       # https://trac.sagemath.org/ticket/19762
-      @utils.run(compile_env.merge({ 'CPPFLAGS' => '-P' }),
-                 './configure',
-                 '--without-shared',
-                 '--without-cxx-shared',
-                 "--prefix=#{@local_build}")
-      @utils.run(compile_env.merge({ 'CPPFLAGS' => '-P' }), "make #{@options[:make_args]}")
-      @utils.run(compile_env.merge({ 'CPPFLAGS' => '-P' }), 'make install.libs')
+      # if gem platform is linux add the std=c++14 flag
+      if Gem::Platform.local.os == 'linux'
+        @utils.run(compile_env.merge({ 'CPPFLAGS' => '-P -std=c++14' }),
+        './configure',
+        '--without-shared',
+        '--without-cxx-shared',
+        "--prefix=#{@local_build}")
+        @utils.run(compile_env.merge({ 'CPPFLAGS' => '-P -std=c++14' }), "make #{@options[:make_args]}")
+        @utils.run(compile_env.merge({ 'CPPFLAGS' => '-P -std=c++14' }), 'make install.libs')
+      elsif Gem::Platform.local.os == 'darwin'
+        @utils.run(compile_env.merge({ 'CPPFLAGS' => '-P' }),
+        './configure',
+        '--without-shared',
+        '--without-cxx-shared',
+        "--prefix=#{@local_build}")
+        @utils.run(compile_env.merge({ 'CPPFLAGS' => '-P' }), "make #{@options[:make_args]}")
+        @utils.run(compile_env.merge({ 'CPPFLAGS' => '-P' }), 'make install.libs')    
+      end
+
     end
   end
 
@@ -836,7 +848,7 @@ class Compiler
       'CI' => 'true',
       'GEM_PATH' => File.join(@ruby_install, 'lib', 'ruby', 'gems', self.class.ruby_api_version),
       # TODO:- `fetch': wrong number of arguments (given 0, expected 1..2) (ArgumentError)
-      #'PATH' => "#{File.join(@ruby_install, 'bin')}:#{ENV.fetch['PATH']}",
+      # 'PATH' => "#{File.join(@ruby_install, 'bin')}:#{ENV.fetch('PATH', nil)}",
       'PATH' => "#{File.join(@ruby_install, 'bin')}",
       'ENCLOSE_IO_USE_ORIGINAL_RUBY' => 'true',
       'ENCLOSE_IO_RUBYC_1ST_PASS' => 'true',
