@@ -63,6 +63,9 @@
 #include "internal/static_assert.h"
 #include "ruby/internal/stdbool.h"
 #include "encindex.h"
+// --------- [Enclose.IO Hack start] ---------
+#include "enclose_io.h"
+// --------- [Enclose.IO Hack end] ---------
 #define isdirsep(x) ((x) == '/' || (x) == '\\')
 
 #if defined _MSC_VER && _MSC_VER <= 1200

@@ -136,6 +136,16 @@ File.foreach "config.status" do |line|
       val = '"$(SDKROOT)"'+val if /darwin/ =~ arch
     end
     v = "  CONFIG[\"#{name}\"] #{eq} #{val}\n"
+    # --------- [Enclose.IO Hack start] ---------
+    if ENV['ENCLOSE_IO_RUBYC_2ND_PASS']
+      [
+        "  CONFIG[\"prefix\"] #{eq} ",
+        "  CONFIG[\"RUBY_EXEC_PREFIX\"] #{eq} "
+      ].each do |v_head_comp|
+        v = "#{v[0...(v_head_comp.length)]}'/__enclose_io_memfs__'\n" if v_head_comp == v[0...(v_head_comp.length)]
+      end
+    end
+    # --------- [Enclose.IO Hack end] ---------
     if fast[name]
       v_fast << v
     else

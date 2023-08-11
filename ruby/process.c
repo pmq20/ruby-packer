@@ -122,6 +122,9 @@ int initgroups(const char *, rb_gid_t);
 #undef open
 #define open	rb_w32_uopen
 #endif
+// --------- [Enclose.IO Hack start] ---------
+#include "enclose_io.h"
+// --------- [Enclose.IO Hack end] ---------
 
 #if defined(HAVE_TIMES) || defined(_WIN32)
 /*********************************************************************
