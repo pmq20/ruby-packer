@@ -1,7 +1,6 @@
 macos_arm_task: 
   macos_instance:
     image: ghcr.io/cirruslabs/macos-ventura-base:latest
-    cpu: 8
   ruby_version_script: ruby --version
   env:
     BISON_PATH: "/opt/homebrew/opt/bison/bin"
@@ -14,83 +13,20 @@ macos_arm_task:
     find .  -name 'install-sh' -type f | xargs chmod +x
     brew install automake texinfo libtool squashfs bison
     bin/rubyc bin/rubyc -o rubyc
+    DYLD_LIBRARY_PATH=/opt/homebrew/opt/openssl@1.1/lib rubyc --help
     mkdir pkg
     mv rubyc pkg/rubyc-darwin-arm64
   # << : *BUILD_TEST_TASK_TEMPLATE
   binary_artifacts:
     path: "pkg/*"
 
-
-# macos_x64_task: 
-#   macos_instance:
-#     image: ghcr.io/cirruslabs/macos-ventura-base:latest
-#   ruby_version_script: ruby --version
-#   env:
-#     TARGET: ox64
-#     USE_ROSETTA: arch -x86_64
-#   cirrus_cli_script: |
-#     chmod +x bin/*
-#   rosetta_script: softwareupdate --install-rosetta --agree-to-license
-#   << : *BUILD_TEST_TASK_TEMPLATE
-#   binary_artifacts:
-#     path: "pkg/*"
-
-# linux_arm_task: 
-#   env:
-#     TARGET: la64
-#     TR_PLATFORM: linux
-#     TR_ARCH: arm64
-#   arm_container:
-#     image: ruby:3.1
-#     cpu: 1
-#     memory: 1G
-#   pre_req_script: apt update --yes && apt install -y build-essential squashfs-tools automake libtool
-#   # pre_req_script: apt update --yes && apt install --yes git zip curl wget netcat-traditional
-#   # bundler_setup_script: |
-#   #     bundle install
-#   << : *BUILD_TEST_TASK_TEMPLATE
-
-# linux_amd_task: 
-#   env:
-#     TARGET: lx64
-#   container:
-#     image: ruby:3.2.2-slim
-#     cpu: 1
-#     memory: 1G
-#   pre_req_script: apt update --yes && apt install --yes git zip curl wget netcat-traditional
-#   ruby_setup_script: gem install bundler -v 2.4.18
-#   << : *BUILD_TEST_TASK_TEMPLATE
-
-
-
-# linux_arm_task: 
-#   container:
-#     dockerfile: ./Dockerfile-tr_packer
-#     # docker_arguments:
-#     #   ARCH: x86_64
-#     # cpu: 1
-#     # memory: 1G
-#   # pre_req_script: apt update --yes && apt install -y build-essential squashfs-tools automake libtool
-#   # pre_req_script: apt update --yes && apt install --yes git zip curl wget netcat-traditional
-#   bundler_setup_script: |
-#       echo "woot"
-#   # binary_artifacts:
-#   #   path: "rubyc"
-
-# d_task:  
-#   container:
-#     dockerfile: Dockerfile-tr_packer_amd64
-#     image: .
-#   bundler_setup_script: |
-#       echo "woot"
-#   binary_artifacts:
-#     path: "rubyc"
 task:
   arm_container:
     matrix:
       - dockerfile: Dockerfile
         docker_arguments:
           - matrix:
-              ARCH: arm64
+              - ARCH: arm64
+              - ARCH: x86_64
   binary_artifacts:
     path: "rubyc"

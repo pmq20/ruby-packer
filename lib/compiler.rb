@@ -5,9 +5,9 @@
 # This file is part of Ruby Packer, distributed under the MIT License
 # For full terms see the included LICENSE file
 
-require_relative './compiler/constants'
-require_relative './compiler/error'
-require_relative './compiler/utils'
+require_relative 'compiler/constants'
+require_relative 'compiler/error'
+require_relative 'compiler/utils'
 
 require 'shellwords'
 require 'tmpdir'

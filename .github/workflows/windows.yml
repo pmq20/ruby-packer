@@ -1,16 +1,16 @@
 name: Windows
 on:
   push:
-    branches: [ master, ci ]
+    branches: [ master, ci_test ]
   pull_request:
-    branches: [ master, ci ]
+    branches: [ master, ci_test ]
   workflow_dispatch:
 jobs:
   make:
     strategy:
       matrix:
         # ruby: ['2.4','2.6','2.7', '3.0', '3.1', '3.2']
-        ruby: ['3.1']
+        ruby: ['3.2']
         vs: [2019]
         # include:
         #   - os: windows-2019
@@ -29,10 +29,10 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
-      # - name: "[Enclose.IO] Install rubocop"
-      #   run: gem install rubocop
-      # - name: "[Enclose.IO] Run rubocop"
-      #   run: rubocop
+      - name: "[Enclose.IO] Install rubocop"
+        run: gem install rubocop
+      - name: "[Enclose.IO] Run rubocop"
+        run: rubocop
       - name: "[Enclose.IO] Install dependencies"
         run: bundle install
       # - name: "[Enclose.IO] Set up Perl"
@@ -63,25 +63,6 @@ jobs:
           mkdir C:\rubyc_tmp
           bundle exec rake
         shell: cmd
-      # - name: "[Enclose.IO] Create Windows Release"
-      #   if: ${{ github.ref == 'refs/heads/master' && success() }}
-      #   id: create_windows_release
-      #   uses: pmq20/create-release@delete-old-release
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   with:
-      #     tag_name: windows-x64
-      #     release_name: Latest Windows Pre-release
-      #     draft: false
-      #     prerelease: true
-      #     replace_old_tag: true
-      # - name: "[Enclose.IO] Upload Windows Release"
-      #   if: ${{ github.ref == 'refs/heads/master' && success() }}
-      #   uses: actions/upload-release-asset@v1
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   with:
-      #     upload_url: ${{ steps.create_windows_release.outputs.upload_url }}
-      #     asset_path: ./rubyc.exe
-      #     asset_name: rubyc.exe
-      #     asset_content_type: application/octet-stream
+      - name: "[Enclose.IO] Create Windows Test run upload"
+          name: rubyc-${{ runner.os }}
+          path: ./rubyc

@@ -1,17 +1,16 @@
 name: Linux
 on:
   push:
-    branches: [ master, ci  ]
+    branches: [ master, ci_test  ]
   pull_request:
-    branches: [ master, ci  ]
+    branches: [ master, ci_test  ]
   workflow_dispatch:
 jobs:
   make:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        # ruby: ['2.4','2.6','2.7', '3.0', '3.1', '3.2']
-        ruby: ['3.1']
+        ruby: ['3.2']
       fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
@@ -33,33 +32,16 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
-      # - name: "[Enclose.IO] Install rubocop"
-      #   run: gem install rubocop
-      # - name: "[Enclose.IO] Run rubocop"
-      #   run: rubocop
+      - name: "[Enclose.IO] Install rubocop"
+        run: gem install rubocop
+      - name: "[Enclose.IO] Run rubocop"
+        run: rubocop
       - name: "[Enclose.IO] Bundle install"
         run: bundle install
       - name: "[Enclose.IO] Rake"
         run: bundle exec rake
-      # - name: "[Enclose.IO] Create Linux Release"
-      #   if: ${{ github.ref == 'refs/heads/master' && success() }}
-      #   id: create_linux_release
-      #   uses: pmq20/create-release@delete-old-release
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   with:
-      #     tag_name: linux-x64
-      #     release_name: Latest Linux Pre-release
-      #     draft: false
-      #     prerelease: true
-      #     replace_old_tag: true
-      # - name: "[Enclose.IO] Upload Linux Release"
-      #   if: ${{ github.ref == 'refs/heads/master' && success() }}
-      #   uses: actions/upload-release-asset@v1
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   with:
-      #     upload_url: ${{ steps.create_linux_release.outputs.upload_url }}
-      #     asset_path: ./rubyc
-      #     asset_name: rubyc
-      #     asset_content_type: application/octet-stream
+      - name: "[Enclose.IO] Create Linux Test run upload"
+        uses: actions/upload-artifact@v3
+        with:
+          name: rubyc-${{ matrix.os }}
+          path: ./rubyc
