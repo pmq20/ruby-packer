@@ -1,4 +1,4 @@
-FROM you54f/traveling-ruby-builder:latest
+FROM you54f/traveling-ruby-builder:latest AS rubyc_builder
 RUN yum -y update && yum install -y squashfs-tools bison texinfo
 RUN cat /etc/issue && \
           uname -a && \
@@ -14,9 +14,25 @@ RUN ruby --version
 RUN bundler --version
 WORKDIR /app
 COPY . .
-# RUN bundle update --bundler
-# RUN bundle install
-# RUN bundle exec rake
+# ENV LD_LIBRARY_PATH="/temp/rubyc/local/lib:$LD_LIBRARY_PATH"
+# ENTRYPOINT [ "bin/rubyc" ]
+# CMD [ "bin/rubyc", "-o", "rubyc" ]
 RUN bin/rubyc bin/rubyc -o rubyc
-ENV LD_LIBRARY_PATH="/tmp/rubyc/local/lib:$LD_LIBRARY_PATH"
-ENTRYPOINT [ "/app/rubyc" ]
+
+RUN wget https://www.openssl.org/source/openssl-1.1.1o.tar.gz && \
+    tar -xvf openssl-1.1.1o.tar.gz && \
+    cd openssl-1.1.1o && \
+    # ./config --prefix=/usr/local/ssl --openssldir=/usr/local/ssl shared zlib && \
+    ./config && \
+    make && \
+    make test || true && \
+    make install
+
+FROM centos:7
+
+COPY --from=rubyc_builder /app/rubyc /usr/local/bin/rubyc
+COPY --from=rubyc_builder /tmp/rubyc/local/lib/libssl.so.1.1 /usr/lib64/libssl.so.1.1
+COPY --from=rubyc_builder /tmp/rubyc/local/lib/libcrypto.so.1.1 /usr/lib64/libcrypto.so.1.1
+
+ENTRYPOINT [ "rubyc" ]
+CMD [ "--help" ]
