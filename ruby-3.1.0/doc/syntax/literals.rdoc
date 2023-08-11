@@ -1,0 +1,497 @@
+= Literals
+
+Literals create objects you can use in your program.  Literals include:
+
+* {Boolean and Nil Literals}[#label-Boolean+and+Nil+Literals]
+* {Number Literals}[#label-Number+Literals]
+
+  * {Integer Literals}[#label-Integer+Literals]
+  * {Float Literals}[#label-Float+Literals]
+  * {Rational Literals}[#label-Rational+Literals]
+  * {Complex Literals}[#label-Complex+Literals]
+
+* {String Literals}[#label-String+Literals]
+* {Here Document Literals}[#label-Here+Document+Literals]
+* {Symbol Literals}[#label-Symbol+Literals]
+* {Array Literals}[#label-Array+Literals]
+* {Hash Literals}[#label-Hash+Literals]
+* {Range Literals}[#label-Range+Literals]
+* {Regexp Literals}[#label-Regexp+Literals]
+* {Lambda Proc Literals}[#label-Lambda+Proc+Literals]
+* {Percent Literals}[#label-Percent+Literals]
+
+  * {%q: Non-Interpolable String Literals}[#label-25q-3A+Non-Interpolable+String+Literals]
+  * {% and %Q: Interpolable String Literals}[#label-25+and+-25Q-3A+Interpolable+String+Literals]
+  * {%w and %W: String-Array Literals}[#label-25w+and+-25W-3A+String-Array+Literals]
+  * {%i and %I: Symbol-Array Literals}[#label-25i+and+-25I-3A+Symbol-Array+Literals]
+  * {%r: Regexp Literals}[#label-25r-3A+Regexp+Literals]
+  * {%s: Symbol Literals}[#label-25s-3A+Symbol+Literals]
+  * {%x: Backtick Literals}[#label-25x-3A+Backtick+Literals]
+
+== Boolean and Nil Literals
+
++nil+ and +false+ are both false values.  +nil+ is sometimes used to indicate
+"no value" or "unknown" but evaluates to +false+ in conditional expressions.
+
++true+ is a true value.  All objects except +nil+ and +false+ evaluate to a
+true value in conditional expressions.
+
+== Number Literals
+
+=== \Integer Literals
+
+You can write integers of any size as follows:
+
+  1234
+  1_234
+
+These numbers have the same value, 1,234.  The underscore may be used to
+enhance readability for humans.  You may place an underscore anywhere in the
+number.
+
+You can use a special prefix to write numbers in decimal, hexadecimal, octal
+or binary formats.  For decimal numbers use a prefix of <tt>0d</tt>, for
+hexadecimal numbers use a prefix of <tt>0x</tt>, for octal numbers use a
+prefix of <tt>0</tt> or <tt>0o</tt>, for binary numbers use a prefix of
+<tt>0b</tt>.  The alphabetic component of the number is not case-sensitive.
+
+Examples:
+
+  0d170
+  0D170
+
+  0xaa
+  0xAa
+  0xAA
+  0Xaa
+  0XAa
+  0XaA
+
+  0252
+  0o252
+  0O252
+
+  0b10101010
+  0B10101010
+
+All these numbers have the same decimal value, 170.  Like integers and floats
+you may use an underscore for readability.
+
+=== \Float Literals
+
+Floating-point numbers may be written as follows:
+
+  12.34
+  1234e-2
+  1.234E1
+
+These numbers have the same value, 12.34.  You may use underscores in floating
+point numbers as well.
+
+=== \Rational Literals
+
+You can write a Rational number as follows (suffixed +r+):
+
+  12r         #=> (12/1)
+  12.3r       #=> (123/10)
+
+A \Rational number is exact, whereas a \Float number may be inexact.
+
+  0.1r + 0.2r #=> (3/10)
+  0.1 + 0.2   #=> 0.30000000000000004
+
+=== \Complex Literals
+
+You can write a Complex number as follows (suffixed +i+):
+
+  1i          #=> (0+1i)
+  1i * 1i     #=> (-1+0i)
+
+Also \Rational numbers may be imaginary numbers.
+
+  12.3ri      #=> (0+(123/10)*i)
+
++i+ must be placed after +r+; the opposite is not allowed.
+
+  12.3ir      #=> Syntax error
+
+== Strings
+
+=== \String Literals
+
+The most common way of writing strings is using <tt>"</tt>:
+
+  "This is a string."
+
+The string may be many lines long.
+
+Any internal <tt>"</tt> must be escaped:
+
+  "This string has a quote: \".  As you can see, it is escaped"
+
+Double-quote strings allow escaped characters such as <tt>\n</tt> for
+newline, <tt>\t</tt> for tab, etc.  The full list of supported escape
+sequences are as follows:
+
+  \a             bell, ASCII 07h (BEL)
+  \b             backspace, ASCII 08h (BS)
+  \t             horizontal tab, ASCII 09h (TAB)
+  \n             newline (line feed), ASCII 0Ah (LF)
+  \v             vertical tab, ASCII 0Bh (VT)
+  \f             form feed, ASCII 0Ch (FF)
+  \r             carriage return, ASCII 0Dh (CR)
+  \e             escape, ASCII 1Bh (ESC)
+  \s             space, ASCII 20h (SPC)
+  \\             backslash, \
+  \nnn           octal bit pattern, where nnn is 1-3 octal digits ([0-7])
+  \xnn           hexadecimal bit pattern, where nn is 1-2 hexadecimal digits ([0-9a-fA-F])
+  \unnnn         Unicode character, where nnnn is exactly 4 hexadecimal digits ([0-9a-fA-F])
+  \u{nnnn ...}   Unicode character(s), where each nnnn is 1-6 hexadecimal digits ([0-9a-fA-F])
+  \cx or \C-x    control character, where x is an ASCII printable character
+  \M-x           meta character, where x is an ASCII printable character
+  \M-\C-x        meta control character, where x is an ASCII printable character
+  \M-\cx         same as above
+  \c\M-x         same as above
+  \c? or \C-?    delete, ASCII 7Fh (DEL)
+
+Any other character following a backslash is interpreted as the
+character itself.
+
+Double-quote strings allow interpolation of other values using
+<tt>#{...}</tt>:
+
+  "One plus one is two: #{1 + 1}"
+
+Any expression may be placed inside the interpolated section, but it's best to
+keep the expression small for readability.
+
+You can also use <tt>#@foo</tt>, <tt>#@@foo</tt> and <tt>#$foo</tt> as a
+shorthand for, respectively, <tt>#{ @foo }</tt>, <tt>#{ @@foo }</tt> and
+<tt>#{ $foo }</tt>.
+
+Interpolation may be disabled by escaping the "#" character or using
+single-quote strings:
+
+  '#{1 + 1}' #=> "\#{1 + 1}"
+
+In addition to disabling interpolation, single-quoted strings also disable all
+escape sequences except for the single-quote (<tt>\'</tt>) and backslash
+(<tt>\\\\</tt>).
+
+Adjacent string literals are automatically concatenated by the interpreter:
+
+  "con" "cat" "en" "at" "ion" #=> "concatenation"
+  "This string contains "\
+  "no newlines."              #=> "This string contains no newlines."
+
+Any combination of adjacent single-quote, double-quote, percent strings will
+be concatenated as long as a percent-string is not last.
+
+  %q{a} 'b' "c" #=> "abc"
+  "a" 'b' %q{c} #=> NameError: uninitialized constant q
+
+There is also a character literal notation to represent single
+character strings, which syntax is a question mark (<tt>?</tt>)
+followed by a single character or escape sequence that corresponds to
+a single codepoint in the script encoding:
+
+  ?a       #=> "a"
+  ?abc     #=> SyntaxError
+  ?\n      #=> "\n"
+  ?\s      #=> " "
+  ?\\      #=> "\\"
+  ?\u{41}  #=> "A"
+  ?\C-a    #=> "\x01"
+  ?\M-a    #=> "\xE1"
+  ?\M-\C-a #=> "\x81"
+  ?\C-\M-a #=> "\x81", same as above
+  ?あ      #=> "あ"
+
+See also:
+
+* {%q: Non-Interpolable String Literals}[#label-25q-3A+Non-Interpolable+String+Literals]
+* {% and %Q: Interpolable String Literals}[#label-25+and+-25Q-3A+Interpolable+String+Literals]
+
+=== Here Document Literals
+
+If you are writing a large block of text you may use a "here document" or
+"heredoc":
+
+  expected_result = <<HEREDOC
+  This would contain specially formatted text.
+
+  That might span many lines
+  HEREDOC
+
+The heredoc starts on the line following <tt><<HEREDOC</tt> and ends with the
+next line that starts with <tt>HEREDOC</tt>.  The result includes the ending
+newline.
+
+You may use any identifier with a heredoc, but all-uppercase identifiers are
+typically used.
+
+You may indent the ending identifier if you place a "-" after <tt><<</tt>:
+
+    expected_result = <<-INDENTED_HEREDOC
+  This would contain specially formatted text.
+
+  That might span many lines
+    INDENTED_HEREDOC
+
+Note that while the closing identifier may be indented, the content is
+always treated as if it is flush left.  If you indent the content those spaces
+will appear in the output.
+
+To have indented content as well as an indented closing identifier, you can use
+a "squiggly" heredoc, which uses a "~" instead of a "-" after <tt><<</tt>:
+
+    expected_result = <<~SQUIGGLY_HEREDOC
+      This would contain specially formatted text.
+
+      That might span many lines
+    SQUIGGLY_HEREDOC
+
+The indentation of the least-indented line will be removed from each line of
+the content.  Note that empty lines and lines consisting solely of literal tabs
+and spaces will be ignored for the purposes of determining indentation, but
+escaped tabs and spaces are considered non-indentation characters.
+
+A heredoc allows interpolation and escaped characters.  You may disable
+interpolation and escaping by surrounding the opening identifier with single
+quotes:
+
+  expected_result = <<-'EXPECTED'
+  One plus one is #{1 + 1}
+  EXPECTED
+
+  p expected_result # prints: "One plus one is \#{1 + 1}\n"
+
+The identifier may also be surrounded with double quotes (which is the same as
+no quotes) or with backticks.  When surrounded by backticks the HEREDOC
+behaves like Kernel#`:
+
+  puts <<-`HEREDOC`
+  cat #{__FILE__}
+  HEREDOC
+
+When surrounding with quotes, any character but that quote and newline
+(CR and/or LF) can be used as the identifier.
+
+To call a method on a heredoc place it after the opening identifier:
+
+  expected_result = <<-EXPECTED.chomp
+  One plus one is #{1 + 1}
+  EXPECTED
+
+You may open multiple heredocs on the same line, but this can be difficult to
+read:
+
+  puts(<<-ONE, <<-TWO)
+  content for heredoc one
+  ONE
+  content for heredoc two
+  TWO
+
+== \Symbol Literals
+
+A Symbol represents a name inside the ruby interpreter.  See Symbol for more
+details on what symbols are and when ruby creates them internally.
+
+You may reference a symbol using a colon: <tt>:my_symbol</tt>.
+
+You may also create symbols by interpolation:
+
+  :"my_symbol1"
+  :"my_symbol#{1 + 1}"
+
+Like strings, a single-quote may be used to disable interpolation:
+
+  :'my_symbol#{1 + 1}' #=> :"my_symbol\#{1 + 1}"
+
+When creating a Hash, there is a special syntax for referencing a Symbol as
+well.
+
+See also:
+
+* {%s: Symbol Literals}[#label-25s-3A+Symbol+Literals]
+
+
+== \Array Literals
+
+An array is created using the objects between <tt>[</tt> and <tt>]</tt>:
+
+  [1, 2, 3]
+
+You may place expressions inside the array:
+
+  [1, 1 + 1, 1 + 2]
+  [1, [1 + 1, [1 + 2]]]
+
+See also:
+
+* {%w and %W: String-Array Literals}[#label-25w+and+-25W-3A+String-Array+Literals]
+* {%i and %I: Symbol-Array Literals}[#label-25i+and+-25I-3A+Symbol-Array+Literals]
+
+See Array for the methods you may use with an array.
+
+== \Hash Literals
+
+A hash is created using key-value pairs between <tt>{</tt> and <tt>}</tt>:
+
+  { "a" => 1, "b" => 2 }
+
+Both the key and value may be any object.
+
+You can create a hash using symbol keys with the following syntax:
+
+  { a: 1, b: 2 }
+
+This same syntax is used for keyword arguments for a method.
+
+Like Symbol literals, you can quote symbol keys.
+
+  { "a 1": 1, "b #{1 + 1}": 2 }
+
+is equal to
+
+  { :"a 1" => 1, :"b 2" => 2 }
+
+Hash values can be omitted, meaning that value will be fetched from the context
+by the name of the key:
+
+  x = 100
+  y = 200
+  h = { x:, y: }
+  #=> {:x=>100, :y=>200}
+
+See Hash for the methods you may use with a hash.
+
+== \Range Literals
+
+A range represents an interval of values.  The range may include or exclude
+its ending value.
+
+  (1..2)  # includes its ending value
+  (1...2) # excludes its ending value
+  (1..)   # endless range, representing infinite sequence from 1 to Infinity
+  (..1)   # beginless range, representing infinite sequence from -Infinity to 1
+
+You may create a range of any object.  See the Range documentation for details
+on the methods you need to implement.
+
+== \Regexp Literals
+
+A regular expression is created using "/":
+
+  /my regular expression/
+
+The regular expression may be followed by flags which adjust the matching
+behavior of the regular expression.  The "i" flag makes the regular expression
+case-insensitive:
+
+  /my regular expression/i
+
+Interpolation may be used inside regular expressions along with escaped
+characters.  Note that a regular expression may require additional escaped
+characters than a string.
+
+See also:
+
+* {%r: Regexp Literals}[#label-25r-3A+Regexp+Literals]
+
+See Regexp for a description of the syntax of regular expressions.
+
+== Lambda Proc Literals
+
+A lambda proc can be created with <tt>-></tt>:
+
+  -> { 1 + 1 }
+
+Calling the above proc will give a result of <tt>2</tt>.
+
+You can require arguments for the proc as follows:
+
+  ->(v) { 1 + v }
+
+This proc will add one to its argument.
+
+== Percent Literals
+
+Each of the literals in described in this section
+may use these paired delimiters:
+
+* <tt>[</tt> and </tt>]</tt>.
+* <tt>(</tt> and </tt>)</tt>.
+* <tt>{</tt> and </tt>}</tt>.
+* <tt><</tt> and </tt>></tt>.
+* Any other character, as both beginning and ending delimiters.
+
+These are demonstrated in the next section.
+
+=== <tt>%q</tt>: Non-Interpolable String Literals
+
+You can write a non-interpolable string with <tt>%q</tt>.
+The created string is the same as if you created it with single quotes:
+
+  %[foo bar baz]        # => "foo bar baz" # Using [].
+  %(foo bar baz)        # => "foo bar baz" # Using ().
+  %{foo bar baz}        # => "foo bar baz" # Using {}.
+  %<foo bar baz>        # => "foo bar baz" # Using <>.
+  %|foo bar baz|        # => "foo bar baz" # Using two |.
+  %:foo bar baz:        # => "foo bar baz" # Using two :.
+  %q(1 + 1 is #{1 + 1}) # => "1 + 1 is \#{1 + 1}" # No interpolation.
+
+=== <tt>% and %Q</tt>: Interpolable String Literals
+
+You can write an interpolable string with <tt>%Q</tt>
+or with its alias <tt>%</tt>:
+
+  %[foo bar baz]       # => "foo bar baz"
+  %(1 + 1 is #{1 + 1}) # => "1 + 1 is 2" # Interpolation.
+
+=== <tt>%w and %W</tt>: String-Array Literals
+
+You can write an array of strings with <tt>%w</tt> (non-interpolable)
+or <tt>%W</tt> (interpolable):
+
+  %w[foo bar baz]       # => ["foo", "bar", "baz"]
+  %w[1 % *]             # => ["1", "%", "*"]
+  # Use backslash to embed spaces in the strings.
+  %w[foo\ bar baz\ bat] # => ["foo bar", "baz bat"]
+  %w(#{1 + 1})          # => ["\#{1", "+", "1}"]
+  %W(#{1 + 1})          # => ["2"]
+
+=== <tt>%i and %I</tt>: Symbol-Array Literals
+
+You can write an array of symbols with <tt>%i</tt> (non-interpolable)
+or <tt>%I</tt> (interpolable):
+
+  %i[foo bar baz]       # => [:foo, :bar, :baz]
+  %i[1 % *]             # => [:"1", :%, :*]
+  # Use backslash to embed spaces in the symbols.
+  %i[foo\ bar baz\ bat] # => [:"foo bar", :"baz bat"]
+  %i(#{1 + 1})          # => [:"\#{1", :+, :"1}"]
+  %I(#{1 + 1})          # => [:"2"]
+
+=== <tt>%s</tt>: Symbol Literals
+
+You can write a symbol with <tt>%s</tt>:
+
+  %s[foo]     # => :foo
+  %s[foo bar] # => :"foo bar"
+
+=== <tt>%r</tt>: Regexp Literals
+
+You can write a regular expression with <tt>%r</tt>:
+
+  r = %r[foo\sbar]   # => /foo\sbar/
+  'foo bar'.match(r) # => #<MatchData "foo bar">
+  r = %r[foo\sbar]i  # => /foo\sbar/i
+  'FOO BAR'.match(r) # => #<MatchData "FOO BAR">
+
+
+=== <tt>%x</tt>: Backtick Literals
+
+You can write and execute a shell command with <tt>%x</tt>:
+
+  %x(echo 1) # => "1\n"

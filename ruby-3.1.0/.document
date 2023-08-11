@@ -1,0 +1,50 @@
+# This file determines which files in the
+# Ruby hierarchy will be processed by the RDoc
+# tool when it is given the top-level directory
+# as an argument
+
+# Process all the C source files
+*.c
+*.y
+
+# prelude
+prelude.rb
+rbconfig.rb
+
+array.rb
+ast.rb
+dir.rb
+gc.rb
+io.rb
+kernel.rb
+marshal.rb
+numeric.rb
+nilclass.rb
+pack.rb
+ractor.rb
+timev.rb
+trace_point.rb
+warning.rb
+
+# the lib/ directory (which has its own .document file)
+lib
+
+# and some of the ext/ directory (which has its own .document file)
+ext
+
+# rdoc files
+NEWS.md
+
+README.md
+README.ja.md
+
+COPYING
+COPYING.ja
+CONTRIBUTING.md
+
+LEGAL
+
+# win32/README.win32 linked from README.md
+win32
+
+doc

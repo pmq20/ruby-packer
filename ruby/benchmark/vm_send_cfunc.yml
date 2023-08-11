@@ -1,3 +1,0 @@
-benchmark:
-  vm_send_cfunc: self.class
-loop_count: 100000000

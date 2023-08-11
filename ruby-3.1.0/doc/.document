@@ -1,0 +1,4 @@
+*.md
+*.rdoc
+NEWS-*
+syntax
