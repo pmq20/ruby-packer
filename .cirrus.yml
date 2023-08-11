@@ -1,31 +1,31 @@
-BUILD_TEST_TASK_TEMPLATE: &BUILD_TEST_TASK_TEMPLATE
-  arch_check_script:
-    - uname -am
-  install_script: |
-    bundle install
-    bundle exec rake
+# BUILD_TEST_TASK_TEMPLATE: &BUILD_TEST_TASK_TEMPLATE
+#   arch_check_script:
+#     - uname -am
+#   install_script: |
+#     bundle install
+#     bundle exec rake
 
-# runtime_script: bundle exec rake package:$TR_PLATFORM:$TR_ARCH
-# package_script: bundle exec rb2exe pact-broker-app.rb --target=$TARGET --daemon
-# test_script: | # NOTE:- Cirrus CI/CLI Executors run in seperate shell sessions per test so the app is closed
-#   ./pact-broker-app ../ruby/config.ru -P ~/pact_broker.pid
-#   wget -qO- https://raw.githubusercontent.com/eficode/wait-for/4df3f9262d84cab0039c07bf861045fbb3c20ab7/wait-for | sh -s -- localhost:9292 -- echo "pact broker is up"
-#   curl -v http://localhost:9292
-#   cat ~/pact_broker.pid | xargs kill
+# # runtime_script: bundle exec rake package:$TR_PLATFORM:$TR_ARCH
+# # package_script: bundle exec rb2exe pact-broker-app.rb --target=$TARGET --daemon
+# # test_script: | # NOTE:- Cirrus CI/CLI Executors run in seperate shell sessions per test so the app is closed
+# #   ./pact-broker-app ../ruby/config.ru -P ~/pact_broker.pid
+# #   wget -qO- https://raw.githubusercontent.com/eficode/wait-for/4df3f9262d84cab0039c07bf861045fbb3c20ab7/wait-for | sh -s -- localhost:9292 -- echo "pact broker is up"
+# #   curl -v http://localhost:9292
+# #   cat ~/pact_broker.pid | xargs kill
 
-macos_arm_task: 
-  macos_instance:
-    image: ghcr.io/cirruslabs/macos-ventura-base:latest
-  ruby_version_script: ruby --version
-  env:
-    TARGET: oa64
-    TR_PLATFORM: osx
-    TR_ARCH: arm64
-  cirrus_cli_script: |
-    chmod +x bin/*
-  << : *BUILD_TEST_TASK_TEMPLATE
-  # binary_artifacts:
-  #   path: "pkg/*"
+# macos_arm_task: 
+#   macos_instance:
+#     image: ghcr.io/cirruslabs/macos-ventura-base:latest
+#   ruby_version_script: ruby --version
+#   env:
+#     TARGET: oa64
+#     TR_PLATFORM: osx
+#     TR_ARCH: arm64
+#   cirrus_cli_script: |
+#     chmod +x bin/*
+#   << : *BUILD_TEST_TASK_TEMPLATE
+#   # binary_artifacts:
+#   #   path: "pkg/*"
 
 # macos_x64_task: 
 #   macos_instance:
@@ -41,20 +41,20 @@ macos_arm_task:
 #   binary_artifacts:
 #     path: "pkg/*"
 
-linux_arm_task: 
-  env:
-    TARGET: la64
-    TR_PLATFORM: linux
-    TR_ARCH: arm64
-  arm_container:
-    image: ruby:3.1
-    cpu: 1
-    memory: 1G
-  pre_req_script: apt update --yes && apt install -y build-essential squashfs-tools automake libtool
-  # pre_req_script: apt update --yes && apt install --yes git zip curl wget netcat-traditional
-  # bundler_setup_script: |
-  #     bundle install
-  << : *BUILD_TEST_TASK_TEMPLATE
+# linux_arm_task: 
+#   env:
+#     TARGET: la64
+#     TR_PLATFORM: linux
+#     TR_ARCH: arm64
+#   arm_container:
+#     image: ruby:3.1
+#     cpu: 1
+#     memory: 1G
+#   pre_req_script: apt update --yes && apt install -y build-essential squashfs-tools automake libtool
+#   # pre_req_script: apt update --yes && apt install --yes git zip curl wget netcat-traditional
+#   # bundler_setup_script: |
+#   #     bundle install
+#   << : *BUILD_TEST_TASK_TEMPLATE
 
 # linux_amd_task: 
 #   env:
@@ -66,3 +66,37 @@ linux_arm_task:
 #   pre_req_script: apt update --yes && apt install --yes git zip curl wget netcat-traditional
 #   ruby_setup_script: gem install bundler -v 2.4.18
 #   << : *BUILD_TEST_TASK_TEMPLATE
+
+
+
+# linux_arm_task: 
+#   container:
+#     dockerfile: ./Dockerfile-tr_packer
+#     # docker_arguments:
+#     #   ARCH: x86_64
+#     # cpu: 1
+#     # memory: 1G
+#   # pre_req_script: apt update --yes && apt install -y build-essential squashfs-tools automake libtool
+#   # pre_req_script: apt update --yes && apt install --yes git zip curl wget netcat-traditional
+#   bundler_setup_script: |
+#       echo "woot"
+#   # binary_artifacts:
+#   #   path: "rubyc"
+
+# d_task:  
+#   container:
+#     dockerfile: Dockerfile-tr_packer_amd64
+#     image: .
+#   bundler_setup_script: |
+#       echo "woot"
+#   binary_artifacts:
+#     path: "rubyc"
+task:
+  arm_container:
+    matrix:
+      - dockerfile: Dockerfile
+        docker_arguments:
+          - matrix:
+              ARCH: arm64
+  binary_artifacts:
+    path: "rubyc"

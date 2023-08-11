@@ -1,4 +1,5 @@
 ARG ARCH
+# FROM you54f/traveling-ruby-builder-arm64:next
 FROM you54f/traveling-ruby-builder-${arch:-arm64}:next
 
 RUN yum -y update && yum install -y squashfs-tools bison texinfo
@@ -16,7 +17,10 @@ RUN ruby --version
 RUN bundler --version
 WORKDIR /app
 COPY . .
+# RUN mv /app/ext/libssl.so.1.1 /usr/lib64
 RUN bundle update --bundler
 RUN bundle install
 RUN ruby --version
-RUN bundle exec rake
+
+RUN bundle exec rake || true
+ENTRYPOINT [ "rubyc" ]

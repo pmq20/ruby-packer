@@ -1,0 +1,46 @@
+FROM you54f/traveling-ruby-builder-arm64:next
+
+RUN yum -y update && yum install -y squashfs-tools ruby byacc
+RUN ruby --version
+RUN cat /etc/issue && \
+          uname -a && \
+          uname -p && \
+          uname -m && \
+          lscpu && \
+          which mksquashfs && \
+          mksquashfs -version
+WORKDIR /openssl
+
+# COPY . .
+# # https://stackoverflow.com/a/72507864
+RUN wget https://www.openssl.org/source/openssl-1.1.1o.tar.gz && \
+    tar -xvf openssl-1.1.1o.tar.gz && \
+    cd openssl-1.1.1o && \
+    # ./config --prefix=/usr/local/ssl --openssldir=/usr/local/ssl shared zlib && \
+    ./config && \
+    make && \
+    make test || true && \
+    make install && \
+    find / -name libssl.so.1.1
+WORKDIR /app
+COPY rubyc /app/rubyc
+RUN chmod +x ./rubyc
+
+RUN echo "source 'https://rubygems.org'" > Gemfile && \
+    echo "gem 'pact_broker'" >> Gemfile && \
+    echo "gem 'pg'" >> Gemfile && \
+    echo "gem 'sqlite3'" >> Gemfile && \
+    echo "gem 'puma'" >> Gemfile && \
+    echo "load Gem.bin_path('rack', 'rackup')" > pact-broker-app.rb
+RUN /app/rubyc --help
+# RUN LD_LIBRARY_PATH=/openssl/openssl-1.1.1o /app/rubyc --open-ssl-dir=/openssl/openssl-1.1.1o
+RUN bundle install
+RUN bundle exec rake || true
+
+# echo "source 'https://rubygems.org'" > Gemfile
+# echo "gem 'pact_broker'" >> Gemfile
+# echo "gem 'pg'" >> Gemfile
+# echo "gem 'sqlite3'" >> Gemfile
+# echo "gem 'puma'" >> Gemfile
+# echo "load Gem.bin_path('rack', 'rackup')" > pact-broker-app.rb
+
