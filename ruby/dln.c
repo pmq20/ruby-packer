@@ -111,6 +111,21 @@ dln_loaderror(const char *format, ...)
 #include "enclose_io.h"
 // --------- [Enclose.IO Hack end] ---------
 
+#if defined(_WIN32) || defined(USE_DLN_DLOPEN)
+static size_t
+init_funcname_len(const char **file)
+{
+    const char *p = *file, *base, *dot = NULL;
+
+    /* Load the file as an object one */
+    for (base = p; *p; p++) { /* Find position of last '/' */
+        if (*p == '.' && !dot) dot = p;
+        if (isdirsep(*p)) base = p+1, dot = NULL;
+    }
+    *file = base;
+    /* Delete suffix if it exists */
+    return (dot ? dot : p) - base;
+}
 
 static const char funcname_prefix[sizeof(FUNCNAME_PREFIX) - 1] = FUNCNAME_PREFIX;
 

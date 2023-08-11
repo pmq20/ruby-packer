@@ -177,6 +177,10 @@ off_t __syscall(quad_t number, ...);
 #define rename(f, t)	rb_w32_urename((f), (t))
 #endif
 
+// --------- [Enclose.IO Hack start] ---------
+#include "enclose_io.h"
+// --------- [Enclose.IO Hack end] ---------
+
 VALUE rb_cIO;
 VALUE rb_eEOFError;
 VALUE rb_eIOError;

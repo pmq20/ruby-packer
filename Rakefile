@@ -46,6 +46,8 @@ namespace 'rubyc' do
 
   desc 'run ruby -e from inside rubyc'
   task :ruby, [:e] => (Gem.win_platform? ? 'rubyc.exe' : 'rubyc') do |_, args|
+    puts args
+    puts args[:e]
     sh rubyc_original_ruby_env, (Gem.win_platform? ? '.\\rubyc.exe' : './rubyc'), '-e', args[:e]
   end
 end

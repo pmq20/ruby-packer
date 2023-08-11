@@ -1,3 +1,11 @@
-rubyc 
-rubyc-arm64 
-linux-arm64-ruby
+*
+!bin
+!ext
+!lib
+!rakelib
+!resource
+!ruby
+!test
+!vendor
+!Gemfile
+!Gemfile.lock

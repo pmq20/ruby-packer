@@ -168,7 +168,6 @@ class Compiler
     @options[:tmpdir] ||= File.expand_path('rubyc', Dir.tmpdir)
     @options[:tmpdir] = File.expand_path(@options[:tmpdir])
     @options[:openssl_dir] ||= '/usr/local/etc/openssl/'
-    # @options[:openssl_dir] ||= '/usr/local/etc/openssl/'
     @options[:ignore_file] = File.readlines('.rubycignore').map(&:strip) if File.exist?('.rubycignore')
   end
 
@@ -209,13 +208,13 @@ class Compiler
   end
 
   def replace_linked_extensions
-    # return if `uname -m`.start_with?('aarch64')
+    return if `uname -m`.start_with?('aarch64')
 
     ext_path = File.join(PRJ_ROOT, 'ext')
 
     # if `uname -m`.start_with?('aarch64')
-      Dir["#{ext_path}/*.{bundle,so,so1.1}"].each do |lib|
-        filename = lib.split('/').last
+    Dir["#{ext_path}/*.{bundle,so}"].each do |lib|
+      filename = lib.split('/').last
       Dir["#{@work_dir}/**/*#{filename}"].sort_by(&:length).reverse.each_with_index do |path, index|
         if index.zero?
           @utils.cp(lib, path)
@@ -285,7 +284,7 @@ class Compiler
       @utils.run(compile_pass1_env,
                  'call', @ruby_configure,
                  '--target=x64-mswin64',
-                 '--disable-install-doc',
+                 '--disable-install-rdoc',
                  "--with-openssl-dir=#{@local_build}",
                  "--prefix=#{@ruby_install}")
       @utils.run(compile_pass1_env, "nmake #{@options[:nmake_args]}")
@@ -340,10 +339,10 @@ class Compiler
     return unless Dir.exist?(@work_dir_local)
 
     @utils.chdir(@work_dir_local) do
-      if Dir.exist?('.git')
-        # log `git status` # removed so user doesnt need git installed
-        @utils.rm_rf('.git')
-      end
+      # if Dir.exist?('.git')
+      #   # log `git status` # removed so user doesnt need git installed
+      @utils.rm_rf('.git')
+      # end
       if File.exist?('a.exe')
         log `dir a.exe`
         @utils.rm_rf('a.exe')
@@ -694,15 +693,14 @@ class Compiler
       #   @utils.run(compile_env.merge({ 'CPPFLAGS' => '-P -std=c++14' }), "make #{@options[:make_args]}")
       #   @utils.run(compile_env.merge({ 'CPPFLAGS' => '-P -std=c++14' }), 'make install.libs')
       # elsif Gem::Platform.local.os == 'darwin'
-        @utils.run(compile_env.merge({ 'CPPFLAGS' => '-P' }),
-        './configure',
-        '--without-shared',
-        '--without-cxx-shared',
-        "--prefix=#{@local_build}")
-        @utils.run(compile_env.merge({ 'CPPFLAGS' => '-P' }), "make #{@options[:make_args]}")
-        @utils.run(compile_env.merge({ 'CPPFLAGS' => '-P' }), 'make install.libs')    
+      @utils.run(compile_env.merge({ 'CPPFLAGS' => '-P' }),
+                 './configure',
+                 '--without-shared',
+                 '--without-cxx-shared',
+                 "--prefix=#{@local_build}")
+      @utils.run(compile_env.merge({ 'CPPFLAGS' => '-P' }), "make #{@options[:make_args]}")
+      @utils.run(compile_env.merge({ 'CPPFLAGS' => '-P' }), 'make install.libs')
       # end
-
     end
   end
 
@@ -848,9 +846,9 @@ class Compiler
     {
       'CI' => 'true',
       'GEM_PATH' => File.join(@ruby_install, 'lib', 'ruby', 'gems', self.class.ruby_api_version),
-      # TODO:- `fetch': wrong number of arguments (given 0, expected 1..2) (ArgumentError)
-      'PATH' => "#{File.join(@ruby_install, 'bin')}:#{ENV.fetch('PATH', nil)}",
-      # 'PATH' => "#{File.join(@ruby_install, 'bin')}",
+      # TODO: `fetch': wrong number of arguments (given 0, expected 1..2) (ArgumentError)
+      # 'PATH' => "#{File.join(@ruby_install, 'bin')}:#{ENV.fetch('PATH', nil)}",
+      'PATH' => File.join(@ruby_install, 'bin').to_s,
       'ENCLOSE_IO_USE_ORIGINAL_RUBY' => 'true',
       'ENCLOSE_IO_RUBYC_1ST_PASS' => 'true',
       'ENCLOSE_IO_RUBYC_2ND_PASS' => nil

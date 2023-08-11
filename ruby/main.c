@@ -43,6 +43,7 @@ extern SQUASH_OS_PATH mkdir_workdir;
 extern char *enclose_io_mkdir_scope;
 // --------- [Enclose.IO Hack end] ---------
 
+
 static int
 rb_main(int argc, char **argv)
 {
@@ -59,10 +60,11 @@ int rb_wasm_rt_start(int (main)(int argc, char **argv), int argc, char **argv);
 int
 main(int argc, char **argv)
 {
+
 // --------- [Enclose.IO Hack start] ---------
-	const uint8_t *enclose_io_memfs = NULL;
-	int ret;
-	sqfs_err enclose_io_ret;
+const uint8_t *enclose_io_memfs = NULL;
+int ret;
+sqfs_err enclose_io_ret;
 #ifdef _WIN32
 	BOOL bool_ret;
 	HRSRC myResource;
@@ -153,7 +155,6 @@ main(int argc, char **argv)
 #endif // ifdef ENCLOSE_IO_ENTRANCE
 #endif // ifdef _WIN32
 // --------- [Enclose.IO Hack end] ---------
-
 #ifdef RUBY_DEBUG_ENV
     ruby_set_debug_option(getenv("RUBY_DEBUG"));
 #endif

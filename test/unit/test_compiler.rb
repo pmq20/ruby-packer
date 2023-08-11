@@ -15,7 +15,7 @@ class TestCompiler < Minitest::Test
   end
 
   def test_class_ruby_api_version
-    assert_equal '2.7.0', Compiler.ruby_api_version
+    assert_equal '3.2.0', Compiler.ruby_api_version
   end
 
   def test_initialize
