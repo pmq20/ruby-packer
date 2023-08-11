@@ -1,6 +1,0 @@
-#!/bin/sh
-prefix="/${0%/*}"
-prefix="${prefix%/*}"
-ruby="${bindir}/${RUBY_INSTALL_NAME}"
-gdbinit="${rubylibdir}/gdbinit"
-exec gdb --command="$gdbinit" --args "$ruby" "$@"
