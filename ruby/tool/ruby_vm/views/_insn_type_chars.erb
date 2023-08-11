@@ -1,0 +1,32 @@
+%# -*- C -*-
+%# Copyright (c) 2017 Urabe, Shyouhei.  All rights reserved.
+%#
+%# This file is a part of  the programming language Ruby.  Permission is hereby
+%# granted, to either  redistribute and/or modify this file,  provided that the
+%# conditions mentioned  in the  file COPYING  are met.   Consult the  file for
+%# details.
+%
+enum ruby_insn_type_chars {
+% RubyVM::Typemap.each_value do |(c, t)|
+    <%= t %> = '<%= c %>',
+% end
+};
+
+static inline union iseq_inline_storage_entry *
+ISEQ_IS_ENTRY_START(const struct rb_iseq_constant_body *body, char op_type)
+{
+    unsigned int relative_ic_offset = 0;
+    switch (op_type) {
+      case TS_IC:
+        relative_ic_offset += body->ise_size;
+      case TS_ISE:
+        relative_ic_offset += body->icvarc_size;
+      case TS_ICVARC:
+        relative_ic_offset += body->ivc_size;
+      case TS_IVC:
+        break;
+      default:
+        rb_bug("Wrong op type");
+    }
+    return &body->is_entries[relative_ic_offset];
+}

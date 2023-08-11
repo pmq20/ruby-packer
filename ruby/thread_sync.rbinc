@@ -1,0 +1,82 @@
+// -*- c -*-
+// DO NOT MODIFY THIS FILE DIRECTLY.
+// auto-generated file
+//   by ./tool/mk_builtin_loader.rb
+//   with thread_sync.rb
+#include "internal/compilers.h"     /* for MAYBE_UNUSED */
+#include "internal/warnings.h"      /* for COMPILER_WARNING_PUSH */
+#include "ruby/ruby.h"              /* for VALUE */
+#include "builtin.h"                /* for RB_BUILTIN_FUNCTION */
+struct rb_execution_context_struct; /* in vm_core.h */
+
+static void
+mjit_compile_invokebuiltin_for_rb_queue_pop(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE);\n");
+    if (index == -1) {
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 2);
+    }
+    else {
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == rb_queue_pop */\n", (VALUE)rb_queue_pop);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0], argv[1]);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_rb_szqueue_pop(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE);\n");
+    if (index == -1) {
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 2);
+    }
+    else {
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == rb_szqueue_pop */\n", (VALUE)rb_szqueue_pop);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0], argv[1]);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_rb_szqueue_push(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE, VALUE);\n");
+    if (index == -1) {
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 3);
+    }
+    else {
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == rb_szqueue_push */\n", (VALUE)rb_szqueue_push);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0], argv[1], argv[2]);\n");
+}
+
+void Init_builtin_thread_sync(void)
+{
+  // table definition
+  static const struct rb_builtin_function thread_sync_table[] = {
+    RB_BUILTIN_FUNCTION(0, rb_queue_pop, rb_queue_pop, 2, mjit_compile_invokebuiltin_for_rb_queue_pop),
+    RB_BUILTIN_FUNCTION(1, rb_szqueue_pop, rb_szqueue_pop, 2, mjit_compile_invokebuiltin_for_rb_szqueue_pop),
+    RB_BUILTIN_FUNCTION(2, rb_szqueue_push, rb_szqueue_push, 3, mjit_compile_invokebuiltin_for_rb_szqueue_push),
+    RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0, 0),
+  };
+
+  // arity_check
+COMPILER_WARNING_PUSH
+#if GCC_VERSION_SINCE(5, 1, 0) || defined __clang__
+COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)
+#endif
+  if (0) rb_builtin_function_check_arity2(rb_queue_pop);
+  if (0) rb_builtin_function_check_arity2(rb_szqueue_pop);
+  if (0) rb_builtin_function_check_arity3(rb_szqueue_push);
+COMPILER_WARNING_POP
+
+  // load
+  rb_load_with_builtin_functions("thread_sync", thread_sync_table);
+}

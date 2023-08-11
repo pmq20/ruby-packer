@@ -1,0 +1,201 @@
+// -*- c -*-
+// DO NOT MODIFY THIS FILE DIRECTLY.
+// auto-generated file
+//   by ./tool/mk_builtin_loader.rb
+//   with kernel.rb
+#include "internal/compilers.h"     /* for MAYBE_UNUSED */
+#include "internal/warnings.h"      /* for COMPILER_WARNING_PUSH */
+#include "ruby/ruby.h"              /* for VALUE */
+#include "builtin.h"                /* for RB_BUILTIN_FUNCTION */
+struct rb_execution_context_struct; /* in vm_core.h */
+
+static VALUE builtin_inline_class_20(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 20 "kernel.rb"
+return rb_obj_class(self);
+#line 17 "kernel.rbinc"
+}
+
+static VALUE builtin_inline_class_69(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 69 "kernel.rb"
+return rb_obj_frozen_p(self);
+#line 24 "kernel.rbinc"
+}
+
+static VALUE builtin_inline_class_122(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 122 "kernel.rb"
+return SIZED_ENUMERATOR(self, 0, 0, rb_obj_size);
+#line 31 "kernel.rbinc"
+}
+
+static VALUE builtin_inline_class_146(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 146 "kernel.rb"
+return SIZED_ENUMERATOR(self, 0, 0, rb_obj_size);
+#line 38 "kernel.rbinc"
+}
+
+static void
+mjit_compile_invokebuiltin_for__bi0(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    if (inlinable_p) {
+        rb_str_catf(buf, "%s", "    {\n");
+        rb_str_catf(buf, "%s", "#line 20 \"kernel.rb\"\n");
+        rb_str_catf(buf, "%s", "    return rb_obj_class(self);\n");
+        rb_str_catf(buf, "%s", "#line 44 \"kernel.rbinc\"\n");
+        rb_str_catf(buf, "%s", "    }\n");
+        rb_str_catf(buf, "%s", "    \n");
+        return;
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_20 */\n", (VALUE)builtin_inline_class_20);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_rb_obj_clone2(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE);\n");
+    if (index == -1) {
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 1);
+    }
+    else {
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == rb_obj_clone2 */\n", (VALUE)rb_obj_clone2);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0]);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for__bi1(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    if (inlinable_p) {
+        rb_str_catf(buf, "%s", "    {\n");
+        rb_str_catf(buf, "%s", "#line 69 \"kernel.rb\"\n");
+        rb_str_catf(buf, "%s", "    return rb_obj_frozen_p(self);\n");
+        rb_str_catf(buf, "%s", "#line 50 \"kernel.rbinc\"\n");
+        rb_str_catf(buf, "%s", "    }\n");
+        rb_str_catf(buf, "%s", "    \n");
+        return;
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_69 */\n", (VALUE)builtin_inline_class_69);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_block_given_p(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == block_given_p */\n", (VALUE)block_given_p);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for__bi2(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    if (inlinable_p) {
+        rb_str_catf(buf, "%s", "    {\n");
+        rb_str_catf(buf, "%s", "#line 122 \"kernel.rb\"\n");
+        rb_str_catf(buf, "%s", "    return SIZED_ENUMERATOR(self, 0, 0, rb_obj_size);\n");
+        rb_str_catf(buf, "%s", "#line 56 \"kernel.rbinc\"\n");
+        rb_str_catf(buf, "%s", "    }\n");
+        rb_str_catf(buf, "%s", "    \n");
+        return;
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_122 */\n", (VALUE)builtin_inline_class_122);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for__bi3(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    if (inlinable_p) {
+        rb_str_catf(buf, "%s", "    {\n");
+        rb_str_catf(buf, "%s", "#line 146 \"kernel.rb\"\n");
+        rb_str_catf(buf, "%s", "    return SIZED_ENUMERATOR(self, 0, 0, rb_obj_size);\n");
+        rb_str_catf(buf, "%s", "#line 62 \"kernel.rbinc\"\n");
+        rb_str_catf(buf, "%s", "    }\n");
+        rb_str_catf(buf, "%s", "    \n");
+        return;
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_146 */\n", (VALUE)builtin_inline_class_146);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_rb_f_float1(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE);\n");
+    if (index == -1) {
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 1);
+    }
+    else {
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == rb_f_float1 */\n", (VALUE)rb_f_float1);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0]);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_rb_f_float(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE);\n");
+    if (index == -1) {
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 2);
+    }
+    else {
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == rb_f_float */\n", (VALUE)rb_f_float);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0], argv[1]);\n");
+}
+
+void Init_builtin_kernel(void)
+{
+  // table definition
+  static const struct rb_builtin_function kernel_table[] = {
+    RB_BUILTIN_FUNCTION(0, _bi0, builtin_inline_class_20, 0, mjit_compile_invokebuiltin_for__bi0),
+    RB_BUILTIN_FUNCTION(1, rb_obj_clone2, rb_obj_clone2, 1, mjit_compile_invokebuiltin_for_rb_obj_clone2),
+    RB_BUILTIN_FUNCTION(2, _bi1, builtin_inline_class_69, 0, mjit_compile_invokebuiltin_for__bi1),
+    RB_BUILTIN_FUNCTION(3, block_given_p, block_given_p, 0, mjit_compile_invokebuiltin_for_block_given_p),
+    RB_BUILTIN_FUNCTION(4, _bi2, builtin_inline_class_122, 0, mjit_compile_invokebuiltin_for__bi2),
+    RB_BUILTIN_FUNCTION(5, _bi3, builtin_inline_class_146, 0, mjit_compile_invokebuiltin_for__bi3),
+    RB_BUILTIN_FUNCTION(6, rb_f_float1, rb_f_float1, 1, mjit_compile_invokebuiltin_for_rb_f_float1),
+    RB_BUILTIN_FUNCTION(7, rb_f_float, rb_f_float, 2, mjit_compile_invokebuiltin_for_rb_f_float),
+    RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0, 0),
+  };
+
+  // arity_check
+COMPILER_WARNING_PUSH
+#if GCC_VERSION_SINCE(5, 1, 0) || defined __clang__
+COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)
+#endif
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_20);
+  if (0) rb_builtin_function_check_arity1(rb_obj_clone2);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_69);
+  if (0) rb_builtin_function_check_arity0(block_given_p);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_122);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_146);
+  if (0) rb_builtin_function_check_arity1(rb_f_float1);
+  if (0) rb_builtin_function_check_arity2(rb_f_float);
+COMPILER_WARNING_POP
+
+  // load
+  rb_load_with_builtin_functions("kernel", kernel_table);
+}

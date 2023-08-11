@@ -1,0 +1,271 @@
+// -*- c -*-
+// DO NOT MODIFY THIS FILE DIRECTLY.
+// auto-generated file
+//   by ./tool/mk_builtin_loader.rb
+//   with gc.rb
+#include "internal/compilers.h"     /* for MAYBE_UNUSED */
+#include "internal/warnings.h"      /* for COMPILER_WARNING_PUSH */
+#include "ruby/ruby.h"              /* for VALUE */
+#include "builtin.h"                /* for RB_BUILTIN_FUNCTION */
+struct rb_execution_context_struct; /* in vm_core.h */
+
+static VALUE builtin_inline_class_262(struct rb_execution_context_struct *ec, const VALUE self)
+{
+MAYBE_UNUSED(const VALUE) flag = rb_vm_lvar(ec, -3);
+#line 262 "gc.rb"
+
+      rb_objspace.flags.measure_gc = RTEST(flag) ? TRUE : FALSE;
+      return flag;
+#line 20 "gc.rbinc"
+}
+
+static VALUE builtin_inline_class_274(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 274 "gc.rb"
+return 
+      RBOOL(rb_objspace.flags.measure_gc);
+#line 28 "gc.rbinc"
+}
+
+static VALUE builtin_inline_class_284(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 284 "gc.rb"
+return 
+      ULL2NUM(rb_objspace.profile.total_time_ns);
+#line 36 "gc.rbinc"
+}
+
+static void
+mjit_compile_invokebuiltin_for_gc_start_internal(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE, VALUE, VALUE);\n");
+    if (index == -1) {
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 4);
+    }
+    else {
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == gc_start_internal */\n", (VALUE)gc_start_internal);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0], argv[1], argv[2], argv[3]);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_gc_enable(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == gc_enable */\n", (VALUE)gc_enable);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_gc_disable(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == gc_disable */\n", (VALUE)gc_disable);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_gc_stress_get(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == gc_stress_get */\n", (VALUE)gc_stress_get);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_gc_stress_set_m(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE);\n");
+    if (index == -1) {
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 1);
+    }
+    else {
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == gc_stress_set_m */\n", (VALUE)gc_stress_set_m);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0]);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_gc_count(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == gc_count */\n", (VALUE)gc_count);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_gc_stat(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE);\n");
+    if (index == -1) {
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 1);
+    }
+    else {
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == gc_stat */\n", (VALUE)gc_stat);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0]);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_gc_stat_heap(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE);\n");
+    if (index == -1) {
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 2);
+    }
+    else {
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == gc_stat_heap */\n", (VALUE)gc_stat_heap);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0], argv[1]);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_gc_latest_gc_info(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE);\n");
+    if (index == -1) {
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 1);
+    }
+    else {
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == gc_latest_gc_info */\n", (VALUE)gc_latest_gc_info);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0]);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_gc_verify_compaction_references(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE, VALUE);\n");
+    if (index == -1) {
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 3);
+    }
+    else {
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == gc_verify_compaction_references */\n", (VALUE)gc_verify_compaction_references);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0], argv[1], argv[2]);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for__bi0(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    if (inlinable_p) {
+        rb_str_catf(buf, "%s", "    {\n");
+        rb_str_catf(buf, "%s", "    MAYBE_UNUSED(const VALUE) flag = rb_vm_lvar(ec, -3);\n");
+        rb_str_catf(buf, "%s", "#line 262 \"gc.rb\"\n");
+        rb_str_catf(buf, "%s", "    \n");
+        rb_str_catf(buf, "%s", "          rb_objspace.flags.measure_gc = RTEST(flag) ? TRUE : FALSE;\n");
+        rb_str_catf(buf, "%s", "          return flag;\n");
+        rb_str_catf(buf, "%s", "#line 45 \"gc.rbinc\"\n");
+        rb_str_catf(buf, "%s", "    }\n");
+        rb_str_catf(buf, "%s", "    \n");
+        return;
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_262 */\n", (VALUE)builtin_inline_class_262);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for__bi1(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    if (inlinable_p) {
+        rb_str_catf(buf, "%s", "    {\n");
+        rb_str_catf(buf, "%s", "#line 274 \"gc.rb\"\n");
+        rb_str_catf(buf, "%s", "    return \n");
+        rb_str_catf(buf, "%s", "          RBOOL(rb_objspace.flags.measure_gc);\n");
+        rb_str_catf(buf, "%s", "#line 52 \"gc.rbinc\"\n");
+        rb_str_catf(buf, "%s", "    }\n");
+        rb_str_catf(buf, "%s", "    \n");
+        return;
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_274 */\n", (VALUE)builtin_inline_class_274);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for__bi2(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    if (inlinable_p) {
+        rb_str_catf(buf, "%s", "    {\n");
+        rb_str_catf(buf, "%s", "#line 284 \"gc.rb\"\n");
+        rb_str_catf(buf, "%s", "    return \n");
+        rb_str_catf(buf, "%s", "          ULL2NUM(rb_objspace.profile.total_time_ns);\n");
+        rb_str_catf(buf, "%s", "#line 59 \"gc.rbinc\"\n");
+        rb_str_catf(buf, "%s", "    }\n");
+        rb_str_catf(buf, "%s", "    \n");
+        return;
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_284 */\n", (VALUE)builtin_inline_class_284);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+void Init_builtin_gc(void)
+{
+  // table definition
+  static const struct rb_builtin_function gc_table[] = {
+    RB_BUILTIN_FUNCTION(0, gc_start_internal, gc_start_internal, 4, mjit_compile_invokebuiltin_for_gc_start_internal),
+    RB_BUILTIN_FUNCTION(1, gc_enable, gc_enable, 0, mjit_compile_invokebuiltin_for_gc_enable),
+    RB_BUILTIN_FUNCTION(2, gc_disable, gc_disable, 0, mjit_compile_invokebuiltin_for_gc_disable),
+    RB_BUILTIN_FUNCTION(3, gc_stress_get, gc_stress_get, 0, mjit_compile_invokebuiltin_for_gc_stress_get),
+    RB_BUILTIN_FUNCTION(4, gc_stress_set_m, gc_stress_set_m, 1, mjit_compile_invokebuiltin_for_gc_stress_set_m),
+    RB_BUILTIN_FUNCTION(5, gc_count, gc_count, 0, mjit_compile_invokebuiltin_for_gc_count),
+    RB_BUILTIN_FUNCTION(6, gc_stat, gc_stat, 1, mjit_compile_invokebuiltin_for_gc_stat),
+    RB_BUILTIN_FUNCTION(7, gc_stat_heap, gc_stat_heap, 2, mjit_compile_invokebuiltin_for_gc_stat_heap),
+    RB_BUILTIN_FUNCTION(8, gc_latest_gc_info, gc_latest_gc_info, 1, mjit_compile_invokebuiltin_for_gc_latest_gc_info),
+    RB_BUILTIN_FUNCTION(9, gc_verify_compaction_references, gc_verify_compaction_references, 3, mjit_compile_invokebuiltin_for_gc_verify_compaction_references),
+    RB_BUILTIN_FUNCTION(10, _bi0, builtin_inline_class_262, 0, mjit_compile_invokebuiltin_for__bi0),
+    RB_BUILTIN_FUNCTION(11, _bi1, builtin_inline_class_274, 0, mjit_compile_invokebuiltin_for__bi1),
+    RB_BUILTIN_FUNCTION(12, _bi2, builtin_inline_class_284, 0, mjit_compile_invokebuiltin_for__bi2),
+    RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0, 0),
+  };
+
+  // arity_check
+COMPILER_WARNING_PUSH
+#if GCC_VERSION_SINCE(5, 1, 0) || defined __clang__
+COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)
+#endif
+  if (0) rb_builtin_function_check_arity4(gc_start_internal);
+  if (0) rb_builtin_function_check_arity0(gc_enable);
+  if (0) rb_builtin_function_check_arity0(gc_disable);
+  if (0) rb_builtin_function_check_arity0(gc_stress_get);
+  if (0) rb_builtin_function_check_arity1(gc_stress_set_m);
+  if (0) rb_builtin_function_check_arity0(gc_count);
+  if (0) rb_builtin_function_check_arity1(gc_stat);
+  if (0) rb_builtin_function_check_arity2(gc_stat_heap);
+  if (0) rb_builtin_function_check_arity1(gc_latest_gc_info);
+  if (0) rb_builtin_function_check_arity3(gc_verify_compaction_references);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_262);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_274);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_284);
+COMPILER_WARNING_POP
+
+  // load
+  rb_load_with_builtin_functions("gc", gc_table);
+}

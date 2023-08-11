@@ -1,0 +1,406 @@
+// -*- c -*-
+// DO NOT MODIFY THIS FILE DIRECTLY.
+// auto-generated file
+//   by ./tool/mk_builtin_loader.rb
+//   with numeric.rb
+#include "internal/compilers.h"     /* for MAYBE_UNUSED */
+#include "internal/warnings.h"      /* for COMPILER_WARNING_PUSH */
+#include "ruby/ruby.h"              /* for VALUE */
+#include "builtin.h"                /* for RB_BUILTIN_FUNCTION */
+struct rb_execution_context_struct; /* in vm_core.h */
+
+static VALUE builtin_inline_class_90(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 90 "numeric.rb"
+return rb_int_uminus(self);
+#line 17 "numeric.rbinc"
+}
+
+static VALUE builtin_inline_class_106(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 106 "numeric.rb"
+return rb_int_comp(self);
+#line 24 "numeric.rbinc"
+}
+
+static VALUE builtin_inline_class_122(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 122 "numeric.rb"
+return rb_int_abs(self);
+#line 31 "numeric.rbinc"
+}
+
+static VALUE builtin_inline_class_168(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 168 "numeric.rb"
+return rb_int_bit_length(self);
+#line 38 "numeric.rbinc"
+}
+
+static VALUE builtin_inline_class_177(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 177 "numeric.rb"
+return rb_int_even_p(self);
+#line 45 "numeric.rbinc"
+}
+
+static VALUE builtin_inline_class_202(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 202 "numeric.rb"
+return rb_int_odd_p(self);
+#line 52 "numeric.rbinc"
+}
+
+static VALUE builtin_inline_class_237(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 237 "numeric.rb"
+return rb_int_size(self);
+#line 59 "numeric.rbinc"
+}
+
+static VALUE builtin_inline_class_264(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 264 "numeric.rb"
+return rb_int_zero_p(self);
+#line 66 "numeric.rbinc"
+}
+
+static VALUE builtin_inline_class_353(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 353 "numeric.rb"
+return rb_float_abs(self);
+#line 73 "numeric.rbinc"
+}
+
+static VALUE builtin_inline_class_358(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 358 "numeric.rb"
+return rb_float_abs(self);
+#line 80 "numeric.rbinc"
+}
+
+static VALUE builtin_inline_class_369(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 369 "numeric.rb"
+return rb_float_uminus(self);
+#line 87 "numeric.rbinc"
+}
+
+static VALUE builtin_inline_class_380(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 380 "numeric.rb"
+return RBOOL(FLOAT_ZERO_P(self));
+#line 94 "numeric.rbinc"
+}
+
+static VALUE builtin_inline_class_391(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 391 "numeric.rb"
+return RBOOL(RFLOAT_VALUE(self) > 0.0);
+#line 101 "numeric.rbinc"
+}
+
+static VALUE builtin_inline_class_402(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 402 "numeric.rb"
+return RBOOL(RFLOAT_VALUE(self) < 0.0);
+#line 108 "numeric.rbinc"
+}
+
+static void
+mjit_compile_invokebuiltin_for__bi0(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    if (inlinable_p) {
+        rb_str_catf(buf, "%s", "    {\n");
+        rb_str_catf(buf, "%s", "#line 90 \"numeric.rb\"\n");
+        rb_str_catf(buf, "%s", "    return rb_int_uminus(self);\n");
+        rb_str_catf(buf, "%s", "#line 114 \"numeric.rbinc\"\n");
+        rb_str_catf(buf, "%s", "    }\n");
+        rb_str_catf(buf, "%s", "    \n");
+        return;
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_90 */\n", (VALUE)builtin_inline_class_90);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for__bi1(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    if (inlinable_p) {
+        rb_str_catf(buf, "%s", "    {\n");
+        rb_str_catf(buf, "%s", "#line 106 \"numeric.rb\"\n");
+        rb_str_catf(buf, "%s", "    return rb_int_comp(self);\n");
+        rb_str_catf(buf, "%s", "#line 120 \"numeric.rbinc\"\n");
+        rb_str_catf(buf, "%s", "    }\n");
+        rb_str_catf(buf, "%s", "    \n");
+        return;
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_106 */\n", (VALUE)builtin_inline_class_106);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for__bi2(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    if (inlinable_p) {
+        rb_str_catf(buf, "%s", "    {\n");
+        rb_str_catf(buf, "%s", "#line 122 \"numeric.rb\"\n");
+        rb_str_catf(buf, "%s", "    return rb_int_abs(self);\n");
+        rb_str_catf(buf, "%s", "#line 126 \"numeric.rbinc\"\n");
+        rb_str_catf(buf, "%s", "    }\n");
+        rb_str_catf(buf, "%s", "    \n");
+        return;
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_122 */\n", (VALUE)builtin_inline_class_122);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for__bi3(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    if (inlinable_p) {
+        rb_str_catf(buf, "%s", "    {\n");
+        rb_str_catf(buf, "%s", "#line 168 \"numeric.rb\"\n");
+        rb_str_catf(buf, "%s", "    return rb_int_bit_length(self);\n");
+        rb_str_catf(buf, "%s", "#line 132 \"numeric.rbinc\"\n");
+        rb_str_catf(buf, "%s", "    }\n");
+        rb_str_catf(buf, "%s", "    \n");
+        return;
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_168 */\n", (VALUE)builtin_inline_class_168);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for__bi4(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    if (inlinable_p) {
+        rb_str_catf(buf, "%s", "    {\n");
+        rb_str_catf(buf, "%s", "#line 177 \"numeric.rb\"\n");
+        rb_str_catf(buf, "%s", "    return rb_int_even_p(self);\n");
+        rb_str_catf(buf, "%s", "#line 138 \"numeric.rbinc\"\n");
+        rb_str_catf(buf, "%s", "    }\n");
+        rb_str_catf(buf, "%s", "    \n");
+        return;
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_177 */\n", (VALUE)builtin_inline_class_177);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for__bi5(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    if (inlinable_p) {
+        rb_str_catf(buf, "%s", "    {\n");
+        rb_str_catf(buf, "%s", "#line 202 \"numeric.rb\"\n");
+        rb_str_catf(buf, "%s", "    return rb_int_odd_p(self);\n");
+        rb_str_catf(buf, "%s", "#line 144 \"numeric.rbinc\"\n");
+        rb_str_catf(buf, "%s", "    }\n");
+        rb_str_catf(buf, "%s", "    \n");
+        return;
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_202 */\n", (VALUE)builtin_inline_class_202);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for__bi6(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    if (inlinable_p) {
+        rb_str_catf(buf, "%s", "    {\n");
+        rb_str_catf(buf, "%s", "#line 237 \"numeric.rb\"\n");
+        rb_str_catf(buf, "%s", "    return rb_int_size(self);\n");
+        rb_str_catf(buf, "%s", "#line 150 \"numeric.rbinc\"\n");
+        rb_str_catf(buf, "%s", "    }\n");
+        rb_str_catf(buf, "%s", "    \n");
+        return;
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_237 */\n", (VALUE)builtin_inline_class_237);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for__bi7(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    if (inlinable_p) {
+        rb_str_catf(buf, "%s", "    {\n");
+        rb_str_catf(buf, "%s", "#line 264 \"numeric.rb\"\n");
+        rb_str_catf(buf, "%s", "    return rb_int_zero_p(self);\n");
+        rb_str_catf(buf, "%s", "#line 156 \"numeric.rbinc\"\n");
+        rb_str_catf(buf, "%s", "    }\n");
+        rb_str_catf(buf, "%s", "    \n");
+        return;
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_264 */\n", (VALUE)builtin_inline_class_264);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for__bi8(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    if (inlinable_p) {
+        rb_str_catf(buf, "%s", "    {\n");
+        rb_str_catf(buf, "%s", "#line 353 \"numeric.rb\"\n");
+        rb_str_catf(buf, "%s", "    return rb_float_abs(self);\n");
+        rb_str_catf(buf, "%s", "#line 162 \"numeric.rbinc\"\n");
+        rb_str_catf(buf, "%s", "    }\n");
+        rb_str_catf(buf, "%s", "    \n");
+        return;
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_353 */\n", (VALUE)builtin_inline_class_353);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for__bi9(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    if (inlinable_p) {
+        rb_str_catf(buf, "%s", "    {\n");
+        rb_str_catf(buf, "%s", "#line 358 \"numeric.rb\"\n");
+        rb_str_catf(buf, "%s", "    return rb_float_abs(self);\n");
+        rb_str_catf(buf, "%s", "#line 168 \"numeric.rbinc\"\n");
+        rb_str_catf(buf, "%s", "    }\n");
+        rb_str_catf(buf, "%s", "    \n");
+        return;
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_358 */\n", (VALUE)builtin_inline_class_358);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for__bi10(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    if (inlinable_p) {
+        rb_str_catf(buf, "%s", "    {\n");
+        rb_str_catf(buf, "%s", "#line 369 \"numeric.rb\"\n");
+        rb_str_catf(buf, "%s", "    return rb_float_uminus(self);\n");
+        rb_str_catf(buf, "%s", "#line 174 \"numeric.rbinc\"\n");
+        rb_str_catf(buf, "%s", "    }\n");
+        rb_str_catf(buf, "%s", "    \n");
+        return;
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_369 */\n", (VALUE)builtin_inline_class_369);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for__bi11(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    if (inlinable_p) {
+        rb_str_catf(buf, "%s", "    {\n");
+        rb_str_catf(buf, "%s", "#line 380 \"numeric.rb\"\n");
+        rb_str_catf(buf, "%s", "    return RBOOL(FLOAT_ZERO_P(self));\n");
+        rb_str_catf(buf, "%s", "#line 180 \"numeric.rbinc\"\n");
+        rb_str_catf(buf, "%s", "    }\n");
+        rb_str_catf(buf, "%s", "    \n");
+        return;
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_380 */\n", (VALUE)builtin_inline_class_380);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for__bi12(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    if (inlinable_p) {
+        rb_str_catf(buf, "%s", "    {\n");
+        rb_str_catf(buf, "%s", "#line 391 \"numeric.rb\"\n");
+        rb_str_catf(buf, "%s", "    return RBOOL(RFLOAT_VALUE(self) > 0.0);\n");
+        rb_str_catf(buf, "%s", "#line 186 \"numeric.rbinc\"\n");
+        rb_str_catf(buf, "%s", "    }\n");
+        rb_str_catf(buf, "%s", "    \n");
+        return;
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_391 */\n", (VALUE)builtin_inline_class_391);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for__bi13(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    if (inlinable_p) {
+        rb_str_catf(buf, "%s", "    {\n");
+        rb_str_catf(buf, "%s", "#line 402 \"numeric.rb\"\n");
+        rb_str_catf(buf, "%s", "    return RBOOL(RFLOAT_VALUE(self) < 0.0);\n");
+        rb_str_catf(buf, "%s", "#line 192 \"numeric.rbinc\"\n");
+        rb_str_catf(buf, "%s", "    }\n");
+        rb_str_catf(buf, "%s", "    \n");
+        return;
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_402 */\n", (VALUE)builtin_inline_class_402);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+void Init_builtin_numeric(void)
+{
+  // table definition
+  static const struct rb_builtin_function numeric_table[] = {
+    RB_BUILTIN_FUNCTION(0, _bi0, builtin_inline_class_90, 0, mjit_compile_invokebuiltin_for__bi0),
+    RB_BUILTIN_FUNCTION(1, _bi1, builtin_inline_class_106, 0, mjit_compile_invokebuiltin_for__bi1),
+    RB_BUILTIN_FUNCTION(2, _bi2, builtin_inline_class_122, 0, mjit_compile_invokebuiltin_for__bi2),
+    RB_BUILTIN_FUNCTION(3, _bi3, builtin_inline_class_168, 0, mjit_compile_invokebuiltin_for__bi3),
+    RB_BUILTIN_FUNCTION(4, _bi4, builtin_inline_class_177, 0, mjit_compile_invokebuiltin_for__bi4),
+    RB_BUILTIN_FUNCTION(5, _bi5, builtin_inline_class_202, 0, mjit_compile_invokebuiltin_for__bi5),
+    RB_BUILTIN_FUNCTION(6, _bi6, builtin_inline_class_237, 0, mjit_compile_invokebuiltin_for__bi6),
+    RB_BUILTIN_FUNCTION(7, _bi7, builtin_inline_class_264, 0, mjit_compile_invokebuiltin_for__bi7),
+    RB_BUILTIN_FUNCTION(8, _bi8, builtin_inline_class_353, 0, mjit_compile_invokebuiltin_for__bi8),
+    RB_BUILTIN_FUNCTION(9, _bi9, builtin_inline_class_358, 0, mjit_compile_invokebuiltin_for__bi9),
+    RB_BUILTIN_FUNCTION(10, _bi10, builtin_inline_class_369, 0, mjit_compile_invokebuiltin_for__bi10),
+    RB_BUILTIN_FUNCTION(11, _bi11, builtin_inline_class_380, 0, mjit_compile_invokebuiltin_for__bi11),
+    RB_BUILTIN_FUNCTION(12, _bi12, builtin_inline_class_391, 0, mjit_compile_invokebuiltin_for__bi12),
+    RB_BUILTIN_FUNCTION(13, _bi13, builtin_inline_class_402, 0, mjit_compile_invokebuiltin_for__bi13),
+    RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0, 0),
+  };
+
+  // arity_check
+COMPILER_WARNING_PUSH
+#if GCC_VERSION_SINCE(5, 1, 0) || defined __clang__
+COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)
+#endif
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_90);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_106);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_122);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_168);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_177);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_202);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_237);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_264);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_353);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_358);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_369);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_380);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_391);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_402);
+COMPILER_WARNING_POP
+
+  // load
+  rb_load_with_builtin_functions("numeric", numeric_table);
+}

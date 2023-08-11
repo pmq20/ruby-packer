@@ -1,0 +1,210 @@
+// -*- c -*-
+// DO NOT MODIFY THIS FILE DIRECTLY.
+// auto-generated file
+//   by ./tool/mk_builtin_loader.rb
+//   with ast.rb
+#include "internal/compilers.h"     /* for MAYBE_UNUSED */
+#include "internal/warnings.h"      /* for COMPILER_WARNING_PUSH */
+#include "ruby/ruby.h"              /* for VALUE */
+#include "builtin.h"                /* for RB_BUILTIN_FUNCTION */
+struct rb_execution_context_struct; /* in vm_core.h */
+
+static void
+mjit_compile_invokebuiltin_for_ast_s_parse(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE, VALUE, VALUE);\n");
+    if (index == -1) {
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 4);
+    }
+    else {
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == ast_s_parse */\n", (VALUE)ast_s_parse);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0], argv[1], argv[2], argv[3]);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_ast_s_parse_file(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE, VALUE, VALUE);\n");
+    if (index == -1) {
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 4);
+    }
+    else {
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == ast_s_parse_file */\n", (VALUE)ast_s_parse_file);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0], argv[1], argv[2], argv[3]);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_ast_s_of(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE, VALUE, VALUE);\n");
+    if (index == -1) {
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 4);
+    }
+    else {
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == ast_s_of */\n", (VALUE)ast_s_of);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0], argv[1], argv[2], argv[3]);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_node_id_for_backtrace_location(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE);\n");
+    if (index == -1) {
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 1);
+    }
+    else {
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == node_id_for_backtrace_location */\n", (VALUE)node_id_for_backtrace_location);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0]);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_ast_node_type(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == ast_node_type */\n", (VALUE)ast_node_type);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_ast_node_first_lineno(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == ast_node_first_lineno */\n", (VALUE)ast_node_first_lineno);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_ast_node_first_column(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == ast_node_first_column */\n", (VALUE)ast_node_first_column);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_ast_node_last_lineno(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == ast_node_last_lineno */\n", (VALUE)ast_node_last_lineno);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_ast_node_last_column(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == ast_node_last_column */\n", (VALUE)ast_node_last_column);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_ast_node_all_tokens(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == ast_node_all_tokens */\n", (VALUE)ast_node_all_tokens);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_ast_node_children(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == ast_node_children */\n", (VALUE)ast_node_children);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_ast_node_inspect(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == ast_node_inspect */\n", (VALUE)ast_node_inspect);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_ast_node_node_id(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == ast_node_node_id */\n", (VALUE)ast_node_node_id);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_ast_node_script_lines(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == ast_node_script_lines */\n", (VALUE)ast_node_script_lines);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+void Init_builtin_ast(void)
+{
+  // table definition
+  static const struct rb_builtin_function ast_table[] = {
+    RB_BUILTIN_FUNCTION(0, ast_s_parse, ast_s_parse, 4, mjit_compile_invokebuiltin_for_ast_s_parse),
+    RB_BUILTIN_FUNCTION(1, ast_s_parse_file, ast_s_parse_file, 4, mjit_compile_invokebuiltin_for_ast_s_parse_file),
+    RB_BUILTIN_FUNCTION(2, ast_s_of, ast_s_of, 4, mjit_compile_invokebuiltin_for_ast_s_of),
+    RB_BUILTIN_FUNCTION(3, node_id_for_backtrace_location, node_id_for_backtrace_location, 1, mjit_compile_invokebuiltin_for_node_id_for_backtrace_location),
+    RB_BUILTIN_FUNCTION(4, ast_node_type, ast_node_type, 0, mjit_compile_invokebuiltin_for_ast_node_type),
+    RB_BUILTIN_FUNCTION(5, ast_node_first_lineno, ast_node_first_lineno, 0, mjit_compile_invokebuiltin_for_ast_node_first_lineno),
+    RB_BUILTIN_FUNCTION(6, ast_node_first_column, ast_node_first_column, 0, mjit_compile_invokebuiltin_for_ast_node_first_column),
+    RB_BUILTIN_FUNCTION(7, ast_node_last_lineno, ast_node_last_lineno, 0, mjit_compile_invokebuiltin_for_ast_node_last_lineno),
+    RB_BUILTIN_FUNCTION(8, ast_node_last_column, ast_node_last_column, 0, mjit_compile_invokebuiltin_for_ast_node_last_column),
+    RB_BUILTIN_FUNCTION(9, ast_node_all_tokens, ast_node_all_tokens, 0, mjit_compile_invokebuiltin_for_ast_node_all_tokens),
+    RB_BUILTIN_FUNCTION(10, ast_node_children, ast_node_children, 0, mjit_compile_invokebuiltin_for_ast_node_children),
+    RB_BUILTIN_FUNCTION(11, ast_node_inspect, ast_node_inspect, 0, mjit_compile_invokebuiltin_for_ast_node_inspect),
+    RB_BUILTIN_FUNCTION(12, ast_node_node_id, ast_node_node_id, 0, mjit_compile_invokebuiltin_for_ast_node_node_id),
+    RB_BUILTIN_FUNCTION(13, ast_node_script_lines, ast_node_script_lines, 0, mjit_compile_invokebuiltin_for_ast_node_script_lines),
+    RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0, 0),
+  };
+
+  // arity_check
+COMPILER_WARNING_PUSH
+#if GCC_VERSION_SINCE(5, 1, 0) || defined __clang__
+COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)
+#endif
+  if (0) rb_builtin_function_check_arity4(ast_s_parse);
+  if (0) rb_builtin_function_check_arity4(ast_s_parse_file);
+  if (0) rb_builtin_function_check_arity4(ast_s_of);
+  if (0) rb_builtin_function_check_arity1(node_id_for_backtrace_location);
+  if (0) rb_builtin_function_check_arity0(ast_node_type);
+  if (0) rb_builtin_function_check_arity0(ast_node_first_lineno);
+  if (0) rb_builtin_function_check_arity0(ast_node_first_column);
+  if (0) rb_builtin_function_check_arity0(ast_node_last_lineno);
+  if (0) rb_builtin_function_check_arity0(ast_node_last_column);
+  if (0) rb_builtin_function_check_arity0(ast_node_all_tokens);
+  if (0) rb_builtin_function_check_arity0(ast_node_children);
+  if (0) rb_builtin_function_check_arity0(ast_node_inspect);
+  if (0) rb_builtin_function_check_arity0(ast_node_node_id);
+  if (0) rb_builtin_function_check_arity0(ast_node_script_lines);
+COMPILER_WARNING_POP
+
+  // load
+  rb_load_with_builtin_functions("ast", ast_table);
+}

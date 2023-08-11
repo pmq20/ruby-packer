@@ -1,0 +1,136 @@
+// -*- c -*-
+// DO NOT MODIFY THIS FILE DIRECTLY.
+// auto-generated file
+//   by ./tool/mk_builtin_loader.rb
+//   with timev.rb
+#include "internal/compilers.h"     /* for MAYBE_UNUSED */
+#include "internal/warnings.h"      /* for COMPILER_WARNING_PUSH */
+#include "ruby/ruby.h"              /* for VALUE */
+#include "builtin.h"                /* for RB_BUILTIN_FUNCTION */
+struct rb_execution_context_struct; /* in vm_core.h */
+
+static void
+mjit_compile_invokebuiltin_for_time_s_now(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE);\n");
+    if (index == -1) {
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 1);
+    }
+    else {
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == time_s_now */\n", (VALUE)time_s_now);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0]);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_time_s_at1(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE);\n");
+    if (index == -1) {
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 1);
+    }
+    else {
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == time_s_at1 */\n", (VALUE)time_s_at1);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0]);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_time_s_at(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE, VALUE, VALUE);\n");
+    if (index == -1) {
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 4);
+    }
+    else {
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == time_s_at */\n", (VALUE)time_s_at);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0], argv[1], argv[2], argv[3]);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_time_init_now(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE);\n");
+    if (index == -1) {
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 1);
+    }
+    else {
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == time_init_now */\n", (VALUE)time_init_now);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0]);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_time_init_parse(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE, VALUE);\n");
+    if (index == -1) {
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 3);
+    }
+    else {
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == time_init_parse */\n", (VALUE)time_init_parse);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0], argv[1], argv[2]);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_time_init_args(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE);\n");
+    if (index == -1) {
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 7);
+    }
+    else {
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == time_init_args */\n", (VALUE)time_init_args);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6]);\n");
+}
+
+void Init_builtin_timev(void)
+{
+  // table definition
+  static const struct rb_builtin_function timev_table[] = {
+    RB_BUILTIN_FUNCTION(0, time_s_now, time_s_now, 1, mjit_compile_invokebuiltin_for_time_s_now),
+    RB_BUILTIN_FUNCTION(1, time_s_at1, time_s_at1, 1, mjit_compile_invokebuiltin_for_time_s_at1),
+    RB_BUILTIN_FUNCTION(2, time_s_at, time_s_at, 4, mjit_compile_invokebuiltin_for_time_s_at),
+    RB_BUILTIN_FUNCTION(3, time_init_now, time_init_now, 1, mjit_compile_invokebuiltin_for_time_init_now),
+    RB_BUILTIN_FUNCTION(4, time_init_parse, time_init_parse, 3, mjit_compile_invokebuiltin_for_time_init_parse),
+    RB_BUILTIN_FUNCTION(5, time_init_args, time_init_args, 7, mjit_compile_invokebuiltin_for_time_init_args),
+    RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0, 0),
+  };
+
+  // arity_check
+COMPILER_WARNING_PUSH
+#if GCC_VERSION_SINCE(5, 1, 0) || defined __clang__
+COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)
+#endif
+  if (0) rb_builtin_function_check_arity1(time_s_now);
+  if (0) rb_builtin_function_check_arity1(time_s_at1);
+  if (0) rb_builtin_function_check_arity4(time_s_at);
+  if (0) rb_builtin_function_check_arity1(time_init_now);
+  if (0) rb_builtin_function_check_arity3(time_init_parse);
+  if (0) rb_builtin_function_check_arity7(time_init_args);
+COMPILER_WARNING_POP
+
+  // load
+  rb_load_with_builtin_functions("timev", timev_table);
+}

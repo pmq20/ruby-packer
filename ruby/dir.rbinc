@@ -1,0 +1,118 @@
+// -*- c -*-
+// DO NOT MODIFY THIS FILE DIRECTLY.
+// auto-generated file
+//   by ./tool/mk_builtin_loader.rb
+//   with dir.rb
+#include "internal/compilers.h"     /* for MAYBE_UNUSED */
+#include "internal/warnings.h"      /* for COMPILER_WARNING_PUSH */
+#include "ruby/ruby.h"              /* for VALUE */
+#include "builtin.h"                /* for RB_BUILTIN_FUNCTION */
+struct rb_execution_context_struct; /* in vm_core.h */
+
+static void
+mjit_compile_invokebuiltin_for_dir_s_open(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE);\n");
+    if (index == -1) {
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 2);
+    }
+    else {
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == dir_s_open */\n", (VALUE)dir_s_open);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0], argv[1]);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_dir_s_close(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE);\n");
+    if (index == -1) {
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 1);
+    }
+    else {
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == dir_s_close */\n", (VALUE)dir_s_close);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0]);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_dir_initialize(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE);\n");
+    if (index == -1) {
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 2);
+    }
+    else {
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == dir_initialize */\n", (VALUE)dir_initialize);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0], argv[1]);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_dir_s_aref(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE, VALUE);\n");
+    if (index == -1) {
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 3);
+    }
+    else {
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == dir_s_aref */\n", (VALUE)dir_s_aref);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0], argv[1], argv[2]);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_dir_s_glob(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE, VALUE, VALUE);\n");
+    if (index == -1) {
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 4);
+    }
+    else {
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == dir_s_glob */\n", (VALUE)dir_s_glob);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0], argv[1], argv[2], argv[3]);\n");
+}
+
+void Init_builtin_dir(void)
+{
+  // table definition
+  static const struct rb_builtin_function dir_table[] = {
+    RB_BUILTIN_FUNCTION(0, dir_s_open, dir_s_open, 2, mjit_compile_invokebuiltin_for_dir_s_open),
+    RB_BUILTIN_FUNCTION(1, dir_s_close, dir_s_close, 1, mjit_compile_invokebuiltin_for_dir_s_close),
+    RB_BUILTIN_FUNCTION(2, dir_initialize, dir_initialize, 2, mjit_compile_invokebuiltin_for_dir_initialize),
+    RB_BUILTIN_FUNCTION(3, dir_s_aref, dir_s_aref, 3, mjit_compile_invokebuiltin_for_dir_s_aref),
+    RB_BUILTIN_FUNCTION(4, dir_s_glob, dir_s_glob, 4, mjit_compile_invokebuiltin_for_dir_s_glob),
+    RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0, 0),
+  };
+
+  // arity_check
+COMPILER_WARNING_PUSH
+#if GCC_VERSION_SINCE(5, 1, 0) || defined __clang__
+COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)
+#endif
+  if (0) rb_builtin_function_check_arity2(dir_s_open);
+  if (0) rb_builtin_function_check_arity1(dir_s_close);
+  if (0) rb_builtin_function_check_arity2(dir_initialize);
+  if (0) rb_builtin_function_check_arity3(dir_s_aref);
+  if (0) rb_builtin_function_check_arity4(dir_s_glob);
+COMPILER_WARNING_POP
+
+  // load
+  rb_load_with_builtin_functions("dir", dir_table);
+}

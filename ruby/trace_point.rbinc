@@ -1,0 +1,280 @@
+// -*- c -*-
+// DO NOT MODIFY THIS FILE DIRECTLY.
+// auto-generated file
+//   by ./tool/mk_builtin_loader.rb
+//   with trace_point.rb
+#include "internal/compilers.h"     /* for MAYBE_UNUSED */
+#include "internal/warnings.h"      /* for COMPILER_WARNING_PUSH */
+#include "ruby/ruby.h"              /* for VALUE */
+#include "builtin.h"                /* for RB_BUILTIN_FUNCTION */
+struct rb_execution_context_struct; /* in vm_core.h */
+
+static void
+mjit_compile_invokebuiltin_for_tracepoint_new_s(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE);\n");
+    if (index == -1) {
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 1);
+    }
+    else {
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_new_s */\n", (VALUE)tracepoint_new_s);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0]);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_tracepoint_inspect(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_inspect */\n", (VALUE)tracepoint_inspect);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_tracepoint_stat_s(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_stat_s */\n", (VALUE)tracepoint_stat_s);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_tracepoint_trace_s(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE);\n");
+    if (index == -1) {
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 1);
+    }
+    else {
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_trace_s */\n", (VALUE)tracepoint_trace_s);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0]);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_tracepoint_allow_reentry(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_allow_reentry */\n", (VALUE)tracepoint_allow_reentry);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_tracepoint_enable_m(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE, VALUE);\n");
+    if (index == -1) {
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 3);
+    }
+    else {
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_enable_m */\n", (VALUE)tracepoint_enable_m);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0], argv[1], argv[2]);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_tracepoint_disable_m(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_disable_m */\n", (VALUE)tracepoint_disable_m);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_tracepoint_enabled_p(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_enabled_p */\n", (VALUE)tracepoint_enabled_p);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_tracepoint_attr_event(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_attr_event */\n", (VALUE)tracepoint_attr_event);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_tracepoint_attr_lineno(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_attr_lineno */\n", (VALUE)tracepoint_attr_lineno);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_tracepoint_attr_path(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_attr_path */\n", (VALUE)tracepoint_attr_path);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_tracepoint_attr_parameters(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_attr_parameters */\n", (VALUE)tracepoint_attr_parameters);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_tracepoint_attr_method_id(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_attr_method_id */\n", (VALUE)tracepoint_attr_method_id);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_tracepoint_attr_callee_id(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_attr_callee_id */\n", (VALUE)tracepoint_attr_callee_id);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_tracepoint_attr_defined_class(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_attr_defined_class */\n", (VALUE)tracepoint_attr_defined_class);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_tracepoint_attr_binding(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_attr_binding */\n", (VALUE)tracepoint_attr_binding);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_tracepoint_attr_self(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_attr_self */\n", (VALUE)tracepoint_attr_self);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_tracepoint_attr_return_value(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_attr_return_value */\n", (VALUE)tracepoint_attr_return_value);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_tracepoint_attr_raised_exception(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_attr_raised_exception */\n", (VALUE)tracepoint_attr_raised_exception);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_tracepoint_attr_eval_script(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_attr_eval_script */\n", (VALUE)tracepoint_attr_eval_script);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_tracepoint_attr_instruction_sequence(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
+{
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_attr_instruction_sequence */\n", (VALUE)tracepoint_attr_instruction_sequence);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
+}
+
+void Init_builtin_trace_point(void)
+{
+  // table definition
+  static const struct rb_builtin_function trace_point_table[] = {
+    RB_BUILTIN_FUNCTION(0, tracepoint_new_s, tracepoint_new_s, 1, mjit_compile_invokebuiltin_for_tracepoint_new_s),
+    RB_BUILTIN_FUNCTION(1, tracepoint_inspect, tracepoint_inspect, 0, mjit_compile_invokebuiltin_for_tracepoint_inspect),
+    RB_BUILTIN_FUNCTION(2, tracepoint_stat_s, tracepoint_stat_s, 0, mjit_compile_invokebuiltin_for_tracepoint_stat_s),
+    RB_BUILTIN_FUNCTION(3, tracepoint_trace_s, tracepoint_trace_s, 1, mjit_compile_invokebuiltin_for_tracepoint_trace_s),
+    RB_BUILTIN_FUNCTION(4, tracepoint_allow_reentry, tracepoint_allow_reentry, 0, mjit_compile_invokebuiltin_for_tracepoint_allow_reentry),
+    RB_BUILTIN_FUNCTION(5, tracepoint_enable_m, tracepoint_enable_m, 3, mjit_compile_invokebuiltin_for_tracepoint_enable_m),
+    RB_BUILTIN_FUNCTION(6, tracepoint_disable_m, tracepoint_disable_m, 0, mjit_compile_invokebuiltin_for_tracepoint_disable_m),
+    RB_BUILTIN_FUNCTION(7, tracepoint_enabled_p, tracepoint_enabled_p, 0, mjit_compile_invokebuiltin_for_tracepoint_enabled_p),
+    RB_BUILTIN_FUNCTION(8, tracepoint_attr_event, tracepoint_attr_event, 0, mjit_compile_invokebuiltin_for_tracepoint_attr_event),
+    RB_BUILTIN_FUNCTION(9, tracepoint_attr_lineno, tracepoint_attr_lineno, 0, mjit_compile_invokebuiltin_for_tracepoint_attr_lineno),
+    RB_BUILTIN_FUNCTION(10, tracepoint_attr_path, tracepoint_attr_path, 0, mjit_compile_invokebuiltin_for_tracepoint_attr_path),
+    RB_BUILTIN_FUNCTION(11, tracepoint_attr_parameters, tracepoint_attr_parameters, 0, mjit_compile_invokebuiltin_for_tracepoint_attr_parameters),
+    RB_BUILTIN_FUNCTION(12, tracepoint_attr_method_id, tracepoint_attr_method_id, 0, mjit_compile_invokebuiltin_for_tracepoint_attr_method_id),
+    RB_BUILTIN_FUNCTION(13, tracepoint_attr_callee_id, tracepoint_attr_callee_id, 0, mjit_compile_invokebuiltin_for_tracepoint_attr_callee_id),
+    RB_BUILTIN_FUNCTION(14, tracepoint_attr_defined_class, tracepoint_attr_defined_class, 0, mjit_compile_invokebuiltin_for_tracepoint_attr_defined_class),
+    RB_BUILTIN_FUNCTION(15, tracepoint_attr_binding, tracepoint_attr_binding, 0, mjit_compile_invokebuiltin_for_tracepoint_attr_binding),
+    RB_BUILTIN_FUNCTION(16, tracepoint_attr_self, tracepoint_attr_self, 0, mjit_compile_invokebuiltin_for_tracepoint_attr_self),
+    RB_BUILTIN_FUNCTION(17, tracepoint_attr_return_value, tracepoint_attr_return_value, 0, mjit_compile_invokebuiltin_for_tracepoint_attr_return_value),
+    RB_BUILTIN_FUNCTION(18, tracepoint_attr_raised_exception, tracepoint_attr_raised_exception, 0, mjit_compile_invokebuiltin_for_tracepoint_attr_raised_exception),
+    RB_BUILTIN_FUNCTION(19, tracepoint_attr_eval_script, tracepoint_attr_eval_script, 0, mjit_compile_invokebuiltin_for_tracepoint_attr_eval_script),
+    RB_BUILTIN_FUNCTION(20, tracepoint_attr_instruction_sequence, tracepoint_attr_instruction_sequence, 0, mjit_compile_invokebuiltin_for_tracepoint_attr_instruction_sequence),
+    RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0, 0),
+  };
+
+  // arity_check
+COMPILER_WARNING_PUSH
+#if GCC_VERSION_SINCE(5, 1, 0) || defined __clang__
+COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)
+#endif
+  if (0) rb_builtin_function_check_arity1(tracepoint_new_s);
+  if (0) rb_builtin_function_check_arity0(tracepoint_inspect);
+  if (0) rb_builtin_function_check_arity0(tracepoint_stat_s);
+  if (0) rb_builtin_function_check_arity1(tracepoint_trace_s);
+  if (0) rb_builtin_function_check_arity0(tracepoint_allow_reentry);
+  if (0) rb_builtin_function_check_arity3(tracepoint_enable_m);
+  if (0) rb_builtin_function_check_arity0(tracepoint_disable_m);
+  if (0) rb_builtin_function_check_arity0(tracepoint_enabled_p);
+  if (0) rb_builtin_function_check_arity0(tracepoint_attr_event);
+  if (0) rb_builtin_function_check_arity0(tracepoint_attr_lineno);
+  if (0) rb_builtin_function_check_arity0(tracepoint_attr_path);
+  if (0) rb_builtin_function_check_arity0(tracepoint_attr_parameters);
+  if (0) rb_builtin_function_check_arity0(tracepoint_attr_method_id);
+  if (0) rb_builtin_function_check_arity0(tracepoint_attr_callee_id);
+  if (0) rb_builtin_function_check_arity0(tracepoint_attr_defined_class);
+  if (0) rb_builtin_function_check_arity0(tracepoint_attr_binding);
+  if (0) rb_builtin_function_check_arity0(tracepoint_attr_self);
+  if (0) rb_builtin_function_check_arity0(tracepoint_attr_return_value);
+  if (0) rb_builtin_function_check_arity0(tracepoint_attr_raised_exception);
+  if (0) rb_builtin_function_check_arity0(tracepoint_attr_eval_script);
+  if (0) rb_builtin_function_check_arity0(tracepoint_attr_instruction_sequence);
+COMPILER_WARNING_POP
+
+  // load
+  rb_load_with_builtin_functions("trace_point", trace_point_table);
+}
