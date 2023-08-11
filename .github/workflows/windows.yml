@@ -64,5 +64,7 @@ jobs:
           bundle exec rake
         shell: cmd
       - name: "[Enclose.IO] Create Windows Test run upload"
+        uses: actions/upload-artifact@v3
+        with:
           name: rubyc-${{ runner.os }}
           path: ./rubyc

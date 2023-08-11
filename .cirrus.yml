@@ -12,10 +12,11 @@ macos_arm_task:
     find . -name '*.sh' -type f | xargs chmod +x
     find .  -name 'install-sh' -type f | xargs chmod +x
     brew install automake texinfo libtool squashfs bison
-    bin/rubyc bin/rubyc -o rubyc
-    DYLD_LIBRARY_PATH=/opt/homebrew/opt/openssl@1.1/lib rubyc --help
+    bin/rubyc bin/rubyc -o rubyc --openssl-dir=/opt/homebrew/opt/openssl@1.1
+    rubyc --help
     mkdir pkg
     mv rubyc pkg/rubyc-darwin-arm64
+# DYLD_LIBRARY_PATH=/opt/homebrew/opt/openssl@1.1/lib rubyc --help
   # << : *BUILD_TEST_TASK_TEMPLATE
   binary_artifacts:
     path: "pkg/*"
@@ -29,4 +30,4 @@ task:
               - ARCH: arm64
               - ARCH: x86_64
   binary_artifacts:
-    path: "rubyc"
+    path: /usr/local/bin/rubyc

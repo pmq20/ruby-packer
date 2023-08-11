@@ -19,7 +19,9 @@ jobs:
       - name: "[Enclose.IO] Install dependencies"
         run: |
           brew upgrade
-          brew install squashfs automake
+          brew install squashfs automake bison
+          brew info bison
+          echo "PATH=$(brew --prefix bison)/bin:$PATH" >>$GITHUB_ENV
       - name: "[Enclose.IO] Check dependencies"
         run: |
           sw_vers
