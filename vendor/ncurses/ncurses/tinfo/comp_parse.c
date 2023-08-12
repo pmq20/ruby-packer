@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 1998-2012,2013 Free Software Foundation, Inc.              *
+ * Copyright (c) 1998-2016,2017 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -47,16 +47,12 @@
 
 #include <tic.h>
 
-MODULE_ID("$Id: comp_parse.c,v 1.90 2013/08/31 15:22:31 tom Exp $")
+MODULE_ID("$Id: comp_parse.c,v 1.100 2017/09/20 00:37:08 tom Exp $")
 
-static void sanity_check2(TERMTYPE *, bool);
-NCURSES_IMPEXP void NCURSES_API(*_nc_check_termtype2) (TERMTYPE *, bool) = sanity_check2;
+static void sanity_check2(TERMTYPE2 *, bool);
+NCURSES_IMPEXP void NCURSES_API(*_nc_check_termtype2) (TERMTYPE2 *, bool) = sanity_check2;
 
-/* obsolete: 20040705 */
-static void sanity_check(TERMTYPE *);
-NCURSES_IMPEXP void NCURSES_API(*_nc_check_termtype) (TERMTYPE *) = sanity_check;
-
-static void fixup_acsc(TERMTYPE *, int);
+static void fixup_acsc(TERMTYPE2 *, int);
 
 static void
 enqueue(ENTRY * ep)
@@ -75,6 +71,8 @@ enqueue(ENTRY * ep)
 	newp->last->next = newp;
 }
 
+#define NAMEBUFFER_SIZE (MAX_NAME_SIZE + 2)
+
 static char *
 force_bar(char *dst, char *src)
 {
@@ -82,8 +80,8 @@ force_bar(char *dst, char *src)
 	size_t len = strlen(src);
 	if (len > MAX_NAME_SIZE)
 	    len = MAX_NAME_SIZE;
-	(void) strncpy(dst, src, len);
-	_nc_STRCPY(dst + len, "|", MAX_NAME_SIZE);
+	_nc_STRNCPY(dst, src, len);
+	_nc_STRCPY(dst + len, "|", NAMEBUFFER_SIZE - len);
 	src = dst;
     }
     return src;
@@ -107,8 +105,8 @@ static bool
 check_collisions(char *n1, char *n2, int counter)
 {
     char *pstart, *qstart, *pend, *qend;
-    char nc1[MAX_NAME_SIZE + 2];
-    char nc2[MAX_NAME_SIZE + 2];
+    char nc1[NAMEBUFFER_SIZE];
+    char nc2[NAMEBUFFER_SIZE];
 
     n1 = ForceBar(nc1, n1);
     n2 = ForceBar(nc2, n2);
@@ -337,11 +335,11 @@ _nc_resolve_uses2(bool fullresolve, bool literal)
 
 	    /* if that didn't work, try to merge in a compiled entry */
 	    if (!foundit) {
-		TERMTYPE thisterm;
+		TERMTYPE2 thisterm;
 		char filename[PATH_MAX];
 
 		memset(&thisterm, 0, sizeof(thisterm));
-		if (_nc_read_entry(lookfor, filename, &thisterm) == 1) {
+		if (_nc_read_entry2(lookfor, filename, &thisterm) == 1) {
 		    DEBUG(2, ("%s: resolving use=%s (compiled)",
 			      child, lookfor));
 
@@ -382,7 +380,7 @@ _nc_resolve_uses2(bool fullresolve, bool literal)
      */
     if (fullresolve) {
 	do {
-	    TERMTYPE merged;
+	    ENTRY merged;
 
 	    keepgoing = FALSE;
 
@@ -408,7 +406,7 @@ _nc_resolve_uses2(bool fullresolve, bool literal)
 		     * the merged entry the name field and string
 		     * table pointer.
 		     */
-		    _nc_copy_termtype(&merged, &(qp->tterm));
+		    _nc_copy_termtype2(&(merged.tterm), &(qp->tterm));
 
 		    /*
 		     * Now merge in each use entry in the proper
@@ -416,12 +414,12 @@ _nc_resolve_uses2(bool fullresolve, bool literal)
 		     */
 		    for (; qp->nuses; qp->nuses--)
 			_nc_merge_entry(&merged,
-					&qp->uses[qp->nuses - 1].link->tterm);
+					qp->uses[qp->nuses - 1].link);
 
 		    /*
 		     * Now merge in the original entry.
 		     */
-		    _nc_merge_entry(&merged, &qp->tterm);
+		    _nc_merge_entry(&merged, qp);
 
 		    /*
 		     * Replace the original entry with the merged one.
@@ -432,7 +430,7 @@ _nc_resolve_uses2(bool fullresolve, bool literal)
 #if NCURSES_XNAMES
 		    FreeIfNeeded(qp->tterm.ext_Names);
 #endif
-		    qp->tterm = merged;
+		    qp->tterm = merged.tterm;
 		    _nc_wrap_entry(qp, TRUE);
 
 		    /*
@@ -459,52 +457,44 @@ _nc_resolve_uses2(bool fullresolve, bool literal)
 
     DEBUG(2, ("RESOLUTION FINISHED"));
 
-    if (fullresolve)
-	if (_nc_check_termtype != 0) {
-	    _nc_curr_col = -1;
-	    for_entry_list(qp) {
-		_nc_curr_line = (int) qp->startline;
-		_nc_set_type(_nc_first_name(qp->tterm.term_names));
+    if (fullresolve) {
+	_nc_curr_col = -1;
+	for_entry_list(qp) {
+	    _nc_curr_line = (int) qp->startline;
+	    _nc_set_type(_nc_first_name(qp->tterm.term_names));
+	    /*
+	     * tic overrides this function pointer to provide more verbose
+	     * checking.
+	     */
+	    if (_nc_check_termtype2 != sanity_check2) {
+		SCREEN *save_SP = SP;
+		SCREEN fake_sp;
+		TERMINAL fake_tm;
+		TERMINAL *save_tm = cur_term;
+
 		/*
-		 * tic overrides this function pointer to provide more verbose
-		 * checking.
+		 * Setup so that tic can use ordinary terminfo interface to
+		 * obtain capability information.
 		 */
-		if (_nc_check_termtype2 != sanity_check2) {
-		    SCREEN *save_SP = SP;
-		    SCREEN fake_sp;
-		    TERMINAL fake_tm;
-		    TERMINAL *save_tm = cur_term;
+		memset(&fake_sp, 0, sizeof(fake_sp));
+		memset(&fake_tm, 0, sizeof(fake_tm));
+		fake_sp._term = &fake_tm;
+		TerminalType(&fake_tm) = qp->tterm;
+		_nc_set_screen(&fake_sp);
+		set_curterm(&fake_tm);
 
-		    /*
-		     * Setup so that tic can use ordinary terminfo interface
-		     * to obtain capability information.
-		     */
-		    memset(&fake_sp, 0, sizeof(fake_sp));
-		    memset(&fake_tm, 0, sizeof(fake_tm));
-		    fake_sp._term = &fake_tm;
-		    fake_tm.type = qp->tterm;
-		    _nc_set_screen(&fake_sp);
-		    set_curterm(&fake_tm);
+		_nc_check_termtype2(&qp->tterm, literal);
 
-		    _nc_check_termtype2(&qp->tterm, literal);
-
-		    _nc_set_screen(save_SP);
-		    set_curterm(save_tm);
-		} else {
-		    fixup_acsc(&qp->tterm, literal);
-		}
+		_nc_set_screen(save_SP);
+		set_curterm(save_tm);
+	    } else {
+		fixup_acsc(&qp->tterm, literal);
 	    }
-	    DEBUG(2, ("SANITY CHECK FINISHED"));
 	}
+	DEBUG(2, ("SANITY CHECK FINISHED"));
+    }
 
     return (TRUE);
-}
-
-/* obsolete: 20040705 */
-NCURSES_EXPORT(int)
-_nc_resolve_uses(bool fullresolve)
-{
-    return _nc_resolve_uses2(fullresolve, FALSE);
 }
 
 /*
@@ -517,18 +507,18 @@ _nc_resolve_uses(bool fullresolve)
 #define CUR tp->
 
 static void
-fixup_acsc(TERMTYPE *tp, int literal)
+fixup_acsc(TERMTYPE2 *tp, int literal)
 {
     if (!literal) {
-	if (acs_chars == 0
-	    && enter_alt_charset_mode != 0
-	    && exit_alt_charset_mode != 0)
+	if (acs_chars == ABSENT_STRING
+	    && PRESENT(enter_alt_charset_mode)
+	    && PRESENT(exit_alt_charset_mode))
 	    acs_chars = strdup(VT_ACSC);
     }
 }
 
 static void
-sanity_check2(TERMTYPE *tp, bool literal)
+sanity_check2(TERMTYPE2 *tp, bool literal)
 {
     if (!PRESENT(exit_attribute_mode)) {
 #ifdef __UNUSED__		/* this casts too wide a net */
@@ -547,7 +537,9 @@ sanity_check2(TERMTYPE *tp, bool literal)
 #endif /* __UNUSED__ */
 	PAIRED(enter_standout_mode, exit_standout_mode);
 	PAIRED(enter_underline_mode, exit_underline_mode);
+#if defined(enter_italics_mode) && defined(exit_italics_mode)
 	PAIRED(enter_italics_mode, exit_italics_mode);
+#endif
     }
 
     /* we do this check/fix in postprocess_termcap(), but some packagers
@@ -578,23 +570,18 @@ sanity_check2(TERMTYPE *tp, bool literal)
     PAIRED(enter_xon_mode, exit_xon_mode);
     PAIRED(enter_am_mode, exit_am_mode);
     ANDMISSING(label_off, label_on);
-#ifdef remove_clock
+#if defined(display_clock) && defined(remove_clock)
     PAIRED(display_clock, remove_clock);
 #endif
     ANDMISSING(set_color_pair, initialize_pair);
-}
-
-/* obsolete: 20040705 */
-static void
-sanity_check(TERMTYPE *tp)
-{
-    sanity_check2(tp, FALSE);
 }
 
 #if NO_LEAKS
 NCURSES_EXPORT(void)
 _nc_leaks_tic(void)
 {
+    T((T_CALLED("_nc_free_tic()")));
+    _nc_globals.leak_checking = TRUE;
     _nc_alloc_entry_leaks();
     _nc_captoinfo_leaks();
     _nc_comp_scan_leaks();

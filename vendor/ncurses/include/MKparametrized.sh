@@ -1,6 +1,6 @@
 #!/bin/sh
 ##############################################################################
-# Copyright (c) 1998-2006,2014 Free Software Foundation, Inc.                #
+# Copyright (c) 1998-2014,2017 Free Software Foundation, Inc.                #
 #                                                                            #
 # Permission is hereby granted, free of charge, to any person obtaining a    #
 # copy of this software and associated documentation files (the "Software"), #
@@ -26,7 +26,7 @@
 # use or other dealings in this Software without prior written               #
 # authorization.                                                             #
 ##############################################################################
-# $Id: MKparametrized.sh,v 1.7 2014/05/24 15:07:19 tom Exp $
+# $Id: MKparametrized.sh,v 1.8 2017/07/22 16:32:27 tom Exp $
 #
 # MKparametrized.sh -- generate indirection vectors for various sort methods
 #
@@ -35,6 +35,8 @@
 #
 CAPS="${1-Caps}"
 cat <<EOF
+#ifndef PARAMETRIZED_H
+#define PARAMETRIZED_H 1
 /*
  * parametrized.h --- is a termcap capability parametrized?
  *
@@ -61,3 +63,4 @@ $0 ~ /#[0-9]/		{print "1,\t/* ", $2, " */"; count++; next;}
 END			{printf("} /* %d entries */;\n\n", count);}
 '
 
+echo "#endif /* PARAMETRIZED_H */"

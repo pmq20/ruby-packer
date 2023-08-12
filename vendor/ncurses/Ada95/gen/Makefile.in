@@ -1,5 +1,5 @@
 ##############################################################################
-# Copyright (c) 1998-2014,2015 Free Software Foundation, Inc.                #
+# Copyright (c) 1998-2015,2018 Free Software Foundation, Inc.                #
 #                                                                            #
 # Permission is hereby granted, free of charge, to any person obtaining a    #
 # copy of this software and associated documentation files (the "Software"), #
@@ -28,7 +28,7 @@
 #
 #  Author:  Juergen Pfeifer, 1996
 #
-#  $Id: Makefile.in,v 1.85 2015/08/05 23:06:31 tom Exp $
+#  $Id: Makefile.in,v 1.87 2018/01/16 00:12:53 tom Exp $
 #
 .SUFFIXES:
 
@@ -46,8 +46,8 @@ exec_prefix	= @exec_prefix@
 bindir		= @bindir@
 includedir	= @includedir@
 
-INSTALL		= @INSTALL@
-INSTALL_PROG	= @INSTALL_PROGRAM@
+INSTALL		= @INSTALL@ @INSTALL_OPT_O@
+INSTALL_SCRIPT	= @INSTALL_SCRIPT@
 INSTALL_DATA	= @INSTALL_DATA@
 
 AWK		= @AWK@
@@ -153,7 +153,7 @@ $(DESTDIR)$(bindir) :
 
 install \
 install.libs :: $(DESTDIR)$(bindir) $(ADACURSES_CONFIG)
-	$(INSTALL_PROG) $(ADACURSES_CONFIG) $(DESTDIR)$(bindir)/$(ADACURSES_CONFIG)
+	$(INSTALL_SCRIPT) $(ADACURSES_CONFIG) $(DESTDIR)$(bindir)/$(ADACURSES_CONFIG)
 
 uninstall \
 uninstall.libs ::

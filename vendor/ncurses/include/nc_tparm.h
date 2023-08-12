@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 2006-2010,2012 Free Software Foundation, Inc.              *
+ * Copyright (c) 2006-2012,2017 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -30,10 +30,13 @@
  *  Author: Thomas E. Dickey                        2006                    *
  ****************************************************************************/
 
-/* $Id: nc_tparm.h,v 1.6 2012/02/18 21:34:42 tom Exp $ */
+/* $Id: nc_tparm.h,v 1.8 2017/07/22 17:09:46 tom Exp $ */
 
 #ifndef NC_TPARM_included
 #define NC_TPARM_included 1
+
+#include <ncurses_cfg.h>
+#include <curses.h>
 
 /*
  * Cast parameters past the formatting-string for tparm() to match the

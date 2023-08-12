@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 1998-2012,2013 Free Software Foundation, Inc.              *
+ * Copyright (c) 1998-2013,2017 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -29,11 +29,14 @@
 /****************************************************************************
  *  Author: Thomas E. Dickey                    1996-on                     *
  ****************************************************************************/
-/* $Id: nc_alloc.h,v 1.22 2013/01/26 21:56:51 tom Exp $ */
+/* $Id: nc_alloc.h,v 1.23 2017/07/22 16:59:37 tom Exp $ */
 
 #ifndef NC_ALLOC_included
 #define NC_ALLOC_included 1
 /* *INDENT-OFF* */
+
+#include <ncurses_cfg.h>
+#include <curses.h>
 
 #ifdef __cplusplus
 extern "C" {

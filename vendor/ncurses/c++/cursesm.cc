@@ -1,6 +1,6 @@
 // * this is for making emacs happy: -*-Mode: C++;-*-
 /****************************************************************************
- * Copyright (c) 1998-2005,2011 Free Software Foundation, Inc.              *
+ * Copyright (c) 1998-2011,2017 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -35,7 +35,7 @@
 #include "cursesm.h"
 #include "cursesapp.h"
 
-MODULE_ID("$Id: cursesm.cc,v 1.23 2011/09/17 22:11:32 tom Exp $")
+MODULE_ID("$Id: cursesm.cc,v 1.24 2017/06/26 08:32:53 tom Exp $")
 
 NCursesMenuItem::~NCursesMenuItem()
 {
@@ -180,8 +180,8 @@ NCursesMenu::~NCursesMenu()
   UserHook* hook = reinterpret_cast<UserHook*>(::menu_userptr(menu));
   delete hook;
   if (b_sub_owner) {
-    delete sub;
     ::set_menu_sub(menu, static_cast<WINDOW *>(0));
+    delete sub;
   }
   if (menu) {
     ITEM** itms = ::menu_items(menu);

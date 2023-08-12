@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 1998-2012,2013 Free Software Foundation, Inc.              *
+ * Copyright (c) 1998-2016,2017 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -56,7 +56,7 @@
 #include <sys/types.h>
 #include <tic.h>
 
-MODULE_ID("$Id: read_termcap.c,v 1.89 2013/12/15 00:32:43 tom Exp $")
+MODULE_ID("$Id: read_termcap.c,v 1.93 2017/04/22 16:11:03 tom Exp $")
 
 #if !PURE_TERMINFO
 
@@ -956,7 +956,7 @@ add_tc(char *termpaths[], char *path, int count)
 #endif /* !USE_GETCAP */
 
 NCURSES_EXPORT(int)
-_nc_read_termcap_entry(const char *const tn, TERMTYPE *const tp)
+_nc_read_termcap_entry(const char *const tn, TERMTYPE2 *const tp)
 {
     int found = TGETENT_NO;
     ENTRY *ep;
@@ -965,6 +965,7 @@ _nc_read_termcap_entry(const char *const tn, TERMTYPE *const tp)
 #endif
 #if USE_GETCAP
     char *p, tc[TBUFSIZ];
+#define MY_SIZE sizeof(tc) - 1
     int status;
     static char *source;
     static int lineno;
@@ -982,8 +983,8 @@ _nc_read_termcap_entry(const char *const tn, TERMTYPE *const tp)
     if (use_terminfo_vars() && (p = getenv("TERMCAP")) != 0
 	&& !_nc_is_abs_path(p) && _nc_name_match(p, tn, "|:")) {
 	/* TERMCAP holds a termcap entry */
-	strncpy(tc, p, sizeof(tc) - 1);
-	tc[sizeof(tc) - 1] = '\0';
+	_nc_STRNCPY(tc, p, MY_SIZE);
+	tc[MY_SIZE] = '\0';
 	_nc_set_source("TERMCAP");
     } else {
 	/* we're using getcap(3) */

@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 2008-2012,2014 Free Software Foundation, Inc.              *
+ * Copyright (c) 2008-2014,2017 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -26,12 +26,16 @@
  * authorization.                                                           *
  ****************************************************************************/
 /*
- * $Id: insdelln.c,v 1.9 2014/08/02 23:09:32 tom Exp $
+ * $Id: insdelln.c,v 1.12 2017/09/07 08:24:24 tom Exp $
  *
  * test-driver for deleteln, wdeleteln, insdelln, winsdelln, insertln, winsertln
  */
 
 #include <test.priv.h>
+
+#if HAVE_WINSDELLN
+
+#include <popup_msg.h>
 
 #define SHOW(n) ((n) == ERR ? "ERR" : "OK")
 #define COLOR_DEFAULT (-1)
@@ -217,19 +221,10 @@ show_help(WINDOW *win)
 	,"q     quit"
 	,"=     resets count to zero."
 	,"?     shows this help-window"
-	,""
-	,""
+	,0
     };
 
-    int y_max, x_max;
-    int row;
-
-    getmaxyx(win, y_max, x_max);
-    for (row = 0; row < (int) SIZEOF(table) && row < y_max; ++row) {
-	MvWPrintw(win, row, 0, "%.*s", x_max, table[row]);
-    }
-    while (wgetch(win) != 'q')
-	beep();
+    popup_msg(win, table);
 }
 
 static void
@@ -279,8 +274,8 @@ update_status(WINDOW *win, STATUS * sp)
 	sp->count = 0;
 	show_status(win, sp);
 	break;
-    case '?':
-	do_subwindow(win, sp, show_help);
+    case HELP_KEY_1:
+	show_help(win);
 	break;
     default:
 	if (isdigit(sp->ch)) {
@@ -387,3 +382,12 @@ main(int argc GCC_UNUSED, char *argv[]GCC_UNUSED)
 
     ExitProgram(EXIT_SUCCESS);
 }
+
+#else
+int
+main(void)
+{
+    printf("This program requires the curses winsdelln function\n");
+    ExitProgram(EXIT_FAILURE);
+}
+#endif

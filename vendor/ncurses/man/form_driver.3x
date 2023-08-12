@@ -1,5 +1,5 @@
 .\"***************************************************************************
-.\" Copyright (c) 1998-2010,2015 Free Software Foundation, Inc.              *
+.\" Copyright (c) 1998-2016,2017 Free Software Foundation, Inc.              *
 .\"                                                                          *
 .\" Permission is hereby granted, free of charge, to any person obtaining a  *
 .\" copy of this software and associated documentation files (the            *
@@ -26,13 +26,15 @@
 .\" authorization.                                                           *
 .\"***************************************************************************
 .\"
-.\" $Id: form_driver.3x,v 1.24 2015/08/02 18:21:11 tom Exp $
+.\" $Id: form_driver.3x,v 1.28 2017/11/18 23:47:37 tom Exp $
 .TH form_driver 3X ""
 .de bP
-.IP \(bu 4
+.ie n  .IP \(bu 4
+.el    .IP \(bu 2
 ..
 .SH NAME
-\fBform_driver\fR \- command-processing loop of the form system
+\fBform_driver\fR,
+\fBform_driver_w\fR \- command-processing loop of the form system
 .SH SYNOPSIS
 \fB#include <form.h>\fR
 .br
@@ -67,7 +69,7 @@ is a wide character or a request.
 The form driver requests are as follows:
 .TS
 l l
-_ _ _
+_ _
 l l.
 \fIName\fR	\fIDescription\fR
 REQ_BEG_FIELD	Move to the beginning of the field.
@@ -133,6 +135,32 @@ REQ_VALIDATION	Validate field.
 If the second argument is a printable character, the driver places it
 in the current position in the current field.  If it is one of the forms
 requests listed above, that request is executed.
+.SS Field validation
+The form library makes updates to the window associated with form fields rather than
+directly to the field buffers.
+.PP
+The form driver provides low-level control over updates to the form fields.
+The form driver also provides for validating modified fields to ensure that the contents
+meet whatever constraints an application may attach using \fBset_field_type\fP.
+.PP
+.PP
+You can validate a field without making any changes to it using
+\fBREQ_VALIDATION\fP.
+The form driver also validates a field in these cases:
+.bP
+a call to \fBset_current_field\fP attempts to move to a different field.
+.bP
+a call to \fBset_current_page\fP attempts to move to a different page of the form.
+.bP
+a request attempts to move to a different field.
+.bP
+a request attempts to move to a different page of the form.
+.PP
+In each case, the move fails if the field is invalid.
+.PP
+If the modified field is valid, the form driver copies the modified
+data from the window associated with the field
+to the field buffer.
 .SS Mouse handling
 .PP
 If the second argument is the KEY_MOUSE special key, the associated
@@ -217,6 +245,9 @@ The form driver code saw an unknown request code.
 .SH SEE ALSO
 \fBcurses\fR(3X),
 \fBform\fR(3X),
+\fBform_field_buffer\fR(3X),
+\fBform_field_validation\fR(3X),
+\fBform_fieldtype\fR(3X),
 \fBform_variables\fR(3X),
 \fBgetch\fR(3X).
 .SH NOTES

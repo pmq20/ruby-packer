@@ -1,6 +1,6 @@
-# $Id: Makefile.in,v 1.115 2015/08/05 23:15:41 tom Exp $
+# $Id: Makefile.in,v 1.120 2018/01/15 19:28:45 tom Exp $
 ##############################################################################
-# Copyright (c) 1998-2014,2015 Free Software Foundation, Inc.                #
+# Copyright (c) 1998-2017,2018 Free Software Foundation, Inc.                #
 #                                                                            #
 # Permission is hereby granted, free of charge, to any person obtaining a    #
 # copy of this software and associated documentation files (the "Software"), #
@@ -54,10 +54,13 @@ bindir		= @bindir@
 libdir		= @libdir@
 includedir	= @includedir@
 includesubdir	= @includesubdir@
+datarootdir	= @datarootdir@
+datadir		= @datadir@
 
 BINDIR		= $(DESTDIR)$(bindir)
 LIBDIR		= $(DESTDIR)$(libdir)
 INCLUDEDIR	= $(DESTDIR)$(includedir)$(includesubdir)
+DATADIR		= $(DESTDIR)$(datadir)
 
 PACKAGE		= @PACKAGE@
 
@@ -67,8 +70,10 @@ LIBTOOL_CLEAN	= @LIB_CLEAN@
 LIBTOOL_COMPILE	= @LIB_COMPILE@
 LIBTOOL_LINK	= @LIB_LINK@
 
-INSTALL		= @INSTALL@
-INSTALL_PROG	= @INSTALL_PROGRAM@
+INSTALL		= @INSTALL@ @INSTALL_OPT_O@
+INSTALL_PROG	= @INSTALL_PROGRAM@ @INSTALL_OPT_S@
+INSTALL_SCRIPT	= @INSTALL_SCRIPT@
+INSTALL_DATA	= @INSTALL_DATA@
 transform	= @program_transform_name@
 TRANSFORM	= sed 's/$x$$//'|sed '$(transform)'|sed 's/$$/$x/'
 
@@ -79,7 +84,7 @@ CC		= @CC@
 CPP		= @CPP@
 
 CFLAGS		= @CFLAGS@ @EXTRA_CFLAGS@
-CPPFLAGS	= -I. -I$(srcdir) -I../test -DHAVE_CONFIG_H @CPPFLAGS@
+CPPFLAGS	= -I. -I$(srcdir) -I../test -DHAVE_CONFIG_H -DDATA_DIR=\"$(datadir)\" @CPPFLAGS@
 
 CCFLAGS		= $(CPPFLAGS) $(CFLAGS)
 

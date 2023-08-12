@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 1998-2005,2010 Free Software Foundation, Inc.              *
+ * Copyright (c) 1998-2010,2017 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -34,7 +34,7 @@
  * This can't be part of the ncurses test-program, because ncurses rips off the
  * bottom line to do labels.
  *
- * $Id: lrtest.c,v 1.22 2010/05/01 19:11:55 tom Exp $
+ * $Id: lrtest.c,v 1.24 2017/09/04 11:28:19 tom Exp $
  */
 
 #include <test.priv.h>
@@ -174,8 +174,7 @@ main(
 	refresh();
     }
 
-    curs_set(1);
-    endwin();
+    exit_curses();
     ExitProgram(EXIT_SUCCESS);
 }
 

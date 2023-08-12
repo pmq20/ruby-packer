@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 1998-2010,2013 Free Software Foundation, Inc.              *
+ * Copyright (c) 1998-2016,2017 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -36,7 +36,7 @@
 
 #include <tic.h>
 
-MODULE_ID("$Id: lib_ti.c,v 1.30 2013/06/08 16:55:05 tom Exp $")
+MODULE_ID("$Id: lib_ti.c,v 1.32 2017/04/11 01:15:42 tom Exp $")
 
 #if 0
 static bool
@@ -53,13 +53,13 @@ NCURSES_EXPORT(int)
 NCURSES_SP_NAME(tigetflag) (NCURSES_SP_DCLx NCURSES_CONST char *str)
 {
     int result = ABSENT_BOOLEAN;
-    int j = -1;
 
     T((T_CALLED("tigetflag(%p, %s)"), (void *) SP_PARM, str));
 
     if (HasTInfoTerminal(SP_PARM)) {
-	TERMTYPE *tp = &(TerminalOf(SP_PARM)->type);
+	TERMTYPE2 *tp = &TerminalType(TerminalOf(SP_PARM));
 	struct name_table_entry const *entry_ptr;
+	int j = -1;
 
 	entry_ptr = _nc_find_type_entry(str, BOOLEAN, FALSE);
 	if (entry_ptr != 0) {
@@ -97,14 +97,14 @@ tigetflag(NCURSES_CONST char *str)
 NCURSES_EXPORT(int)
 NCURSES_SP_NAME(tigetnum) (NCURSES_SP_DCLx NCURSES_CONST char *str)
 {
-    int j = -1;
     int result = CANCELLED_NUMERIC;	/* Solaris returns a -1 on error */
 
     T((T_CALLED("tigetnum(%p, %s)"), (void *) SP_PARM, str));
 
     if (HasTInfoTerminal(SP_PARM)) {
-	TERMTYPE *tp = &(TerminalOf(SP_PARM)->type);
+	TERMTYPE2 *tp = &TerminalType(TerminalOf(SP_PARM));
 	struct name_table_entry const *entry_ptr;
+	int j = -1;
 
 	entry_ptr = _nc_find_type_entry(str, NUMBER, FALSE);
 	if (entry_ptr != 0) {
@@ -145,13 +145,13 @@ NCURSES_EXPORT(char *)
 NCURSES_SP_NAME(tigetstr) (NCURSES_SP_DCLx NCURSES_CONST char *str)
 {
     char *result = CANCELLED_STRING;
-    int j = -1;
 
     T((T_CALLED("tigetstr(%p, %s)"), (void *) SP_PARM, str));
 
     if (HasTInfoTerminal(SP_PARM)) {
-	TERMTYPE *tp = &(TerminalOf(SP_PARM)->type);
+	TERMTYPE2 *tp = &TerminalType(TerminalOf(SP_PARM));
 	struct name_table_entry const *entry_ptr;
+	int j = -1;
 
 	entry_ptr = _nc_find_type_entry(str, STRING, FALSE);
 	if (entry_ptr != 0) {

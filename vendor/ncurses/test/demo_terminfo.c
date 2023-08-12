@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 2009-2014,2015 Free Software Foundation, Inc.              *
+ * Copyright (c) 2009-2016,2017 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -29,7 +29,7 @@
 /*
  * Author: Thomas E. Dickey
  *
- * $Id: demo_terminfo.c,v 1.39 2015/07/10 23:45:44 tom Exp $
+ * $Id: demo_terminfo.c,v 1.48 2017/11/24 20:49:11 tom Exp $
  *
  * A simple demo of the terminfo interface.
  */
@@ -45,6 +45,8 @@
 #define NCURSES_XNAMES 0
 #endif
 #endif
+
+static void failed(const char *) GCC_NORETURN;
 
 static void
 failed(const char *msg)
@@ -67,8 +69,10 @@ static bool f_opt = FALSE;
 static bool n_opt = FALSE;
 static bool q_opt = FALSE;
 static bool s_opt = FALSE;
+#ifdef NCURSES_VERSION
 static bool x_opt = FALSE;
 static bool y_opt = FALSE;
+#endif
 
 static char *d_opt;
 static char *e_opt;
@@ -88,13 +92,14 @@ static long total_n_values;
 static long total_s_values;
 
 #define FCOLS 8
-#define FNAME(type) "%s %-*s = ", #type, FCOLS
+#define FNAME(type) "%s %-*s = ", #type, f_opt ? 24 : FCOLS
 
 static char *
 make_dbitem(char *p, char *q)
 {
-    char *result = malloc(strlen(e_opt) + 2 + (size_t) (p - q));
-    sprintf(result, "%s=%.*s", e_opt, (int) (p - q), q);
+    size_t need = strlen(e_opt) + 2 + (size_t) (p - q);
+    char *result = malloc(need);
+    _nc_SPRINTF(result, _nc_SLIMIT(need) "%s=%.*s", e_opt, (int) (p - q), q);
     return result;
 }
 
@@ -149,7 +154,7 @@ next_dbitem(void)
     return result;
 }
 
-#ifdef NO_LEAKS
+#if NO_LEAKS
 static void
 free_dblist(void)
 {
@@ -164,7 +169,7 @@ free_dblist(void)
 #endif
 
 static void
-dumpit(NCURSES_CONST char *cap)
+dumpit(NCURSES_CONST char *cap, const char *show)
 {
     const char *str;
     int num;
@@ -173,7 +178,7 @@ dumpit(NCURSES_CONST char *cap)
 	total_values++;
 	total_s_values++;
 	if (!q_opt) {
-	    printf(FNAME(str), cap);
+	    printf(FNAME(str), show ? show : cap);
 	    while (*str != 0) {
 		int ch = UChar(*str++);
 		switch (ch) {
@@ -226,14 +231,14 @@ dumpit(NCURSES_CONST char *cap)
 	total_values++;
 	total_n_values++;
 	if (!q_opt) {
-	    printf(FNAME(num), cap);
+	    printf(FNAME(num), show ? show : cap);
 	    printf(" %d\n", num);
 	}
     } else if ((num = tigetflag(cap)) >= 0) {
 	total_values++;
 	total_b_values++;
 	if (!q_opt) {
-	    printf(FNAME(flg), cap);
+	    printf(FNAME(flg), show ? show : cap);
 	    printf("%s\n", num ? "true" : "false");
 	}
     }
@@ -284,7 +289,7 @@ abcdefghijklmnopqrstuvwxyz_";
 		cap[j] = legal[item[j]];
 	    }
 	    cap[length] = '\0';
-	    dumpit(cap);
+	    dumpit(cap, NULL);
 
 	    k = length - 1;
 	    do {
@@ -311,9 +316,9 @@ abcdefghijklmnopqrstuvwxyz_";
 }
 
 #if USE_CODE_LISTS
-#define fullname(type,n) f_opt ? type##fnames[n] : my_##type##codes[n]
+#define fullname(type,n) f_opt ? type##fnames[n] : cap
 #else
-#define fullname(type,n) my_##type##codes[n]
+#define fullname(type,n) cap
 #endif
 
 static void
@@ -331,28 +336,28 @@ demo_terminfo(char *name)
 
     if (b_opt) {
 	for (n = 0;; ++n) {
-	    cap = fullname(bool, n);
+	    cap = my_boolcodes[n];
 	    if (cap == 0)
 		break;
-	    dumpit(cap);
+	    dumpit(cap, fullname(bool, n));
 	}
     }
 
     if (n_opt) {
 	for (n = 0;; ++n) {
-	    cap = fullname(num, n);
+	    cap = my_numcodes[n];
 	    if (cap == 0)
 		break;
-	    dumpit(cap);
+	    dumpit(cap, fullname(num, n));
 	}
     }
 
     if (s_opt) {
 	for (n = 0;; ++n) {
-	    cap = fullname(str, n);
+	    cap = my_strcodes[n];
 	    if (cap == 0)
 		break;
-	    dumpit(cap);
+	    dumpit(cap, fullname(str, n));
 	}
     }
 #ifdef NCURSES_VERSION
@@ -360,19 +365,19 @@ demo_terminfo(char *name)
 	int mod;
 	if (y_opt) {
 #if NCURSES_XNAMES
-	    TERMTYPE *term = &(cur_term->type);
+	    TERMTYPE *term = (TERMTYPE *) cur_term;
 	    if (term != 0
 		&& ((NUM_BOOLEANS(term) != BOOLCOUNT)
 		    || (NUM_NUMBERS(term) != NUMCOUNT)
 		    || (NUM_STRINGS(term) != STRCOUNT))) {
 		for (n = BOOLCOUNT; n < NUM_BOOLEANS(term); ++n) {
-		    dumpit(ExtBoolname(term, (int) n, boolnames));
+		    dumpit(ExtBoolname(term, (int) n, boolnames), NULL);
 		}
 		for (n = NUMCOUNT; n < NUM_NUMBERS(term); ++n) {
-		    dumpit(ExtNumname(term, (int) n, numnames));
+		    dumpit(ExtNumname(term, (int) n, numnames), NULL);
 		}
 		for (n = STRCOUNT; n < NUM_STRINGS(term); ++n) {
-		    dumpit(ExtStrname(term, (int) n, strnames));
+		    dumpit(ExtStrname(term, (int) n, strnames), NULL);
 		}
 	    }
 #endif
@@ -394,11 +399,13 @@ demo_terminfo(char *name)
 			    !strcmp(xterm_keys[n], "kRIT")) {
 			    continue;
 			}
-			sprintf(temp, "%.*s", 8, xterm_keys[n]);
+			_nc_SPRINTF(temp, _nc_SLIMIT(sizeof(temp))
+				    "%.*s", 8, xterm_keys[n]);
 		    } else {
-			sprintf(temp, "%.*s%d", 8, xterm_keys[n], mod);
+			_nc_SPRINTF(temp, _nc_SLIMIT(sizeof(temp))
+				    "%.*s%d", 8, xterm_keys[n], mod);
 		    }
-		    dumpit(temp);
+		    dumpit(temp, NULL);
 		}
 	    }
 	}
@@ -731,7 +738,7 @@ copy_code_list(NCURSES_CONST char *const *list)
 		length += chunk;
 	    } else {
 		result[count] = unused;
-		strcpy(unused, list[count]);
+		_nc_STRCPY(unused, list[count], length);
 		unused += chunk;
 	    }
 	}
@@ -746,7 +753,18 @@ copy_code_list(NCURSES_CONST char *const *list)
 
     return result;
 }
+
+#if NO_LEAKS
+static void
+free_code_list(char **list)
+{
+    if (list) {
+	free(list[0]);
+	free(list);
+    }
+}
 #endif
+#endif /* USE_CODE_LISTS */
 
 static void
 usage(void)
@@ -892,20 +910,33 @@ main(int argc, char *argv[])
 	}
     }
 
-    printf("%ld values (%ld booleans, %ld numbers, %ld strings)\n",
-	   total_values, total_b_values, total_n_values, total_s_values);
+#define PLURAL(n) n, (n != 1) ? "s" : ""
+    printf("%ld value%s (%ld boolean%s, %ld number%s, %ld string%s)\n",
+	   PLURAL(total_values),
+	   PLURAL(total_b_values),
+	   PLURAL(total_n_values),
+	   PLURAL(total_s_values));
 
-#ifdef NO_LEAKS
+#if NO_LEAKS
     free_dblist();
-    if (my_blob != 0) {
-	free(my_blob);
-	free(my_boolcodes);
-	free(my_numcodes);
-	free(my_numvalues);
-	free(my_strcodes);
-	free(my_strvalues);
+    if (input_name != 0) {
+	if (my_blob != 0) {
+	    free(my_blob);
+	    free(my_boolcodes);
+	    free(my_numcodes);
+	    free(my_numvalues);
+	    free(my_strcodes);
+	    free(my_strvalues);
+	}
+    }
+#if USE_CODE_LISTS
+    else {
+	free_code_list(my_boolcodes);
+	free_code_list(my_numcodes);
+	free_code_list(my_strcodes);
     }
 #endif
+#endif /* NO_LEAKS */
 
     ExitProgram(EXIT_SUCCESS);
 }
@@ -914,7 +945,7 @@ main(int argc, char *argv[])
 int
 main(int argc GCC_UNUSED, char *argv[]GCC_UNUSED)
 {
-    printf("This program requires the terminfo functions such as tigetstr\n");
+    failed("This program requires the terminfo functions such as tigetstr");
     ExitProgram(EXIT_FAILURE);
 }
 #endif /* HAVE_TIGETSTR */

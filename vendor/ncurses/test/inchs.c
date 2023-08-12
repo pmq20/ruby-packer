@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 2007-2010,2012 Free Software Foundation, Inc.              *
+ * Copyright (c) 2007-2012,2017 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -26,7 +26,7 @@
  * authorization.                                                           *
  ****************************************************************************/
 /*
- * $Id: inchs.c,v 1.12 2012/11/18 01:58:15 tom Exp $
+ * $Id: inchs.c,v 1.16 2017/09/06 09:20:42 tom Exp $
  *
  * Author: Thomas E Dickey
  */
@@ -46,6 +46,7 @@
 */
 
 #include <test.priv.h>
+#include <popup_msg.h>
 
 #define BASE_Y 7
 #define MAX_COLS 1024
@@ -69,6 +70,17 @@ Quit(int ch)
 static int
 test_inchs(int level, char **argv, WINDOW *chrwin, WINDOW *strwin)
 {
+    static const char *help[] =
+    {
+	"Test input from screen using inch(), etc., in a moveable viewport.",
+	"",
+	"Commands:",
+	" ESC/^Q                   - quit",
+	" h,j,k,l (and arrow-keys) - move viewport",
+	" w                        - recur to new window",
+	"                            for next input file",
+	0
+    };
     WINDOW *txtbox = 0;
     WINDOW *txtwin = 0;
     FILE *fp;
@@ -158,6 +170,9 @@ test_inchs(int level, char **argv, WINDOW *chrwin, WINDOW *strwin)
 		touchwin(txtwin);
 		wnoutrefresh(txtwin);
 	    }
+	    break;
+	case HELP_KEY_1:
+	    popup_msg(txtwin, help);
 	    break;
 	default:
 	    beep();
@@ -264,7 +279,7 @@ main(int argc, char *argv[])
     setlocale(LC_ALL, "");
 
     if (argc < 2) {
-	fprintf(stderr, "usage: %s file\n", argv[0]);
+	fprintf(stderr, "usage: %s file1 [file2 [...]]\n", argv[0]);
 	return EXIT_FAILURE;
     }
 

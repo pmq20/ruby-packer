@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 2005-2006,2008 Free Software Foundation, Inc.              *
+ * Copyright (c) 2005-2016,2017 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -26,7 +26,7 @@
  * authorization.                                                           *
  ****************************************************************************/
 /*
- * $Id: demo_altkeys.c,v 1.9 2010/11/14 00:59:26 tom Exp $
+ * $Id: demo_altkeys.c,v 1.11 2017/06/17 18:33:03 tom Exp $
  *
  * Demonstrate the define_key() function.
  * Thomas Dickey - 2005/10/22
@@ -91,7 +91,10 @@ main(int argc GCC_UNUSED, char *argv[]GCC_UNUSED)
 
     unlink(MY_LOGFILE);
 
-    newterm(0, stdout, stdin);
+    if (newterm(0, stdout, stdin) == 0) {
+	fprintf(stderr, "Cannot initialize terminal\n");
+	ExitProgram(EXIT_FAILURE);
+    }
     (void) cbreak();		/* take input chars one at a time, no wait for \n */
     (void) noecho();		/* don't echo input */
 
@@ -104,14 +107,15 @@ main(int argc GCC_UNUSED, char *argv[]GCC_UNUSED)
      */
     for (n = 0; n < 255; ++n) {
 	char temp[10];
-	sprintf(temp, "\033%c", n);
+	_nc_SPRINTF(temp, _nc_SLIMIT(sizeof(temp)) "\033%c", n);
 	define_key(temp, n + MY_KEYS);
     }
     for (n = KEY_MIN; n < KEY_MAX; ++n) {
 	char *value;
 	if ((value = keybound(n, 0)) != 0) {
-	    char *temp = typeMalloc(char, strlen(value) + 2);
-	    sprintf(temp, "\033%s", value);
+	    size_t need = strlen(value) + 2;
+	    char *temp = typeMalloc(char, need);
+	    _nc_SPRINTF(temp, _nc_SLIMIT(need) "\033%s", value);
 	    define_key(temp, n + MY_KEYS);
 	    free(temp);
 	    free(value);

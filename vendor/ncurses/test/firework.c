@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 1998-2013,2014 Free Software Foundation, Inc.              *
+ * Copyright (c) 1998-2014,2017 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -26,7 +26,7 @@
  * authorization.                                                           *
  ****************************************************************************/
 /*
- * $Id: firework.c,v 1.30 2014/08/02 17:24:07 tom Exp $
+ * $Id: firework.c,v 1.35 2017/09/30 15:42:24 tom Exp $
  */
 #include <test.priv.h>
 
@@ -37,8 +37,7 @@ static short my_bg = COLOR_BLACK;
 static void
 cleanup(void)
 {
-    curs_set(1);
-    endwin();
+    exit_curses();
 }
 
 static void
@@ -137,17 +136,54 @@ explode(int row, int col)
     showit();
 }
 
-int
-main(
-	int argc GCC_UNUSED,
-	char *argv[]GCC_UNUSED)
+static void
+usage(void)
 {
-    int start, end, row, diff, flag = 0, direction;
+    static const char *msg[] =
+    {
+	"Usage: firework [options]"
+	,""
+	,"Options:"
+#if HAVE_USE_DEFAULT_COLORS
+	," -d       invoke use_default_colors, repeat to use in init_pair"
+#endif
+    };
+    size_t n;
+
+    for (n = 0; n < SIZEOF(msg); n++)
+	fprintf(stderr, "%s\n", msg[n]);
+
+    ExitProgram(EXIT_FAILURE);
+}
+
+int
+main(int argc, char *argv[])
+{
+    int ch;
+    int start, end;
+    int row, diff;
+    int flag = 0;
+    int direction;
     unsigned seed;
+#if HAVE_USE_DEFAULT_COLORS
+    bool d_option = FALSE;
+#endif
 
-    CATCHALL(onsig);
+    while ((ch = getopt(argc, argv, "d")) != -1) {
+	switch (ch) {
+#if HAVE_USE_DEFAULT_COLORS
+	case 'd':
+	    d_option = TRUE;
+	    break;
+#endif
+	default:
+	    usage();
+	}
+    }
+    if (optind < argc)
+	usage();
 
-    initscr();
+    InitAndCatch(initscr(), onsig);
     noecho();
     cbreak();
     keypad(stdscr, TRUE);
@@ -156,7 +192,7 @@ main(
     if (has_colors()) {
 	start_color();
 #if HAVE_USE_DEFAULT_COLORS
-	if (use_default_colors() == OK)
+	if (d_option && (use_default_colors() == OK))
 	    my_bg = -1;
 #endif
     }
@@ -174,7 +210,7 @@ main(
 	    diff = abs(start - end);
 	} while (diff < 2 || diff >= LINES - 2);
 	(void) attrset(AttrArg(0, A_NORMAL));
-	for (row = 0; row < diff; row++) {
+	for (row = 1; row < diff; row++) {
 	    MvPrintw(LINES - row, start + (row * direction),
 		     (direction < 0) ? "\\" : "/");
 	    if (flag++) {

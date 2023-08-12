@@ -57,7 +57,7 @@
 <span class="comment"><EM>--  Binding Version 01.00</EM></span>
 <span class="comment"><EM>------------------------------------------------------------------------------</EM></span>
 <b>with</b> System.Storage_Elements;
-<b>with</b> <A HREF="interfac__ads.htm#ref_36_9">Interfaces</A>.C;   <span class="comment"><EM>--  We need this for some assertions.</EM></span>
+<b>with</b> <A HREF="interfac__ads.htm#ref_38_9">Interfaces</A>.C;   <span class="comment"><EM>--  We need this for some assertions.</EM></span>
 
 <b>with</b> <A HREF="terminal_interface__ads.htm#ref_42_9">Terminal_Interface</A>.<A HREF="terminal_interface-curses_constants__ads.htm#ref_6_28">Curses_Constants</A>;
 
@@ -403,8 +403,8 @@
 
    <span class="comment"><EM>--------------------------------------------------------------------------</EM></span>
 
-   <b>type</b> <span class="symbol"><A NAME="ref_389_9">Color_Number</A></span> <b>is</b> <b>range</b> -1 .. Integer (<A HREF="interfac__ads.htm#ref_36_9">Interfaces</A>.C.short'Last);
-   <b>for</b> <A HREF="terminal_interface-curses__ads.htm#ref_389_9">Color_Number</A>'Size <b>use</b> <A HREF="interfac__ads.htm#ref_36_9">Interfaces</A>.C.short'Size;
+   <b>type</b> <span class="symbol"><A NAME="ref_389_9">Color_Number</A></span> <b>is</b> <b>range</b> -1 .. Integer (<A HREF="interfac__ads.htm#ref_38_9">Interfaces</A>.C.short'Last);
+   <b>for</b> <A HREF="terminal_interface-curses__ads.htm#ref_389_9">Color_Number</A>'Size <b>use</b> <A HREF="interfac__ads.htm#ref_38_9">Interfaces</A>.C.short'Size;
    <span class="comment"><EM>--  (n)curses uses a short for the color index</EM></span>
    <span class="comment"><EM>--  The model is, that a Color_Number is an index into an array of</EM></span>
    <span class="comment"><EM>--  (potentially) definable colors. Some of those indices are</EM></span>
@@ -419,8 +419,8 @@
    <span class="symbol"><A NAME="ref_402_4">Cyan</A></span>    : <b>constant</b> <A HREF="terminal_interface-curses__ads.htm#ref_389_9">Color_Number</A> := <A HREF="terminal_interface-curses_constants__ads.htm#ref_6_28">Curses_Constants</A>.<A HREF="terminal_interface-curses_constants__ads.htm#ref_75_4">COLOR_CYAN</A>;
    <span class="symbol"><A NAME="ref_403_4">White</A></span>   : <b>constant</b> <A HREF="terminal_interface-curses__ads.htm#ref_389_9">Color_Number</A> := <A HREF="terminal_interface-curses_constants__ads.htm#ref_6_28">Curses_Constants</A>.<A HREF="terminal_interface-curses_constants__ads.htm#ref_76_4">COLOR_WHITE</A>;
 
-   <b>type</b> <span class="symbol"><A NAME="ref_405_9">RGB_Value</A></span> <b>is</b> <b>range</b> 0 .. Integer (<A HREF="interfac__ads.htm#ref_36_9">Interfaces</A>.C.short'Last);
-   <b>for</b> <A HREF="terminal_interface-curses__ads.htm#ref_405_9">RGB_Value</A>'Size <b>use</b> <A HREF="interfac__ads.htm#ref_36_9">Interfaces</A>.C.short'Size;
+   <b>type</b> <span class="symbol"><A NAME="ref_405_9">RGB_Value</A></span> <b>is</b> <b>range</b> 0 .. Integer (<A HREF="interfac__ads.htm#ref_38_9">Interfaces</A>.C.short'Last);
+   <b>for</b> <A HREF="terminal_interface-curses__ads.htm#ref_405_9">RGB_Value</A>'Size <b>use</b> <A HREF="interfac__ads.htm#ref_38_9">Interfaces</A>.C.short'Size;
    <span class="comment"><EM>--  Some system may allow to redefine a color by setting RGB values.</EM></span>
 
    <b>type</b> <span class="symbol"><A NAME="ref_409_9">Color_Pair</A></span> <b>is</b> <b>range</b> 0 .. 255;
@@ -1965,8 +1965,8 @@
    <b>pragma</b> Inline (<A HREF="terminal_interface-curses__ads.htm#ref_1946_14">Reset_Terminal_State</A>);
 
    <b>type</b> <span class="symbol"><A NAME="ref_1950_9">Stdscr_Init_Proc</A></span> <b>is</b> <b>access</b>
-      <b>function</b> (<span class="symbol"><A NAME="ref_1951_17">Win</A></span>     : <A HREF="terminal_interface-curses__ads.htm#ref_55_9">Window</A>;
-                <span class="symbol"><A NAME="ref_1952_17">Columns</A></span> : <A HREF="terminal_interface-curses__ads.htm#ref_63_12">Column_Count</A>) <b>return</b> Integer;
+      <b>function</b> (<span class="symbol"><A NAME="ref_1951_17" HREF="terminal_interface-curses__ads.htm#ref_1950_9">Win</A></span>     : <A HREF="terminal_interface-curses__ads.htm#ref_55_9">Window</A>;
+                <span class="symbol"><A NAME="ref_1952_17" HREF="terminal_interface-curses__ads.htm#ref_1950_9">Columns</A></span> : <A HREF="terminal_interface-curses__ads.htm#ref_63_12">Column_Count</A>) <b>return</b> Integer;
    <b>pragma</b> Convention (C, <A HREF="terminal_interface-curses__ads.htm#ref_1950_9">Stdscr_Init_Proc</A>);
    <span class="comment"><EM>--  N.B.: the return value is actually ignored, but it seems to be</EM></span>
    <span class="comment"><EM>--        a good practice to return 0 if you think all went fine</EM></span>

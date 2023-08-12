@@ -1,6 +1,6 @@
 '\" t
 .\"***************************************************************************
-.\" Copyright (c) 1998-2014,2015 Free Software Foundation, Inc.              *
+.\" Copyright (c) 1998-2016,2017 Free Software Foundation, Inc.              *
 .\"                                                                          *
 .\" Permission is hereby granted, free of charge, to any person obtaining a  *
 .\" copy of this software and associated documentation files (the            *
@@ -27,8 +27,16 @@
 .\" authorization.                                                           *
 .\"***************************************************************************
 .\"
-.\" $Id: form.3x,v 1.26 2015/08/02 18:14:50 tom Exp $
+.\" $Id: form.3x,v 1.30 2017/11/25 20:28:02 tom Exp $
 .TH form 3X ""
+.ie \n(.g .ds `` \(lq
+.el       .ds `` ``
+.ie \n(.g .ds '' \(rq
+.el       .ds '' ''
+.de bP
+.ie n  .IP \(bu 4
+.el    .IP \(bu 2
+..
 .SH NAME
 \fBform\fR \- curses extension for programming forms
 .SH SYNOPSIS
@@ -146,6 +154,7 @@ set_form_userptr	\fBform_userptr\fR(3X)
 set_form_win	\fBform_win\fR(3X)
 set_max_field	\fBform_field_buffer\fR(3X)
 set_new_page	\fBform_new_page\fR(3X)
+unfocus_current_field	\fBform_page\fR(3X)
 unpost_form	\fBform_post\fR(3X)
 .TE
 .SH RETURN VALUE
@@ -195,11 +204,27 @@ The header file \fB<form.h>\fR automatically includes the header files
 \fB<curses.h>\fR and \fB<eti.h>\fR.
 .PP
 In your library list, libform.a should be before libncurses.a; that is,
-you want to say `\-lform \-lncurses', not the other way around (which would
-give you a link error using most linkers).
+you want to say \*(``\-lform \-lncurses\*('', not the other way around
+(which would give you a link error when using static libraries).
 .SH PORTABILITY
 These routines emulate the System V forms library.  They were not supported on
 Version 7 or BSD versions.
+.PP
+The menu facility was documented in SVr4.2 in
+\fICharacter User Interface Programming (UNIX SVR4.2)\fP.
+.PP
+It is not part of X/Open Curses.
+.PP
+Aside from ncurses, there are few implementations:
+.bP
+systems based on SVr4 source code, e.g., Solaris.
+.bP
+NetBSD curses.
+.PP
+A few functions in this implementation are extensions added for ncurses,
+but not provided by other implementations, e.g.,
+\fBform_driver_w\fP,
+\fBunfocus_current_field\fP.
 .SH AUTHORS
 Juergen Pfeifer.  Manual pages and adaptation for ncurses by Eric
 S. Raymond.

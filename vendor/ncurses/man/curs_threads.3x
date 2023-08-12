@@ -1,5 +1,5 @@
 .\"***************************************************************************
-.\" Copyright (c) 2008-2014,2015 Free Software Foundation, Inc.              *
+.\" Copyright (c) 2008-2015,2017 Free Software Foundation, Inc.              *
 .\"                                                                          *
 .\" Permission is hereby granted, free of charge, to any person obtaining a  *
 .\" copy of this software and associated documentation files (the            *
@@ -26,16 +26,16 @@
 .\" authorization.                                                           *
 .\"***************************************************************************
 .\"
-.\" $Id: curs_threads.3x,v 1.21 2015/04/11 10:23:49 tom Exp $
+.\" $Id: curs_threads.3x,v 1.24 2017/11/18 23:56:00 tom Exp $
 .TH curs_threads 3X ""
 .de bP
-.IP \(bu 4
+.ie n  .IP \(bu 4
+.el    .IP \(bu 2
 ..
 .na
 .hy 0
 .SH NAME
-\fBuse_screen\fR,
-\fBuse_window\fR \- \fBcurses\fR thread support
+\fBcurs_threads\fR \- \fBcurses\fR thread support
 .ad
 .hy
 .SH SYNOPSIS
@@ -67,7 +67,7 @@ configuration which hide the mutex's needed to prevent concurrent
 use of the global variables when configured for threading.
 .PP
 In addition to forcing access to members of the \fBWINDOW\fP structure
-to be via functions (see \fBcurs_opaque\fP(3x)),
+to be via functions (see \fBcurs_opaque\fP(3X)),
 it makes functions of the common global variables,
 e.g.,
 COLORS,

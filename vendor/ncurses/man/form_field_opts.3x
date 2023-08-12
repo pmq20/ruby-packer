@@ -1,6 +1,6 @@
 '\" t
 .\"***************************************************************************
-.\" Copyright (c) 1998-2010,2014 Free Software Foundation, Inc.              *
+.\" Copyright (c) 1998-2014,2015 Free Software Foundation, Inc.              *
 .\"                                                                          *
 .\" Permission is hereby granted, free of charge, to any person obtaining a  *
 .\" copy of this software and associated documentation files (the            *
@@ -27,10 +27,13 @@
 .\" authorization.                                                           *
 .\"***************************************************************************
 .\"
-.\" $Id: form_field_opts.3x,v 1.17 2014/07/26 21:21:57 tom Exp $
+.\" $Id: form_field_opts.3x,v 1.20 2015/12/05 23:53:43 tom Exp $
 .TH form_field_opts 3X ""
 .SH NAME
-\fBform_field_opts\fR \- set and get field options
+\fBset_field_opts\fP,
+\fBfield_opts_on\fP,
+\fBfield_opts_off\fP,
+\fBfield_opts\fP \- set and get field options
 .SH SYNOPSIS
 \fB#include <form.h>\fR
 .br
@@ -91,10 +94,13 @@ O_WRAP
 Words that do not fit on a line are wrapped to the next line.  Words are
 blank-separated.
 .PP
-One extension option is defined (extensions are off by default):
+These extension options are defined (extensions are off by default):
 .TP 5
 O_DYNAMIC_JUSTIFY
 Permit dynamic fields to be justified, like static fields.
+.TP 5
+O_NO_LEFT_STRIP
+Preserve leading whitespace in the field buffer, which is normally discarded.
 .SH RETURN VALUE
 Except for \fBfield_opts\fR, each routine returns one of the following:
 .TP 5

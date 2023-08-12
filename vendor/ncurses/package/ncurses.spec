@@ -1,11 +1,11 @@
 Summary: shared libraries for terminal handling
 Name: ncurses6
-Version: 6.0
-Release: 20150808
+Version: 6.1
+Release: 20180127
 License: X11
 Group: Development/Libraries
 Source: ncurses-%{version}-%{release}.tgz
-# URL: http://invisible-island.net/ncurses/
+# URL: https://invisible-island.net/ncurses/
 
 %define CC_NORMAL -Wall -Wstrict-prototypes -Wmissing-prototypes -Wshadow -Wconversion
 %define CC_STRICT %{CC_NORMAL} -W -Wbad-function-cast -Wcast-align -Wcast-qual -Wmissing-declarations -Wnested-externs -Wpointer-arith -Wwrite-strings -ansi -pedantic
@@ -42,6 +42,7 @@ RPATH_LIST=../lib:%{_prefix}/lib \
 	--with-default-terminfo-dir=%{MYDATA} \
 	--with-install-prefix=$RPM_BUILD_ROOT \
 	--with-terminfo-dirs=%{MYDATA}:/usr/share/terminfo \
+	--with-config-suffix=dev \
 	--disable-echo \
 	--disable-getcap \
 	--disable-leaks \
@@ -88,9 +89,14 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/*
 %{_includedir}/*
 %{_libdir}/*
-%{MY_PKG}/*.pc
 
 %changelog
+
+* Mon Jan 01 2018 Thomas E. Dickey
+- drop redundant files pattern for "*.pc"
+
+* Tue Dec 26 2017 Thomas E. Dickey
+- add --with-config-suffix option
 
 * Sun Apr 26 2015 Thomas E. Dickey
 - move package to /usr

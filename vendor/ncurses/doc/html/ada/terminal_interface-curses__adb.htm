@@ -59,8 +59,8 @@
 <b>with</b> System;
 
 <b>with</b> <A HREF="terminal_interface__ads.htm#ref_42_9">Terminal_Interface</A>.<A HREF="terminal_interface-curses__ads.htm#ref_47_28">Curses</A>.<A HREF="terminal_interface-curses-aux__ads.htm#ref_45_35">Aux</A>;
-<b>with</b> <A HREF="interfac__ads.htm#ref_36_9">Interfaces</A>.C;                  <b>use</b> <A HREF="interfac__ads.htm#ref_36_9">Interfaces</A>.C;
-<b>with</b> <A HREF="interfac__ads.htm#ref_36_9">Interfaces</A>.C.Strings;          <b>use</b> <A HREF="interfac__ads.htm#ref_36_9">Interfaces</A>.C.Strings;
+<b>with</b> <A HREF="interfac__ads.htm#ref_38_9">Interfaces</A>.C;                  <b>use</b> <A HREF="interfac__ads.htm#ref_38_9">Interfaces</A>.C;
+<b>with</b> <A HREF="interfac__ads.htm#ref_38_9">Interfaces</A>.C.Strings;          <b>use</b> <A HREF="interfac__ads.htm#ref_38_9">Interfaces</A>.C.Strings;
 <b>with</b> Ada.Characters.Handling;       <b>use</b> Ada.Characters.Handling;
 <b>with</b> Ada.Strings.Fixed;
 
@@ -1729,7 +1729,7 @@
       <b>if</b> <A HREF="terminal_interface-curses__adb.htm#ref_1705_7">N</A> &gt; <A HREF="terminal_interface-curses__ads.htm#ref_1585_20">Str</A>'Length <b>then</b>
          <b>raise</b> Constraint_Error;
       <b>end</b> <b>if</b>;
-      <A HREF="terminal_interface-curses__adb.htm#ref_1706_7">Txt</A> (0) := <A HREF="interfac__ads.htm#ref_36_9">Interfaces</A>.C.char'First;
+      <A HREF="terminal_interface-curses__adb.htm#ref_1706_7">Txt</A> (0) := <A HREF="interfac__ads.htm#ref_38_9">Interfaces</A>.C.char'First;
       <b>if</b> <A HREF="terminal_interface-curses__adb.htm#ref_1700_16">Winnstr</A> (<A HREF="terminal_interface-curses__ads.htm#ref_1584_20">Win</A>, <A HREF="terminal_interface-curses__adb.htm#ref_1706_7">Txt</A>, <A HREF="terminal_interface-curses-aux__ads.htm#ref_50_12">C_Int</A> (<A HREF="terminal_interface-curses__adb.htm#ref_1705_7">N</A>)) = <A HREF="terminal_interface-curses-aux__ads.htm#ref_65_4">Curses_Err</A> <b>then</b>
          <b>raise</b> <A HREF="terminal_interface-curses__ads.htm#ref_521_4">Curses_Exception</A>;
       <b>end</b> <b>if</b>;
@@ -1819,7 +1819,7 @@
       <b>if</b> <A HREF="terminal_interface-curses__adb.htm#ref_1795_7">N</A> &gt; <A HREF="terminal_interface-curses__ads.htm#ref_1634_19">Str</A>'Length <b>then</b>
          <b>raise</b> Constraint_Error;
       <b>end</b> <b>if</b>;
-      <A HREF="terminal_interface-curses__adb.htm#ref_1796_7">Txt</A> (0) := <A HREF="interfac__ads.htm#ref_36_9">Interfaces</A>.C.char'First;
+      <A HREF="terminal_interface-curses__adb.htm#ref_1796_7">Txt</A> (0) := <A HREF="interfac__ads.htm#ref_38_9">Interfaces</A>.C.char'First;
       <b>if</b> <A HREF="terminal_interface-curses__adb.htm#ref_1790_16">Wgetnstr</A> (<A HREF="terminal_interface-curses__ads.htm#ref_1633_19">Win</A>, <A HREF="terminal_interface-curses__adb.htm#ref_1796_7">Txt</A>, <A HREF="terminal_interface-curses-aux__ads.htm#ref_50_12">C_Int</A> (<A HREF="terminal_interface-curses__adb.htm#ref_1795_7">N</A>)) = <A HREF="terminal_interface-curses-aux__ads.htm#ref_65_4">Curses_Err</A> <b>then</b>
          <b>raise</b> <A HREF="terminal_interface-curses__ads.htm#ref_521_4">Curses_Exception</A>;
       <b>end</b> <b>if</b>;
@@ -2371,7 +2371,7 @@
 <span class="comment"><EM>------------------------------------------------------------------------------</EM></span>
    <b>function</b> <span class="symbol"><A NAME="ref_2355_13" HREF="terminal_interface-curses__ads.htm#ref_550_13">Lines</A></span> <b>return</b> <A HREF="terminal_interface-curses__ads.htm#ref_61_12">Line_Count</A>
    <b>is</b>
-      <b>function</b> <span class="symbol"><A NAME="ref_2357_16">LINES_As_Function</A></span> <b>return</b> <A HREF="interfac__ads.htm#ref_36_9">Interfaces</A>.C.int;
+      <b>function</b> <span class="symbol"><A NAME="ref_2357_16">LINES_As_Function</A></span> <b>return</b> <A HREF="interfac__ads.htm#ref_38_9">Interfaces</A>.C.int;
       <b>pragma</b> Import (C, LINES_As_Function, "LINES_as_function");
    <b>begin</b>
       <b>return</b> <A HREF="terminal_interface-curses__ads.htm#ref_61_12">Line_Count</A> (<A HREF="terminal_interface-curses__adb.htm#ref_2357_16">LINES_As_Function</A>);
@@ -2379,7 +2379,7 @@
 
    <b>function</b> <span class="symbol"><A NAME="ref_2363_13" HREF="terminal_interface-curses__ads.htm#ref_553_13">Columns</A></span> <b>return</b> <A HREF="terminal_interface-curses__ads.htm#ref_63_12">Column_Count</A>
    <b>is</b>
-      <b>function</b> <span class="symbol"><A NAME="ref_2365_16">COLS_As_Function</A></span> <b>return</b> <A HREF="interfac__ads.htm#ref_36_9">Interfaces</A>.C.int;
+      <b>function</b> <span class="symbol"><A NAME="ref_2365_16">COLS_As_Function</A></span> <b>return</b> <A HREF="interfac__ads.htm#ref_38_9">Interfaces</A>.C.int;
       <b>pragma</b> Import (C, COLS_As_Function, "COLS_as_function");
    <b>begin</b>
       <b>return</b> <A HREF="terminal_interface-curses__ads.htm#ref_63_12">Column_Count</A> (<A HREF="terminal_interface-curses__adb.htm#ref_2365_16">COLS_As_Function</A>);
@@ -2387,7 +2387,7 @@
 
    <b>function</b> <span class="symbol"><A NAME="ref_2371_13" HREF="terminal_interface-curses__ads.htm#ref_556_13">Tab_Size</A></span> <b>return</b> Natural
    <b>is</b>
-      <b>function</b> <span class="symbol"><A NAME="ref_2373_16">TABSIZE_As_Function</A></span> <b>return</b> <A HREF="interfac__ads.htm#ref_36_9">Interfaces</A>.C.int;
+      <b>function</b> <span class="symbol"><A NAME="ref_2373_16">TABSIZE_As_Function</A></span> <b>return</b> <A HREF="interfac__ads.htm#ref_38_9">Interfaces</A>.C.int;
       <b>pragma</b> Import (C, TABSIZE_As_Function, "TABSIZE_as_function");
 
    <b>begin</b>
@@ -2396,7 +2396,7 @@
 
    <b>function</b> <span class="symbol"><A NAME="ref_2380_13" HREF="terminal_interface-curses__ads.htm#ref_559_13">Number_Of_Colors</A></span> <b>return</b> Natural
    <b>is</b>
-      <b>function</b> <span class="symbol"><A NAME="ref_2382_16">COLORS_As_Function</A></span> <b>return</b> <A HREF="interfac__ads.htm#ref_36_9">Interfaces</A>.C.int;
+      <b>function</b> <span class="symbol"><A NAME="ref_2382_16">COLORS_As_Function</A></span> <b>return</b> <A HREF="interfac__ads.htm#ref_38_9">Interfaces</A>.C.int;
       <b>pragma</b> Import (C, COLORS_As_Function, "COLORS_as_function");
    <b>begin</b>
       <b>return</b> Natural (<A HREF="terminal_interface-curses__adb.htm#ref_2382_16">COLORS_As_Function</A>);
@@ -2404,7 +2404,7 @@
 
    <b>function</b> <span class="symbol"><A NAME="ref_2388_13" HREF="terminal_interface-curses__ads.htm#ref_562_13">Number_Of_Color_Pairs</A></span> <b>return</b> Natural
    <b>is</b>
-      <b>function</b> <span class="symbol"><A NAME="ref_2390_16">COLOR_PAIRS_As_Function</A></span> <b>return</b> <A HREF="interfac__ads.htm#ref_36_9">Interfaces</A>.C.int;
+      <b>function</b> <span class="symbol"><A NAME="ref_2390_16">COLOR_PAIRS_As_Function</A></span> <b>return</b> <A HREF="interfac__ads.htm#ref_38_9">Interfaces</A>.C.int;
       <b>pragma</b> Import (C, COLOR_PAIRS_As_Function, "COLOR_PAIRS_as_function");
    <b>begin</b>
       <b>return</b> Natural (<A HREF="terminal_interface-curses__adb.htm#ref_2390_16">COLOR_PAIRS_As_Function</A>);

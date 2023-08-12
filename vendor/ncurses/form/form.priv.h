@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 1998-2012,2014 Free Software Foundation, Inc.              *
+ * Copyright (c) 1998-2016,2017 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -30,12 +30,15 @@
  *   Author:  Juergen Pfeifer, 1995,1997                                    *
  ****************************************************************************/
 
-/* $Id: form.priv.h,v 0.38 2014/11/01 13:56:14 tom Exp $ */
+/* $Id: form.priv.h,v 0.42 2017/02/11 16:12:19 tom Exp $ */
 
 #ifndef FORM_PRIV_H
 #define FORM_PRIV_H 1
 /* *INDENT-OFF*/
 #include "curses.priv.h"
+
+#define NCURSES_OPAQUE_FORM  0
+
 #include "mf_common.h"
 
 #if USE_WIDEC_SUPPORT
@@ -162,7 +165,8 @@ TypeArgument;
 
 #define ALL_FIELD_OPTS (Field_Options)( \
 			STD_FIELD_OPTS |\
-			O_DYNAMIC_JUSTIFY)
+			O_DYNAMIC_JUSTIFY |\
+			O_NO_LEFT_STRIP)
 
 #define C_BLANK ' '
 #define is_blank(c) ((c)==C_BLANK)
@@ -183,6 +187,7 @@ extern NCURSES_EXPORT(FIELD *) _nc_First_Active_Field (FORM*);
 extern NCURSES_EXPORT(bool) _nc_Internal_Validation (FORM*);
 extern NCURSES_EXPORT(int) _nc_Set_Current_Field (FORM*, FIELD*);
 extern NCURSES_EXPORT(int) _nc_Position_Form_Cursor (FORM*);
+extern NCURSES_EXPORT(void) _nc_Unset_Current_Field(FORM *form);
 
 #if NCURSES_INTEROP_FUNCS
 extern NCURSES_EXPORT(FIELDTYPE *) _nc_TYPE_INTEGER(void);

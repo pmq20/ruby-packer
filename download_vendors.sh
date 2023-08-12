@@ -30,13 +30,11 @@ function download_and_extract()
     cd ..
 }
 
-rm -rf "vendor/libffi"
-download_and_extract vendor libffi libffi-$LIBFFI_VERSION https://github.com/libffi/libffi/releases/download/v$LIBFFI_VERSION/libffi-$LIBFFI_VERSION.tar.gz
+# rm -rf "vendor/libffi"
+# download_and_extract vendor libffi libffi-$LIBFFI_VERSION https://github.com/libffi/libffi/releases/download/v$LIBFFI_VERSION/libffi-$LIBFFI_VERSION.tar.gz
 
-# download_and_extract yaml-$LIBYAML_VERSION.tar.gz \
-#     https://pyyaml.org/download/libyaml/yaml-$LIBYAML_VERSION.tar.gz
+# download_and_extract vendor yaml yaml-$LIBYAML_VERSION https://pyyaml.org/download/libyaml/yaml-$LIBYAML_VERSION.tar.gz
 
-download_and_extract vendor openssl openssl-$OPENSSL_VERSION https://www.openssl.org/source/openssl-$OPENSSL_VERSION.tar.gz
+# download_and_extract vendor openssl openssl-$OPENSSL_VERSION https://www.openssl.org/source/openssl-$OPENSSL_VERSION.tar.gz
 
-# download_and_extract ncurses-$NCURSES_VERSION.tar.bz2 \
-# 	https://ftp.gnu.org/pub/gnu/ncurses/ncurses-$NCURSES_VERSION.tar.gz
+# download_and_extract vendor ncurses ncurses-$NCURSES_VERSION https://ftp.gnu.org/pub/gnu/ncurses/ncurses-$NCURSES_VERSION.tar.gz

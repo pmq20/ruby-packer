@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 2008-2013,2015 Free Software Foundation, Inc.              *
+ * Copyright (c) 2008-2016,2017 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -34,7 +34,6 @@
 /* ./tty/hardscroll.c */
 
 #include <curses.priv.h>
-
 #undef _nc_oldnums
 int	*_nc_oldnums;
 
@@ -182,7 +181,7 @@ int	wchgat(
 		WINDOW	*win, 
 		int	n, 
 		attr_t	attr, 
-		short	color, 
+		short	pair_arg, 
 		const void *opts)
 		{ return(*(int *)0); }
 
@@ -243,6 +242,26 @@ int	start_color_sp(
 int	start_color(void)
 		{ return(*(int *)0); }
 
+#undef _nc_change_pair
+void	_nc_change_pair(
+		SCREEN	*sp, 
+		int	pair)
+		{ /* void */ }
+
+#undef _nc_reserve_pairs
+colorpair_t *_nc_reserve_pairs(
+		SCREEN	*sp, 
+		int	want)
+		{ return(*(colorpair_t **)0); }
+
+#undef _nc_init_pair
+int	_nc_init_pair(
+		SCREEN	*sp, 
+		int	pair, 
+		int	f, 
+		int	b)
+		{ return(*(int *)0); }
+
 #undef init_pair_sp
 int	init_pair_sp(
 		SCREEN	*sp, 
@@ -256,6 +275,15 @@ int	init_pair(
 		short	pair, 
 		short	f, 
 		short	b)
+		{ return(*(int *)0); }
+
+#undef _nc_init_color
+int	_nc_init_color(
+		SCREEN	*sp, 
+		int	color, 
+		int	r, 
+		int	g, 
+		int	b)
 		{ return(*(int *)0); }
 
 #undef init_color_sp
@@ -310,6 +338,14 @@ int	color_content(
 		short	*b)
 		{ return(*(int *)0); }
 
+#undef _nc_pair_content
+int	_nc_pair_content(
+		SCREEN	*sp, 
+		int	pair, 
+		int	*f, 
+		int	*b)
+		{ return(*(int *)0); }
+
 #undef pair_content_sp
 int	pair_content_sp(
 		SCREEN	*sp, 
@@ -347,7 +383,7 @@ void	_nc_do_color(
 #undef wcolor_set
 int	wcolor_set(
 		WINDOW	*win, 
-		short	color_pair_number, 
+		short	pair_arg, 
 		void	*opts)
 		{ return(*(int *)0); }
 
@@ -2079,14 +2115,14 @@ int	slk_restore(void)
 int	slk_attr_set_sp(
 		SCREEN	*sp, 
 		const attr_t attr, 
-		short	color_pair_number, 
+		short	pair_arg, 
 		void	*opts)
 		{ return(*(int *)0); }
 
 #undef slk_attr_set
 int	slk_attr_set(
 		const attr_t attr, 
-		short	color_pair_number, 
+		short	pair_arg, 
 		void	*opts)
 		{ return(*(int *)0); }
 
@@ -2156,12 +2192,12 @@ int	slk_clear(void)
 #undef slk_color_sp
 int	slk_color_sp(
 		SCREEN	*sp, 
-		short	color_pair_number)
+		short	pair_arg)
 		{ return(*(int *)0); }
 
 #undef slk_color
 int	slk_color(
-		short	color_pair_number)
+		short	pair_arg)
 		{ return(*(int *)0); }
 
 /* ./base/lib_slkinit.c */
@@ -2520,10 +2556,6 @@ void	_nc_do_xmc_glitch(
 
 /* ./trace/varargs.c */
 
-typedef enum {
-    atUnknown = 0, atInteger, atFloat, atPoint, atString
-} ARGTYPE;
-
 #undef _nc_varargs
 char	*_nc_varargs(
 		const char *fmt, 
@@ -2651,6 +2683,12 @@ int	mcprint(
 		char	*data, 
 		int	len)
 		{ return(*(int *)0); }
+
+/* ./base/new_pair.c */
+
+#undef _nc_new_pair
+void	_nc_new_pair(void)
+		{ /* void */ }
 
 /* ./base/resizeterm.c */
 
@@ -2782,8 +2820,8 @@ int	_nc_add_to_try(
 
 #undef _nc_align_termtype
 void	_nc_align_termtype(
-		TERMTYPE *to, 
-		TERMTYPE *from)
+		TERMTYPE2 *to, 
+		TERMTYPE2 *from)
 		{ /* void */ }
 
 #undef _nc_copy_termtype
@@ -2935,19 +2973,13 @@ ENTRY	*_nc_tail;
 #undef _nc_free_entry
 void	_nc_free_entry(
 		ENTRY	*headp, 
-		TERMTYPE *tterm)
+		TERMTYPE2 *tterm)
 		{ /* void */ }
 
 #undef _nc_free_entries
 void	_nc_free_entries(
 		ENTRY	*headp)
 		{ /* void */ }
-
-#undef _nc_delink_entry
-ENTRY	*_nc_delink_entry(
-		ENTRY	*headp, 
-		TERMTYPE *tterm)
-		{ return(*(ENTRY **)0); }
 
 #undef _nc_leaks_tinfo
 void	_nc_leaks_tinfo(void)
@@ -2956,9 +2988,9 @@ void	_nc_leaks_tinfo(void)
 /* ./fallback.c */
 
 #undef _nc_fallback
-const TERMTYPE *_nc_fallback(
+const TERMTYPE2 *_nc_fallback(
 		const char *name)
-		{ return(*(const TERMTYPE **)0); }
+		{ return(*(const TERMTYPE2 **)0); }
 
 /* ./tinfo/free_ttype.c */
 
@@ -3019,8 +3051,8 @@ void	_nc_init_acs(void)
 /* ./tinfo/lib_baudrate.c */
 
 struct speed {
-    short s; 
-    int sp; 
+    int given_speed; 
+    int actual_speed; 
 };
 
 #undef _nc_baudrate
@@ -3475,7 +3507,7 @@ void	_nc_update_screensize(
 #undef _nc_setup_tinfo
 int	_nc_setup_tinfo(
 		const char *const tn, 
-		TERMTYPE *const tp)
+		TERMTYPE2 *const tp)
 		{ return(*(int *)0); }
 
 #undef _nc_tinfo_cmdch
@@ -3504,6 +3536,14 @@ int	_nc_setupterm(
 		int	*errret, 
 		int	reuse)
 		{ return(*(int *)0); }
+
+#undef _nc_find_prescr
+SCREEN	*_nc_find_prescr(void)
+		{ return(*(SCREEN **)0); }
+
+#undef _nc_forget_prescr
+void	_nc_forget_prescr(void)
+		{ /* void */ }
 
 #undef new_prescr
 SCREEN	*new_prescr(void)
@@ -3894,11 +3934,6 @@ chtype	_nc_retrace_chtype(
 
 /* ./trace/lib_tracebits.c */
 
-typedef struct {
-    unsigned int val;
-    const char name[8];
-} BITNAMES;
-
 #undef _nc_trace_ttymode
 char	*_nc_trace_ttymode(
 		struct termios *tty)
@@ -4068,12 +4103,12 @@ void	_nc_set_buffer(
 
 #undef _nc_init_termtype
 void	_nc_init_termtype(
-		TERMTYPE *const tp)
+		TERMTYPE2 *const tp)
 		{ /* void */ }
 
 #undef _nc_read_termtype
 int	_nc_read_termtype(
-		TERMTYPE *ptr, 
+		TERMTYPE2 *ptr, 
 		char	*buffer, 
 		int	limit)
 		{ return(*(int *)0); }
@@ -4081,21 +4116,23 @@ int	_nc_read_termtype(
 #undef _nc_read_file_entry
 int	_nc_read_file_entry(
 		const char *const filename, 
-		TERMTYPE *ptr)
+		TERMTYPE2 *ptr)
 		{ return(*(int *)0); }
 
 #undef _nc_read_entry
 int	_nc_read_entry(
 		const char *const name, 
 		char	*const filename, 
-		TERMTYPE *const tp)
+		TERMTYPE2 *const tp)
 		{ return(*(int *)0); }
 
 /* ./tinfo/read_termcap.c */
 
-#undef _nc_read_termcap
-void	_nc_read_termcap(void)
-		{ /* void */ }
+#undef _nc_read_termcap_entry
+int	_nc_read_termcap_entry(
+		const char *const tn, 
+		TERMTYPE2 *const tp)
+		{ return(*(int *)0); }
 
 /* ./tinfo/strings.c */
 
@@ -4177,7 +4214,7 @@ int	_nc_remove_string(
 
 #undef _nc_trim_sgr0
 char	*_nc_trim_sgr0(
-		TERMTYPE *tp)
+		TERMTYPE2 *tp)
 		{ return(*(char **)0); }
 
 /* ./unctrl.c */
@@ -4229,7 +4266,7 @@ const char *_nc_viscbuf(
 
 #undef _nc_init_entry
 void	_nc_init_entry(
-		TERMTYPE *const tp)
+		ENTRY	*const tp)
 		{ /* void */ }
 
 #undef _nc_copy_entry
@@ -4250,8 +4287,8 @@ void	_nc_wrap_entry(
 
 #undef _nc_merge_entry
 void	_nc_merge_entry(
-		TERMTYPE *const to, 
-		TERMTYPE *const from)
+		ENTRY	*const target, 
+		ENTRY	*const source)
 		{ /* void */ }
 
 /* ./tinfo/captoinfo.c */
@@ -4283,11 +4320,8 @@ char	*_nc_tic_expand(
 
 #undef _nc_check_termtype2
 void	(*_nc_check_termtype2)(
-		TERMTYPE *p1, 
+		TERMTYPE2 *p1, 
 		NCURSES_BOOL p2);
-#undef _nc_check_termtype
-void	(*_nc_check_termtype)(
-		TERMTYPE *p1);
 
 #undef _nc_entry_match
 NCURSES_BOOL _nc_entry_match(
@@ -4309,11 +4343,6 @@ void	_nc_read_entry_source(
 int	_nc_resolve_uses2(
 		NCURSES_BOOL fullresolve, 
 		NCURSES_BOOL literal)
-		{ return(*(int *)0); }
-
-#undef _nc_resolve_uses
-int	_nc_resolve_uses(
-		NCURSES_BOOL fullresolve)
 		{ return(*(int *)0); }
 
 /* ./tinfo/comp_scan.c */
@@ -4366,7 +4395,7 @@ void	_nc_panic_mode(
 
 #undef _nc_parse_entry
 int	_nc_parse_entry(
-		struct entry *entryp, 
+		ENTRY	*entryp, 
 		int	literal, 
 		NCURSES_BOOL silent)
 		{ return(*(int *)0); }
@@ -4377,11 +4406,6 @@ int	_nc_capcmp(
 		const char *t)
 		{ return(*(int *)0); }
 
-typedef struct {
-    const char from[3];
-    const char to[6];
-} assoc;
-
 /* ./tinfo/write_entry.c */
 
 #undef _nc_set_writedir
@@ -4391,8 +4415,16 @@ void	_nc_set_writedir(
 
 #undef _nc_write_entry
 void	_nc_write_entry(
-		TERMTYPE *const tp)
+		TERMTYPE2 *const tp)
 		{ /* void */ }
+
+#undef _nc_write_object
+int	_nc_write_object(
+		TERMTYPE2 *tp, 
+		char	*buffer, 
+		unsigned *offset, 
+		unsigned limit)
+		{ return(*(int *)0); }
 
 #undef _nc_tic_written
 int	_nc_tic_written(void)

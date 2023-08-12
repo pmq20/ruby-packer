@@ -1,5 +1,5 @@
 .\"***************************************************************************
-.\" Copyright (c) 1998-2013,2015 Free Software Foundation, Inc.              *
+.\" Copyright (c) 1998-2015,2017 Free Software Foundation, Inc.              *
 .\"                                                                          *
 .\" Permission is hereby granted, free of charge, to any person obtaining a  *
 .\" copy of this software and associated documentation files (the            *
@@ -28,8 +28,12 @@
 .\"
 .\" Author: Thomas E. Dickey 1996-on
 .\"
-.\" $Id: resizeterm.3x,v 1.19 2015/06/06 23:38:18 tom Exp $
+.\" $Id: resizeterm.3x,v 1.24 2017/11/18 23:47:37 tom Exp $
 .TH resizeterm 3X ""
+.de bP
+.ie n  .IP \(bu 4
+.el    .IP \(bu 2
+..
 .SH NAME
 \fBis_term_resized\fR,
 \fBresize_term\fR,
@@ -56,7 +60,7 @@ such as the \fBLINES\fP and \fBCOLS\fP variables.
 .SS resize_term
 .PP
 Most of the work is done by the inner function \fBresize_term\fR.
-The outer function \fBresizeterm\fR adds bookkeeping for the SIGWINCH handler.
+The outer function \fBresizeterm\fR adds bookkeeping for the \fBSIGWINCH\fP handler.
 When resizing the windows,
 \fBresize_term\fR blank-fills the areas that are extended.
 The calling application should fill in these areas with appropriate data.
@@ -76,22 +80,48 @@ They will fail if either of the dimensions are less than or equal to zero,
 or if an error occurs while (re)allocating memory for the windows.
 .SH NOTES
 While these functions are intended to be used to support a signal handler
-(i.e., for SIGWINCH), care should be taken to avoid invoking them in a
+(i.e., for \fBSIGWINCH\fP), care should be taken to avoid invoking them in a
 context where \fBmalloc\fR or \fBrealloc\fR may have been interrupted,
 since it uses those functions.
 .PP
-If ncurses is configured to supply its own SIGWINCH handler,
-the \fBresizeterm\fR function \fBungetch\fP's a \fBKEY_RESIZE\fR which
-will be read on the next call to \fBgetch\fR.
-This is used to alert an application that the screen size has changed,
+If ncurses is configured to supply its own \fBSIGWINCH\fP handler,
+.bP
+on receipt of a \fBSIGWINCH\fP, the handler sets a flag
+.bP
+which is tested in \fBwgetch\fP(3X) and \fBdoupdate\fP,
+.bP
+in turn, calling the \fBresizeterm\fR function,
+.bP
+which \fBungetch\fP's a \fBKEY_RESIZE\fR which
+will be read on the next call to \fBwgetch\fR.
+.IP
+The \fBKEY_RESIZE\fP alerts an application that the screen size has changed,
 and that it should repaint special features such as pads that cannot
 be done automatically.
+.IP
+Calling \fBresizeterm\fP or \fBresize_term\fP
+directly from a signal handler is unsafe.
+This indirect method is used to provide a safe way to resize the ncurses
+data structures.
 .PP
 If the environment variables \fBLINES\fP or \fBCOLUMNS\fP are set,
 this overrides the library's use of the window size obtained from
 the operating system.
-Thus, even if a SIGWINCH is received,
+Thus, even if a \fBSIGWINCH\fP is received,
 no screen size change may be recorded.
+.SH PORTABILITY
+.PP
+It is possible to resize the screen with SVr4 curses,
+by
+.bP
+exiting curses with \fBendwin\fP(3X) and
+.bP
+resuming using \fBrefresh\fP(3X).
+.PP
+Doing that clears the screen and is visually distracting.
+.PP
+This extension of ncurses was introduced in mid-1995.
+It was adopted in NetBSD curses (2001) and PDCurses (2003).
 .SH SEE ALSO
 \fBcurs_getch\fR(3X),
 \fBcurs_variables\fR(3X),

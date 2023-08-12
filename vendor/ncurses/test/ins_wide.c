@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 2002-2012,2014 Free Software Foundation, Inc.              *
+ * Copyright (c) 2002-2016,2017 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -26,7 +26,7 @@
  * authorization.                                                           *
  ****************************************************************************/
 /*
- * $Id: ins_wide.c,v 1.21 2014/08/02 17:24:55 tom Exp $
+ * $Id: ins_wide.c,v 1.24 2017/10/18 23:03:57 tom Exp $
  *
  * Demonstrate the wins_wstr() and wins_wch functions.
  * Thomas Dickey - 2002/11/23
@@ -236,7 +236,8 @@ test_inserts(int level)
 	static char cmd[80];
 	setlocale(LC_ALL, "");
 
-	putenv(strcpy(cmd, "TABSIZE=8"));
+	_nc_STRCPY(cmd, "TABSIZE=8", sizeof(cmd));
+	putenv(cmd);
 
 	initscr();
 	(void) cbreak();	/* take input chars one at a time, no wait for \n */
@@ -390,6 +391,8 @@ test_inserts(int level)
 	    }
 	    break;
 	default:
+	    if (length >= BUFSIZ - 2)
+		break;
 	    buffer[length++] = (wchar_t) ch;
 	    buffer[length] = '\0';
 
@@ -455,7 +458,7 @@ usage(void)
 {
     static const char *tbl[] =
     {
-	"Usage: inserts [options]"
+	"Usage: ins_wide [options]"
 	,""
 	,"Options:"
 	,"  -f FILE read data from given file"

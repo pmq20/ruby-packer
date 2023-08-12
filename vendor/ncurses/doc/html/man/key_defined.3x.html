@@ -33,7 +33,7 @@
 <HTML>
 <HEAD>
 <meta http-equiv="Content-Type" content="text/html; charset=us-ascii">
-<meta name="generator" content="Manpage converted by man2html - see http://invisible-island.net/scripts/readme.html#others_scripts">
+<meta name="generator" content="Manpage converted by man2html - see https://invisible-island.net/scripts/readme.html#others_scripts">
 <TITLE>key_defined 3x</TITLE>
 <link rev=made href="mailto:bug-ncurses@gnu.org">
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
@@ -41,58 +41,48 @@
 <BODY>
 <H1 class="no-header">key_defined 3x</H1>
 <PRE>
-<STRONG><A HREF="key_defined.3x.html">key_defined(3x)</A></STRONG>                                         <STRONG><A HREF="key_defined.3x.html">key_defined(3x)</A></STRONG>
+<STRONG><A HREF="key_defined.3x.html">key_defined(3x)</A></STRONG>                                                <STRONG><A HREF="key_defined.3x.html">key_defined(3x)</A></STRONG>
 
 
 
 
-</PRE>
-<H2><a name="h2-NAME">NAME</a></H2><PRE>
+</PRE><H2><a name="h2-NAME">NAME</a></H2><PRE>
        <STRONG>key_defined</STRONG> - check if a keycode is defined
 
 
-</PRE>
-<H2><a name="h2-SYNOPSIS">SYNOPSIS</a></H2><PRE>
+</PRE><H2><a name="h2-SYNOPSIS">SYNOPSIS</a></H2><PRE>
        <STRONG>#include</STRONG> <STRONG>&lt;curses.h&gt;</STRONG>
 
        <STRONG>int</STRONG> <STRONG>key_defined(const</STRONG> <STRONG>char</STRONG> <STRONG>*definition);</STRONG>
 
 
-</PRE>
-<H2><a name="h2-DESCRIPTION">DESCRIPTION</a></H2><PRE>
-       This is an extension to the curses library.  It permits an
-       application to determine if a string is currently bound to
-       any keycode.
+</PRE><H2><a name="h2-DESCRIPTION">DESCRIPTION</a></H2><PRE>
+       This  is an extension to the curses library.  It permits an application
+       to determine if a string is currently bound to any keycode.
 
 
-</PRE>
-<H2><a name="h2-RETURN-VALUE">RETURN VALUE</a></H2><PRE>
-       If  the  string  is bound to a keycode, its value (greater
-       than zero) is returned.  If no keycode is bound,  zero  is
-       returned.   If  the  string  conflicts with longer strings
-       which are bound to keys, -1 is returned.
+</PRE><H2><a name="h2-RETURN-VALUE">RETURN VALUE</a></H2><PRE>
+       If the string is bound to a keycode, its value (greater than  zero)  is
+       returned.   If  no  keycode  is bound, zero is returned.  If the string
+       conflicts with longer strings which are bound to keys, -1 is returned.
 
 
-</PRE>
-<H2><a name="h2-PORTABILITY">PORTABILITY</a></H2><PRE>
-       These routines are specific to  ncurses.   They  were  not
-       supported  on  Version 7, BSD or System V implementations.
-       It is recommended that any code depending on them be  con-
-       ditioned using NCURSES_VERSION.
+</PRE><H2><a name="h2-PORTABILITY">PORTABILITY</a></H2><PRE>
+       These routines are specific to ncurses.  They  were  not  supported  on
+       Version 7, BSD or System V implementations.  It is recommended that any
+       code depending on them be conditioned using NCURSES_VERSION.
 
 
-</PRE>
-<H2><a name="h2-SEE-ALSO">SEE ALSO</a></H2><PRE>
+</PRE><H2><a name="h2-SEE-ALSO">SEE ALSO</a></H2><PRE>
        <STRONG><A HREF="define_key.3x.html">define_key(3x)</A></STRONG>.
 
 
-</PRE>
-<H2><a name="h2-AUTHOR">AUTHOR</a></H2><PRE>
+</PRE><H2><a name="h2-AUTHOR">AUTHOR</a></H2><PRE>
        Thomas Dickey.
 
 
 
-                                                        <STRONG><A HREF="key_defined.3x.html">key_defined(3x)</A></STRONG>
+                                                               <STRONG><A HREF="key_defined.3x.html">key_defined(3x)</A></STRONG>
 </PRE>
 <div class="nav">
 <ul>

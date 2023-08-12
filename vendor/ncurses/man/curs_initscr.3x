@@ -1,5 +1,5 @@
 .\"***************************************************************************
-.\" Copyright (c) 1998-2014,2015 Free Software Foundation, Inc.              *
+.\" Copyright (c) 1998-2016,2017 Free Software Foundation, Inc.              *
 .\"                                                                          *
 .\" Permission is hereby granted, free of charge, to any person obtaining a  *
 .\" copy of this software and associated documentation files (the            *
@@ -26,10 +26,11 @@
 .\" authorization.                                                           *
 .\"***************************************************************************
 .\"
-.\" $Id: curs_initscr.3x,v 1.24 2015/07/21 23:01:38 tom Exp $
+.\" $Id: curs_initscr.3x,v 1.29 2017/11/18 23:47:37 tom Exp $
 .TH curs_initscr 3X ""
 .de bP
-.IP \(bu 4
+.ie n  .IP \(bu 4
+.el    .IP \(bu 2
 ..
 .ie \n(.g .ds `` \(lq
 .el       .ds `` ``
@@ -66,14 +67,14 @@
 \fBinitscr\fR is normally the first \fBcurses\fR routine to call when
 initializing a program.
 A few special routines sometimes need to be called before it;
-these are \fBslk_init\fR, \fBfilter\fR, \fBripoffline\fR,
+these are \fBslk_init\fR(3X), \fBfilter\fR, \fBripoffline\fR,
 \fBuse_env\fR.
 For multiple-terminal applications,
 \fBnewterm\fR may be called before \fBinitscr\fR.
 .PP
 The initscr code determines the terminal type and initializes all \fBcurses\fR
 data structures.
-\fBinitscr\fR also causes the first call to \fBrefresh\fR to clear the screen.
+\fBinitscr\fR also causes the first call to \fBrefresh\fR(3X) to clear the screen.
 If errors occur, \fBinitscr\fR writes an appropriate error
 message to standard error and exits;
 otherwise, a pointer is returned to \fBstdscr\fR.
@@ -108,14 +109,19 @@ A program should always call \fBendwin\fR before exiting or escaping from
 \fBcurses\fR mode temporarily.
 This routine
 .bP
-restores tty modes,
+resets colors to correspond with the default color pair 0,
 .bP
-moves the cursor to the lower left-hand corner of the screen and
+moves the cursor to the lower left-hand corner of the screen,
 .bP
-resets the terminal into
-the proper non-visual mode.
+clears the remainder of the line so that it uses the default colors,
+.bP
+sets the cursor to normal visibility (see \fBcurs_set\fP(3X)),
+.bP
+stops cursor-addressing mode using the \fIexit_ca_mode\fP terminal capability,
+.bP
+restores tty modes (see \fBreset_shell_mode\fP(3X)).
 .PP
-Calling \fBrefresh\fR or \fBdoupdate\fR after a
+Calling \fBrefresh\fR(3X) or \fBdoupdate\fR(3X) after a
 temporary escape causes the program to resume visual mode.
 .SS isendwin
 .PP
@@ -155,8 +161,6 @@ i.e.,
 .bP
 \fBset_term\fP
 returns no error.
-.SH NOTES
-Note that \fBinitscr\fR and \fBnewterm\fR may be macros.
 .SH PORTABILITY
 These functions were described in the XSI Curses standard, Issue 4.
 As of 2015, the current document is X/Open Curses, Issue 7.
@@ -187,9 +191,10 @@ Other implementations may handle a missing/empty TERM variable differently.
 Quoting from X/Open Curses, section 3.1.1:
 .RS 5
 .PP
-\fICurses implementations may provide for special handling of the SIGINT,
-SIGQUIT and SIGTSTP signals if their disposition is SIG_DFL at the time
-\fBinitscr()\fP is called \fP...
+\fICurses implementations may provide for special handling of the \fBSIGINT\fP,
+\fBSIGQUIT\fP and \fBSIGTSTP\fP signals
+if their disposition is \fBSIG_DFL\fP at the time
+\fBinitscr\fP is called \fP...
 .PP
 \fIAny special handling for these signals may remain in effect for the
 life of the process or until the process changes the disposition of
@@ -231,7 +236,7 @@ assuming that it has been completely altered.
 It also updates the saved terminal modes with \fBdef_shell_mode\fP (see curs_kernel(3X)).
 .TP 5
 .B SIGWINCH
-This handles the window-size changes which were initially ignored in
+This handles the window-size changes which were ignored in
 the standardization efforts.
 The handler sets a (signal-safe) variable
 which is later tested in \fBwgetch\fP (see curs_getch(3X)).

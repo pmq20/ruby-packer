@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 1999-2012,2013 Free Software Foundation, Inc.              *
+ * Copyright (c) 1999-2016,2017 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -29,7 +29,7 @@
 /*
  * Author: Thomas E. Dickey
  *
- * $Id: cardfile.c,v 1.42 2013/09/28 22:02:17 tom Exp $
+ * $Id: cardfile.c,v 1.45 2017/10/19 21:14:25 tom Exp $
  *
  * File format: text beginning in column 1 is a title; other text is content.
  */
@@ -132,8 +132,10 @@ add_content(CARD * card, const char *content)
 	if (card->content != 0 && (offset = strlen(card->content)) != 0) {
 	    total += 1 + offset;
 	    card->content = typeRealloc(char, total + 1, card->content);
-	    if (card->content)
-		strcpy(card->content + offset++, " ");
+	    if (card->content) {
+		_nc_STRCPY(card->content + offset, " ", total + 1 - offset);
+		offset++;
+	    }
 	} else {
 	    offset = 0;
 	    if (card->content != 0)
@@ -141,7 +143,7 @@ add_content(CARD * card, const char *content)
 	    card->content = typeMalloc(char, total + 1);
 	}
 	if (card->content)
-	    strcpy(card->content + offset, content);
+	    _nc_STRCPY(card->content + offset, content, total + 1 - offset);
 	else
 	    failed("add_content");
     }
@@ -547,7 +549,7 @@ usage(void)
 {
     static const char *msg[] =
     {
-	"Usage: view [options] file"
+	"Usage: cardfile [options] file"
 	,""
 	,"Options:"
 	," -c       use color if terminal supports it"

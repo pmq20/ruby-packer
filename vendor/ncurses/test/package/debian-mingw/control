@@ -4,7 +4,7 @@ Section: misc
 Priority: optional
 Standards-Version: 3.8.4
 Build-Depends: debhelper (>= 5)
-Homepage: http://invisible-island.net/ncurses/ncurses-examples.html
+Homepage: https://invisible-island.net/ncurses/ncurses-examples.html
 
 Package: mingw32-ncurses-examples
 Architecture: any

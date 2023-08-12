@@ -1,5 +1,5 @@
 .\"***************************************************************************
-.\" Copyright (c) 1998-2020,2015 Free Software Foundation, Inc.              *
+.\" Copyright (c) 1998-2016,2017 Free Software Foundation, Inc.              *
 .\"                                                                          *
 .\" Permission is hereby granted, free of charge, to any person obtaining a  *
 .\" copy of this software and associated documentation files (the            *
@@ -26,10 +26,12 @@
 .\" authorization.                                                           *
 .\"***************************************************************************
 .\"
-.\" $Id: panel.3x,v 1.18 2015/04/11 10:23:49 tom Exp $
+.\" $Id: panel.3x,v 1.24 2017/11/25 20:31:13 tom Exp $
 .TH panel 3X ""
-.ds n 5
-.ds d @TERMINFO@
+.ie \n(.g .ds `` \(lq
+.el       .ds `` ``
+.ie \n(.g .ds '' \(rq
+.el       .ds '' ''
 .SH NAME
 panel \- panel stack extension for curses
 .SH SYNOPSIS
@@ -37,35 +39,35 @@ panel \- panel stack extension for curses
 .P
 \fBcc [flags] sourcefiles \-lpanel \-lncurses\fR
 .P
-\fBPANEL *new_panel(WINDOW *win)\fR
+\fBPANEL *new_panel(WINDOW *win);\fR
 .br
-\fBint bottom_panel(PANEL *pan)\fR
+\fBint bottom_panel(PANEL *pan);\fR
 .br
-\fBint top_panel(PANEL *pan)\fR
+\fBint top_panel(PANEL *pan);\fR
 .br
-\fBint show_panel(PANEL *pan)\fR
+\fBint show_panel(PANEL *pan);\fR
 .br
 \fBvoid update_panels();\fR
 .br
-\fBint hide_panel(PANEL *pan)\fR
+\fBint hide_panel(PANEL *pan);\fR
 .br
-\fBWINDOW *panel_window(const PANEL *pan)\fR
+\fBWINDOW *panel_window(const PANEL *pan);\fR
 .br
-\fBint replace_panel(PANEL *pan, WINDOW *window)\fR
+\fBint replace_panel(PANEL *pan, WINDOW *window);\fR
 .br
-\fBint move_panel(PANEL *pan, int starty, int startx)\fR
+\fBint move_panel(PANEL *pan, int starty, int startx);\fR
 .br
-\fBint panel_hidden(const PANEL *pan)\fR
+\fBint panel_hidden(const PANEL *pan);\fR
 .br
-\fBPANEL *panel_above(const PANEL *pan)\fR
+\fBPANEL *panel_above(const PANEL *pan);\fR
 .br
-\fBPANEL *panel_below(const PANEL *pan)\fR
+\fBPANEL *panel_below(const PANEL *pan);\fR
 .br
-\fBint set_panel_userptr(PANEL *pan, const void *ptr)\fR
+\fBint set_panel_userptr(PANEL *pan, const void *ptr);\fR
 .br
-\fBconst void *panel_userptr(const PANEL *pan)\fR
+\fBconst void *panel_userptr(const PANEL *pan);\fR
 .br
-\fBint del_panel(PANEL *pan)\fR
+\fBint del_panel(PANEL *pan);\fR
 .br
 .SH DESCRIPTION
 Panels are \fBcurses\fR(3X) windows with the added feature of
@@ -90,14 +92,14 @@ allocates  a  \fBPANEL\fR structure, associates it with
 to  be  displayed above any other panel) and returns a
 pointer to the new panel.
 .TP
-.B update_panels()
+.B update_panels
 refreshes the virtual screen to reflect the relations between the
-panels in the stack, but does not call doupdate() to refresh the
+panels in the stack, but does not call \fBdoupdate\fP to refresh the
 physical screen.
 Use this function and not \fBwrefresh\fP or \fBwnoutrefresh\fP.
 .B update_panels
 may be called more than once before a call to
-doupdate(), but doupdate() is the function responsible for updating
+\fBdoupdate\fP, but \fBdoupdate\fP is the function responsible for updating
 the physical screen.
 .TP
 .B del_panel(pan)
@@ -111,7 +113,7 @@ view. The \fBPANEL\fR structure is not lost, merely removed from the stack.
 .B panel_hidden(pan)
 returns \fBTRUE\fP if the panel is in the panel stack,
 \fBFALSE\fP if it is not.
-If the panel is a null pointer, return ERR.
+If the panel is a null pointer, return \fBERR\fP.
 .TP
 .B show_panel(pan)
 makes a hidden panel visible by placing it on top of the panels in the
@@ -127,7 +129,7 @@ puts panel at the bottom of all panels.
 .B move_panel(pan,starty,startx)
 moves the given panel window so that its upper-left corner is at
 \fBstarty\fR, \fBstartx\fR.  It does not change the position of the
-panel in the stack.  Be sure to use this function, not \fBmvwin()\fR,
+panel in the stack.  Be sure to use this function, not \fBmvwin\fR,
 to move a panel window.
 .TP
 .B replace_panel(pan,window)
@@ -158,22 +160,31 @@ occurs. Each routine that returns an int value returns \fBOK\fR if it
 executes successfully and \fBERR\fR if not.
 .SH COMPATIBILITY
 Reasonable care has been taken to  ensure  compatibility
-with  the  native  panel facility introduced in SVr3.2 (inspection of
+with  the  native  panel facility introduced in System V (inspection of
 the SVr4 manual pages suggests the programming interface is unchanged).
 The \fBPANEL\fR data structures are merely  similar. The  programmer
 is cautioned not to directly use \fBPANEL\fR fields.
 .P
-The functions \fBshow_panel()\fR and \fBtop_panel()\fR are identical
+The functions \fBshow_panel\fR and \fBtop_panel\fR are identical
 in this implementation, and work equally well with displayed or hidden
-panels.  In the native System V implementation, \fBshow_panel()\fR is
+panels.  In the native System V implementation, \fBshow_panel\fR is
 intended for making a hidden panel visible (at the top of the stack)
-and \fBtop_panel()\fR is intended for making an already-visible panel
+and \fBtop_panel\fR is intended for making an already-visible panel
 move to the top of the stack. You are cautioned to use the correct
 function to ensure compatibility with native panel libraries.
 .SH NOTE
 In your library list, libpanel.a should be before libncurses.a; that is,
-you want to say `\-lpanel \-lncurses', not the other way around (which would
-usually give a link-error).
+you should say \*(``\-lpanel \-lncurses\*('', not the other way around
+(which would give a link-error with static libraries).
+.SH PORTABILITY
+.PP
+The panel facility was documented in SVr4.2 in
+\fICharacter User Interface Programming (UNIX SVR4.2)\fP.
+.PP
+It is not part of X/Open Curses.
+.PP
+Aside from ncurses, only systems based on SVr4 source code,
+e.g., Solaris provide this library.
 .SH FILES
 .P
 panel.h

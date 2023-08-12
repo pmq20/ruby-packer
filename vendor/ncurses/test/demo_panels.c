@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 2007-2010,2014 Free Software Foundation, Inc.              *
+ * Copyright (c) 2007-2016,2017 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -26,7 +26,7 @@
  * authorization.                                                           *
  ****************************************************************************/
 /*
- * $Id: demo_panels.c,v 1.38 2014/08/02 17:24:07 tom Exp $
+ * $Id: demo_panels.c,v 1.41 2017/04/15 18:39:29 tom Exp $
  *
  * Demonstrate a variety of functions from the panel library.
  */
@@ -222,7 +222,7 @@ mkpanel(short color, int rows, int cols, int tly, int tlx)
 	    wbkgdset(win, A_BOLD | ' ');
 	}
     }
-    sprintf(userdata, "p%d", color % 8);
+    _nc_SPRINTF(userdata, _nc_SLIMIT(3) "p%d", color % 8);
     set_panel_userptr(pan, (NCURSES_CONST void *) userdata);
     return pan;
 }
@@ -271,7 +271,7 @@ my_create_panel(PANEL ** pans, int which, FillPanel myFill)
 
     if (code > 0) {
 	char also[80];
-	sprintf(also, " (first %d,%d)", y0, x0);
+	_nc_SPRINTF(also, _nc_SLIMIT(sizeof(also)) " (first %d,%d)", y0, x0);
 	/* get the position of the opposite corner */
 	while ((code = get_position("Opposite corner",
 				    also, which, &x1, &y1)) == 0) {
@@ -302,7 +302,7 @@ my_move_panel(PANEL ** pans, int which, bool continuous)
 	char also[80];
 
 	getbegyx(win, y0, x0);
-	sprintf(also, " (start %d,%d)", y0, x0);
+	_nc_SPRINTF(also, _nc_SLIMIT(sizeof(also)) " (start %d,%d)", y0, x0);
 	wmove(stdscr, y0, x0);
 	while ((code = get_position("Move panel", also, which, &x1, &y1)) == 0) {
 	    if (continuous) {
@@ -327,7 +327,7 @@ my_resize_panel(PANEL ** pans, int which, FillPanel myFill)
 	char also[80];
 
 	getbegyx(win, y0, x0);
-	sprintf(also, " (start %d,%d)", y0, x0);
+	_nc_SPRINTF(also, _nc_SLIMIT(sizeof(also)) " (start %d,%d)", y0, x0);
 	wmove(stdscr, y0, x0);
 	while ((code = get_position("Resize panel",
 				    also, which, &x1, &y1)) == 0) {
@@ -479,7 +479,7 @@ show_panels(PANEL * px[MAX_PANELS + 1])
 	"  m - move the panel (M for continuous move)",
 	"  r - resize the panel",
 	"  s - show the panel",
-	"  b - put the panel on the top of the stack"
+	"  t - put the panel on the top of the stack"
     };
 
     struct {
@@ -655,7 +655,7 @@ get_command(PANEL * px[MAX_PANELS + 1], char *buffer, int limit)
 		wrefresh(curscr);
 	    } else if (ch == '\n' || ch == KEY_ENTER) {
 		break;
-	    } else if (ch == '?') {
+	    } else if (ch == HELP_KEY_1) {
 		show_panels(px);
 	    } else if (length + 3 < limit) {
 		if (ch >= KEY_MIN) {

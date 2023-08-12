@@ -1,5 +1,5 @@
 .\"***************************************************************************
-.\" Copyright (c) 1998-2010,2011 Free Software Foundation, Inc.              *
+.\" Copyright (c) 1998-2011,2017 Free Software Foundation, Inc.              *
 .\"                                                                          *
 .\" Permission is hereby granted, free of charge, to any person obtaining a  *
 .\" copy of this software and associated documentation files (the            *
@@ -26,8 +26,12 @@
 .\" authorization.                                                           *
 .\"***************************************************************************
 .\"
-.\" $Id: term.7,v 1.23 2011/12/17 23:32:17 tom Exp $
+.\" $Id: term.7,v 1.24 2017/02/18 17:01:51 tom Exp $
 .TH term 7
+.ie \n(.g .ds `` \(lq
+.el       .ds `` ``
+.ie \n(.g .ds '' \(rq
+.el       .ds '' ''
 .ds n 5
 .ds d @TERMINFO@
 .SH NAME
@@ -44,14 +48,14 @@ or \fB/etc/ttys\fR (BSD UNIXes).
 This will nearly always suffice for workstation and microcomputer consoles.
 .PP
 If you use a dialup line, the type of device attached to it may vary.  Older
-UNIX systems pre-set a very dumb terminal type like `dumb' or `dialup' on
-dialup lines.  Newer ones may pre-set `vt100', reflecting the prevalence of DEC
+UNIX systems pre-set a very dumb terminal type like \*(``dumb\*('' or \*(``dialup\*('' on
+dialup lines.  Newer ones may pre-set \*(``vt100\*('', reflecting the prevalence of DEC
 VT100-compatible terminals and personal-computer emulators.
 .PP
 Modern telnets pass your \fBTERM\fR environment variable from the local side to
 the remote one.  There can be problems if the remote terminfo or termcap entry
 for your type is not compatible with yours, but this situation is rare and
-can almost always be avoided by explicitly exporting `vt100' (assuming you
+can almost always be avoided by explicitly exporting \*(``vt100\*('' (assuming you
 are in fact using a VT100-superset console, terminal, or terminal emulator.)
 .PP
 In any case, you are free to override the system \fBTERM\fR setting to your
@@ -81,7 +85,7 @@ letter).  This command dumps a capability file in the text format described by
 \fBterminfo\fR(\*n).
 .PP
 The first line of a \fBterminfo\fR(\*n) description gives the names by which
-terminfo knows a terminal, separated by `|' (pipe-bar) characters with the last
+terminfo knows a terminal, separated by \*(``|\*('' (pipe-bar) characters with the last
 name field terminated by a comma.  The first name field is the type's
 \fIprimary name\fR, and is the one to use when setting \fBTERM\fR.  The last
 name field (if distinct from the first) is actually a description of the
@@ -172,7 +176,7 @@ Wide; terminal is in 132 column mode.
 Conventionally, if your terminal type is a variant intended to specify a
 line height, that suffix should go first.  So, for a hypothetical FuBarCo
 model 2317 terminal in 30-line mode with reverse video, best form would be
-\fBfubar\-30\-rv\fR (rather than, say, `fubar\-rv\-30').
+\fBfubar\-30\-rv\fR (rather than, say, \*(``fubar\-rv\-30\*('').
 .PP
 Terminal types that are written not as standalone entries, but rather as
 components to be plugged into other entries via \fBuse\fP capabilities,

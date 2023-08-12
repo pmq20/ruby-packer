@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 2007-2008,2009 Free Software Foundation, Inc.              *
+ * Copyright (c) 2007-2009,2016 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -32,7 +32,7 @@
 
 #include <curses.priv.h>
 
-MODULE_ID("$Id: use_screen.c,v 1.8 2009/10/24 22:40:20 tom Exp $")
+MODULE_ID("$Id: use_screen.c,v 1.9 2016/01/23 21:32:00 tom Exp $")
 
 NCURSES_EXPORT(int)
 use_screen(SCREEN *screen, NCURSES_SCREEN_CB func, void *data)
@@ -40,7 +40,7 @@ use_screen(SCREEN *screen, NCURSES_SCREEN_CB func, void *data)
     SCREEN *save_SP;
     int code = OK;
 
-    T((T_CALLED("use_screen(%p,%p,%p)"), (void *) screen, func, (void *) data));
+    T((T_CALLED("use_screen(%p,%p,%p)"), (void *) screen, TR_FUNC(func), (void *) data));
 
     /*
      * FIXME - add a flag so a given thread can check if _it_ has already

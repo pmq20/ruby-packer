@@ -1,6 +1,6 @@
-# $Id: Makefile.in,v 1.95 2015/08/05 09:24:06 tom Exp $
+# $Id: Makefile.in,v 1.102 2018/01/15 19:28:45 tom Exp $
 ##############################################################################
-# Copyright (c) 1998-2014,2015 Free Software Foundation, Inc.                #
+# Copyright (c) 1998-2016,2018 Free Software Foundation, Inc.                #
 #                                                                            #
 # Permission is hereby granted, free of charge, to any person obtaining a    #
 # copy of this software and associated documentation files (the "Software"), #
@@ -78,7 +78,7 @@ LIBTOOL_INSTALL	= @LIB_INSTALL@
 LIBTOOL_UNINSTALL = @LIB_UNINSTALL@
 
 INSTALL		= @INSTALL@
-INSTALL_PROG	= @INSTALL_PROGRAM@
+INSTALL_PROG	= @INSTALL_PROGRAM@ @INSTALL_OPT_S@
 transform	= @program_transform_name@
 
 AWK		= @AWK@
@@ -92,7 +92,7 @@ CPP		= @CPP@
 CFLAGS		= @CFLAGS@
 
 INCDIR		= $(top_srcdir)/include
-CPPFLAGS	= -DHAVE_CONFIG_H @CPPFLAGS@
+CPPFLAGS	= -DHAVE_CONFIG_H -I../progs @CPPFLAGS@
 
 CCFLAGS		= $(CPPFLAGS) $(CFLAGS)
 
@@ -179,6 +179,7 @@ actual_tset      = `echo tset$x|      $(TRANSFORM)`
 
 # transformed names for comparing at runtime
 define_captoinfo = `echo captoinfo|   $(TRANSFORM)`
+define_clear     = `echo clear|       $(TRANSFORM)`
 define_infotocap = `echo infotocap|   $(TRANSFORM)`
 define_init      = `echo init|        $(TRANSFORM)`
 define_reset     = `echo reset|       $(TRANSFORM)`
@@ -191,6 +192,7 @@ transform.h :
 	-$(SHELL) -c 'if test -n "$x" ; then echo "#define SUFFIX_IGNORED \"$x\"">>$@; fi'
 	echo "#define PROG_CAPTOINFO \"$(define_captoinfo)\""		>>$@
 	echo "#define PROG_INFOTOCAP \"$(define_infotocap)\""		>>$@
+	echo "#define PROG_CLEAR     \"$(define_clear)\""		>>$@
 	echo "#define PROG_RESET     \"$(define_reset)\""		>>$@
 	echo "#define PROG_INIT      \"$(define_init)\""		>>$@
 	echo "#endif /* __TRANSFORM_H */"				>>$@
@@ -248,21 +250,27 @@ toe$x: $(DEPS_TOE) $(DEPS_CURSES)
 	@ECHO_LD@ $(LINK) $(DEPS_TOE) $(LDFLAGS_TIC) -o $@
 
 DEPS_CLEAR = \
-	$(MODEL)/clear$o
+	$(MODEL)/clear$o \
+	$(MODEL)/clear_cmd$o \
+	$(MODEL)/tty_settings$o
 
 clear$x: $(DEPS_CLEAR) $(DEPS_CURSES)
 	@ECHO_LD@ $(LINK) $(DEPS_CLEAR) $(LDFLAGS_TINFO) -o $@
 
 DEPS_TABS = \
-	$(MODEL)/tabs$o
+	$(MODEL)/tabs$o \
+	$(MODEL)/tty_settings$o
 
 tabs$x: $(DEPS_TABS) $(DEPS_TABS)
 	@ECHO_LD@ $(LINK) $(DEPS_TABS) $(LDFLAGS_TINFO) -o $@
 
 DEPS_TPUT = \
 	$(MODEL)/tput$o \
+	$(MODEL)/clear_cmd$o \
+	$(MODEL)/reset_cmd$o \
 	$(MODEL)/tparm_type$o \
-	$(MODEL)/transform$o
+	$(MODEL)/transform$o \
+	$(MODEL)/tty_settings$o
 
 tput$x: $(DEPS_TPUT) $(DEPS_CURSES) transform.h
 	@ECHO_LD@ $(LINK) $(DEPS_TPUT) $(LDFLAGS_TINFO) -o $@
@@ -276,7 +284,9 @@ infocmp$x: $(DEPS_INFOCMP) $(DEPS_CURSES)
 
 DEPS_TSET = \
 	$(MODEL)/tset$o \
-	$(MODEL)/transform$o
+	$(MODEL)/reset_cmd$o \
+	$(MODEL)/transform$o \
+	$(MODEL)/tty_settings$o
 
 tset$x: $(DEPS_TSET) $(DEPS_CURSES) transform.h
 	@ECHO_LD@ $(LINK) $(DEPS_TSET) $(LDFLAGS_TINFO) -o $@

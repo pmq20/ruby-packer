@@ -1,5 +1,5 @@
 dnl***************************************************************************
-dnl Copyright (c) 2010-2014,2015 Free Software Foundation, Inc.              *
+dnl Copyright (c) 2010-2016,2018 Free Software Foundation, Inc.              *
 dnl                                                                          *
 dnl Permission is hereby granted, free of charge, to any person obtaining a  *
 dnl copy of this software and associated documentation files (the            *
@@ -28,18 +28,20 @@ dnl***************************************************************************
 dnl
 dnl Author: Thomas E. Dickey
 dnl
-dnl $Id: configure.in,v 1.60 2015/04/18 18:49:57 tom Exp $
+dnl $Id: configure.in,v 1.65 2018/01/15 20:36:23 tom Exp $
 dnl Process this file with autoconf to produce a configure script.
 dnl
-dnl See http://invisible-island.net/autoconf/ for additional information.
+dnl See https://invisible-island.net/autoconf/ for additional information.
 dnl
 dnl ---------------------------------------------------------------------------
 AC_PREREQ(2.52.20030208)
-AC_REVISION($Revision: 1.60 $)
+AC_REVISION($Revision: 1.65 $)
 AC_INIT(gen/gen.c)
 AC_CONFIG_HEADER(include/ncurses_cfg.h:include/ncurses_cfg.hin)
 
 CF_TOP_BUILDDIR
+
+CF_HELP_MESSAGE(General Options:)
 
 CF_WITH_SYSTYPE
 
@@ -53,7 +55,7 @@ CF_CFG_DEFAULTS
 CF_PROG_CC(gnatgcc gcc cc)
 AC_PROG_CPP
 AC_PROG_GCC_TRADITIONAL
-CF_PROG_CC_C_O(CC)
+CF_PROG_CC_C_O(CC,[$CFLAGS $CPPFLAGS])
 
 AC_ARG_PROGRAM
 
@@ -61,6 +63,9 @@ CF_PROG_AWK
 CF_PROG_EGREP
 AC_PROG_INSTALL
 CF_PROG_LN_S
+
+CF_PROG_INSTALL
+CF_INSTALL_OPTS
 
 AC_SYS_LONG_FILE_NAMES
 
@@ -448,6 +453,7 @@ AC_CHECK_LIB(bsd, gettimeofday,
 esac
 
 ###	Checks for header files.
+AC_CHECK_SIZEOF([signed char], 0)
 AC_STDC_HEADERS
 AC_HEADER_DIRENT
 AC_HEADER_TIME
@@ -583,6 +589,14 @@ AC_SUBST(EXTERNAL_TREE)
 # match layout used by make-tar.sh
 ADAHTML_DIR=../doc/ada
 AC_SUBST(ADAHTML_DIR)
+
+if test "x$cross_compiling" = xyes ; then
+	ADAGEN_LDFLAGS='$(CROSS_LDFLAGS)'
+else
+	ADAGEN_LDFLAGS='$(NATIVE_LDFLAGS)'
+fi
+
+AC_SUBST(ADAGEN_LDFLAGS)
 
 AC_OUTPUT( \
 	$SUB_MAKEFILES \

@@ -58,9 +58,9 @@
 <span class="comment"><EM>------------------------------------------------------------------------------</EM></span>
 <b>with</b> Ada.Unchecked_Deallocation;
 
-<b>with</b> <A HREF="interfac__ads.htm#ref_36_9">Interfaces</A>.C; <b>use</b> <A HREF="interfac__ads.htm#ref_36_9">Interfaces</A>.C;
-<b>with</b> <A HREF="interfac__ads.htm#ref_36_9">Interfaces</A>.C.Strings; <b>use</b> <A HREF="interfac__ads.htm#ref_36_9">Interfaces</A>.C.Strings;
-<b>with</b> <A HREF="interfac__ads.htm#ref_36_9">Interfaces</A>.C.Pointers;
+<b>with</b> <A HREF="interfac__ads.htm#ref_38_9">Interfaces</A>.C; <b>use</b> <A HREF="interfac__ads.htm#ref_38_9">Interfaces</A>.C;
+<b>with</b> <A HREF="interfac__ads.htm#ref_38_9">Interfaces</A>.C.Strings; <b>use</b> <A HREF="interfac__ads.htm#ref_38_9">Interfaces</A>.C.Strings;
+<b>with</b> <A HREF="interfac__ads.htm#ref_38_9">Interfaces</A>.C.Pointers;
 
 <b>with</b> <A HREF="terminal_interface__ads.htm#ref_42_9">Terminal_Interface</A>.<A HREF="terminal_interface-curses__ads.htm#ref_47_28">Curses</A>.<A HREF="terminal_interface-curses-aux__ads.htm#ref_45_35">Aux</A>;
 
@@ -70,7 +70,7 @@
 
    <b>type</b> C_Field_Array <b>is</b> <b>array</b> (Natural <b>range</b> &lt;&gt;) <b>of</b> <b>aliased</b> <A HREF="terminal_interface-curses-forms__ads.htm#ref_51_9">Field</A>;
    <b>package</b> F_Array <b>is</b> <b>new</b>
-     <A HREF="interfac__ads.htm#ref_36_9">Interfaces</A>.C.Pointers (Natural, <A HREF="terminal_interface-curses-forms__ads.htm#ref_51_9">Field</A>, C_Field_Array, <A HREF="terminal_interface-curses-forms__ads.htm#ref_54_4">Null_Field</A>);
+     <A HREF="interfac__ads.htm#ref_38_9">Interfaces</A>.C.Pointers (Natural, <A HREF="terminal_interface-curses-forms__ads.htm#ref_51_9">Field</A>, C_Field_Array, <A HREF="terminal_interface-curses-forms__ads.htm#ref_54_4">Null_Field</A>);
 
 <span class="comment"><EM>------------------------------------------------------------------------------</EM></span>
    <span class="comment"><EM>--  |</EM></span>

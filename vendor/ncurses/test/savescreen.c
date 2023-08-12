@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 2007-2011,2015 Free Software Foundation, Inc.              *
+ * Copyright (c) 2007-2017,2018 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -26,13 +26,14 @@
  * authorization.                                                           *
  ****************************************************************************/
 /*
- * $Id: savescreen.c,v 1.27 2015/03/28 23:21:28 tom Exp $
+ * $Id: savescreen.c,v 1.51 2018/01/14 17:39:47 tom Exp $
  *
  * Demonstrate save/restore functions from the curses library.
  * Thomas Dickey - 2007/7/14
  */
 
 #include <test.priv.h>
+#include <popup_msg.h>
 
 #if HAVE_SCR_DUMP
 
@@ -50,8 +51,29 @@
 # endif
 #endif
 
+#if defined(__hpux)
+#define MyMarker 'X'
+#else
+#define MyMarker ACS_DIAMOND
+#endif
+
+#define MAX_ANSI 8
+
 static bool use_init = FALSE;
 static bool keep_dumps = FALSE;
+
+#if USE_WIDEC_SUPPORT
+/* In HPUX curses, cchar_t is opaque; other implementations are not */
+static wchar_t
+BaseChar(cchar_t data)
+{
+    wchar_t my_wchar[CCHARW_MAX];
+    attr_t my_attr;
+    short my_pair;
+    getcchar(&data, my_wchar, &my_attr, &my_pair, NULL);
+    return my_wchar[0];
+}
+#endif
 
 static int
 fexists(const char *name)
@@ -106,7 +128,7 @@ after_load(void)
 }
 
 static void
-show_what(int which, int last)
+show_what(int color, int which, int last)
 {
     int y, x, n;
     time_t now;
@@ -115,7 +137,7 @@ show_what(int which, int last)
     getyx(stdscr, y, x);
 
     move(0, 0);
-    printw("Saved %d of %d (? for help)", which, last + 1);
+    printw("Color %d.  Saved %d of %d (? for help)", color, which, last + 1);
 
     now = time((time_t *) 0);
     mytime = ctime(&now);
@@ -134,36 +156,68 @@ show_what(int which, int last)
 }
 
 static int
-get_command(int which, int last)
+get_command(int color, int which, int last)
 {
     int ch;
 
     timeout(50);
 
     do {
-	show_what(which, last);
+	show_what(color, which, last);
 	ch = getch();
     } while (ch == ERR);
 
     return ch;
 }
 
-static void
-show_help(const char **help)
+static int
+dump_screen(char **files, int color, int which, int last, bool use_colors)
 {
-    WINDOW *mywin = newwin(LINES, COLS, 0, 0);
-    int n;
+#if USE_WIDEC_SUPPORT
+    cchar_t mycc;
+    int myxx;
+#endif
+    char *filename = files[which];
+    bool dumped = FALSE;
 
-    box(mywin, 0, 0);
-    wmove(mywin, 1, 1);
-    for (n = 0; help[n] != 0; ++n) {
-	wmove(mywin, 1 + n, 2);
-	wprintw(mywin, "%.*s", COLS - 4, help[n]);
+    if (filename != 0) {
+	dumped = TRUE;
+	show_what(color, ++which, last);
+	if (scr_dump(filename) == ERR) {
+	    endwin();
+	    printf("Cannot write screen-dump %s\n", filename);
+	    cleanup(files);
+	    ExitProgram(EXIT_SUCCESS);
+	}
+	if (use_colors) {
+	    int cx, cy;
+	    int pair = 1 + (which % MAX_ANSI);
+	    /*
+	     * Change the background color, to make it more obvious.  But that
+	     * changes the existing text-color.  Copy the old values from the
+	     * currently displayed screen.
+	     */
+	    bkgd((chtype) COLOR_PAIR(pair));
+	    for (cy = 1; cy < LINES; ++cy) {
+		for (cx = 0; cx < COLS; ++cx) {
+		    wmove(curscr, cy, cx);
+		    wmove(stdscr, cy, cx);
+#if USE_WIDEC_SUPPORT
+		    if (win_wch(curscr, &mycc) != ERR) {
+			myxx = wcwidth(BaseChar(mycc));
+			if (myxx > 0) {
+			    wadd_wchnstr(stdscr, &mycc, 1);
+			    cx += (myxx - 1);
+			}
+		    }
+#else
+		    waddch(stdscr, winch(curscr));
+#endif
+		}
+	    }
+	}
     }
-    wgetch(mywin);
-    delwin(mywin);
-    touchwin(stdscr);
-    refresh();
+    return dumped;
 }
 
 static void
@@ -183,8 +237,9 @@ editor_help(void)
 	"   a           toggle between '#' and graphic symbol for drawing",
 	"   c           change color drawn by line to next in palette",
 	"   h,j,k,l or arrows to move around the screen, drawing",
+	0
     };
-    show_help(msgs);
+    popup_msg(stdscr, msgs);
 }
 
 static void
@@ -199,8 +254,9 @@ replay_help(void)
 	"   q           quit",
 	"   <space>     load the next screen",
 	"   <backspace> load the previous screen",
+	0
     };
-    show_help(msgs);
+    popup_msg(stdscr, msgs);
 }
 
 static void
@@ -229,13 +285,20 @@ main(int argc, char *argv[])
     int ch;
     int which = 0;
     int last;
+    bool use_colors = FALSE;
     bool replaying = FALSE;
     bool done = FALSE;
     char **files;
     char *fill_by = 0;
 #if USE_WIDEC_SUPPORT
+    int r, g, b;
+    int cube = 0;
+    int cube0 = 16;
+    int cube1;
     cchar_t mycc;
-    int myxx;
+    static const wchar_t mywc[2] =
+    {L'#', 0};
+    bool using_rgb = FALSE;
 #endif
 
     setlocale(LC_ALL, "");
@@ -273,20 +336,150 @@ main(int argc, char *argv[])
     noecho();
     keypad(stdscr, TRUE);
     curs_set(0);
-    if (has_colors()) {
-	short pair;
-	short color;
 
-	start_color();
+    if (has_colors() && (start_color() == OK) && COLORS >= MAX_ANSI) {
+	static const struct {
+	    int fg, bg;
+	} table[MAX_ANSI] = {
+#define DATA(fg,bg) { COLOR_##fg, COLOR_##bg }
+	    DATA(RED, WHITE),
+		DATA(GREEN, WHITE),
+		DATA(YELLOW, BLACK),
+		DATA(BLUE, WHITE),
+		DATA(MAGENTA, WHITE),
+		DATA(MAGENTA, BLACK),
+		DATA(CYAN, WHITE),
+		DATA(CYAN, BLACK),
+#undef DATA
+	};
+	int n;
+	int pair = 1;
+
+	use_colors = TRUE;
 	/*
-	 * Assume pairs is the square of colors, and assign pairs going down
-	 * so that there is minimal conflict with the background color (which
-	 * counts up).  The intent is just to show how color pair values are
-	 * saved and restored.
+	 * Discounting color-pair 0 (no color), make the next 8 color pairs
+	 * useful for leaving a visually distinct trail of characters on the
+	 * screen.
 	 */
-	for (pair = 0; pair < COLOR_PAIRS; ++pair) {
-	    color = (short) (pair % (COLORS - 1));
-	    init_pair(pair, (short) (COLOR_WHITE - color), color);
+	for (n = 0; n < MAX_ANSI; ++n) {
+	    init_pair((short) pair++, (short) table[n].fg, (short) table[n].bg);
+	}
+	/*
+	 * After that, use color pairs for constructing a test-pattern, e.g.,
+	 * imitating xterm's scripts.
+	 */
+	if (fill_by == 0) {
+	    if (COLORS <= 256) {
+		for (n = 0; n < COLORS; ++n)
+		    init_pair((short) (n + MAX_ANSI), (short) n, (short) n);
+	    }
+#if HAVE_TIGETSTR && USE_WIDEC_SUPPORT
+	    else if (tigetflag("RGB") > 0) {
+		int rows = LINES - 1;
+		int cols = COLS - 1;
+		/* FIXME: test all 3 types of capability */
+		int b_max = 255;
+		int r_max = 255;
+		int g_max = 255;
+		int b_delta = (b_max / rows);
+		int r_delta = (r_max / cols);
+		int g_delta = (g_max / cols);
+		int row = 0;
+
+		b = 0;
+		using_rgb = TRUE;
+		while (row++ < rows) {
+		    int col = 0;
+		    r = 0;
+		    g = g_max;
+		    while (col++ < cols) {
+			int color = (((r * (g_max + 1)) + g) * (b_max + 1)
+				     + b + MAX_ANSI);
+#if HAVE_INIT_EXTENDED_COLOR
+			init_extended_pair(pair, color, color);
+#else
+			init_pair(pair, color, color);
+#endif
+			pair++;
+			r += r_delta;
+			g -= g_delta;
+		    }
+		    b += b_delta;
+		}
+	    }
+#endif
+	}
+	if ((fill_by == 0) && !replaying) {
+	    /*
+	     * Originally (before wide-characters) ncurses supported 16 colors.
+	     */
+	    if (COLORS >= 16 && COLORS <= 256) {
+		mvprintw(2, 0, "System colors:\n");
+		for (n = 0; n < 16; ++n) {
+		    pair = n + MAX_ANSI;
+		    addch((chtype) (' ' | COLOR_PAIR(pair)));
+		    addch((chtype) (' ' | COLOR_PAIR(pair)));
+		    if (((n + 1) % 8) == 0)
+			addch('\n');
+		}
+	    }
+	    /*
+	     * Even with ncurses, you need wide-character support to have more
+	     * than 16 colors.
+	     */
+#if USE_WIDEC_SUPPORT
+	    if (COLORS == 88) {
+		cube = 4;
+	    } else if (COLORS == 256) {
+		cube = 6;
+	    }
+	    if (cube != 0) {
+		cube0 = 16;
+		cube1 = cube0 + (cube * cube * cube);
+
+		addch('\n');
+		printw("Color cube, %dx%dx%d:\n", cube, cube, cube);
+		for (g = 0; g < cube; g++) {
+		    for (r = 0; r < cube; r++) {
+			for (b = 0; b < cube; b++) {
+			    pair = MAX_ANSI
+				+ 16
+				+ (r * cube * cube) + (g * cube) + b;
+			    setcchar(&mycc, mywc, 0, (short) pair, NULL);
+			    add_wch(&mycc);
+			    add_wch(&mycc);
+			}
+			addch(' ');
+		    }
+		    addch('\n');
+		}
+		addch('\n');
+		printw("Grayscale ramp:\n");
+		for (n = cube1; n < COLORS; ++n) {
+		    pair = n + MAX_ANSI;
+		    setcchar(&mycc, mywc, 0, (short) pair, NULL);
+		    add_wch(&mycc);
+		    add_wch(&mycc);
+		}
+	    } else if ((COLORS > 256) && using_rgb) {
+		int rows = LINES - 1;
+		int cols = COLS - 1;
+		int row = 0;
+
+		b = 0;
+		pair = MAX_ANSI;
+		while (row++ < rows) {
+		    int col = 0;
+		    while (col++ < cols) {
+			setcchar(&mycc, mywc, 0, (short) pair, &pair);
+			add_wch(&mycc);
+			++pair;
+		    }
+		    addch('\n');
+		}
+		addch('\n');
+	    }
+#endif
 	}
     }
 
@@ -309,7 +502,7 @@ main(int argc, char *argv[])
 	    }
 	    move(0, 0);
 	} else {
-	    endwin();
+	    exit_curses();
 	    fprintf(stderr, "Cannot open \"%s\"\n", fill_by);
 	    ExitProgram(EXIT_FAILURE);
 	}
@@ -321,14 +514,14 @@ main(int argc, char *argv[])
 	 * Use the last file as the initial/current screen.
 	 */
 	if (last < 0) {
-	    endwin();
+	    exit_curses();
 	    printf("No screen-dumps given\n");
 	    ExitProgram(EXIT_FAILURE);
 	}
 
 	which = last;
 	if (load_screen(files[which]) == ERR) {
-	    endwin();
+	    exit_curses();
 	    printf("Cannot load screen-dump %s\n", files[which]);
 	    ExitProgram(EXIT_FAILURE);
 	}
@@ -358,7 +551,7 @@ main(int argc, char *argv[])
 		if (++which > last)
 		    which = 0;
 		break;
-	    case '?':
+	    case HELP_KEY_1:
 		replay_help();
 		break;
 	    default:
@@ -383,10 +576,14 @@ main(int argc, char *argv[])
 	int x = 0;
 	int color = 0;
 	int altchars = 0;
+	bool dirty = use_colors || (fill_by != 0);
 
 	while (!done) {
-	    switch (get_command(which, last)) {
+	    switch (get_command(color, which, last)) {
 	    case 'n':
+		if (dirty && files[which]) {
+		    dump_screen(files, color, which, last, use_colors);
+		}
 		setup_next();
 		done = TRUE;
 		break;
@@ -395,46 +592,12 @@ main(int argc, char *argv[])
 		done = TRUE;
 		break;
 	    case ' ':
-		if (files[which] != 0) {
-		    show_what(which + 1, last);
-		    if (scr_dump(files[which]) == ERR) {
-			endwin();
-			printf("Cannot write screen-dump %s\n", files[which]);
-			cleanup(files);
-			done = TRUE;
-			break;
-		    }
-		    ++which;
-		    if (has_colors()) {
-			int cx, cy;
-			short pair = (short) (which % COLOR_PAIRS);
-			/*
-			 * Change the background color, to make it more
-			 * obvious.  But that changes the existing text-color. 
-			 * Copy the old values from the currently displayed
-			 * screen.
-			 */
-			bkgd((chtype) COLOR_PAIR(pair));
-			for (cy = 1; cy < LINES; ++cy) {
-			    for (cx = 0; cx < COLS; ++cx) {
-				wmove(curscr, cy, cx);
-				wmove(stdscr, cy, cx);
-#if USE_WIDEC_SUPPORT
-				if (win_wch(curscr, &mycc) != ERR) {
-				    myxx = wcwidth(mycc.chars[0]);
-				    if (myxx > 0) {
-					wadd_wchnstr(stdscr, &mycc, 1);
-					cx += (myxx - 1);
-				    }
-				}
-#else
-				waddch(stdscr, winch(curscr));
-#endif
-			    }
-			}
-		    }
+		if (dump_screen(files, color, which, last, use_colors)) {
+		    which = (which + 1) % MAX_ANSI;
+		    dirty = FALSE;
 		} else {
-		    beep();
+		    setup_next();
+		    done = TRUE;
 		}
 		break;
 	    case KEY_LEFT:
@@ -461,9 +624,11 @@ main(int argc, char *argv[])
 		altchars = !altchars;
 		break;
 	    case 'c':
-		color = (color + 1) % COLORS;
+		if (use_colors) {
+		    color = (color + 1) % MAX_ANSI;
+		}
 		break;
-	    case '?':
+	    case HELP_KEY_1:
 		editor_help();
 		break;
 	    default:
@@ -471,11 +636,15 @@ main(int argc, char *argv[])
 		continue;
 	    }
 	    if (!done) {
-		attr_t attr = (A_REVERSE | COLOR_PAIR(color * COLORS));
-		chtype ch2 = (altchars ? ACS_DIAMOND : '#');
+		chtype attr = A_REVERSE;
+		chtype ch2 = (altchars ? MyMarker : '#');
+		if (use_colors) {
+		    attr |= (chtype) COLOR_PAIR(color);
+		}
 		move(y, x);
-		addch(ch2 | attr);
+		AddCh(ch2 | attr);
 		move(y, x);
+		dirty = TRUE;
 	    }
 	}
 	endwin();
@@ -485,7 +654,7 @@ main(int argc, char *argv[])
 
 #else
 int
-main(int argc, char *argv[])
+main(int argc GCC_UNUSED, char *argv[]GCC_UNUSED)
 {
     printf("This program requires the screen-dump functions\n");
     ExitProgram(EXIT_FAILURE);

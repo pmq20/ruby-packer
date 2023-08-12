@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 2005-2013,2014 Free Software Foundation, Inc.              *
+ * Copyright (c) 2005-2016,2017 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -26,7 +26,7 @@
  * authorization.                                                           *
  ****************************************************************************/
 /*
- * $Id: demo_menus.c,v 1.54 2014/09/05 08:34:06 tom Exp $
+ * $Id: demo_menus.c,v 1.65 2017/11/24 21:03:30 tom Exp $
  *
  * Demonstrate a variety of functions from the menu library.
  * Thomas Dickey - 2005/4/9
@@ -75,11 +75,8 @@ top_row				-
 #ifdef NCURSES_VERSION
 #ifdef TRACE
 static unsigned save_trace = TRACE_ORDINARY | TRACE_CALLS;
-extern unsigned _nc_tracing;
 static MENU *mpTrace;
 #endif
-#else
-#undef TRACE
 #endif
 
 typedef enum {
@@ -113,6 +110,15 @@ static WINDOW *status;
 static bool loaded_file = FALSE;
 
 static char empty[1];
+static void failed(const char *s) GCC_NORETURN;
+
+static void
+failed(const char *s)
+{
+    perror(s);
+    endwin();
+    ExitProgram(EXIT_FAILURE);
+}
 
 /* Common function to allow ^T to toggle trace-mode in the middle of a test
  * so that trace-files can be made smaller.
@@ -186,9 +192,9 @@ menu_offset(MenuNo number)
     int result = 0;
 
     if (okMenuNo(number)) {
-	int spc_desc, spc_rows, spc_cols;
-
+	int spc_rows;
 #ifdef NCURSES_VERSION
+	int spc_desc, spc_cols;
 	menu_spacing(mpBanner, &spc_desc, &spc_rows, &spc_cols);
 #else
 	spc_rows = 0;
@@ -270,13 +276,6 @@ menu_create(ITEM ** items, int count, int ncols, MenuNo number)
     if (mcols + (2 * margin + x) >= COLS)
 	mcols = COLS - (2 * margin + x);
 
-#ifdef TRACE
-    if (number == eTrace)
-	menu_opts_off(result, O_ONEVALUE);
-    else
-	menu_opts_on(result, O_ONEVALUE);
-#endif
-
     menuwin = newwin(mrows + (2 * margin), mcols + (2 * margin), y, x);
     set_menu_win(result, menuwin);
     keypad(menuwin, TRUE);
@@ -284,6 +283,16 @@ menu_create(ITEM ** items, int count, int ncols, MenuNo number)
 	box(menuwin, 0, 0);
 
     set_menu_sub(result, derwin(menuwin, mrows, mcols, margin, margin));
+
+#ifdef TRACE
+    if (number == eTrace)
+	menu_opts_off(result, O_ONEVALUE);
+    else
+	menu_opts_on(result, O_ONEVALUE);
+#endif
+#if defined(NCURSES_MOUSE_VERSION) && defined(O_MOUSE_MENU)
+    menu_opts_on(result, O_MOUSE_MENU);
+#endif
 
     post_menu(result);
 
@@ -541,27 +550,31 @@ static char *
 tracetrace(unsigned tlevel)
 {
     static char *buf;
+    static size_t need = 12;
     int n;
 
     if (buf == 0) {
-	size_t need = 12;
 	for (n = 0; t_tbl[n].name != 0; n++)
 	    need += strlen(t_tbl[n].name) + 2;
 	buf = typeMalloc(char, need);
+	if (!buf)
+	    failed("tracetrace");
     }
-    sprintf(buf, "0x%02x = {", tlevel);
+    _nc_SPRINTF(buf, _nc_SLIMIT(need) "0x%02x = {", tlevel);
     if (tlevel == 0) {
-	sprintf(buf + strlen(buf), "%s, ", t_tbl[0].name);
+	_nc_STRCAT(buf, t_tbl[0].name, need);
+	_nc_STRCAT(buf, ", ", need);
     } else {
 	for (n = 1; t_tbl[n].name != 0; n++)
 	    if ((tlevel & t_tbl[n].mask) == t_tbl[n].mask) {
-		strcat(buf, t_tbl[n].name);
-		strcat(buf, ", ");
+		_nc_STRCAT(buf, t_tbl[n].name, need);
+		_nc_STRCAT(buf, ", ", need);
 	    }
     }
     if (buf[strlen(buf) - 2] == ',')
 	buf[strlen(buf) - 2] = '\0';
-    return (strcat(buf, "}"));
+    _nc_STRCAT(buf, "}", need);
+    return buf;
 }
 
 /* fake a dynamically reconfigurable menu using the 0th entry to deselect
@@ -751,6 +764,36 @@ move_menus(MENU * current, int by_y, int by_x)
     }
 }
 
+#ifdef KEY_RESIZE
+static void
+resize_menu(MENU ** menu)
+{
+#if 0
+    WINDOW *win = menu_win(*menu);
+    WINDOW *sub = menu_sub(*menu);
+#endif
+    (void) menu;
+}
+
+static void
+resize_menus(MENU * current)
+{
+    (void) current;
+
+    werase(status);
+    wnoutrefresh(status);
+    wresize(status, 1, COLS);
+    mvwin(status, LINES - 1, 0);
+
+    resize_menu(&mpBanner);
+    resize_menu(&mpFile);
+    resize_menu(&mpSelect);
+#ifdef TRACE
+    resize_menu(&mpTrace);
+#endif
+}
+#endif
+
 static void
 show_status(int ch, MENU * menu)
 {
@@ -774,7 +817,7 @@ perform_menus(void)
     int ch = ERR;
 
 #ifdef NCURSES_MOUSE_VERSION
-    mousemask(ALL_MOUSE_EVENTS, (mmask_t *) 0);
+    mousemask(BUTTON1_CLICKED, (mmask_t *) 0);
 #endif
 
     menu_display(last_menu);
@@ -803,6 +846,11 @@ perform_menus(void)
 	case KEY_SRIGHT:
 	    move_menus(last_menu, 0, 1);
 	    continue;
+#ifdef KEY_RESIZE
+	case KEY_RESIZE:
+	    resize_menus(last_menu);
+	    continue;
+#endif
 	}
 	cmd = menu_virtualize(ch);
 
@@ -836,9 +884,17 @@ perform_menus(void)
 #endif
 	    }
 
+#if defined(NCURSES_MOUSE_VERSION) && defined(O_MOUSE_MENU)
 	    if ((code == E_REQUEST_DENIED) && (cmd == KEY_MOUSE)) {
+		(void) menu_getc(mpBanner);
 		code = menu_driver(mpBanner, cmd);
+		if (code == E_REQUEST_DENIED) {
+		    MEVENT event;
+		    if (menu_getc(mpBanner) == KEY_MOUSE)
+			getmouse(&event);	/* give up */
+		}
 	    }
+#endif
 
 	    break;
 	}
@@ -868,10 +924,6 @@ perform_menus(void)
 	    beep();
 	continue;
     }
-
-#ifdef NCURSES_MOUSE_VERSION
-    mousemask(0, (mmask_t *) 0);
-#endif
 }
 
 static void
@@ -950,7 +1002,7 @@ main(int argc, char *argv[])
 
     setlocale(LC_ALL, "");
 
-    while ((c = getopt(argc, argv, "a:de:fhmp:s:t:")) != -1) {
+    while ((c = getopt(argc, argv, "fht:")) != -1) {
 	switch (c) {
 #if HAVE_RIPOFFLINE
 	case 'f':

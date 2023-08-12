@@ -1,5 +1,5 @@
 .\"***************************************************************************
-.\" Copyright (c) 1998-2013,2015 Free Software Foundation, Inc.              *
+.\" Copyright (c) 1998-2016,2017 Free Software Foundation, Inc.              *
 .\"                                                                          *
 .\" Permission is hereby granted, free of charge, to any person obtaining a  *
 .\" copy of this software and associated documentation files (the            *
@@ -26,7 +26,7 @@
 .\" authorization.                                                           *
 .\"***************************************************************************
 .\"
-.\" $Id: curs_inopts.3x,v 1.19 2015/04/11 10:21:38 tom Exp $
+.\" $Id: curs_inopts.3x,v 1.26 2017/11/21 00:47:10 tom Exp $
 .TH curs_inopts 3X ""
 .ie \n(.g .ds `` \(lq
 .el       .ds `` ``
@@ -93,7 +93,7 @@
 .br
 .SH DESCRIPTION
 The \fBncurses\fP library provides several functions which let an application
-change way input from the terminal is handled.
+change the way input from the terminal is handled.
 Some are global, applying to all windows.
 Others apply only to a specific window.
 Window-specific settings are not automatically applied to new or derived
@@ -123,7 +123,7 @@ discussion of how these routines interact with \fBecho\fR and \fBnoecho\fR.]
 .SS echo/noecho
 .PP
 The \fBecho\fR and \fBnoecho\fR routines control whether characters typed by
-the user are echoed by \fBgetch\fR as they are typed.
+the user are echoed by \fBgetch\fR(3X) as they are typed.
 Echoing by the tty
 driver is always disabled, but initially \fBgetch\fR is in echo mode, so
 characters typed are echoed.
@@ -140,20 +140,20 @@ The \fBhalfdelay\fR routine is used for half-delay mode, which is similar to
 \fBcbreak\fR mode in that characters typed by the user are immediately
 available to the program.
 However, after blocking for \fItenths\fR tenths of
-seconds, ERR is returned if nothing has been typed.
-The value of \fBtenths\fR
+seconds, \fBERR\fP is returned if nothing has been typed.
+The value of \fItenths\fR
 must be a number between 1 and 255.
 Use \fBnocbreak\fR to leave half-delay
 mode.
 .\"
 .SS intrflush
 .PP
-If the \fBintrflush\fR option is enabled, (\fIbf\fR is \fBTRUE\fR), when an
-interrupt key is pressed on the keyboard (interrupt, break, quit) all output in
+If the \fBintrflush\fR option is enabled (\fIbf\fR is \fBTRUE\fR), and an
+interrupt key is pressed on the keyboard (interrupt, break, quit), all output in
 the tty driver queue will be flushed, giving the effect of faster response to
 the interrupt, but causing \fBcurses\fR to have the wrong idea of what is on
 the screen.
-Disabling (\fIbf\fR is \fBFALSE\fR), the option prevents the
+Disabling the option (\fIbf\fR is \fBFALSE\fR) prevents the
 flush.
 The default for the option is inherited from the tty driver settings.
 The window argument is ignored.
@@ -163,7 +163,7 @@ The window argument is ignored.
 The \fBkeypad\fR option enables the keypad of the user's terminal.
 If
 enabled (\fIbf\fR is \fBTRUE\fR), the user can press a function key
-(such as an arrow key) and \fBwgetch\fR returns a single value
+(such as an arrow key) and \fBwgetch\fR(3X) returns a single value
 representing the function key, as in \fBKEY_LEFT\fR.
 If disabled
 (\fIbf\fR is \fBFALSE\fR), \fBcurses\fR does not treat function keys
@@ -171,7 +171,7 @@ specially and the program has to interpret the escape sequences
 itself.
 If the keypad in the terminal can be turned on (made to
 transmit) and off (made to work locally), turning on this option
-causes the terminal keypad to be turned on when \fBwgetch\fR is
+causes the terminal keypad to be turned on when \fBwgetch\fR(3X) is
 called.
 The default value for keypad is \fBFALSE\fP.
 .\"
@@ -200,7 +200,7 @@ If no input is ready, \fBgetch\fR returns \fBERR\fR.
 If disabled
 (\fIbf\fR is \fBFALSE\fR), \fBgetch\fR waits until a key is pressed.
 .PP
-While interpreting an input escape sequence, \fBwgetch\fR sets a timer
+While interpreting an input escape sequence, \fBwgetch\fR(3X) sets a timer
 while waiting for the next character.
 If \fBnotimeout(\fR\fIwin\fR,
 \fBTRUE\fR) is called, then \fBwgetch\fR does not set a timer.
@@ -229,7 +229,7 @@ output queues associated with the \fBINTR\fR, \fBQUIT\fR and
 When
 \fBqiflush\fR is called, the queues will be flushed when these control
 characters are read.
-You may want to call \fBnoqiflush()\fR in a signal
+You may want to call \fBnoqiflush\fR in a signal
 handler if you want output to continue as though the interrupt
 had not occurred, after the handler exits.
 .\"
@@ -255,7 +255,7 @@ The \fBcurses\fR library does \*(``line-breakout optimization\*(''
 by looking for typeahead periodically while updating the screen.
 If input is found, and it is coming from a tty,
 the current update is postponed until
-\fBrefresh\fR or \fBdoupdate\fR is called again.
+\fBrefresh\fR(3X) or \fBdoupdate\fR is called again.
 This allows faster response to commands typed in advance.
 Normally, the input FILE
 pointer passed to \fBnewterm\fR, or \fBstdin\fR in the case that
@@ -266,9 +266,10 @@ If \fIfd\fR is
 \-1, then no typeahead checking is done.
 .\"
 .SH RETURN VALUE
-All routines that return an integer return \fBERR\fR upon failure and OK (SVr4
-specifies only "an integer value other than \fBERR\fR") upon successful
-completion, unless otherwise noted in the preceding routine descriptions.
+All routines that return an integer return \fBERR\fR upon failure and \fBOK\fP
+(SVr4 specifies only \*(``an integer value other than \fBERR\fR\*('')
+upon successful completion,
+unless otherwise noted in the preceding routine descriptions.
 .PP
 X/Open does not define any error conditions.
 In this implementation,
@@ -296,19 +297,19 @@ just after initialization, even if your program remains in cooked mode.
 When \fBkeypad\fP is first enabled,
 ncurses loads the key-definitions for the current terminal description.
 If the terminal description includes extended string capabilities,
-e.g., from using the \fB\-x\fP option of @TIC@,
+e.g., from using the \fB\-x\fP option of \fB@TIC@\fP,
 then ncurses also defines keys for the capabilities whose names
-begin with "k".
+begin with \*(``k\*(''.
 The corresponding keycodes are generated and (depending on previous
 loads of terminal descriptions) may differ from one execution of a
 program to the next.
 The generated keycodes are recognized by the \fBkeyname\fP function
-(which will then return a name beginning with "k" denoting the
-terminfo capability name rather than "K", used for curses key-names).
+(which will then return a name beginning with \*(``k\*('' denoting the
+terminfo capability name rather than \*(``K\*('', used for curses key-names).
 On the other hand, an application can use \fBdefine_key\fP to establish
 a specific keycode for a given string.
 This makes it possible for an application to check for an extended
-capability's presence with \fItigetstr\fP,
+capability's presence with \fBtigetstr\fP,
 and reassign the keycode to match its own needs.
 .PP
 Low-level applications can use \fBtigetstr\fP to obtain the definition
@@ -334,7 +335,7 @@ Note that \fBecho\fR, \fBnoecho\fR, \fBhalfdelay\fR, \fBintrflush\fR,
 \fBqiflush\fR, \fBtimeout\fR, and \fBwtimeout\fR may be macros.
 .PP
 The \fBnoraw\fR and \fBnocbreak\fR calls follow historical practice in that
-they attempt to restore to normal (`cooked') mode from raw and cbreak modes
+they attempt to restore to normal (\*(``cooked\*('') mode from raw and cbreak modes
 respectively.
 Mixing raw/noraw and cbreak/nocbreak calls leads to tty driver
 control states that are hard to predict or understand; it is not recommended.

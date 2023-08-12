@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 2004-2010,2011 Free Software Foundation, Inc.              *
+ * Copyright (c) 2004-2011,2016 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -39,7 +39,7 @@
 #include <wctype.h>
 #endif
 
-MODULE_ID("$Id: lib_add_wch.c,v 1.12 2011/03/22 09:31:15 Petr.Pavlu Exp $")
+MODULE_ID("$Id: lib_add_wch.c,v 1.13 2016/05/28 23:36:34 tom Exp $")
 
 /* clone/adapt lib_addch.c */
 static const cchar_t blankchar = NewChar(BLANK_TEXT);
@@ -55,7 +55,7 @@ static const cchar_t blankchar = NewChar(BLANK_TEXT);
  */
 
 /* Return bit mask for clearing color pair number if given ch has color */
-#define COLOR_MASK(ch) (~(attr_t)((ch) & A_COLOR ? A_COLOR : 0))
+#define COLOR_MASK(ch) (~(attr_t)(((ch) & A_COLOR) ? A_COLOR : 0))
 
 static NCURSES_INLINE cchar_t
 render_char(WINDOW *win, cchar_t ch)

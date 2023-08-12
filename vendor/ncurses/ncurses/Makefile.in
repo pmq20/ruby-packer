@@ -1,6 +1,6 @@
-# $Id: Makefile.in,v 1.147 2015/08/05 23:15:41 tom Exp $
+# $Id: Makefile.in,v 1.155 2018/01/15 19:28:45 tom Exp $
 ##############################################################################
-# Copyright (c) 1998-2014,2015 Free Software Foundation, Inc.                #
+# Copyright (c) 1998-2017,2018 Free Software Foundation, Inc.                #
 #                                                                            #
 # Permission is hereby granted, free of charge, to any person obtaining a    #
 # copy of this software and associated documentation files (the "Software"), #
@@ -83,7 +83,7 @@ LT_UNDEF	= @LT_UNDEF@
 
 INSTALL		= @INSTALL@
 INSTALL_LIB	= @INSTALL@ @INSTALL_LIB@
-INSTALL_PROG	= @INSTALL_PROGRAM@
+INSTALL_PROG	= @INSTALL_PROGRAM@ @INSTALL_OPT_S@
 INSTALL_DATA	= @INSTALL_DATA@
 
 AR		= @AR@
@@ -101,7 +101,7 @@ CPP		= @CPP@
 CFLAGS		= @CFLAGS@
 
 INCDIR		= $(srcdir)/../include
-CPPFLAGS	= -DHAVE_CONFIG_H @CPPFLAGS@
+CPPFLAGS	= -DHAVE_CONFIG_H -I../ncurses @CPPFLAGS@
 
 CCFLAGS		= $(CPPFLAGS) $(CFLAGS)
 
@@ -196,6 +196,8 @@ TEST_PROGS = \
 	hashmap$x \
 	lib_mvcur$x
 
+LOCAL_LIBDIR	= @top_builddir@/lib
+
 base	 = $(srcdir)/base
 serial	 = $(srcdir)/tty
 tinfo	 = $(srcdir)/tinfo
@@ -204,8 +206,9 @@ wide	 = $(srcdir)/widechar
 win32con = $(srcdir)/win32con
 
 ################################################################################
-all \
-libs ::		$(AUTO_SRC) ../lib $(LIBRARIES)
+all libs ::	$(AUTO_SRC) ../lib $(LIBRARIES)
+
+@CHECK_BUILD@all libs ::	report_offsets$(BUILD_EXEEXT) 
 
 sources:	$(AUTO_SRC)
 
@@ -225,7 +228,7 @@ init_keytry.h: make_keys$(BUILD_EXEEXT) keys.list
 	./make_keys$(BUILD_EXEEXT) keys.list > $@
 
 keys.list :	$(tinfo)/MKkeys_list.sh
-	AWK=$(AWK) $(SHELL) $(tinfo)/MKkeys_list.sh $(TERMINFO_CAPS) | sort >$@
+	AWK=$(AWK) $(SHELL) $(tinfo)/MKkeys_list.sh $(TERMINFO_CAPS) | LC_ALL=C sort >$@
 
 make_keys$(BUILD_EXEEXT) : \
 		$(tinfo)/make_keys.c \
@@ -236,6 +239,11 @@ make_hash$(BUILD_EXEEXT) : \
 		$(tinfo)/make_hash.c \
 		../include/hashsize.h
 	$(BUILD_CC) -o $@ $(BUILD_CPPFLAGS) $(BUILD_CCFLAGS) $(tinfo)/make_hash.c $(BUILD_LDFLAGS) $(BUILD_LIBS)
+
+report_offsets$(BUILD_EXEEXT) : \
+		$(srcdir)/report_offsets.c
+	$(BUILD_CC) -o $@ $(BUILD_CPPFLAGS) $(BUILD_CCFLAGS) $(srcdir)/report_offsets.c $(BUILD_LDFLAGS) $(BUILD_LIBS)
+	./report_offsets$(BUILD_EXEEXT)
 
 ./expanded.c : $(srcdir)/curses.priv.h $(serial)/MKexpanded.sh
 	$(SHELL) -e $(serial)/MKexpanded.sh "$(CPP)" $(CPPFLAGS) > $@
@@ -266,13 +274,15 @@ tags:
 @MAKE_UPPER_TAGS@	$(ETAGS) *.[ch] */*.[ch]
 
 mostlyclean ::
-	-rm -f core tags TAGS *~ *.bak *.i *.ln *.atac trace
+	-rm -f core tags TAGS *~ *.bak *.i *.ln *.atac
+	-test -d trace || rm -f trace
 	-rm -f $(TEST_PROGS)
 
 clean :: mostlyclean
 	-rm -f $(AUTO_SRC)
 	-rm -f make_keys$(BUILD_EXEEXT)
 	-rm -f make_hash$(BUILD_EXEEXT)
+	-rm -f report_offsets$(BUILD_EXEEXT)
 	-rm -rf .libs *.dSYM *.map
 
 distclean :: clean

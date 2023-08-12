@@ -1,5 +1,5 @@
 .\"***************************************************************************
-.\" Copyright (c) 1998-2010,2015 Free Software Foundation, Inc.              *
+.\" Copyright (c) 1998-2016,2017 Free Software Foundation, Inc.              *
 .\"                                                                          *
 .\" Permission is hereby granted, free of charge, to any person obtaining a  *
 .\" copy of this software and associated documentation files (the            *
@@ -26,7 +26,7 @@
 .\" authorization.                                                           *
 .\"***************************************************************************
 .\"
-.\" $Id: curs_outopts.3x,v 1.26 2015/07/21 00:23:43 tom Exp $
+.\" $Id: curs_outopts.3x,v 1.28 2017/01/07 19:25:15 tom Exp $
 .TH curs_outopts 3X ""
 .na
 .hy 0
@@ -70,7 +70,7 @@
 These routines set options that change the style of output within
 \fBcurses\fR.
 All options are initially \fBFALSE\fR, unless otherwise stated.
-It is not necessary to turn these options off before calling \fBendwin\fR.
+It is not necessary to turn these options off before calling \fBendwin\fR(3X).
 .SS clearok
 .PP
 If \fBclearok\fR is called with \fBTRUE\fR as argument, the next
@@ -189,8 +189,8 @@ if the window pointer is null.
 .SH PORTABILITY
 These functions are described in the XSI Curses standard, Issue 4.
 .PP
-The XSI Curses standard is ambiguous on the question of whether \fBraw\fR()
-should disable the CRLF translations controlled by \fBnl\fR() and \fBnonl\fR().
+The XSI Curses standard is ambiguous on the question of whether \fBraw\fR
+should disable the CRLF translations controlled by \fBnl\fR and \fBnonl\fR.
 BSD curses did turn off these translations; AT&T curses (at least as late as
 SVr1) did not.
 We choose to do so, on the theory that a programmer requesting

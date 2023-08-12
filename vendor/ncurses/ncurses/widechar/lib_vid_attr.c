@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 2002-2013,2014 Free Software Foundation, Inc.              *
+ * Copyright (c) 2002-2014,2017 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -36,7 +36,7 @@
 #define CUR SP_TERMTYPE
 #endif
 
-MODULE_ID("$Id: lib_vid_attr.c,v 1.23 2014/06/07 22:13:46 tom Exp $")
+MODULE_ID("$Id: lib_vid_attr.c,v 1.25 2017/06/24 13:22:27 tom Exp $")
 
 #define doPut(mode) \
 	TPUTS_TRACE(#mode); \
@@ -51,12 +51,12 @@ MODULE_ID("$Id: lib_vid_attr.c,v 1.23 2014/06/07 22:13:46 tom Exp $")
 	/* if there is no current screen, assume we *can* do color */
 #define SetColorsIf(why, old_attr, old_pair) \
 	if (can_color && (why)) { \
-		TR(TRACE_ATTRS, ("old pair = %d -- new pair = %d", old_pair, pair)); \
-		if ((pair != old_pair) \
-		 || (fix_pair0 && (pair == 0)) \
+		TR(TRACE_ATTRS, ("old pair = %d -- new pair = %d", old_pair, color_pair)); \
+		if ((color_pair != old_pair) \
+		 || (fix_pair0 && (color_pair == 0)) \
 		 || (reverse ^ ((old_attr & A_REVERSE) != 0))) { \
 		    NCURSES_SP_NAME(_nc_do_color) (NCURSES_SP_ARGx \
-						   old_pair, pair, \
+						   old_pair, color_pair, \
 						   reverse, outc); \
 		} \
 	}
@@ -68,10 +68,11 @@ MODULE_ID("$Id: lib_vid_attr.c,v 1.23 2014/06/07 22:13:46 tom Exp $")
 NCURSES_EXPORT(int)
 NCURSES_SP_NAME(vid_puts) (NCURSES_SP_DCLx
 			   attr_t newmode,
-			   NCURSES_PAIRS_T pair,
-			   void *opts GCC_UNUSED,
+			   NCURSES_PAIRS_T pair_arg,
+			   void *opts OPTIONAL_PAIR,
 			   NCURSES_SP_OUTC outc)
 {
+    int color_pair = pair_arg;
 #if NCURSES_EXT_COLORS
     static attr_t previous_attr = A_NORMAL;
     static int previous_pair = 0;
@@ -85,8 +86,12 @@ NCURSES_SP_NAME(vid_puts) (NCURSES_SP_DCLx
 #define fix_pair0 FALSE
 #endif
 
+    if (!IsValidTIScreen(SP_PARM))
+	returnCode(ERR);
+
     newmode &= A_ATTRIBUTES;
-    T((T_CALLED("vid_puts(%s,%d)"), _traceattr(newmode), pair));
+    set_extended_pair(opts, color_pair);
+    T((T_CALLED("vid_puts(%s,%d)"), _traceattr(newmode), color_pair));
 
     /* this allows us to go on whether or not newterm() has been called */
     if (SP_PARM) {
@@ -107,7 +112,7 @@ NCURSES_SP_NAME(vid_puts) (NCURSES_SP_DCLx
      * If we have a terminal that cannot combine color with video
      * attributes, use the colors in preference.
      */
-    if ((pair != 0
+    if ((color_pair != 0
 	 || fix_pair0)
 	&& (no_color_video > 0)) {
 	/*
@@ -136,7 +141,7 @@ NCURSES_SP_NAME(vid_puts) (NCURSES_SP_DCLx
     }
 
     if (newmode == previous_attr
-	&& pair == previous_pair)
+	&& color_pair == previous_pair)
 	returnCode(OK);
 
     if (reverse) {
@@ -146,7 +151,7 @@ NCURSES_SP_NAME(vid_puts) (NCURSES_SP_DCLx
     turn_off = (~newmode & previous_attr) & ALL_BUT_COLOR;
     turn_on = (newmode & ~(previous_attr & TPARM_ATTR)) & ALL_BUT_COLOR;
 
-    SetColorsIf(((pair == 0) && !fix_pair0), previous_attr, previous_pair);
+    SetColorsIf(((color_pair == 0) && !fix_pair0), previous_attr, previous_pair);
 
     if (newmode == A_NORMAL) {
 	if ((previous_attr & A_ALTCHARSET) && exit_alt_charset_mode) {
@@ -173,7 +178,7 @@ NCURSES_SP_NAME(vid_puts) (NCURSES_SP_DCLx
 	    previous_pair = 0;
 	}
 
-	SetColorsIf((pair != 0) || fix_pair0, previous_attr, previous_pair);
+	SetColorsIf((color_pair != 0) || fix_pair0, previous_attr, previous_pair);
     } else if (set_attributes) {
 	if (turn_on || turn_off) {
 	    TPUTS_TRACE("set_attributes");
@@ -201,7 +206,7 @@ NCURSES_SP_NAME(vid_puts) (NCURSES_SP_DCLx
 	    }
 	}
 #endif
-	SetColorsIf((pair != 0) || fix_pair0, previous_attr, previous_pair);
+	SetColorsIf((color_pair != 0) || fix_pair0, previous_attr, previous_pair);
     } else {
 
 	TR(TRACE_ATTRS, ("turning %s off", _traceattr(turn_off)));
@@ -226,7 +231,7 @@ NCURSES_SP_NAME(vid_puts) (NCURSES_SP_DCLx
 	    previous_attr &= ALL_BUT_COLOR;
 	    previous_pair = 0;
 	}
-	SetColorsIf((pair != 0) || fix_pair0, previous_attr, previous_pair);
+	SetColorsIf((color_pair != 0) || fix_pair0, previous_attr, previous_pair);
 
 	TR(TRACE_ATTRS, ("turning %s on", _traceattr(turn_on)));
 	/* *INDENT-OFF* */
@@ -259,16 +264,17 @@ NCURSES_SP_NAME(vid_puts) (NCURSES_SP_DCLx
 
     if (SP_PARM) {
 	SetAttr(SCREEN_ATTRS(SP_PARM), newmode);
-	SetPair(SCREEN_ATTRS(SP_PARM), pair);
+	SetPair(SCREEN_ATTRS(SP_PARM), color_pair);
     } else {
 	previous_attr = newmode;
-	previous_pair = pair;
+	previous_pair = color_pair;
     }
 
     returnCode(OK);
 #else
-    T((T_CALLED("vid_puts(%s,%d)"), _traceattr(newmode), (int) pair));
-    set_color(newmode, pair);
+    T((T_CALLED("vid_puts(%s,%d)"), _traceattr(newmode), color_pair));
+    (void) opts;
+    set_color(newmode, color_pair);
     returnCode(NCURSES_SP_NAME(vidputs) (NCURSES_SP_ARGx newmode, outc));
 #endif
 }
@@ -276,14 +282,14 @@ NCURSES_SP_NAME(vid_puts) (NCURSES_SP_DCLx
 #if NCURSES_SP_FUNCS
 NCURSES_EXPORT(int)
 vid_puts(attr_t newmode,
-	 NCURSES_PAIRS_T pair,
+	 NCURSES_PAIRS_T pair_arg,
 	 void *opts GCC_UNUSED,
 	 NCURSES_OUTC outc)
 {
     SetSafeOutcWrapper(outc);
     return NCURSES_SP_NAME(vid_puts) (CURRENT_SCREEN,
 				      newmode,
-				      pair,
+				      pair_arg,
 				      opts,
 				      _nc_outc_wrapper);
 }
@@ -293,22 +299,22 @@ vid_puts(attr_t newmode,
 NCURSES_EXPORT(int)
 NCURSES_SP_NAME(vid_attr) (NCURSES_SP_DCLx
 			   attr_t newmode,
-			   NCURSES_PAIRS_T pair,
+			   NCURSES_PAIRS_T pair_arg,
 			   void *opts)
 {
-    T((T_CALLED("vid_attr(%s,%d)"), _traceattr(newmode), (int) pair));
+    T((T_CALLED("vid_attr(%s,%d)"), _traceattr(newmode), (int) pair_arg));
     returnCode(NCURSES_SP_NAME(vid_puts) (NCURSES_SP_ARGx
 					  newmode,
-					  pair,
+					  pair_arg,
 					  opts,
 					  NCURSES_SP_NAME(_nc_putchar)));
 }
 
 #if NCURSES_SP_FUNCS
 NCURSES_EXPORT(int)
-vid_attr(attr_t newmode, NCURSES_PAIRS_T pair, void *opts)
+vid_attr(attr_t newmode, NCURSES_PAIRS_T pair_arg, void *opts)
 {
-    return NCURSES_SP_NAME(vid_attr) (CURRENT_SCREEN, newmode, pair, opts);
+    return NCURSES_SP_NAME(vid_attr) (CURRENT_SCREEN, newmode, pair_arg, opts);
 }
 #endif
 

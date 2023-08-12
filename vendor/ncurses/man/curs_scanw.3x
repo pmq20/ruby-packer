@@ -1,5 +1,5 @@
 .\"***************************************************************************
-.\" Copyright (c) 1998-2006,2010 Free Software Foundation, Inc.              *
+.\" Copyright (c) 1998-2010,2017 Free Software Foundation, Inc.              *
 .\"                                                                          *
 .\" Permission is hereby granted, free of charge, to any person obtaining a  *
 .\" copy of this software and associated documentation files (the            *
@@ -26,7 +26,7 @@
 .\" authorization.                                                           *
 .\"***************************************************************************
 .\"
-.\" $Id: curs_scanw.3x,v 1.17 2010/12/04 18:40:45 tom Exp $
+.\" $Id: curs_scanw.3x,v 1.19 2017/11/21 00:46:31 tom Exp $
 .TH curs_scanw 3X ""
 .SH NAME
 \fBscanw\fR,
@@ -55,7 +55,7 @@ The \fBscanw\fR, \fBwscanw\fR and \fBmvscanw\fR routines are analogous to
 for \fBsscanf\fR(3).  Fields which do not map to a variable in the \fIfmt\fR
 field are lost.
 .PP
-The \fBvwscanw\fR and \fBvw_scanw\fR routines are analogous to \fBvscanf\fR.
+The \fBvwscanw\fR and \fBvw_scanw\fR routines are analogous to \fBvscanf\fR(3).
 They perform a \fBwscanw\fR using a variable argument list.
 The third argument is a \fIva_list\fR,
 a pointer to a list of arguments, as defined in \fB<stdarg.h>\fR.
@@ -82,13 +82,13 @@ This implementation uses \fB<stdarg.h>\fR for both, because that header
 is included in \fB<curses.h\fR>.
 .LP
 Both XSI and The Single Unix Specification, Version 2 state that these
-functions return ERR or OK.
-Since the underlying \fBscanf\fR can return the number of items scanned,
+functions return \fBERR\fP or \fBOK\fP.
+Since the underlying \fBscanf\fR(3) can return the number of items scanned,
 and the SVr4 code was documented to use this feature,
 this is probably an editing error which was introduced in XSI,
 rather than being done intentionally.
-Portable applications should only test if the return value is ERR,
-since the OK value (zero) is likely to be misleading.
+Portable applications should only test if the return value is \fBERR\fP,
+since the \fBOK\fP value (zero) is likely to be misleading.
 One possible way to get useful results would be to use a "%n" conversion
 at the end of the format string to ensure that something was processed.
 .SH SEE ALSO

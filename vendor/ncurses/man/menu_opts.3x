@@ -1,6 +1,6 @@
 '\" t
 .\"***************************************************************************
-.\" Copyright (c) 1998-2007,2010 Free Software Foundation, Inc.              *
+.\" Copyright (c) 1998-2015,2016 Free Software Foundation, Inc.              *
 .\"                                                                          *
 .\" Permission is hereby granted, free of charge, to any person obtaining a  *
 .\" copy of this software and associated documentation files (the            *
@@ -27,9 +27,12 @@
 .\" authorization.                                                           *
 .\"***************************************************************************
 .\"
-.\" $Id: menu_opts.3x,v 1.12 2010/12/04 18:40:45 tom Exp $
+.\" $Id: menu_opts.3x,v 1.14 2016/03/26 22:42:41 tom Exp $
 .TH menu_opts 3X ""
 .SH NAME
+\fBset_menu_opts\fP,
+\fBmenu_opts_on\fP,
+\fBmenu_opts_off\fP,
 \fBmenu_opts\fR \- set and get menu options
 .SH SYNOPSIS
 \fB#include <menu.h>\fR
@@ -74,6 +77,12 @@ Move the cursor to within the item name while pattern-matching.
 O_NONCYCLIC
 Don't wrap around next-item and previous-item,
 requests to the other end of the menu.
+.TP 5
+O_MOUSE_MENU
+If user clicks with the mouse
+and it does not fall on the currently active menu,
+push \fBKEY_MOUSE\fP and the \fBMEVENT\fP data
+back on the queue to allow processing in another part of the calling program.
 .SH RETURN VALUE
 Except for \fBmenu_opts\fR, each routine returns one of the following:
 .TP 5

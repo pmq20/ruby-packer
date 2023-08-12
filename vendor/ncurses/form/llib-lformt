@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 2010-2010,2015 Free Software Foundation, Inc.              *
+ * Copyright (c) 2010-2015,2017 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -108,6 +108,11 @@ chtype	field_back(
 int	set_current_field(
 		FORM	*form, 
 		FIELD	*field)
+		{ return(*(int *)0); }
+
+#undef unfocus_current_field
+int	unfocus_current_field(
+		FORM	*const form)
 		{ return(*(int *)0); }
 
 #undef current_field
@@ -458,6 +463,11 @@ int	_nc_Synchronize_Options(
 		Field_Options newopts)
 		{ return(*(int *)0); }
 
+#undef _nc_Unset_Current_Field
+void	_nc_Unset_Current_Field(
+		FORM	*form)
+		{ /* void */ }
+
 #undef _nc_Set_Current_Field
 int	_nc_Set_Current_Field(
 		FORM	*form, 
@@ -795,8 +805,6 @@ FIELDTYPE *_nc_TYPE_IPV4(void)
 
 /* ./fty_num.c */
 
-#include <locale.h>
-
 typedef struct
   {
     int precision;
@@ -822,8 +830,6 @@ FIELDTYPE *_nc_TYPE_NUMERIC(void)
 		{ return(*(FIELDTYPE **)0); }
 
 /* ./fty_regex.c */
-
-#include <regex.h>
 
 typedef struct
   {

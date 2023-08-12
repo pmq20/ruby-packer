@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 1998-2014,2015 Free Software Foundation, Inc.              *
+ * Copyright (c) 1998-2015,2016 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -42,7 +42,7 @@
 
 #include <curses.priv.h>
 
-MODULE_ID("$Id: lib_getch.c,v 1.132 2015/05/09 17:10:41 tom Exp $")
+MODULE_ID("$Id: lib_getch.c,v 1.136 2016/09/10 21:59:16 tom Exp $")
 
 #include <fifo_defs.h>
 
@@ -224,11 +224,6 @@ fifo_push(SCREEN *sp EVENTLIST_2nd(_nc_eventlist * evl))
     if (tail < 0)
 	return ERR;
 
-#ifdef HIDE_EINTR
-  again:
-    errno = 0;
-#endif
-
 #ifdef NCURSES_WGETCH_EVENTS
     if (evl
 #if USE_GPM_SUPPORT || USE_EMX_MOUSE || USE_SYSMOUSE
@@ -313,24 +308,6 @@ fifo_push(SCREEN *sp EVENTLIST_2nd(_nc_eventlist * evl))
 #endif
     }
 
-#ifdef HIDE_EINTR
-    /*
-     * Under System V curses with non-restarting signals, getch() returns
-     * with value ERR when a handled signal keeps it from completing.
-     * If signals restart system calls, OTOH, the signal is invisible
-     * except to its handler.
-     *
-     * We don't want this difference to show.  This piece of code
-     * tries to make it look like we always have restarting signals.
-     */
-    if (n <= 0 && errno == EINTR
-# if USE_PTHREADS_EINTR
-	&& (_nc_globals.have_sigwinch == 0)
-# endif
-	)
-	goto again;
-#endif
-
     if ((n == -1) || (n == 0)) {
 	TR(TRACE_IEVENT, ("read(%d,&ch,1)=%d, errno=%d", sp->_ifd, n, errno));
 	ch = ERR;
@@ -360,7 +337,7 @@ fifo_clear(SCREEN *sp)
     tail = peek = 0;
 }
 
-static int kgetch(SCREEN *EVENTLIST_2nd(_nc_eventlist * evl));
+static int kgetch(SCREEN *, bool EVENTLIST_2nd(_nc_eventlist *));
 
 static void
 recur_wrefresh(WINDOW *win)
@@ -537,7 +514,7 @@ _nc_wgetch(WINDOW *win,
 	int runcount = 0;
 
 	do {
-	    ch = kgetch(sp EVENTLIST_2nd(evl));
+	    ch = kgetch(sp, win->_notimeout EVENTLIST_2nd(evl));
 	    if (ch == KEY_MOUSE) {
 		++runcount;
 		if (sp->_mouse_inline(sp))
@@ -649,7 +626,7 @@ wgetch_events(WINDOW *win, _nc_eventlist * evl)
     int code;
     int value;
 
-    T((T_CALLED("wgetch_events(%p,%p)"), win, evl));
+    T((T_CALLED("wgetch_events(%p,%p)"), (void *) win, (void *) evl));
     code = _nc_wgetch(win,
 		      &value,
 		      _nc_use_meta(win)
@@ -692,11 +669,11 @@ wgetch(WINDOW *win)
 */
 
 static int
-kgetch(SCREEN *sp EVENTLIST_2nd(_nc_eventlist * evl))
+kgetch(SCREEN *sp, bool forever EVENTLIST_2nd(_nc_eventlist * evl))
 {
     TRIES *ptr;
     int ch = 0;
-    int timeleft = GetEscdelay(sp);
+    int timeleft = forever ? 9999999 : GetEscdelay(sp);
 
     TR(TRACE_IEVENT, ("kgetch() called"));
 

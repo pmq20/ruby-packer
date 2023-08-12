@@ -1,5 +1,5 @@
 .\"***************************************************************************
-.\" Copyright (c) 1998-2013,2014 Free Software Foundation, Inc.              *
+.\" Copyright (c) 1998-2016,2017 Free Software Foundation, Inc.              *
 .\"                                                                          *
 .\" Permission is hereby granted, free of charge, to any person obtaining a  *
 .\" copy of this software and associated documentation files (the            *
@@ -26,7 +26,7 @@
 .\" authorization.                                                           *
 .\"***************************************************************************
 .\"
-.\" $Id: tic.1m,v 1.60 2014/05/24 22:00:11 tom Exp $
+.\" $Id: tic.1m,v 1.66 2017/11/18 23:51:17 tom Exp $
 .TH @TIC@ 1M ""
 .ie \n(.g .ds `` \(lq
 .el       .ds `` ``
@@ -35,7 +35,8 @@
 .ds n 5
 .ds d @TERMINFO@
 .de bP
-.IP \(bu 4
+.ie n  .IP \(bu 4
+.el    .IP \(bu 2
 ..
 .SH NAME
 \fB@TIC@\fR \- the \fIterminfo\fR entry-description compiler
@@ -54,10 +55,12 @@ N\
 T\
 U\
 V\
+W\
 a\
 c\
 f\
 g\
+q\
 r\
 s\
 t\
@@ -65,6 +68,7 @@ x\
 \fR]
 [\fB\-e\fR \fInames\fR]
 [\fB\-o\fR \fIdir\fR]
+[\fB\-Q\fR[\fIn\fR]]
 [\fB\-R\fR \fIsubset\fR]
 [\fB\-v\fR[\fIn\fR]]
 [\fB\-w\fR[\fIn\fR]]
@@ -243,6 +247,25 @@ obsolete capabilities.
 Write compiled entries to given database location.
 Overrides the TERMINFO environment variable.
 .TP
+\fB\-Q\fR\fIn\fR
+Rather than show source in terminfo (text) format,
+print the compiled (binary) format in hexadecimal or base64 form,
+depending on the option's value:
+.RS 8
+.TP 3
+1
+hexadecimal
+.TP 3
+2
+base64
+.TP 3
+3
+hexadecimal and base64
+.RE
+.TP
+\fB\-q\fR
+Suppress comments and blank lines when showing translated source.
+.TP
 \fB\-R\fR\fIsubset\fR
 Restrict output to a given subset.
 This option is for use with archaic
@@ -285,8 +308,10 @@ reports the version of ncurses which was used in this program, and exits.
 \fB\-v\fR\fIn\fR
 specifies that (verbose) output be written to standard error trace
 information showing \fB@TIC@\fR's progress.
+.IP
 The optional parameter \fIn\fR is a number from 1 to 10, inclusive,
 indicating the desired level of detail of information.
+If ncurses is built without tracing support, the optional parameter is ignored.
 If \fIn\fR is omitted, the default level is 1.
 If \fIn\fR is specified and greater than 1, the level of
 detail is increased.
@@ -317,6 +342,13 @@ All values computed in construction of the hash table
 .LP
 If the debug level \fIn\fR is not given, it is taken to be one.
 .RE
+.TP
+\fB\-W\fR
+By itself, the \fB\-w\fP option will not force long strings to be wrapped.
+Use the \fB\-W\fP option to do this.
+.IP
+If you specify both \fB\-f\fP and \fB\-W\fP options,
+the latter is ignored when \fB\-f\fP has already split the line.
 .TP
 \fB\-w\fR\fIn\fR
 specifies the width of the output.

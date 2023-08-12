@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 1998-2013,2014 Free Software Foundation, Inc.              *
+ * Copyright (c) 1998-2014,2017 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -69,7 +69,7 @@
 #define CUR SP_TERMTYPE
 #endif
 
-MODULE_ID("$Id: lib_vidattr.c,v 1.71 2014/09/04 22:01:27 tom Exp $")
+MODULE_ID("$Id: lib_vidattr.c,v 1.72 2017/06/24 12:13:42 tom Exp $")
 
 #define doPut(mode) \
 	TPUTS_TRACE(#mode); \
@@ -117,7 +117,7 @@ NCURSES_SP_NAME(vidputs) (NCURSES_SP_DCLx
 
     T((T_CALLED("vidputs(%p,%s)"), (void *) SP_PARM, _traceattr(newmode)));
 
-    if (!IsTermInfo(SP_PARM))
+    if (!IsValidTIScreen(SP_PARM))
 	returnCode(ERR);
 
     /* this allows us to go on whether or not newterm() has been called */

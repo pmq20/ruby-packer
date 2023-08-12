@@ -1,4 +1,4 @@
-/* $Id: tclock.c,v 1.34 2014/08/02 16:37:03 tom Exp $ */
+/* $Id: tclock.c,v 1.38 2017/09/09 00:37:06 tom Exp $ */
 
 #include <test.priv.h>
 
@@ -116,8 +116,28 @@ dline(int pair, int from_x, int from_y, int x2, int y2, int ch)
     }
 }
 
+static void
+usage(void)
+{
+    static const char *msg[] =
+    {
+	"Usage: tclock [options]"
+	,""
+	,"Options:"
+#if HAVE_USE_DEFAULT_COLORS
+	," -d       invoke use_default_colors"
+#endif
+    };
+    size_t n;
+
+    for (n = 0; n < SIZEOF(msg); n++)
+	fprintf(stderr, "%s\n", msg[n]);
+
+    ExitProgram(EXIT_FAILURE);
+}
+
 int
-main(int argc GCC_UNUSED, char *argv[]GCC_UNUSED)
+main(int argc, char *argv[])
 {
     int i, cx, cy;
     double cr, mradius, hradius, mangle, hangle;
@@ -137,6 +157,24 @@ main(int argc GCC_UNUSED, char *argv[]GCC_UNUSED)
     struct timeval current;
 #endif
     double fraction = 0.0;
+#if HAVE_USE_DEFAULT_COLORS
+    bool d_option = FALSE;
+#endif
+
+    while ((ch = getopt(argc, argv, "d")) != -1) {
+	switch (ch) {
+#if HAVE_USE_DEFAULT_COLORS
+	case 'd':
+	    d_option = TRUE;
+	    break;
+#endif
+	default:
+	    usage();
+	    /* NOTREACHED */
+	}
+    }
+    if (optind < argc)
+	usage();
 
     setlocale(LC_ALL, "");
 
@@ -149,7 +187,7 @@ main(int argc GCC_UNUSED, char *argv[]GCC_UNUSED)
     if (has_colors()) {
 	start_color();
 #if HAVE_USE_DEFAULT_COLORS
-	if (use_default_colors() == OK)
+	if (d_option && (use_default_colors() == OK))
 	    my_bg = -1;
 #endif
 	init_pair(1, COLOR_RED, my_bg);
@@ -175,7 +213,7 @@ main(int argc GCC_UNUSED, char *argv[]GCC_UNUSED)
 	sangle = (i + 1) * (2.0 * PI) / 12.0;
 	sdx = A2X(sangle, sradius);
 	sdy = A2Y(sangle, sradius);
-	sprintf(szChar, "%d", i + 1);
+	_nc_SPRINTF(szChar, _nc_SLIMIT(sizeof(szChar)) "%d", i + 1);
 
 	MvAddStr(cy - sdy, cx + sdx, szChar);
     }
@@ -254,8 +292,7 @@ main(int argc GCC_UNUSED, char *argv[]GCC_UNUSED)
 
     }
 
-    curs_set(1);
-    endwin();
+    exit_curses();
     ExitProgram(EXIT_SUCCESS);
 }
 #else

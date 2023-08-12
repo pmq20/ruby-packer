@@ -1,5 +1,5 @@
 .\"***************************************************************************
-.\" Copyright (c) 1998-2009,2010 Free Software Foundation, Inc.              *
+.\" Copyright (c) 1998-2010,2017 Free Software Foundation, Inc.              *
 .\"                                                                          *
 .\" Permission is hereby granted, free of charge, to any person obtaining a  *
 .\" copy of this software and associated documentation files (the            *
@@ -28,7 +28,7 @@
 .\"
 .\" Author: Thomas E. Dickey 1997
 .\"
-.\" $Id: define_key.3x,v 1.14 2010/12/04 18:49:20 tom Exp $
+.\" $Id: define_key.3x,v 1.15 2017/11/21 00:53:44 tom Exp $
 .TH define_key 3X ""
 .SH NAME
 \fBdefine_key\fP \- define a keycode
@@ -48,10 +48,10 @@ Similarly, if the given keycode is negative or zero, any existing string
 for the given definition is removed.
 .SH RETURN VALUE
 The keycode must be greater than zero, and the string non-null,
-otherwise ERR is returned.
-ERR may also be returned if there is insufficient memory to allocate the
+otherwise \fBERR\fP is returned.
+\fBERR\fP may also be returned if there is insufficient memory to allocate the
 data to store the definition.
-If no error is detected, OK is returned.
+If no error is detected, \fBOK\fP is returned.
 .SH PORTABILITY
 These routines are specific to ncurses.  They were not supported on
 Version 7, BSD or System V implementations.  It is recommended that

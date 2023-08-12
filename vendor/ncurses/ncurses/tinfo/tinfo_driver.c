@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 2008-2014,2015 Free Software Foundation, Inc.              *
+ * Copyright (c) 2008-2016,2017 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -28,12 +28,13 @@
 
 /****************************************************************************
  *  Author: Juergen Pfeifer                                                 *
- *                                                                          *
+ *     and: Thomas E. Dickey                                                *
  ****************************************************************************/
 
 #include <curses.priv.h>
-#define CUR ((TERMINAL*)TCB)->type.
+#define CUR TerminalType((TERMINAL*)TCB).
 #include <tic.h>
+#include <termcap.h>		/* ospeed */
 
 #if HAVE_NANOSLEEP
 #include <time.h>
@@ -50,7 +51,7 @@
 # endif
 #endif
 
-MODULE_ID("$Id: tinfo_driver.c,v 1.40 2015/06/27 01:20:41 tom Exp $")
+MODULE_ID("$Id: tinfo_driver.c,v 1.59 2017/09/10 21:08:46 tom Exp $")
 
 /*
  * SCO defines TIOCGSIZE and the corresponding struct.  Other systems (SunOS,
@@ -113,6 +114,33 @@ drv_Name(TERMINAL_CONTROL_BLOCK * TCB)
     return "tinfo";
 }
 
+static void
+get_baudrate(TERMINAL *termp)
+{
+    int my_ospeed;
+    int result;
+    if (GET_TTY(termp->Filedes, &termp->Nttyb) == OK) {
+#ifdef TERMIOS
+	termp->Nttyb.c_oflag &= (unsigned) (~OFLAGS_TABS);
+#else
+	termp->Nttyb.sg_flags &= (unsigned) (~XTABS);
+#endif
+    }
+#ifdef USE_OLD_TTY
+    result = (int) cfgetospeed(&(termp->Nttyb));
+    my_ospeed = (NCURSES_OSPEED) _nc_ospeed(result);
+#else /* !USE_OLD_TTY */
+#ifdef TERMIOS
+    my_ospeed = (NCURSES_OSPEED) cfgetospeed(&(termp->Nttyb));
+#else
+    my_ospeed = (NCURSES_OSPEED) termp->Nttyb.sg_ospeed;
+#endif
+    result = _nc_baudrate(my_ospeed);
+#endif
+    termp->_baudrate = result;
+    ospeed = (NCURSES_OSPEED) my_ospeed;
+}
+
 #undef SETUP_FAIL
 #define SETUP_FAIL FALSE
 
@@ -125,7 +153,7 @@ drv_CanHandle(TERMINAL_CONTROL_BLOCK * TCB, const char *tname, int *errret)
     SCREEN *sp;
 
     START_TRACE();
-    T((T_CALLED("tinfo::drv_CanHandle(%p)"), TCB));
+    T((T_CALLED("tinfo::drv_CanHandle(%p)"), (void *) TCB));
 
     assert(TCB != 0 && tname != 0);
     termp = (TERMINAL *) TCB;
@@ -133,17 +161,17 @@ drv_CanHandle(TERMINAL_CONTROL_BLOCK * TCB, const char *tname, int *errret)
     TCB->magic = TCBMAGIC;
 
 #if (NCURSES_USE_DATABASE || NCURSES_USE_TERMCAP)
-    status = _nc_setup_tinfo(tname, &termp->type);
+    status = _nc_setup_tinfo(tname, &TerminalType(termp));
 #else
     status = TGETENT_NO;
 #endif
 
     /* try fallback list if entry on disk */
     if (status != TGETENT_YES) {
-	const TERMTYPE *fallback = _nc_fallback(tname);
+	const TERMTYPE2 *fallback = _nc_fallback2(tname);
 
 	if (fallback) {
-	    termp->type = *fallback;
+	    TerminalType(termp) = *fallback;
 	    status = TGETENT_YES;
 	}
     }
@@ -157,13 +185,33 @@ drv_CanHandle(TERMINAL_CONTROL_BLOCK * TCB, const char *tname, int *errret)
 	}
     }
     result = TRUE;
+#if NCURSES_EXT_NUMBERS
+    _nc_export_termtype2(&termp->type, &TerminalType(termp));
+#endif
 #if !USE_REENTRANT
-    strncpy(ttytype, termp->type.term_names, (size_t) NAMESIZE - 1);
-    ttytype[NAMESIZE - 1] = '\0';
+    save_ttytype(termp);
 #endif
 
     if (command_character)
 	_nc_tinfo_cmdch(termp, *command_character);
+
+    /*
+     * If an application calls setupterm() rather than initscr() or
+     * newterm(), we will not have the def_prog_mode() call in
+     * _nc_setupscreen().  Do it now anyway, so we can initialize the
+     * baudrate.
+     */
+    if (sp == 0 && NC_ISATTY(termp->Filedes)) {
+	get_baudrate(termp);
+    }
+#if NCURSES_EXT_NUMBERS
+#define cleanup_termtype() \
+    _nc_free_termtype2(&TerminalType(termp)); \
+    _nc_free_termtype(&termp->type)
+#else
+#define cleanup_termtype() \
+    _nc_free_termtype2(&TerminalType(termp))
+#endif
 
     if (generic_type) {
 	/*
@@ -173,12 +221,15 @@ drv_CanHandle(TERMINAL_CONTROL_BLOCK * TCB, const char *tname, int *errret)
 	if ((VALID_STRING(cursor_address)
 	     || (VALID_STRING(cursor_down) && VALID_STRING(cursor_home)))
 	    && VALID_STRING(clear_screen)) {
+	    cleanup_termtype();
 	    ret_error1(TGETENT_YES, "terminal is not really generic.\n", tname);
 	} else {
+	    cleanup_termtype();
 	    ret_error1(TGETENT_NO, "I need something more specific.\n", tname);
 	}
     }
     if (hard_copy) {
+	cleanup_termtype();
 	ret_error1(TGETENT_YES, "I can't handle hardcopy terminals.\n", tname);
     }
 
@@ -261,8 +312,8 @@ drv_defaultcolors(TERMINAL_CONTROL_BLOCK * TCB, int fg, int bg)
 	sp->_has_sgr_39_49 = (NCURSES_SP_NAME(tigetflag) (NCURSES_SP_ARGx
 							  "AX")
 			      == TRUE);
-	sp->_default_fg = isDefaultColor(fg) ? COLOR_DEFAULT : (fg & C_MASK);
-	sp->_default_bg = isDefaultColor(bg) ? COLOR_DEFAULT : (bg & C_MASK);
+	sp->_default_fg = isDefaultColor(fg) ? COLOR_DEFAULT : fg;
+	sp->_default_bg = isDefaultColor(bg) ? COLOR_DEFAULT : bg;
 	if (sp->_color_pairs != 0) {
 	    bool save = sp->_default_color;
 	    sp->_default_color = TRUE;
@@ -358,7 +409,7 @@ drv_size(TERMINAL_CONTROL_BLOCK * TCB, int *linep, int *colp)
 
     if (sp) {
 	useEnv = sp->_use_env;
-	useTioctl = sp->_use_tioctl;
+	useTioctl = sp->use_tioctl;
     } else {
 	useEnv = _nc_prescreen.use_env;
 	useTioctl = _nc_prescreen.use_tioctl;
@@ -749,9 +800,9 @@ drv_do_color(TERMINAL_CONTROL_BLOCK * TCB,
 	     NCURSES_SP_OUTC outc)
 {
     SCREEN *sp = TCB->csp;
-    NCURSES_COLOR_T fg = COLOR_DEFAULT;
-    NCURSES_COLOR_T bg = COLOR_DEFAULT;
-    NCURSES_COLOR_T old_fg, old_bg;
+    int fg = COLOR_DEFAULT;
+    int bg = COLOR_DEFAULT;
+    int old_fg, old_bg;
 
     AssertTCB();
     if (sp == 0)
@@ -766,19 +817,13 @@ drv_do_color(TERMINAL_CONTROL_BLOCK * TCB,
 				    TPARM_1(set_color_pair, pair), 1, outc);
 	    return;
 	} else if (sp != 0) {
-	    NCURSES_SP_NAME(pair_content) (NCURSES_SP_ARGx
-					   (short) pair,
-					   &fg,
-					   &bg);
+	    _nc_pair_content(SP_PARM, pair, &fg, &bg);
 	}
     }
 
     if (old_pair >= 0
 	&& sp != 0
-	&& NCURSES_SP_NAME(pair_content) (NCURSES_SP_ARGx
-					  (short) old_pair,
-					  &old_fg,
-					  &old_bg) !=ERR) {
+	&& _nc_pair_content(SP_PARM, old_pair, &old_fg, &old_bg) != ERR) {
 	if ((isDefaultColor(fg) && !isDefaultColor(old_fg))
 	    || (isDefaultColor(bg) && !isDefaultColor(old_bg))) {
 #if NCURSES_EXT_FUNCS
@@ -807,13 +852,13 @@ drv_do_color(TERMINAL_CONTROL_BLOCK * TCB,
 
 #if NCURSES_EXT_FUNCS
     if (isDefaultColor(fg))
-	fg = (NCURSES_COLOR_T) default_fg(sp);
+	fg = default_fg(sp);
     if (isDefaultColor(bg))
-	bg = (NCURSES_COLOR_T) default_bg(sp);
+	bg = default_bg(sp);
 #endif
 
     if (reverse) {
-	NCURSES_COLOR_T xx = fg;
+	int xx = fg;
 	fg = bg;
 	bg = xx;
     }
@@ -851,10 +896,10 @@ drv_initmouse(TERMINAL_CONTROL_BLOCK * TCB)
     if (sp != 0) {
 	if (key_mouse != 0) {
 	    if (!strcmp(key_mouse, xterm_kmous)
-		|| strstr(TerminalOf(sp)->type.term_names, "xterm") != 0) {
+		|| strstr(SP_TERMTYPE term_names, "xterm") != 0) {
 		init_xterm_mouse(sp);
 	    }
-	} else if (strstr(TerminalOf(sp)->type.term_names, "xterm") != 0) {
+	} else if (strstr(SP_TERMTYPE term_names, "xterm") != 0) {
 	    if (_nc_add_to_try(&(sp->_keytry), xterm_kmous, KEY_MOUSE) == OK)
 		init_xterm_mouse(sp);
 	}
@@ -979,12 +1024,18 @@ drv_setfilter(TERMINAL_CONTROL_BLOCK * TCB)
 {
     AssertTCB();
 
-    clear_screen = 0;
-    cursor_down = parm_down_cursor = 0;
-    cursor_address = 0;
-    cursor_up = parm_up_cursor = 0;
-    row_address = 0;
-    cursor_home = carriage_return;
+    /* *INDENT-EQLS* */
+    clear_screen     = ABSENT_STRING;
+    cursor_address   = ABSENT_STRING;
+    cursor_down      = ABSENT_STRING;
+    cursor_up        = ABSENT_STRING;
+    parm_down_cursor = ABSENT_STRING;
+    parm_up_cursor   = ABSENT_STRING;
+    row_address      = ABSENT_STRING;
+    cursor_home      = carriage_return;
+
+    if (back_color_erase)
+	clr_eos = ABSENT_STRING;
 }
 
 static void

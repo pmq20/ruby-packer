@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 1998-2009,2012 Free Software Foundation, Inc.              *
+ * Copyright (c) 1998-2012,2016 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -39,7 +39,7 @@
 
 #include <curses.priv.h>
 
-MODULE_ID("$Id: lib_printw.c,v 1.23 2012/09/03 17:55:28 tom Exp $")
+MODULE_ID("$Id: lib_printw.c,v 1.24 2016/05/28 23:11:26 tom Exp $")
 
 NCURSES_EXPORT(int)
 printw(const char *fmt,...)
@@ -86,7 +86,6 @@ wprintw(WINDOW *win, const char *fmt,...)
 NCURSES_EXPORT(int)
 mvprintw(int y, int x, const char *fmt,...)
 {
-    va_list argp;
     int code;
 
 #ifdef TRACE
@@ -98,6 +97,8 @@ mvprintw(int y, int x, const char *fmt,...)
 #endif
 
     if ((code = move(y, x)) != ERR) {
+	va_list argp;
+
 	va_start(argp, fmt);
 	code = vwprintw(stdscr, fmt, argp);
 	va_end(argp);
@@ -108,7 +109,6 @@ mvprintw(int y, int x, const char *fmt,...)
 NCURSES_EXPORT(int)
 mvwprintw(WINDOW *win, int y, int x, const char *fmt,...)
 {
-    va_list argp;
     int code;
 
 #ifdef TRACE
@@ -120,6 +120,8 @@ mvwprintw(WINDOW *win, int y, int x, const char *fmt,...)
 #endif
 
     if ((code = wmove(win, y, x)) != ERR) {
+	va_list argp;
+
 	va_start(argp, fmt);
 	code = vwprintw(win, fmt, argp);
 	va_end(argp);

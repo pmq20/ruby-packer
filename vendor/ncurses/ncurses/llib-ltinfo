@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 2012-2013,2015 Free Software Foundation, Inc.              *
+ * Copyright (c) 2012-2016,2017 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -34,8 +34,6 @@
 /* ./tinfo/access.c */
 
 #include <curses.priv.h>
-#include <ctype.h>
-#include <tic.h>
 
 #undef _nc_rootname
 char	*_nc_rootname(
@@ -90,8 +88,8 @@ int	_nc_add_to_try(
 
 #undef _nc_align_termtype
 void	_nc_align_termtype(
-		TERMTYPE *to, 
-		TERMTYPE *from)
+		TERMTYPE2 *to, 
+		TERMTYPE2 *from)
 		{ /* void */ }
 
 #undef _nc_copy_termtype
@@ -110,8 +108,6 @@ const char *const numcodes[] = {0};
 const char *const strcodes[] = {0};
 
 /* ./comp_captab.c */
-
-#include <hashsize.h>
 
 #undef _nc_get_table
 const struct name_table_entry *_nc_get_table(
@@ -196,8 +192,6 @@ struct name_table_entry const *_nc_find_type_entry(
 
 /* ./tinfo/db_iterator.c */
 
-#include <time.h>
-
 #undef _nc_tic_dir
 const char *_nc_tic_dir(
 		const char *path)
@@ -242,19 +236,13 @@ ENTRY	*_nc_tail;
 #undef _nc_free_entry
 void	_nc_free_entry(
 		ENTRY	*headp, 
-		TERMTYPE *tterm)
+		TERMTYPE2 *tterm)
 		{ /* void */ }
 
 #undef _nc_free_entries
 void	_nc_free_entries(
 		ENTRY	*headp)
 		{ /* void */ }
-
-#undef _nc_delink_entry
-ENTRY	*_nc_delink_entry(
-		ENTRY	*headp, 
-		TERMTYPE *tterm)
-		{ return(*(ENTRY **)0); }
 
 #undef _nc_leaks_tinfo
 void	_nc_leaks_tinfo(void)
@@ -263,9 +251,9 @@ void	_nc_leaks_tinfo(void)
 /* ./fallback.c */
 
 #undef _nc_fallback
-const TERMTYPE *_nc_fallback(
+const TERMTYPE2 *_nc_fallback(
 		const char *name)
-		{ return(*(const TERMTYPE **)0); }
+		{ return(*(const TERMTYPE2 **)0); }
 
 /* ./tinfo/free_ttype.c */
 
@@ -303,15 +291,6 @@ char	*_nc_home_terminfo(void)
 
 /* ./tinfo/init_keytry.c */
 
-#if 0
-
-#include <init_keytry.h>
-
-#undef _nc_tinfo_fkeys
-const struct tinfo_fkeys _nc_tinfo_fkeys[] = {0};
-
-#endif
-
 #undef _nc_init_keytry
 void	_nc_init_keytry(
 		SCREEN	*sp)
@@ -333,11 +312,9 @@ void	_nc_init_acs(void)
 
 /* ./tinfo/lib_baudrate.c */
 
-#include <termcap.h>
-
 struct speed {
-    short s; 
-    int sp; 
+    int given_speed; 
+    int actual_speed; 
 };
 
 #undef _nc_baudrate
@@ -484,8 +461,6 @@ char	*longname(void)
 		{ return(*(char **)0); }
 
 /* ./tinfo/lib_napms.c */
-
-#include <sys/time.h>
 
 #undef napms_sp
 int	napms_sp(
@@ -670,10 +645,6 @@ int	intrflush(
 
 /* ./tinfo/lib_setup.c */
 
-#include <locale.h>
-#include <sys/ioctl.h>
-#include <langinfo.h>
-
 #undef ttytype
 char	ttytype[256];
 #undef LINES
@@ -736,7 +707,7 @@ void	_nc_update_screensize(
 #undef _nc_setup_tinfo
 int	_nc_setup_tinfo(
 		const char *const tn, 
-		TERMTYPE *const tp)
+		TERMTYPE2 *const tp)
 		{ return(*(int *)0); }
 
 #undef _nc_tinfo_cmdch
@@ -790,12 +761,6 @@ int	tgetent_sp(
 		char	*bufp, 
 		const char *name)
 		{ return(*(int *)0); }
-
-#if 0
-
-#include <capdefaults.c>
-
-#endif
 
 #undef tgetent
 int	tgetent(
@@ -1136,11 +1101,6 @@ chtype	_nc_retrace_chtype(
 
 /* ./trace/lib_tracebits.c */
 
-typedef struct {
-    unsigned int val;
-    const char name[8];
-} BITNAMES;
-
 #undef _nc_trace_ttymode
 char	*_nc_trace_ttymode(
 		struct termios *tty)
@@ -1297,16 +1257,14 @@ void	_nc_set_buffer(
 
 /* ./tinfo/read_entry.c */
 
-#include <hashed_db.h>
-
 #undef _nc_init_termtype
 void	_nc_init_termtype(
-		TERMTYPE *const tp)
+		TERMTYPE2 *const tp)
 		{ /* void */ }
 
 #undef _nc_read_termtype
 int	_nc_read_termtype(
-		TERMTYPE *ptr, 
+		TERMTYPE2 *ptr, 
 		char	*buffer, 
 		int	limit)
 		{ return(*(int *)0); }
@@ -1314,19 +1272,17 @@ int	_nc_read_termtype(
 #undef _nc_read_file_entry
 int	_nc_read_file_entry(
 		const char *const filename, 
-		TERMTYPE *ptr)
+		TERMTYPE2 *ptr)
 		{ return(*(int *)0); }
 
 #undef _nc_read_entry
 int	_nc_read_entry(
 		const char *const name, 
 		char	*const filename, 
-		TERMTYPE *const tp)
+		TERMTYPE2 *const tp)
 		{ return(*(int *)0); }
 
 /* ./tinfo/read_termcap.c */
-
-#include <sys/types.h>
 
 #undef _nc_read_termcap
 void	_nc_read_termcap(void)
@@ -1412,7 +1368,7 @@ int	_nc_remove_string(
 
 #undef _nc_trim_sgr0
 char	*_nc_trim_sgr0(
-		TERMTYPE *tp)
+		TERMTYPE2 *tp)
 		{ return(*(char **)0); }
 
 /* ./unctrl.c */

@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 1998-2013,2014 Free Software Foundation, Inc.              *
+ * Copyright (c) 1998-2014,2017 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -39,7 +39,7 @@
 #define CUR SP_TERMTYPE
 #endif
 
-MODULE_ID("$Id: lib_acs.c,v 1.45 2014/03/08 20:32:59 tom Exp $")
+MODULE_ID("$Id: lib_acs.c,v 1.46 2017/09/20 00:48:55 tom Exp $")
 
 #if BROKEN_LINKER || USE_REENTRANT
 #define MyBuffer _nc_prescreen.real_acs_map
@@ -171,7 +171,7 @@ NCURSES_SP_NAME(_nc_init_acs) (NCURSES_SP_DCL0)
     if (ena_acs != NULL) {
 	NCURSES_PUTP2("ena_acs", ena_acs);
     }
-#if NCURSES_EXT_FUNCS
+#if NCURSES_EXT_FUNCS && defined(enter_pc_charset_mode) && defined(exit_pc_charset_mode)
     /*
      * Linux console "supports" the "PC ROM" character set by the coincidence
      * that smpch/rmpch and smacs/rmacs have the same values.  ncurses has

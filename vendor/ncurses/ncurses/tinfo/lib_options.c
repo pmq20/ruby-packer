@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 1998-2013,2014 Free Software Foundation, Inc.              *
+ * Copyright (c) 1998-2014,2017 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -46,7 +46,7 @@
 #define CUR SP_TERMTYPE
 #endif
 
-MODULE_ID("$Id: lib_options.c,v 1.78 2014/09/27 21:55:24 tom Exp $")
+MODULE_ID("$Id: lib_options.c,v 1.80 2017/06/24 23:13:09 tom Exp $")
 
 NCURSES_EXPORT(int)
 idlok(WINDOW *win, bool flag)
@@ -87,7 +87,7 @@ NCURSES_SP_NAME(halfdelay) (NCURSES_SP_DCLx int t)
 {
     T((T_CALLED("halfdelay(%p,%d)"), (void *) SP_PARM, t));
 
-    if (t < 1 || t > 255 || !IsValidTIScreen(SP_PARM))
+    if (t < 1 || t > 255 || !SP_PARM || !IsValidTIScreen(SP_PARM))
 	returnCode(ERR);
 
     NCURSES_SP_NAME(cbreak) (NCURSES_SP_ARG);
@@ -202,7 +202,7 @@ NCURSES_SP_NAME(curs_set) (NCURSES_SP_DCLx int vis)
 #ifdef USE_TERM_DRIVER
 	    code = CallDriver_1(SP_PARM, td_cursorSet, vis);
 #else
-	    if (IsTermInfo(SP_PARM)) {
+	    if (IsValidTIScreen(SP_PARM)) {
 		switch (vis) {
 		case 2:
 		    code = NCURSES_PUTP2_FLUSH("cursor_visible",
@@ -241,7 +241,7 @@ NCURSES_EXPORT(int)
 NCURSES_SP_NAME(typeahead) (NCURSES_SP_DCLx int fd)
 {
     T((T_CALLED("typeahead(%p, %d)"), (void *) SP_PARM, fd));
-    if (IsValidTIScreen(SP_PARM)) {
+    if (SP_PARM && IsValidTIScreen(SP_PARM)) {
 	SP_PARM->_checkfd = fd;
 	returnCode(OK);
     } else {

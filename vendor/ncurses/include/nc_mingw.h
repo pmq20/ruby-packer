@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 2008-2009,2010 Free Software Foundation, Inc.              *
+ * Copyright (c) 2008-2010,2017 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -28,14 +28,14 @@
 
 /****************************************************************************
  * Author: Thomas Dickey, 2008-on                                           * 
- *                                                                          *
  ****************************************************************************/
 
-/* $Id: nc_mingw.h,v 1.3 2010/09/25 22:16:12 juergen Exp $ */
+/* $Id: nc_mingw.h,v 1.4 2017/07/22 17:06:38 tom Exp $ */
 
 #ifndef NC_MINGW_H
 #define NC_MINGW_H 1
 
+#ifdef __MINGW32__
 #ifdef WINVER
 #  if WINVER < 0x0501
 #    error WINVER must at least be 0x0501
@@ -65,5 +65,7 @@ extern int _nc_gettimeofday(struct timeval *, void *);
 #undef wcwidth
 #define wcwidth(ucs) _nc_wcwidth(ucs)
 extern int _nc_wcwidth(wchar_t);
+
+#endif /* __MINGW32__ */
 
 #endif /* NC_MINGW_H */

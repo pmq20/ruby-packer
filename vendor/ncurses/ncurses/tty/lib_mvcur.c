@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 1998-2014,2015 Free Software Foundation, Inc.              *
+ * Copyright (c) 1998-2016,2017 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -159,7 +159,7 @@
 #define CUR SP_TERMTYPE
 #endif
 
-MODULE_ID("$Id: lib_mvcur.c,v 1.136 2015/07/25 20:14:57 tom Exp $")
+MODULE_ID("$Id: lib_mvcur.c,v 1.145 2017/07/23 00:08:37 tom Exp $")
 
 #define WANT_CHAR(sp, y, x) NewScreen(sp)->_line[y].text[x]	/* desired state */
 
@@ -450,8 +450,8 @@ NCURSES_SP_NAME(_nc_mvcur_init) (NCURSES_SP_DCL0)
 
     /*
      * A different, possibly better way to arrange this would be to set the
-     * SCREEN's _endwin to TRUE at window initialization time and let this be
-     * called by doupdate's return-from-shellout code.
+     * SCREEN's _endwin at window initialization time and let this be called by
+     * doupdate's return-from-shellout code.
      */
     NCURSES_SP_NAME(_nc_mvcur_resume) (NCURSES_SP_ARG);
 }
@@ -992,10 +992,10 @@ _nc_real_mvcur(NCURSES_SP_DCLx
 	}
 
 	if (xold >= screen_columns(SP_PARM)) {
-	    int l;
 
 	    if (SP_PARM->_nl) {
-		l = (xold + 1) / screen_columns(SP_PARM);
+		int l = (xold + 1) / screen_columns(SP_PARM);
+
 		yold += l;
 		if (yold >= screen_lines(SP_PARM))
 		    l -= (yold - screen_lines(SP_PARM) - 1);
@@ -1056,9 +1056,18 @@ NCURSES_SP_NAME(_nc_mvcur) (NCURSES_SP_DCLx
 			    int yold, int xold,
 			    int ynew, int xnew)
 {
-    return _nc_real_mvcur(NCURSES_SP_ARGx yold, xold, ynew, xnew,
-			  NCURSES_SP_NAME(_nc_outch),
-			  TRUE);
+    int rc;
+    rc = _nc_real_mvcur(NCURSES_SP_ARGx yold, xold, ynew, xnew,
+			NCURSES_SP_NAME(_nc_outch),
+			TRUE);
+    /*
+     * With the terminal-driver, we cannot distinguish between internal and
+     * external calls.  Flush the output if the screen has not been
+     * initialized, e.g., when used from low-level terminfo programs.
+     */
+    if ((SP_PARM != 0) && (SP_PARM->_endwin == ewInitial))
+	NCURSES_SP_NAME(_nc_flush) (NCURSES_SP_ARG);
+    return rc;
 }
 
 #if NCURSES_SP_FUNCS
@@ -1077,11 +1086,16 @@ _nc_mvcur(int yold, int xold,
 NCURSES_EXPORT(int)
 TINFO_MVCUR(NCURSES_SP_DCLx int yold, int xold, int ynew, int xnew)
 {
-    return _nc_real_mvcur(NCURSES_SP_ARGx
-			  yold, xold,
-			  ynew, xnew,
-			  NCURSES_SP_NAME(_nc_outch),
-			  TRUE);
+    int rc;
+    rc = _nc_real_mvcur(NCURSES_SP_ARGx
+			yold, xold,
+			ynew, xnew,
+			NCURSES_SP_NAME(_nc_outch),
+			TRUE);
+    if ((SP_PARM != 0) && (SP_PARM->_endwin == ewInitial))
+	NCURSES_SP_NAME(_nc_flush) (NCURSES_SP_ARG);
+    NCURSES_SP_NAME(_nc_flush) (NCURSES_SP_ARG);
+    return rc;
 }
 
 #else /* !USE_TERM_DRIVER */
@@ -1181,7 +1195,7 @@ roll(int n)
 int
 main(int argc GCC_UNUSED, char *argv[]GCC_UNUSED)
 {
-    strcpy(tname, getenv("TERM"));
+    _nc_STRCPY(tname, getenv("TERM"), sizeof(tname));
     load_term();
     _nc_setupscreen(lines, columns, stdout, FALSE, 0);
     baudrate();
@@ -1197,8 +1211,10 @@ main(int argc GCC_UNUSED, char *argv[]GCC_UNUSED)
 	int fy, fx, ty, tx, n, i;
 	char buf[BUFSIZ], capname[BUFSIZ];
 
-	(void) fputs("> ", stdout);
-	(void) fgets(buf, sizeof(buf), stdin);
+	if (fputs("> ", stdout) == EOF)
+	    break;
+	if (fgets(buf, sizeof(buf), stdin) == 0)
+	    break;
 
 	if (buf[0] == '?') {
 	    (void) puts("?                -- display this help message");
@@ -1245,7 +1261,7 @@ main(int argc GCC_UNUSED, char *argv[]GCC_UNUSED)
 							     before.tv_sec)
 			   * 1000000));
 	} else if (buf[0] == 'r') {
-	    (void) strcpy(tname, termname());
+	    _nc_STRCPY(tname, termname(), sizeof(tname));
 	    load_term();
 	} else if (sscanf(buf, "l %s", tname) == 1) {
 	    load_term();
@@ -1278,8 +1294,9 @@ main(int argc GCC_UNUSED, char *argv[]GCC_UNUSED)
 		}
 	    }
 	} else if (buf[0] == 'i') {
-	    dump_init(NULL, F_TERMINFO, S_TERMINFO, 70, 0, 0, FALSE, FALSE);
-	    dump_entry(&cur_term->type, FALSE, TRUE, 0, 0);
+	    dump_init(NULL, F_TERMINFO, S_TERMINFO,
+		      FALSE, 70, 0, 0, FALSE, FALSE, 0);
+	    dump_entry(&TerminalType(cur_term), FALSE, TRUE, 0, 0);
 	    putchar('\n');
 	} else if (buf[0] == 'o') {
 	    if (_nc_optimize_enable & OPTIMIZE_MVCUR) {

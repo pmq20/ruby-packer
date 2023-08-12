@@ -1,5 +1,5 @@
 .\"***************************************************************************
-.\" Copyright (c) 2002-2006,2010 Free Software Foundation, Inc.              *
+.\" Copyright (c) 2002-2010,2017 Free Software Foundation, Inc.              *
 .\"                                                                          *
 .\" Permission is hereby granted, free of charge, to any person obtaining a  *
 .\" copy of this software and associated documentation files (the            *
@@ -26,7 +26,7 @@
 .\" authorization.                                                           *
 .\"***************************************************************************
 .\"
-.\" $Id: curs_ins_wch.3x,v 1.5 2010/12/04 18:38:55 tom Exp $
+.\" $Id: curs_ins_wch.3x,v 1.6 2017/11/21 00:53:44 tom Exp $
 .TH curs_ins_wch 3X ""
 .SH NAME
 \fBins_wch\fR,
@@ -50,8 +50,8 @@ All characters to the right of the cursor are moved one space to the right,
 with the possibility of the rightmost character on the line being lost.
 The insertion operation does not change the cursor position.
 .SH RETURN VALUE
-If successful, these functions return OK.
-If not, they return ERR.
+If successful, these functions return \fBOK\fP.
+If not, they return \fBERR\fP.
 .PP
 Functions with a "mv" prefix first perform a cursor movement using
 \fBwmove\fP, and return an error if the position is outside the window,

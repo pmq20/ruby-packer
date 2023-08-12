@@ -1,7 +1,7 @@
 <!-- 
   * t
   ****************************************************************************
-  * Copyright (c) 1998-2010,2014 Free Software Foundation, Inc.              *
+  * Copyright (c) 1998-2014,2015 Free Software Foundation, Inc.              *
   *                                                                          *
   * Permission is hereby granted, free of charge, to any person obtaining a  *
   * copy of this software and associated documentation files (the            *
@@ -27,13 +27,13 @@
   * sale, use or other dealings in this Software without prior written       *
   * authorization.                                                           *
   ****************************************************************************
-  * @Id: form_field_opts.3x,v 1.17 2014/07/26 21:21:57 tom Exp @
+  * @Id: form_field_opts.3x,v 1.20 2015/12/05 23:53:43 tom Exp @
 -->
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
 <HTML>
 <HEAD>
 <meta http-equiv="Content-Type" content="text/html; charset=us-ascii">
-<meta name="generator" content="Manpage converted by man2html - see http://invisible-island.net/scripts/readme.html#others_scripts">
+<meta name="generator" content="Manpage converted by man2html - see https://invisible-island.net/scripts/readme.html#others_scripts">
 <TITLE>form_field_opts 3x</TITLE>
 <link rev=made href="mailto:bug-ncurses@gnu.org">
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
@@ -41,18 +41,17 @@
 <BODY>
 <H1 class="no-header">form_field_opts 3x</H1>
 <PRE>
-<STRONG><A HREF="form_field_opts.3x.html">form_field_opts(3x)</A></STRONG>                                 <STRONG><A HREF="form_field_opts.3x.html">form_field_opts(3x)</A></STRONG>
+<STRONG><A HREF="form_field_opts.3x.html">form_field_opts(3x)</A></STRONG>                                        <STRONG><A HREF="form_field_opts.3x.html">form_field_opts(3x)</A></STRONG>
 
 
 
 
-</PRE>
-<H2><a name="h2-NAME">NAME</a></H2><PRE>
-       <STRONG>form_field_opts</STRONG> - set and get field options
+</PRE><H2><a name="h2-NAME">NAME</a></H2><PRE>
+       <STRONG>set_field_opts</STRONG>, <STRONG>field_opts_on</STRONG>, <STRONG>field_opts_off</STRONG>, <STRONG>field_opts</STRONG> - set and get
+       field options
 
 
-</PRE>
-<H2><a name="h2-SYNOPSIS">SYNOPSIS</a></H2><PRE>
+</PRE><H2><a name="h2-SYNOPSIS">SYNOPSIS</a></H2><PRE>
        <STRONG>#include</STRONG> <STRONG>&lt;form.h&gt;</STRONG>
        int set_field_opts(FIELD *field, Field_Options opts);
        int field_opts_on(FIELD *field, Field_Options opts);
@@ -60,36 +59,31 @@
        Field_Options field_opts(const FIELD *field);
 
 
-</PRE>
-<H2><a name="h2-DESCRIPTION">DESCRIPTION</a></H2><PRE>
-       The  function  <STRONG>set_field_opts</STRONG>  sets  all the given field's
-       option bits (field  option  bits  may  be  logically-OR'ed
-       together).
+</PRE><H2><a name="h2-DESCRIPTION">DESCRIPTION</a></H2><PRE>
+       The function <STRONG>set_field_opts</STRONG> sets all  the  given  field's  option  bits
+       (field option bits may be logically-OR'ed together).
 
-       The function <STRONG>field_opts_on</STRONG> turns on the given option bits,
-       and leaves others alone.
+       The  function  <STRONG>field_opts_on</STRONG> turns on the given option bits, and leaves
+       others alone.
 
-       The function <STRONG>field_opts_off</STRONG> turns  off  the  given  option
-       bits, and leaves others alone.
+       The function <STRONG>field_opts_off</STRONG> turns off the given option bits, and leaves
+       others alone.
 
-       The function <STRONG>field_opts</STRONG> returns the field's current option
-       bits.
+       The function <STRONG>field_opts</STRONG> returns the field's current option bits.
 
-       The following standard options are defined (all are on  by
-       default):
+       The following standard options are defined (all are on by default):
 
        O_ACTIVE
-            The  field  is  visited  during  processing.  If this
-            option is off, the field will  not  be  reachable  by
-            navigation  keys.  Please  notice  that  an invisible
-            field appears to be inactive also.
+            The  field  is  visited during processing.  If this option is off,
+            the field will not be reachable by navigation keys. Please  notice
+            that an invisible field appears to be inactive also.
 
        O_AUTOSKIP
             Skip to the next field when this one fills.
 
        O_BLANK
-            The field is cleared whenever a character is  entered
-            at the first position.
+            The  field is cleared whenever a character is entered at the first
+            position.
 
        O_EDIT
             The field can be edited.
@@ -104,35 +98,34 @@
             The field contents are displayed as data is entered.
 
        O_STATIC
-            Field  buffers  are  fixed  to field's original size.
-            Turn this option off to create a dynamic field.
+            Field buffers are fixed  to  field's  original  size.   Turn  this
+            option off to create a dynamic field.
 
        O_VISIBLE
-            The field is displayed.  If this option is off,  dis-
-            play of the field is suppressed.
+            The  field  is  displayed.   If this option is off, display of the
+            field is suppressed.
 
        O_WRAP
-            Words  that  do  not fit on a line are wrapped to the
-            next line.  Words are blank-separated.
+            Words that do not fit on a line are  wrapped  to  the  next  line.
+            Words are blank-separated.
 
-       One extension option is defined  (extensions  are  off  by
-       default):
+       These extension options are defined (extensions are off by default):
 
        O_DYNAMIC_JUSTIFY
-            Permit  dynamic  fields  to be justified, like static
-            fields.
+            Permit dynamic fields to be justified, like static fields.
+
+       O_NO_LEFT_STRIP
+            Preserve leading whitespace in the field buffer, which is normally
+            discarded.
 
 
-</PRE>
-<H2><a name="h2-RETURN-VALUE">RETURN VALUE</a></H2><PRE>
-       Except for <STRONG>field_opts</STRONG>, each routine  returns  one  of  the
-       following:
+</PRE><H2><a name="h2-RETURN-VALUE">RETURN VALUE</a></H2><PRE>
+       Except for <STRONG>field_opts</STRONG>, each routine returns one of the following:
 
        <STRONG>E_OK</STRONG> The routine succeeded.
 
        <STRONG>E_BAD_ARGUMENT</STRONG>
-            Routine  detected  an incorrect or out-of-range argu-
-            ment.
+            Routine detected an incorrect or out-of-range argument.
 
        <STRONG>E_CURRENT</STRONG>
             The field is the current field.
@@ -141,31 +134,27 @@
             System error occurred (see <STRONG>errno</STRONG>).
 
 
-</PRE>
-<H2><a name="h2-SEE-ALSO">SEE ALSO</a></H2><PRE>
+</PRE><H2><a name="h2-SEE-ALSO">SEE ALSO</a></H2><PRE>
        <STRONG><A HREF="ncurses.3x.html">curses(3x)</A></STRONG>, <STRONG><A HREF="form.3x.html">form(3x)</A></STRONG>.  <STRONG><A HREF="form_field_just.3x.html">form_field_just(3x)</A></STRONG>.
 
 
-</PRE>
-<H2><a name="h2-NOTES">NOTES</a></H2><PRE>
-       The header file <STRONG>&lt;form.h&gt;</STRONG> automatically includes the header
-       file <STRONG>&lt;curses.h&gt;</STRONG>.
+</PRE><H2><a name="h2-NOTES">NOTES</a></H2><PRE>
+       The  header  file  <STRONG>&lt;form.h&gt;</STRONG>  automatically  includes  the  header  file
+       <STRONG>&lt;curses.h&gt;</STRONG>.
 
 
-</PRE>
-<H2><a name="h2-PORTABILITY">PORTABILITY</a></H2><PRE>
-       These  routines  emulate the System V forms library.  They
-       were not supported on Version 7 or BSD versions.
+</PRE><H2><a name="h2-PORTABILITY">PORTABILITY</a></H2><PRE>
+       These  routines emulate the System V forms library.  They were not sup-
+       ported on Version 7 or BSD versions.
 
 
-</PRE>
-<H2><a name="h2-AUTHORS">AUTHORS</a></H2><PRE>
-       Juergen Pfeifer.  Manual  pages  and  adaptation  for  new
-       curses by Eric S. Raymond.
+</PRE><H2><a name="h2-AUTHORS">AUTHORS</a></H2><PRE>
+       Juergen Pfeifer.  Manual pages and adaptation for new curses by Eric S.
+       Raymond.
 
 
 
-                                                    <STRONG><A HREF="form_field_opts.3x.html">form_field_opts(3x)</A></STRONG>
+                                                           <STRONG><A HREF="form_field_opts.3x.html">form_field_opts(3x)</A></STRONG>
 </PRE>
 <div class="nav">
 <ul>

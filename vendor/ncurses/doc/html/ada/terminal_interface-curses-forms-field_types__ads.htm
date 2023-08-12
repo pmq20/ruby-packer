@@ -55,13 +55,13 @@
 <span class="comment"><EM>--  @Revision: 1.19 @</EM></span>
 <span class="comment"><EM>--  Binding Version 01.00</EM></span>
 <span class="comment"><EM>------------------------------------------------------------------------------</EM></span>
-<b>with</b> <A HREF="interfac__ads.htm#ref_36_9">Interfaces</A>.C;
+<b>with</b> <A HREF="interfac__ads.htm#ref_38_9">Interfaces</A>.C;
 <b>with</b> <A HREF="terminal_interface__ads.htm#ref_42_9">Terminal_Interface</A>.<A HREF="terminal_interface-curses__ads.htm#ref_47_28">Curses</A>.<A HREF="terminal_interface-curses-aux__ads.htm#ref_45_35">Aux</A>;
 
 <b>package</b> <A HREF="terminal_interface__ads.htm#ref_42_9">Terminal_Interface</A>.<A HREF="terminal_interface-curses__ads.htm#ref_47_28">Curses</A>.<A HREF="terminal_interface-curses-forms__ads.htm#ref_45_35">Forms</A>.<span class="symbol"><A NAME="ref_44_41" HREF="terminal_interface-curses-forms-field_types__adb.htm#ref_51_46">Field_Types</A></span> <b>is</b>
    <b>pragma</b> Preelaborate (<A HREF="terminal_interface__ads.htm#ref_42_9">Terminal_Interface</A>.<A HREF="terminal_interface-curses__ads.htm#ref_47_28">Curses</A>.<A HREF="terminal_interface-curses-forms__ads.htm#ref_45_35">Forms</A>.<A HREF="terminal_interface-curses-forms-field_types__ads.htm#ref_44_41">Field_Types</A>);
-   <b>use</b> <b>type</b> <A HREF="interfac__ads.htm#ref_36_9">Interfaces</A>.C.int;
-   <b>subtype</b> <span class="symbol"><A NAME="ref_47_12">C_Int</A></span> <b>is</b> <A HREF="interfac__ads.htm#ref_36_9">Interfaces</A>.C.int;
+   <b>use</b> <b>type</b> <A HREF="interfac__ads.htm#ref_38_9">Interfaces</A>.C.int;
+   <b>subtype</b> <span class="symbol"><A NAME="ref_47_12">C_Int</A></span> <b>is</b> <A HREF="interfac__ads.htm#ref_38_9">Interfaces</A>.C.int;
 
    <span class="comment"><EM>--  |=====================================================================</EM></span>
    <span class="comment"><EM>--  | Man page <A HREF="../man/form_fieldtype.3x.html">form_fieldtype.3x</A></EM></span>
@@ -107,28 +107,28 @@
    <span class="comment"><EM>--  | Most of this is used by the implementations of the child packages.</EM></span>
    <span class="comment"><EM>--  |</EM></span>
 <b>private</b>
-   <b>type</b> <span class="symbol"><A NAME="ref_93_9">Makearg_Function</A></span> <b>is</b> <b>access</b>
-     <b>function</b> (<span class="symbol"><A NAME="ref_94_16">Args</A></span> : System.Address) <b>return</b> System.Address;
+   <b>type</b> <span class="symbol"><A NAME="ref_93_9" HREF="terminal_interface-curses-forms-field_types__ads.htm#ref_44_41">Makearg_Function</A></span> <b>is</b> <b>access</b>
+     <b>function</b> (<span class="symbol"><A NAME="ref_94_16" HREF="terminal_interface-curses-forms-field_types__ads.htm#ref_93_9">Args</A></span> : System.Address) <b>return</b> System.Address;
    <b>pragma</b> Convention (C, <A HREF="terminal_interface-curses-forms-field_types__ads.htm#ref_93_9">Makearg_Function</A>);
 
    <b>type</b> <span class="symbol"><A NAME="ref_97_9">Copyarg_Function</A></span> <b>is</b> <b>access</b>
-     <b>function</b> (<span class="symbol"><A NAME="ref_98_16">Usr</A></span> : System.Address) <b>return</b> System.Address;
+     <b>function</b> (<span class="symbol"><A NAME="ref_98_16" HREF="terminal_interface-curses-forms-field_types__ads.htm#ref_97_9">Usr</A></span> : System.Address) <b>return</b> System.Address;
    <b>pragma</b> Convention (C, <A HREF="terminal_interface-curses-forms-field_types__ads.htm#ref_97_9">Copyarg_Function</A>);
 
    <b>type</b> <span class="symbol"><A NAME="ref_101_9">Freearg_Function</A></span> <b>is</b> <b>access</b>
-     <b>procedure</b> (<span class="symbol"><A NAME="ref_102_17">Usr</A></span> : System.Address);
+     <b>procedure</b> (<span class="symbol"><A NAME="ref_102_17" HREF="terminal_interface-curses-forms-field_types__ads.htm#ref_101_9">Usr</A></span> : System.Address);
    <b>pragma</b> Convention (C, <A HREF="terminal_interface-curses-forms-field_types__ads.htm#ref_101_9">Freearg_Function</A>);
 
    <b>type</b> <span class="symbol"><A NAME="ref_105_9">Field_Check_Function</A></span> <b>is</b> <b>access</b>
-     <b>function</b> (<span class="symbol"><A NAME="ref_106_16">Fld</A></span> : <A HREF="terminal_interface-curses-forms__ads.htm#ref_51_9">Field</A>; <span class="symbol"><A NAME="ref_106_29">Usr</A></span> : System.Address) <b>return</b> <A HREF="terminal_interface-curses__ads.htm#ref_2098_9">Curses_Bool</A>;
+     <b>function</b> (<span class="symbol"><A NAME="ref_106_16" HREF="terminal_interface-curses-forms-field_types__ads.htm#ref_105_9">Fld</A></span> : <A HREF="terminal_interface-curses-forms__ads.htm#ref_51_9">Field</A>; <span class="symbol"><A NAME="ref_106_29" HREF="terminal_interface-curses-forms-field_types__ads.htm#ref_105_9">Usr</A></span> : System.Address) <b>return</b> <A HREF="terminal_interface-curses__ads.htm#ref_2098_9">Curses_Bool</A>;
    <b>pragma</b> Convention (C, <A HREF="terminal_interface-curses-forms-field_types__ads.htm#ref_105_9">Field_Check_Function</A>);
 
    <b>type</b> <span class="symbol"><A NAME="ref_109_9">Char_Check_Function</A></span> <b>is</b> <b>access</b>
-     <b>function</b> (<span class="symbol"><A NAME="ref_110_16">Ch</A></span> : <A HREF="terminal_interface-curses-forms-field_types__ads.htm#ref_47_12">C_Int</A>; <span class="symbol"><A NAME="ref_110_28">Usr</A></span> : System.Address) <b>return</b> <A HREF="terminal_interface-curses__ads.htm#ref_2098_9">Curses_Bool</A>;
+     <b>function</b> (<span class="symbol"><A NAME="ref_110_16" HREF="terminal_interface-curses-forms-field_types__ads.htm#ref_109_9">Ch</A></span> : <A HREF="terminal_interface-curses-forms-field_types__ads.htm#ref_47_12">C_Int</A>; <span class="symbol"><A NAME="ref_110_28" HREF="terminal_interface-curses-forms-field_types__ads.htm#ref_109_9">Usr</A></span> : System.Address) <b>return</b> <A HREF="terminal_interface-curses__ads.htm#ref_2098_9">Curses_Bool</A>;
    <b>pragma</b> Convention (C, <A HREF="terminal_interface-curses-forms-field_types__ads.htm#ref_109_9">Char_Check_Function</A>);
 
    <b>type</b> <span class="symbol"><A NAME="ref_113_9">Choice_Function</A></span> <b>is</b> <b>access</b>
-     <b>function</b> (<span class="symbol"><A NAME="ref_114_16">Fld</A></span> : <A HREF="terminal_interface-curses-forms__ads.htm#ref_51_9">Field</A>; <span class="symbol"><A NAME="ref_114_29">Usr</A></span> : System.Address) <b>return</b> <A HREF="terminal_interface-curses__ads.htm#ref_2098_9">Curses_Bool</A>;
+     <b>function</b> (<span class="symbol"><A NAME="ref_114_16" HREF="terminal_interface-curses-forms-field_types__ads.htm#ref_113_9">Fld</A></span> : <A HREF="terminal_interface-curses-forms__ads.htm#ref_51_9">Field</A>; <span class="symbol"><A NAME="ref_114_29" HREF="terminal_interface-curses-forms-field_types__ads.htm#ref_113_9">Usr</A></span> : System.Address) <b>return</b> <A HREF="terminal_interface-curses__ads.htm#ref_2098_9">Curses_Bool</A>;
    <b>pragma</b> Convention (C, <A HREF="terminal_interface-curses-forms-field_types__ads.htm#ref_113_9">Choice_Function</A>);
 
    <span class="comment"><EM>--  +----------------------------------------------------------------------</EM></span>
@@ -136,8 +136,8 @@
    <span class="comment"><EM>--  |</EM></span>
    <b>type</b> <span class="symbol"><A NAME="ref_120_9">Low_Level_Field_Type</A></span> <b>is</b>
       <b>record</b>
-         <span class="symbol"><A NAME="ref_122_10">Status</A></span> :              <A HREF="interfac__ads.htm#ref_36_9">Interfaces</A>.C.unsigned_short;
-         <span class="symbol"><A NAME="ref_123_10">Ref_Count</A></span> :           <A HREF="interfac__ads.htm#ref_36_9">Interfaces</A>.C.long;
+         <span class="symbol"><A NAME="ref_122_10">Status</A></span> :              <A HREF="interfac__ads.htm#ref_38_9">Interfaces</A>.C.unsigned_short;
+         <span class="symbol"><A NAME="ref_123_10">Ref_Count</A></span> :           <A HREF="interfac__ads.htm#ref_38_9">Interfaces</A>.C.long;
          <span class="symbol"><A NAME="ref_124_10">Left</A></span>, <span class="symbol"><A NAME="ref_124_16">Right</A></span> :         System.Address;
          <span class="symbol"><A NAME="ref_125_10">Makearg</A></span> :             <A HREF="terminal_interface-curses-forms-field_types__ads.htm#ref_93_9">Makearg_Function</A>;
          <span class="symbol"><A NAME="ref_126_10">Copyarg</A></span> :             <A HREF="terminal_interface-curses-forms-field_types__ads.htm#ref_97_9">Copyarg_Function</A>;

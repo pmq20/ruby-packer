@@ -1,5 +1,5 @@
 .\"***************************************************************************
-.\" Copyright (c) 2008-2011,2013 Free Software Foundation, Inc.              *
+.\" Copyright (c) 2008-2016,2017 Free Software Foundation, Inc.              *
 .\"                                                                          *
 .\" Permission is hereby granted, free of charge, to any person obtaining a  *
 .\" copy of this software and associated documentation files (the            *
@@ -26,9 +26,30 @@
 .\" authorization.                                                           *
 .\"***************************************************************************
 .\"
-.\" $Id: tabs.1,v 1.11 2013/06/22 18:11:57 tom Exp $
+.\" $Id: tabs.1,v 1.16 2017/11/18 23:56:00 tom Exp $
 .TH @TABS@ 1 ""
 .ds n 5
+.ie \n(.g .ds `` \(lq
+.el       .ds `` ``
+.ie \n(.g .ds '' \(rq
+.el       .ds '' ''
+.de bP
+.ie n  .IP \(bu 4
+.el    .IP \(bu 2
+..
+.de NS
+.ie n  .sp
+.el    .sp .5
+.ie n  .in +4
+.el    .in +2
+.nf
+.ft C			\" Courier
+..
+.de NE
+.fi
+.ft R
+.in -4
+..
 .SH NAME
 \fB@TABS@\fR \- set tabs on a terminal
 .SH SYNOPSIS
@@ -39,10 +60,14 @@ The \fB@TABS@\fP program clears and sets tab-stops on the terminal.
 This uses the terminfo \fIclear_all_tabs\fP and \fIset_tab\fP capabilities.
 If either is absent, \fB@TABS@\fP is unable to clear/set tab-stops.
 The terminal should be configured to use hard tabs, e.g.,
-.sp
-.RS
+.NS
 stty tab0
-.RE
+.NE
+.PP
+Like \fB@CLEAR@\fR(1), \fB@TABS@\fR writes to the standard output.
+You can redirect the standard output to a file (which prevents
+\fB@TABS@\fR from actually changing the tabstops),
+and later \fBcat\fP the file to the screen, setting tabstops at that point.
 .SH OPTIONS
 .SS General Options
 .TP 5
@@ -68,29 +93,31 @@ The \fB@TABS@\fP program processes a single list of tab stops.
 The last option to be processed which defines a list is the one that
 determines the list to be processed.
 .SS Implicit Lists
-Use a single number as an option, e.g., "\fB\-5\fP" to set tabs at the given
+Use a single number as an option, e.g., \*(``\fB\-5\fP\*('' to set tabs at the given
 interval (in this case 1, 6, 11, 16, 21, etc.).  Tabs are repeated up to
 the right margin of the screen.
 .PP
-Use "\fB\-0\fP" to clear all tabs.
+Use \*(``\fB\-0\fP\*('' to clear all tabs.
 .PP
-Use "\fB\-8\fP" to set tabs to the standard interval.
+Use \*(``\fB\-8\fP\*('' to set tabs to the standard interval.
 .SS Explicit Lists
-An explicit list can be defined after the options (this does not use a "\-").
-The values in the list must be in increasing numeric order, and greater than
-zero.  They are separated by a comma or a blank, for example,
-.sp
-.RS
+An explicit list can be defined after the options
+(this does not use a \*(``\-\*('').
+The values in the list must be in increasing numeric order,
+and greater than zero.
+They are separated by a comma or a blank, for example,
+.NS
 tabs 1,6,11,16,21
 .br
 tabs 1 6 11 16 21
-.RE
-Use a '+' to treat a number as an increment relative to the previous value,
+.NE
+.PP
+Use a \*(``+\*('' to treat a number as an increment relative to the previous value,
 e.g.,
-.sp
-.RS
+.NS
 tabs 1,+5,+5,+5,+5
-.RE
+.NE
+.PP
 which is equivalent to the 1,6,11,16,21 example.
 .SS Predefined Tab-Stops
 X/Open defines several predefined lists of tab stops.
@@ -123,8 +150,14 @@ SNOBOL
 UNIVAC 1100 Assembler
 .SH PORTABILITY
 .PP
-X/Open describes a \fB+m\fP option, to set a terminal's left-margin.
+IEEE Std 1003.1/The Open Group  Base Specifications Issue 7 (POSIX.1-2008) describes
+a \fBtabs\fP utility.  However
+.bP
+This standard describes a \fB+m\fP option, to set a terminal's left-margin.
 Very few of the entries in the terminal database provide this capability.
+.bP
+There is no counterpart in X/Open Curses Issue 7 for this utility,
+unlike \fB@TPUT@(1)\fP.
 .PP
 The \fB\-d\fP (debug) and \fB\-n\fP (no-op) options are extensions not provided
 by other implementations.

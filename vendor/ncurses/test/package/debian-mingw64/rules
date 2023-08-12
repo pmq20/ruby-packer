@@ -1,5 +1,5 @@
 #!/usr/bin/make -f
-# MAde with the aid of dh_make, by Craig Small
+# Made with the aid of dh_make, by Craig Small
 # Sample debian/rules that uses debhelper. GNU copyright 1997 by Joey Hess.
 # Some lines taken from debmake, by Cristoph Lameter.
 
@@ -13,6 +13,8 @@ DEB_BUILD_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
 
 CC_NORMAL = -Wall -Wstrict-prototypes -Wmissing-prototypes -Wshadow -Wconversion
 CC_STRICT = $(CC_NORMAL) -W -Wbad-function-cast -Wcast-align -Wcast-qual -Wmissing-declarations -Wnested-externs -Wpointer-arith -Wwrite-strings -ansi -pedantic
+
+NCURSES_PKG = ncurses-examples
 
 TARGET    = x86_64-w64-mingw32
 MINGW_BIN = /usr/bin
@@ -39,6 +41,8 @@ configure-stamp:
 		--host=$(TARGET) \
 		--target=$(TARGET) \
 		--prefix=$(MINGW_TOP) \
+		--bindir=\$${prefix}/bin/$(NCURSES_PKG) \
+		--datadir=\$${prefix}/share/$(NCURSES_PKG) \
 		--with-screen=ncursesw6 \
 		--with-pkg-config-libdir=/usr/$(TARGET)/lib/pkgconfig
 

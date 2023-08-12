@@ -1,5 +1,5 @@
 -------------------------------------------------------------------------------
--- Copyright (c) 1998-2014,2015 Free Software Foundation, Inc.               --
+-- Copyright (c) 1998-2017,2018 Free Software Foundation, Inc.               --
 --                                                                           --
 -- Permission is hereby granted, free of charge, to any person obtaining a   --
 -- copy of this software and associated documentation files (the             --
@@ -25,7 +25,7 @@
 -- sale, use or other dealings in this Software without prior written        --
 -- authorization.                                                            --
 -------------------------------------------------------------------------------
--- $Id: NEWS,v 1.2476 2015/08/08 23:29:51 tom Exp $
+-- $Id: NEWS,v 1.3069 2018/01/27 15:28:53 tom Exp $
 -------------------------------------------------------------------------------
 
 This is a log of changes that ncurses has gone through since Zeyd started
@@ -38,12 +38,1303 @@ Contributors include those who have provided patches (even small ones), as well
 as those who provide useful information (bug reports, analyses).  Changes with
 no cited author are the work of Thomas E Dickey (TD).
 
-A few contributors are given in this file by their initials.
-They each account for one percent or more of the changes since 1.9.9e.
+A few contributors may be cited in this file by their initials.
+Each accounts for half of one percent or more of the changes since 1.9.9e.
 See the AUTHORS file for the corresponding full names.
 
 Changes through 1.9.9e did not credit all contributions;
 it is not possible to add this information.
+
+20180127
+	+ updated release notes
+	+ amend a warning message from tic which should have flagged misuse
+	  of "XT" capability in "screen" terminal description.
+	> terminfo changes:
+	+ trim "XT" from screen entry, add comments to explain why it was
+	  not suitable -TD
+	+ modify iterm to use xterm+sl-twm building block -TD
+	+ mark konsole-420pc, konsole-vt100, konsole-xf3x obsolete reflecting
+	  konsole's removal in 2008 -TD
+	+ expanded the history section of konsole to explain its flawed
+	  imitation of xterm's keyboard -TD
+	+ use xterm+x11mouse in screen.* entries because screen does not yet
+	  support xterm's 1006 mode -TD
+	+ add nsterm-build400 for macOS 10.13 -TD
+	+ add ansi+idc1, use that in ansi+idc adding dch for consistency -TD
+	+ update vte to vte-2017 -TD
+	+ add ecma+strikeout to vte-2017 -TD
+	+ add iterm2-direct -TD
+	+ updated teraterm, added teraterm-256color -TD
+	+ add mlterm-direct -TD
+	+ add descriptions for ANSI building-blocks -TD
+
+20180121 pre-release
+	> terminfo changes:
+	+ add xterm+noalt, xterm+titlestack, xterm+alt1049, xterm+alt+title
+	  blocks from xterm #331 -TD
+	+ add xterm+direct, xterm+indirect, xterm-direct entries from xterm
+	  #331 -TD
+	+ modify xterm+256color and xterm+256setaf to use correct number of
+	  color pairs, for ncurses 6.1 -TD
+	+ add rs1 capability to xterm-256color -TD
+	+ modify xterm-r5, xterm-r6 and xterm-xf86-v32 to use xterm+kbs to
+	  match xterm #272, reflecting packager's changes -TD
+	+ remove "boolean" Se, Ss from st-0.7 -TD
+	+ add konsole-direct and st-direct -TD
+	+ remove unsupported "Tc" capability from st-0.7; use st-direct if
+	  direct-colors are wanted -TD
+	+ add vte-direct -TD
+	+ add XT, hpa, indn, and vpa to screen, and invis, E3 to tmux (patch by
+	  Pierre Carru)
+	+ use xterm+sm+1006 in xterm-new, vte-2014 -TD
+	+ use xterm+x11mouse in iterm, iterm2, mlterm3 because xterm's 1006
+	  mode does not work with those programs.  konsole is debatable -TD
+	+ add "termite" entry (report by Markus Pfeiffer) -TD
+	> merge branch begun April 2, 2017 which provides these features:
+	+ support read/write new binary-format for terminfo which stores
+	  numeric capabilities as a signed 32-bit integer.  The test programs
+	  such as picsmap, ncurses were created or updated during 2017 to use
+	  this feature.
+	+ the new format is written by the wide-character configuration of
+	  tic when it finds a numeric capability larger than 32767.
+	+ other applications such as infocmp built with the wide-character
+	  ncurses library work as expected.
+	+ applications built with the "narrow" (8-bit) configuration will
+	  read the new format, but will limit those extended values to 32767.
+	+ in either wide/narrow configuration, the structure defined in
+	  term.h still uses signed 16-bit values.
+	+ because it is incompatible with the legacy (mid-1980s) binary format,
+	  a new magic value is provided for the "file" program.
+	+ the term.5 manual page is updated to describe this new format.
+	+ the limit on file-size for compiled terminfo is increased in the
+	  wide-character configuration to 32768.
+
+20180120
+	+ build-fix in picsmap.c for stdint.h existence.
+	+ add --disable-stripping option to configure scripts.
+	+ modify ncurses-examples to install test-scripts in the data directory.
+	+ work around tool-breakage in Debian 9 and later by invoking
+	  gprconfig to specify the C compiler to be used by gnatmake,
+	  and conditionally suppressing Library_Options line for static
+	  libraries.
+	+ bump the compat level for test-packages to 7, i.e., Debian 5.
+
+20180106
+	+ fixes for writing extended color pairs in putwin.
+	+ modify test/savescreen.c to add test patterns that exercise 88-,
+	  256-, etc., colors.
+	+ modify configure option --with-build-cc, adding clang, c89 and c99
+	  as possible default values.
+	+ modify ncurses-examples configure script to use pkg-config for the
+	  extra form/menu/panel libraries, to be more consistent with the
+	  handling of the curses/ncurses library.
+	+ modify test-packages for mingw to supply "pc" files.
+	+ modify gen-pkgconfig.in to list -lpthread as a private library when
+	  configured to access it via weak symbols.
+	+ simplify gen-pkgconfig.in, adding -ltinfo without the special linker
+	  checks because some versions of the linker simply hard-code the
+	  behavior.
+	+ update URLs for ncurses website to use https.
+	+ modify CF_CURSES_LIBS to fill in $cf_nculib_root in case the
+	  ncurses-examples are built with a system ncurses that lacks the
+	  standard "curses" symbolic link, as done by SuSE.  The symbol is
+	  needed to make a followup check for the pthread library work, and
+	  would be set properly using the options "--with-screen", etc.
+	+ generate misc/*.pc with "all" rule, as done for "sources" rule
+	  (report by Jeffrey Walton).
+
+20171230
+	+ build-fix for ncurses-examples with Fedora27, adding check for
+	  reset_color_pairs() -- not yet in Fedora's package.
+	+ consistently add $CFLAGS to $MK_SHARED_LIB symbol in configure
+	  script when the latter happens to use the C compiler rather than
+	  directly using the loader (report by Jeffrey Walton).
+	+ set ABI for upcoming 6.1 release in "*.map" files.  While there are
+	  some remaining internals to apply, no ABI-related changes are
+	  anticipated.
+	+ add configure --with-config-suffix option to work around filename
+	  conflict with Redhat packages versus test-packages.
+
+20171223
+	+ modify ncurses-examples to quiet const-warnings when building with
+	  PDCurses.
+	+ modify toe to not exit if unable to read a terminal description,
+	  e.g., if there is a permission problem.
+	+ minor fix for progs/toe.c, using _nc_free_termtype2.
+	+ assign 0 to pointer in _nc_tgetent_leak() after freeing it. Also
+	  avoid reusing pointer from previous successful call to tgetent
+	  if the latest call is unsuccessful (patch by Michael Schroeder,
+	  OpenSuSE #1070450).
+	+ minor fix for test/tracemunch, initialize $awaiting variable.
+
+20171216
+	+ repair template in test/package/ncurses-examples.spec (cf: 20171111).
+	+ improve tic's warning about the number of parameters tparm might use
+	  for u1-u9 by making a special case for u6.
+	+ improve curs_attr.3x discussion of color pairs.
+
+20171209
+	+ modify misc/ncurses-config.in to make output with --includedir
+	  consistent with --cflags, i.e., when --disable-overwrite option was
+	  configured the output should show the subdirectory where headers
+	  are.
+	+ modify MKlib_gen.sh to suppress macros when calling an "implemented"
+	  function in link_test.c
+	+ updated ftp-url used in test-packages, etc.
+	+ modify order of -pie/-shared options in configure script in case
+	  LDFLAGS uses "-pie", working around a defect or limitation in the GNU
+	  linker (prompted by patch by Yogesh Prasad, forwarded by Jay Shah).
+	+ add entry in man_db.renames for user_caps.5
+
+20171125
+	+ modify MKlib_gen.sh to avoid tracing result from getstr/getnstr
+	  before initialized.
+	+ add "-a" aspect-ratio option to picsmap.
+	+ add configure check for default path of rgb.txt, used in picsmap.
+	+ modify _nc_write_entry() to truncate too-long filename (report by
+	  Hosein Askari, Debian #882620).
+	+ build-fix for ncurses-examples with NetBSD curses:
+	  + it lacks the use_env() function.
+	  + it lacks libpanel; a recent change used the wrong ifdef symbol.
+	+ add a macro for is_linetouched() and adjust the function's return
+	  value to make it possible for most applications to check for an
+	  error-return (report by Midolikawa H).
+	+ additional manpage cleanup.
+	+ update config.guess, config.sub from
+		http://git.savannah.gnu.org/cgit/config.git
+
+20171118
+	+ add a note to curs_addch.3x on portability.
+	+ add a note to curs_pad.3x on the origin and portability of pads.
+	+ improve manpage description of getattrs (report by Midolikawa H).
+	+ improve manpage macros (prompted by discussion in Debian #880551.
+	+ reviewed test-programs using KEY_RESIZE, made fixes to test/worm.c
+	+ add a "-d" option to picsmap for default-colors.
+	+ modify old terminology entry and a few other terminal emulators to
+	  account for xon -TD
+	+ correct sgr string for tmux, which used screen's "standout" code
+	  rather than the standard code (patch by Roman Kagan)
+	+ correct sgr/sgr0 strings in a few other cases reported by tic, making
+	  those correspond to the non-sgr settings where they differ, but
+	  otherwise use ECMA-48 consistently:
+	  jaixterm, aixterm, att5420_2, att4424, att500, decansi, d410-7b,
+	  dm80, hpterm, emu-220, hp2, iTerm2.app, mterm-ansi, ncrvt100an,
+	  st-0.7, vi603, vwmterm -TD
+	+ build-fix for diagnostics warning in lib_mouse.c for pre-5.0 versions
+	  of gcc which did not recognize the diagnostic "push" pragma (patch by
+	  Vassili Courzakis).
+
+20171111
+	+ add "op" to xterm+256setaf -TD
+	+ reviewed terminology 1.0.0 -TD
+	+ reviewed st 0.7 -TD
+	+ suppress debug-package for ncurses-examples rpm build.
+
+20171104
+	+ check for interrupt in color-pair initialization of dots_curses.c,
+	  dots_xcurses.c
+	+ add z/Z zoom feature to test/ncurses.c C/c screens.
+	+ add '<' and '>' commands to test/ncurses.c S/s screens, to better
+	  test off-by-ones in the overlap/copywin functions.
+
+20171028
+	+ improve man/curs_inwstr.3x, correct end-logic for lib_inwstr.c
+	  (report by Midolikawa H).
+	+ fix typo in a few places for "improvements" (patch by Sven Joachim).
+	+ clear the other half of a double-width character on which a line
+	  drawing character is drawn.
+	+ make test/ncurses.c "s" test easier to understand which subtests are
+	  available; add a "S" wide-character overlap test-screen.
+	+ modify test/ncurses.c C/c tests to allow for extended color pairs.
+	+ add endwin() call in error-returns from test/ncurses.c omitted in
+	  recent redesign of its menu (cf: 20170923).
+	+ improve install of hashed-db by removing the ".db" file as done for
+	  directory-tree terminal databases.
+	+ repair a few overlooked items in include/ncurses_defs from recent
+	  port/refactoring of test-programs (cf: 20170909).
+	+ add test/padview.c, to compare pads with direct updates in view.c
+
+20171021
+	+ modify test/view.c to expand tabs using the ncurses library rather
+	  than in the test-program.
+	+ remove very old SIGWINCH example in test/view.c, just use KEY_RESIZE.
+	+ add -T, -e, -f -m options to "dots" test-programs.
+	+ fix a few typos in usage-messages for test-programs.
+
+20171014
+	+ minor cleanup to test/view.c:
+	  + eliminate "-n" option by simply reading the whole file.
+	  + implement page up/down commands.
+	+ add check in tput for init/reset operands to ensure those use a
+	  terminal.
+	+ improve manual pages which discuss chtype, cchar_t types and the
+	  attribute values which can be stored in those types.
+	+ correct array-index when parsing "-T" command-line option in tabs
+	  program.
+	+ modify demo_new_pair.c to pass extended pairs to setcchar().
+	+ add test/dots_xcurses.c to illustrate a different approach used for
+	  extended colors which can be contrasted with dots_curses.c.
+	+ add a check in tic to note when a description uses non-mandatory
+	  delays without xon_xoff.  This is not an error, but some descriptions
+	  for a terminal emulator may use the combination incorrectly.
+
+20171007
+	+ modify "-T" option of clear and tput to call use_tioctl() to obtain
+	  the operating system's notion of the screensize if possible.
+	+ review/repair some exit-codes for tput, making usage-message exit
+	  with 2 rather than 1, and a failure to open terminal 4+errno.
+	+ amend check in tput, tabs and clear to allow those to use the
+	  database-only features in cron if a -T option gives a suitable
+	  terminal name (report by Lauri Tirkkonen).
+	+ correct an ifdef in test/ncurses.c for systems with soft-keys but
+	  not slk_color().
+	+ regenerate man-html documentation.
+
+20170930
+	+ fix a symbol conflict that made ncurses.c C/c menu not work with
+	  Solaris xpg4 curses.
+	+ add refresh() call to dots_mvcur.c, needed to use mvcur() with
+	  Solaris xpg4 curses after calling newterm().
+	+ minor fixes for configure script from work on ncurses-examples and
+	  tin.
+	+ improve animation in test/xmas.c by adding a time-delay in blinkit().
+	+ modify several test programs to reflect that ncurses honors existing
+	  signal handlers in initscr(), while other implementations do not.
+	+ modify bs.c to make it easier to quit.
+	+ change ncurses-examples to use attr_t vs chtype to follow X/Open
+	  documentation more closely since Solaris xpg4-curses uses different
+	  values for WA_xxx vs A_xxx that rely on attr_t being an unsigned
+	  short.  Tru64 aka OSF1, HPUX, AIX did as ncurses does, equating the
+	  two sets.
+
+20170923
+	+ modify menu for test/ncurses.c to fit on 24-line screen.
+	+ build-fix for configure --with-caps=uwin
+	+ add options to test_arrays.c, for selecting termcap vs terminfo, etc.
+
+20170916
+	+ minor fix to test/filter.c to avoid clearing the command in one case.
+	+ modify filter() to discard clr_eos if back_color_erase is set.
+
+20170909
+	+ improve wide-character implementation of myADDNSTR() in frm_driver.c,
+	  which was inconsistent with the normal implementation.
+	+ save/restore cursor position in Undo_Justification(), matching
+	  behavior of Buffer_To_Window() (report by Leon Winter).
+	+ modify test/knight to provide the "slow" solution for small screens
+	  using "R", noting that Warnsdorf's method is easily done with "a".
+	+ modify several test-programs which call use_default_colors() to
+	  consistently do this only if "-d" option is given.
+	+ additional changes to test with non-standard variants of curses:
+	  + modify a loop limit in firework.c to work around absense of limit
+	    checks in some libraries.
+	  + fill the last row of a window with "?" in firstlast if waddch does
+	    not return ERR on the lower-right corner.
+	+ add checks in test/configure for some functions not in 4.3BSD curses.
+	+ fix a regression in test/configure (cf: 20170826).
+
+20170902
+	+ amend change for endwin-state for better consistency with the older
+	  logic (report/patch by Jeb Rosen, cf: 20170722).
+	+ modify check in fmt_entry() to handle a cancelled reset string
+	  (Debian #873746).  Make similar fixes in other parts of dump_entry.c
+	  and tput.c
+
+20170827
+	+ fix a bug in repeat_char logic (cf: 20170729, report by Chris Clayton).
+
+20170826
+	+ fixes for "iterm2" (report by Leonardo Brondani Schenkel) -TD
+	+ corrected a warning from tic about keys which are the same, to skip
+	  over missing/cancelled values.
+	+ add check in tic for unnecessary use of "2" to denote a shifted
+	  special key.
+	+ improve checks in trim_sgr0, comp_parse.c and parse_entry.c, for
+	  cancelled string capabilities.
+	+ add check in _nc_parse_entry() for invalid entry name, setting the
+	  name to "invalid" to avoid problems storing entries.
+	+ add/improve checks in tic's parser to address invalid input
+	  + add a check in comp_scan.c to handle the special case where a
+	    nontext file ending with a NUL rather than newline is given to tic
+	    as input (Redhat #1484274).
+	  + allow for cancelled capabilities in _nc_save_str (Redhat #1484276).
+	  + add validity checks for "use=" target in _nc_parse_entry (Redhat
+	    #1484284).
+	  + check for invalid strings in postprocess_termcap (Redhat #1484285)
+	  + reset secondary pointers on EOF in next_char() (Redhat #1484287).
+	  + guard _nc_safe_strcpy() and _nc_safe_strcat() against calls using
+	    cancelled strings (Redhat #1484291).
+	+ correct typo in curs_memleaks.3x (Sven Joachim).
+	+ improve test/configure checks for some curses variants not based on
+	  X/Open Curses.
+	+ add options for test/configure to disable checks for form, menu and
+	  panel libraries.
+
+20170819
+	+ update "iterm" entry -TD
+	+ add "iterm2" entry (report by Leonardo Brondani Schenkel) -TD
+	+ regenerate llib-* files.
+	+ regenerate HTML manpages.
+	+ improve picsmap test-program:
+	  + reduce memory used for tsearch
+	  + add report in log file showing cumulative color coverage.
+	+ add -x option to clear/tput to make the E3 extension optional
+	  (cf: 20130622).
+	+ add options -T and -V to clear command for compatibility with tput.
+	+ add usage message to clear command (Debian #371855).
+	+ improve usage messages for tset and tput.
+	+ minor fixes to "RGB" extension and reset_color_pairs().
+
+20170812
+	+ improve description of -R option in infocmp manual page (report by
+	  Stephane Chazelas).
+	+ add reset_color_pairs() function.
+	+ add user_caps.5 manual page to document the terminfo extensions used
+	  by ncurses.
+	+ improve build scripts, using SIGQUIT vs SIGTRAP; add other configure
+	  script fixes from work on xterm, lynx and tack.
+	+ modify install-rule for ncurses-examples to put the data files in
+	  /usr/share/ncurses-examples
+	+ improve tracemunch, by changing address-parameters of add_wch(),
+	  color_content() and pair_content() to dummy parameters.
+	+ minor optimization to _nc_change_pair, to return quickly when the
+	  current screen is marked for clearing.
+	+ in-progress changes to improve performance of test/picsmap.c for
+	  loading image files.
+	+ modify allocation for SCREEN's color-pair table to start small, grow
+	  on demand up to the existing limit.
+	+ add "RGB" extension capability for direct-color support, use this to
+	  improve color_content().
+	+ improve picsmap test-program:
+	  + if no palette file is needed, attempt to load one based on $TERM,
+	    checking first in the current directory, then by adding ".dat"
+	    suffix, and finally in the data-directory, e.g.,
+	    /usr/share/ncurses-examples
+	  + add "-l" option for logging
+	  + add "-d" option for debugging
+	  + add "-s" option for stepping automatically through list of images,
+	    with time delay.
+	  + use tsearch to improve time for loading color table for images.
+	+ update config.guess, config.sub from
+		http://git.savannah.gnu.org/cgit/config.git
+
+20170729
+	+ update interix entry using tack and SFU on Windows 7 Ultimate -TD
+	+ use ^? for kdch1 in interix (reported by Jonathan de Boyne Pollard)
+	+ add "rep" to xterm-new, available since 1997/01/26 -TD
+	+ move SGR 24 and 27 from vte-2014 to vte-2012 (request by Alain
+	  Williams) -TD
+	+ add a check in newline_forces_scroll() in case a program moves the
+	  cursor outside scrolling margins (report by Robert King).
+	+ improve _nc_tparm_analyze, using that to extend the checks made by
+	  tic for reporting inconsistencies between the expected number of
+	  parameters for a capability and the actual.
+	+ amend handling of repeat_char capability in EmitRange (adapted from
+	  report/patch by Dick Wesseling):
+	  + translate the character to the alternate character set when the
+	    alternate character set is enabled.
+	  + do not use repeat_char for characters past 255.
+	+ document "_nc_free_tinfo" in manual page, because it could be used in
+	  tack for memory-leak checking.
+	+ add "--without-tack" configure option to refine "--with-progs"
+	  configure option.  Normally tack is no longer built in-tree, but
+	  a few packagers combine it during the build.  If term_entry.h is
+	  installed, there is no advantage to in-tree builds.
+	+ adjust configure-script to define HAVE_CURSES_DATA_BOOLNAMES symbol
+	  needed for tack 1.08 when built in-tree.  Rather than relying upon
+	  internal "_nc_" functions, tack now uses the boolean, number and
+	  string capability name-arrays provided by ncurses and SVr4 Unix
+	  curses.  It still uses term_entry.h for the definitions of the
+	  extended capability arrays.
+	+ add an overlooked null-pointer check in mvcur changes from 20170722
+
+20170722
+	+ improve test-packages for ncurses-examples and AdaCurses for lintian
+	+ modify logic for endwin-state to be able to detect the case where
+	  the screen was never initialized, using that to trigger a flush of
+	  ncurses' buffer for mvcur, e.g., in test/dots_mvcur.c for the
+	  term-driver configuration.
+	+ add dependency upon ncurses_cfg.h to a few other internal header
+	  files to allow each to be compiled separately.
+	+ add dependency upon ncurses_cfg.h to tic's header-files; any program
+	  using tic-library will have to supply this file.  Legacy tack
+	  versions supply this file; ongoing tack development has dropped the
+	  dependency upon tic-library and new releases will not be affected.
+
+20170715
+	+ modify command-line parameters for "convert" used in picsmap to work
+	  with ImageMagick 6.8 and newer.
+	+ fix build-problem with tack and ABI-5 (Debian #868328).
+	+ repair termcap-format from tic/infocmp broken in 20170701 fixes
+	  (Debian #868266).
+	+ reformat terminfo.src with 20170513 updates.
+	+ improve test-packages to address lintian warnings.
+
+20170708
+	+ add a note to tic manual page about -W versus -f options.
+	+ correct a limit-check in fixes from 20170701 (report by Sven Joachim).
+
+20170701
+	+ modify update_getenv() in db_iterator.c to ensure that environment
+	  variables which are not initially set will be checked later if an
+	  application happens to set them (patch by Guillaume Maudoux).
+	+ remove initialization-check for calling napms() in the term-driver
+	  configuration; none is needed.
+	+ add help-screen to test/test_getstr.c and test/test_get_wstr.c
+	+ improve compatibility between different configurations of new_prescr,
+	  fixing a case with threaded code and term-driver where c++/demo did
+	  not work (cf: 20160213).
+	+ the fixes for Redhat #1464685 obscured a problem subsequently
+	  reported in Redhat #1464687; the given test-case was no longer
+	  reproducible.  Testing without the fixes for the earlier reports
+	  showed a problem with buffer overflow in dump_entry.c, which is
+	  addressed by reducing the use of a fixed-size buffer.
+	+ add/improve checks in tic's parser to address invalid input
+	  (Redhat #1464684, #1464685, #1464686, #1464691).
+	  + alloc_entry.c, add a check for a null-pointer.
+	  + parse_entry.c, add several checks for valid pointers as well as
+	    one check to ensure that a single character on a line is not
+	    treated as the 2-character termcap short-name.
+	+ fix a memory leak in delscreen() (report by Bai Junq).
+	+ improve tracemunch, showing thread identifiers as names.
+	+ fix a use-after-free in NCursesMenu::~NCursesMenu()
+	+ further amend incorrect calls for memory-leaks from 20170617 changes
+	  (report by Allen Hewes).
+
+20170624
+	+ modify c++/etip.h.in to accommodate deprecation of throw() and
+	  throws() in c++17 (prompted by patch by Romain Geissler).
+	+ remove some incorrect calls for memory-leaks from 20170617 changes
+	  (report by Allen Hewes).
+	+ add test-programs for termattrs and term_attrs.
+	+ modify _nc_outc_wrapper to use the standard output if the screen was
+	  not initialized, rather than returning an error.
+	+ improve checks for low-level terminfo functions when the terminal
+	  has not been initialized (Redhat #1345963).
+	+ modify make_hash to allow building with address-sanitizer,
+	  assuming that --disable-leaks is configured.
+	+ amend changes for number_format() in 20170506 to avoid undefined
+	  behavior when shifting (patch by Emanuele Giaquinta).
+
+20170617
+	+ fill in some places where TERMTYPE2 vs TERMTYPE was not used
+	  (report by Allen Hewes).
+	+ use ExitTerminfo() internally in error-exits for ncurses' setupterm
+	  to help with leak checking.
+	+ use ExitProgram() in error-exit from initscr() to help with leak
+	  checking.
+	+ review test-programs, adding checks for cases where the terminal
+	  cannot be initialized.
+
+20170610
+	+ add option "-xp" to picsmap.c, to use init_extended_pair().
+	+ make simple performance fixes for picsmap.c
+	+ improve aspect ratio of images read from "convert" in picsmap.c
+
+20170603
+	+ add option to picsmap to use color-palette files, e.g., for mapping
+	  to xterm-256color.
+	+ move the data in SCREEN used for the alloc_pair() function to the
+	  end, to restore compatibility between ncurses/ncursesw libtinfo
+	  (report/patch by Miroslav Lichvar).
+	+ add build-time utility "report_offsets" to help show when the various
+	  configurations of tinfo library are compatible or not.
+
+20170527
+	+ improved test/picsmap.c:
+	  + lookup named colors for xpm files in rgb.txt
+	  + accept blanks in color-keys for xpm files.
+	  + if neither xbm/xpm work, try "convert", which may be available.
+
+20170520
+	+ modify test/picsmap.c to read xpm files.
+	+ modify package/debian/* to create documentation packages, so the
+	  related files can be checked with lintian.
+	+ fix some typos in manpages (report/patch by Sven Joachim).
+
+20170513
+	+ add test/picsmap.c to fill in some testing issues not met by dots.
+	  The initial version reads X bitmap (".xbm") files.
+	+ repair logic which forces a repaint where a color-pair's content is
+	  changed (cf: 20170311).
+	+ improve tracemunch, showing screenXX pointers as names.
+
+20170506
+	+ modify tic/infocmp display of numeric values to use hexadecimal when
+	  they are "close" to a power of two, making the result more readable.
+	+ improve discussion of portability in curs_mouse.3x
+	+ change line-length for generated html/manpages to 78 columns from 65.
+	+ improve discussion of line-drawing characters in curs_add_wch.3x
+	  (prompted by discussion with Lorinczy Zsigmond).
+	+ cleanup formatting of hackguide.html and ncurses-intro.html
+	+ add examples for WACS_D_PLUS and WACS_T_PLUS to test/ncurses.c
+
+20170429
+	+ corrected a case where $with_gpm was set to "maybe" after CF_WITH_GPM,
+	  overlooked in 20160528 fixes (report by Alexandre Bury).
+	+ improve a couple of test-program's help-messages.
+	+ corrected loop in rain.c from 20170415 changes.
+	+ modify winnstr and winchnstr to return error if the output pointer is
+	  null, as well as adding a null pointer check of the window pointer
+	  for better compatibility with other implementations.
+	+ improve discussion of NetBSD curses in scr_dump.5
+	+ modify LIMIT_TYPED macro in new_pair.h to avoid changing sign of the
+	  value to be limited (reports by Darby Payne, Rob Boudreau).
+	+ update config.guess, config.sub from
+		http://git.savannah.gnu.org/cgit/config.git
+
+20170422
+	+ build-fix for termcap-configuration (report by Chi-Hsuan Yen).
+	+ improve terminfo manual page discussion of control- and graphics-
+	  characters.
+	+ remove tic warning about "^?" in string capabilities, which was
+	  marked as an extension (cf: 20000610, 20110820); however all Unix
+	  implementations support this and X/Open Curses does not address it.
+	  On the other hand, termcap never did support this feature.
+	+ correct missing comma-separator between string capabilities in
+	  icl6402 and m2-nam -TD
+	+ restore rmir/smir in ansi+idc to better match original ansiterm+idc,
+	  add alias ansiterm (report by Robert King).
+	+ amend an old check for ambiguous use of "ma" in terminfo versus
+	  a termcap use, if the capability is cancelled to treat it as number.
+	+ correct a case in _nc_captoinfo() which read "%%" and emitted "%".
+	+ modify sscanf calls in _nc_infotocap() for patterns "%{number}%+%c"
+	  and "%'char'%+%c" to check that the final character is really 'c',
+	  avoiding a case in icl6404 which cannot be converted to termcap.
+	+ in _nc_infotocap(), add a check to ensure that terminfo "^?" is not
+	  written to termcap, because the BSDs did not implement that.
+	+ in _nc_tic_expand() and _nc_infotocap(), improve string-length check
+	  when deciding whether to use "^X" or "\xxx" format for control
+	  characters, to make the output of tic/infocmp more predictable.
+	+ limit termcap "%d" width to 2 digits on input, and use "%2" in
+	  preference to "%02" on output.
+	+ correct terminfo/termcap conversion of "%02" and "%03" into "%2" and
+	  "%3"; the result repeated the last character.
+	+ add man/scr_dump.5 to document screen-dump format.
+
+20170415
+	+ modify several test programs to use new popup_msgs, adapted from
+	  help-screen used in test/edit_field.c
+	+ drop two symbols obsoleted in 2004: _nc_check_termtype, and
+	  _nc_resolve_uses
+	+ fix some old copyright dates (cf: 20031025).
+	+ build-fixes for test/savescreen.c to work with AIX and HPUX.
+	+ minor fix to configure script, adding a backslash/continuation.
+	+ extend TERMINAL structure for ABI 6 to store numbers internally as
+	  integers rather than short, by adding new data for this purpose.
+	+ more fixes for minor memory-leaks in test-programs.
+
+20170408
+	+ change logic in wins_nwstr() to avoid addressing data past the output
+	  of mbstowcs().
+	+ correct a call to setcchar() in Data_Entry_w() from 20131207 changes.
+	+ fix minor memory-leaks in test-programs.
+	+ further improve ifdef in term_entry.h for internal definitions not
+	  used by tack.
+
+20170401
+	+ minor fixes for vt100+4bsd, e.g., delay in sgr for consistency -TD
+	+ add smso for env230, to match sgr -TD
+	+ remove p7/protect from sgr in fbterm -TD
+	+ drop setf/setb from fbterm; setaf/setab are enough -TD
+	+ make xterm-pcolor sgr consistent with other capabilities -TD
+	+ add rmxx/smxx ECMA-48 strikeout extension to tmux and xterm-basic
+	  (discussion with Nicholas Marriott)
+	+ add test-programs sp_tinfo and extended_color
+	+ modify no-leaks code for lib_cur_term.c to account for the tgetent()
+	  cache.
+	+ modify setupterm() to save original tty-modes so that erasechar()
+	  works as expected.  Also modify _nc_setupscreen() to avoid redundant
+	  calls to get original tty-modes.
+	+ modify set_curterm() to update ttytype[] data used by longname().
+	+ modify wattr_set() and wattr_get() to return ERR if win-parameter is
+	  null, as documented.
+	+ improve cast used for null-pointer checks in header macros, to
+	  reduce compiler warnings.
+	+ modify several functions, using the reserved "opts" parameter to pass
+	  color- and pair-values larger than 16-bits:
+	  + getcchar(), setcchar(), slk_attr_set(), vid_puts(), wattr_get(),
+	    wattr_set(), wchgat(), wcolor_set().
+	  + Other functions call these with the corresponding altered behavior,
+	    including chgat(), mvchgat(), mvwchgat(), slk_color_on(),
+	    slk_color_off(), vid_attr().
+	+ add new functions for manipulating color- and pair-values larger
+	  than 16-bits.  These are extended_color_content(),
+	  extended_pair_content(), extended_slk_color(), init_extended_color(),
+	  init_extended_pair(), and the corresponding sp-funcs.
+
+20170325
+	+ fix a memory leak in the window-list when creating multiple screens
+	  (reports by Andres Martinelli, Debian #783486).
+	+ reviewed calls from link_test.c, added a few more null-pointer
+	  checks.
+	+ add a null-pointer check in ungetmouse, in case mousemask was not
+	  called (report by "Kau").
+	+ updated curs_sp_funcs.3x for new functions.
+
+20170318
+	+ change TERMINAL structure in term.h to make it opaque.  Some
+	  applications misuse its members, e.g., directly modifying it
+	  rather than using def_prog_mode().
+	+ modify utility headers such as tic.h to make it clearer which are
+	  externals that are used by tack.
+	+ improve curs_slk.3x in particular its discussion of portability.
+	+ fix cut/paste in legacy_encoding.3x
+	+ add prototype for find_pair() to new_pair.3x (report by Branden
+	  Robinson).
+	+ fix a couple of broken links in generated man-html documentation.
+	+ regenerate man-html documentation.
+
+20170311
+	+ modify vt100 rs2 string to reset vt52 mode and scrolling regions
+	  (report/analysis by Robert King) -TD
+	+ add vt100+4bsd building block, use that for older terminals rather
+	  than "vt100" which is now mostly used as a building block for
+	  terminal emulators -TD
+	+ correct a few spelling errors in terminfo.src comments -TD
+	+ add fbterm -TD
+	+ fix a typo in ncurses.c test_attr legend (patch by Petr Vanek).
+	+ changed internal colorpair_t to a struct, eliminating an internal
+	  8-bit limit on colors
+	+ add ncurses/new_pair.h
+	+ add ncurses/base/new_pair.c with alloc_pair(), find_pair() and
+	  free_pair() functions
+	+ add test/demo_new_pair.c
+
+20170304
+	+ improve terminfo manual description of terminfo syntax.
+	+ clarify the use of wint_t vs wchar_t in curs_get_wstr.3x
+	+ improve description of endwin() in manual.
+	+ modify setcchar() and getcchar() to treat negative color-pair as an
+	  error.
+	+ fix a typo in include/hashed_db.h (Andre Sa).
+
+20170225
+	+ fixes for CF_CC_ENV_FLAGS (report by Ross Burton).
+
+20170218
+	+ fix several formatting issues with manual pages.
+	+ correct read of terminfo entry in which all strings are absent or
+	  explicitly cancelled.  Before this fix, the result was that all were
+	  treated as only absent.
+	+ modify infocmp to suppress mixture of absent/cancelled capabilities
+	  that would only show as "NULL, NULL", unless the -q option is used,
+	  e.g., to show "-, @" or "@, -".
+
+20170212
+	+ build-fixes for PGI compilers (report by Adam J. Stewart)
+	  + accept whitespace in sed expression for generating expanded.c
+	  + modify configure check that g++ compiler warnings are not used.
+	  + add configure check for -fPIC option needed for shared libraries.
+	+ let configure --disable-ext-funcs override the default for the
+	  --enable-sp-funcs option.
+	+ mark some structs in form/menu/panel libraries as potentially opaque
+	  without modifying API/ABI.
+	+ add configure option --enable-opaque-curses for ncurses library and
+	  similar options for the other libraries.
+
+20170204
+	+ trim newlines, tabs and escaped newlines from terminfo "paths" passed
+	  to db-iterator.
+	+ ignore zero-length files in db-iterator; these are useful for
+	  instance to suppress "$HOME/.terminfo" when not wanted.
+	+ amended "b64:" encoder to work with the terminfo reader.
+	+ modify terminfo reader to accept "b64:" format using RFC-3548 in
+	  as well as RFC-4648 url/filename-safe format.
+	+ modify terminfo reader to accept "hex:" format as generated by
+	  "infocmp -0qQ1" (cf: 20150905).
+	+ adjust authors comment to reflect drop below 1% for SV.
+
+20170128
+	+ minor comment-fixes to help automate links to bug-urls -TD
+	+ add dvtm, dvtm-256color -TD
+	+ add settings corresponding to xterm-keys option to tmux entry to
+	  reflect upcoming change to make that option "on" by default
+	  (patch by Nicholas Marriott).
+	+ uncancel Ms in tmux entry (Harry Gindi, Nicholas Marriott).
+	+ add dumb-emacs-ansi -TD
+
+20170121
+	+ improve discussion of early history of tput program.
+	+ incorporate A_COLOR mask into COLOR_PAIR(), in case user application
+	  provides an out-of-range pair number (report by Elijah Stone).
+	+ clarify description in tput manual page regarding support for
+	  termcap names (prompted by FreeBSD #214709).
+	+ remove a restriction in tput's support for termcap names which
+	  omitted capabilities normally not shown in termcap translations
+	  (cf: 990123).
+	+ modify configure script for clang as used on FreeBSD, to work around
+	  clang's differences in exit codes vs gcc.
+
+20170114
+	+ improve discussion of early history of tset/reset programs.
+	+ clarify in manual pages that the optional verbose option level is
+	  available only when ncurses is configured for tracing.
+	+ amend change from 20161231 to avoid writing traces to the standard
+	  error after initializing the trace feature using the environment
+	  variable.
+
+20170107
+	+ amend changes for tput to reset tty modes to "sane" if the program
+	  is run as "reset", like tset.  Likewise, ensure that tset sends
+	  either reset- or init-strings.
+	+ improve manual page descriptions of tput init/reset and tset/reset,
+	  to make it easier to see how they are similar and different.
+	+ move a static result from key_name() to _nc_globals
+	+ modify _nc_get_screensize to allow for use_env() and use_tioctl()
+	  state to be per-screen when sp-funcs are configured, better matching
+	  the behavior when using the term-driver configuration.
+	+ improve cross-references in manual pages for often used functions
+	+ move SCREEN field for use_tioctl() data before the ncursesw fields,
+	  and limit that to the sp-funcs configuration to improve termlib
+	  compatibility (cf:  20120714).
+	+ correct order of initialization for traces in use_env() and
+	  use_tioctl() versus first trace calls.
+
+20161231
+	+ fix errata for ncurses-howto (report by Damien Ruscoe).
+	+ fix a few places in configure/build scripts where DESTDIR and rpath
+	  were combined (report by Thomas Klausner).
+	+ merge current st description (report by Harry Gindi) -TD
+	+ modify flash capability for linux and wyse entries to put the delay
+	  between the reverse/normal escapes rather than after -TD
+	+ modify program tabs to pass the actual tty file descriptor to
+	  setupterm rather than the standard output, making padding work
+	  consistently.
+	+ explain in clear's manual page that it writes to stdout.
+	+ add special case for verbose debugging traces of command-line
+	  utilities which write to stderr (cf: 20161126).
+	+ remove a trace with literal escapes from skip_DECSCNM(), added in
+	  20161203.
+	+ update config.guess, config.sub from
+		http://git.savannah.gnu.org/cgit/config.git
+
+20161224
+	+ correct parameters for copywin call in _nc_Synchronize_Attributes()
+	  (patch by Leon Winter).
+	+ improve color-handling section in terminfo manual page (prompted by
+	  patch by Mihail Konev).
+	+ modify programs clear, tput and tset to pass the actual tty file
+	  descriptor to setupterm rather than the standard output, making
+	  padding work.
+
+20161217
+	+ add tput-colorcube demo script.
+	+ add -r and -s options to tput-initc demo, to match usage in xterm.
+	+ flush the standard output in _nc_flush for the case where SP is zero,
+	  e.g., when called via putp.  This fixes a scenario where "tput flash"
+	  did not work after changes in 20130112.
+
+20161210
+	+ add configure script option --disable-wattr-macros for use in cases
+	  where one wants to use the same headers for ncurses5/ncurses6
+	  development, by suppressing the wattr* macros which differ due to
+	  the introduction of extended colors (prompted by comments in
+	  Debian #230990, Redhat #1270534).
+	+ add test/tput-initc to demonstrate tput used to initialize palette
+	  from a data file.
+	+ modify test/xterm*.dat to use the newer color4/color12 values.
+
+20161203
+	+ improve discussion of field validation in form_driver.3x manual page.
+	+ update curs_trace.3x manual page.
+
+20161126
+	+ modify linux-16color to not mask dim, standout or reverse with the
+	  ncv capability -TD
+	+ add 0.1sec mandatory delay to flash capabilities using the VT100
+	  reverse-video control -TD
+	+ omit selection of ISO-8859-1 for G0 in enacs capability from linux2.6
+	  entry, to avoid conflict with the user-defined mapping.  The reset
+	  feature will use ISO-8859-1 in any case (Mikulas Patocka).
+	+ improve check in tic for delays by also warning about beep/flash
+	  when a delay is not embedded, or if those use the VT100 reverse
+	  video escape without using a delay.
+	+ minor fix for syntax-check of delays from 20161119 changes.
+	+ modify trace() to avoid overwriting existing file (report by Maor
+	  Shwartz).
+
+20161119
+	+ add check in tic for some syntax errors of delays, as well as use of
+	  proportional delays for non-line capabilities.
+	+ document history of the clear program and the E3 extension, prompted
+	  by various discussions including
+	  http://unix.stackexchange.com/questions/87469/clearing-the-old-scrollback-buffer
+
+20161112
+	+ improve -W option in tic/infocmp:
+	  + correct order of size-adjustments in wrapped lines
+	  + if -f option splits line, do not further split it with -W
+	  + begin a new line when adding "use=" after a wrapped line
+
+20161105
+	+ fix typo in man/terminfo.tail (Alain Williams).
+	+ correct program-name in adacurses6-config.1 manual page.
+
+20161029
+	+ add new function "unfocus_current_field" (Leon Winter)
+
+20161022
+	+ modify tset -w (and tput reset) to update the program's copy of the
+	  screensize if it was already set in the system, to improve tabstop
+	  setting which relies upon knowing the actual screensize.
+	+ add functionality of tset -w to tput, like the "-c" feature this is
+	  not optional in tput.
+	+ add "clear" as a possible link/alias to tput.
+	+ improve tput's check for being called as "init" or "reset" to allow
+	  for transformed names.
+	+ split-out the "clear" function from progs/clear.c, share with
+	  tput to get the same behavior, e.g., the E3 extension.
+
+20161015
+	+ amend internal use of tputs to consistently use the number of lines
+	  affected, e.g., for insert/delete character operations.  While
+	  merging terminfo source early in 1995, several descriptions used the
+	  "*" proportional delay for these operations, prompting a change in
+	  doupdate.
+	+ regenerate llib-* files.
+	+ regenerate HTML manpages.
+	+ fix several formatting issues with manual pages.
+
+20161008
+	+ adjust size in infocmp/tic to work with strlcpy.
+	+ fix configure script to record when strlcat is found on OpenBSD.
+	+ build-fix for "recent" OpenBSD vs baudrate.
+
+20161001
+	+ add -W option to tic/infocmp to force long strings to wrap.  This is
+	  in addition to the -w option which attempts to fit capabilities into
+	  a given line-length.
+	+ add linux-m1 minitel entries (patch by Alexandre Montaron).
+	+ correct rs2 string for vt100-nam -TD
+
+20160924
+	+ modify _nc_tic_expand to escape comma if it immediately follows a
+	  percent sign, to work with minitel change.
+	+ updated minitel and viewdata descriptions (Alexandre Montaron).
+
+20160917
+	+ build-fix for gnat6, which unhelpfully attempts to compile C files.
+	+ fix typo in 20160910 changes (Debian #837892, patch by Sven Joachim).
+
+20160910
+	+ trim dead code ifdef'd with HIDE_EINTR since 970830 (discussion with
+	  Leon Winter).
+	+ trim some obsolete/incorrect wording about EINTR from wgetch manual
+	  page (patch by Leon Winter).
+	+ really correct 20100515 change (patch by Rich Coe).
+	+ add "--enable-string-hacks" option to test/configure
+	+ completed string-hacks for "sprintf", etc., including test-programs.
+	+ make "--enable-string-hacks" work with Debian by checking for the
+	  "bsd" library and its associated "<bsd/string.h>" header.
+
+20160903
+	+ correct 20100515 change for weak signals versus sigprocmask (report
+	  by Rich Coe).
+	+ modify misc/Makefile.in to work around OpenBSD "make" which unlike
+	  all other versions of "make" does not recognize continuation lines
+	  of comments.
+	+ amend the last change to CF_C_ENV_FLAGS to move only the
+	  preprocessor, optimization and warning flags to CPPFLAGS and CFLAGS,
+	  leaving the residue in CC.  That happens to work for gcc's various
+	  "model" options, but may require tuning for other compilers (report
+	  by Sven Joachim).
+
+20160827
+	+ add "v" menu entry to test/ncurses.c to show baudrate and other
+	  values.
+	+ add "newer" baudrate symbols from Linux and FreeBSD to progs/tset.c,
+	  lib_baudrate.c
+	+ modify CF_XOPEN_SOURCE macro:
+	  + add "uclinux" to case for "linux" (patch by Yann E. Morin)
+	  + modify _GNU_SOURCE for cygwin headers, tested with cygwin 2.3, 2.5
+	    (patch by Corinna Vinschen, from changes to tin).
+	+ improve CF_CC_ENV_FLAGS macro to allow for compiler wrappers such
+	  as "ccache" (report by Enrico Scholz).
+	+ update config.guess, config.sub from
+		http://git.savannah.gnu.org/cgit/config.git
+
+20160820
+	+ update tput manual page to reflect changes to manipulate terminal
+	  modes by sharing functions with tset.
+	+ add the terminal-mode parts of "reset" (aka tset) to the "tput reset"
+	  command, making the two almost the same except for window-size.
+	+ adapt logic used in dialog "--keep-tite" option for test/filter.c as
+	  "-a" option.  When set, test/filter attempts to suppress the
+	  alternate screen.
+	+ correct a typo in interix entry -TD
+
+20160813
+	+ add a dependency upon generated-sources in Ada95/src/Makefile.in to
+	  handle a case of "configure && make install".
+	+ trim trailing blanks from include/Caps*, to work around a problem
+	  in sed (Debian #818067).
+
+20160806
+	+ improve CF_GNU_SOURCE configure macro to optionally define
+	  _DEFAULT_SOURCE work around a nuisance in recent glibc releases.
+	+ move the terminfo-specific parts of tput's "reset" function into
+	  the shared reset_cmd.c, making the two forms of reset use the same
+	  strings.
+	+ split-out the terminal initialization functions from tset as
+	  progs/reset_cmd.c, as part of changes to merge the reset-feature
+	  with tput.
+
+20160730
+	+ change tset's initialization to allow it to get settings from the
+	  standard input as well as /dev/tty, to be more effective when
+	  output or error are redirected.
+	+ improve discussion of history and portability for tset/reset/tput
+	  manual pages.
+
+20160723
+	+ improve error message from tset/reset when both stderr/stdout are
+	  redirected to a file or pipe.
+	+ improve organization of curs_attr.3x, curs_color.3x
+
+20160709
+	+ work around Debian's antique/unmaintained version of mawk when
+	  building link_test.
+	+ improve test/list_keys.c, showing ncurses's convention of modifiers
+	  for special keys, based on xterm.
+
+20160702
+	+ improve test/list_keys.c, using $TERM if no parameters are given.
+
+20160625
+	+ build-fixes for ncurses "test_progs" rule.
+	+ amend change to CF_CC_ENV_FLAGS in 20160521 to make multilib build
+	  work (report by Sven Joachim).
+
+20160618
+	+ build-fixes for ncurses-examples with NetBSD curses.
+	+ improve test/list_keys.c, fixing column-widths and sorting the list
+	  to make it more readable.
+
+20160611
+	+ revise fix for Debian #805618 (report by Vlado Potisk, cf: 20151128).
+	+ modify test/ncurses.c a/A screens to make exiting on an escape
+	  character depend on the start of keypad and timeout modes, to allow
+	  better testing of function-keys.
+	+ modify rs1 for xterm-16color, xterm-88color and xterm-256color to
+	  reset palette using "oc" string as in linux -TD
+	+ use ANSI reply for u8 in xterm-new, to reflect vt220-style responses
+	  that could be returned -TD
+	+ added a few capabilities fixed in recent vte -TD
+
+20160604
+	+ correct logic for -f option in test/demo_terminfo.c
+	+ add test/list_keys.c
+
+20160528
+	+ further workaround for PIE/PIC breakage which causes gpm to not link.
+	+ fix most cppcheck warnings, mostly style, in ncurses library.
+
+20160521
+	+ improved manual page description of tset/reset versus window-size.
+	+ fixes to work with a slightly broken compiler configuration which
+	  cannot compile "Hello World!" without adding compiler options
+	  (report by Ola x Nilsson):
+	  + pass appropriate compiler options to the CF_PROG_CC_C_O macro.
+	  + when separating compiler and options in CF_CC_ENV_FLAGS, ensure
+	    that all options are split-off into CFLAGS or CPPFLAGS
+	  + restore some -I options removed in 20140726 because they appeared
+	    to be redundant.  In fact, they are needed for a compiler that
+	    cannot combine -c and -o options.
+
+20160514
+	+ regenerate HTML manpages.
+	+ improve manual pages for wgetch and wget_wch to point out that they
+	  might return values without names in curses.h (Debian #822426).
+	+ make linux3.0 entry the default linux entry (Debian #823658) -TD
+	+ modify linux2.6 entry to improve line-drawing so that the linux3.0
+	  entry can be used in non-UTF-8 mode -TD
+	+ document return value of use_extended_names (report by Mike Gran).
+
+20160507
+	+ amend change to _nc_do_color to restore the early return for the
+	  special case used in _nc_screen_wrap (report by Dick Streefland,
+	  cf: 20151017).
+	+ modify test/ncurses.c:
+	  + check return-value of putwin
+	  + correct ifdef which made the 'g' test's legend not reflect changes
+	    to keypad- and scroll-modes.
+	+ correct return-value of extended putwin (report by Mike Gran).
+
+20160423
+	+ modify test/ncurses.c 'd' edit-color menu to optionally read xterm
+	  color palette directly from terminal, as well as handling KEY_RESIZE
+	  and screen-repainting with control/L and control/R.
+	+ add 'oc' capability to xterm+256color, allowing palette reset for
+	  xterm -TD
+
+20160416
+	+ add workaround in configure script for inept transition to PIE vs
+	  PIC builds documented in
+		  https://fedoraproject.org/wiki/Changes/Harden_All_Packages
+	+ add "reset" to list of programs whose names might change in manpages
+	  due to program-transformation configure options.
+	+ drop long-obsolete "-n" option from tset.
+
+20160409
+	+ modify test/blue.c to use Unicode values for card-glyphs when
+	  available, as well as improving the check for CP437 and CP850.
+
+20160402
+	+ regenerate HTML manpages.
+	+ improve manual pages for utilities with respect to POSIX versus
+	  X/Open Curses.
+
+20160326
+	+ regenerate HTML manpages.
+	+ improve test/demo_menus.c, allowing mouse-click on the menu-headers
+	  to switch the active menu.  This requires a new extension option
+	  O_MOUSE_MENU to tell the menu driver to put mouse events which do not
+	  apply to the active menu back into the queue so that the application
+	  can handle the event.
+
+20160319
+	+ improve description of tgoto parameters (report by Steffen Nurpmeso).
+	+ amend workaround for Solaris line-drawing to restore a special case
+	  that maps Unicode line-drawing characters into the acsc string for
+	  non-Unicode locales (Debian #816888).
+
+20160312
+	+ modified test/filter.c to illustrate an alternative to getnstr, that
+	  polls for input while updating a clock on the right margin as well
+	  as responding to window size-changes.
+
+20160305
+	+ omit a redefinition of "inline" when traces are enabled, since this
+	  does not work with gcc 5.3.x MinGW cross-compiling (cf: 20150912).
+
+20160220
+	+ modify test/configure script to check for pthread dependency of
+	  ncursest or ncursestw library when building ncurses examples, e.g.,
+	  in case weak symbols are used.
+	+ modify configure macro for shared-library rules to use -Wl,-rpath
+	  rather than -rpath to work around a bug in scons (FreeBSD #178732,
+	  cf: 20061021).
+	+ double-width multibyte characters were not counted properly in
+	  winsnstr and wins_nwstr (report/example by Eric Pruitt).
+	+ update config.guess, config.sub from
+		http://git.savannah.gnu.org/cgit/config.git
+
+20160213
+	+ amend fix for _nc_ripoffline from 20091031 to make test/ditto.c work
+	  in threaded configuration.
+	+ move _nc_tracebits, _tracedump and _tracemouse to curses.priv.h,
+	  since they are not part of the suggested ABI6.
+
+20160206
+	+ define WIN32_LEAN_AND_MEAN for MinGW port, making builds faster.
+	+ modify test/ditto.c to allow $XTERM_PROG environment variable to
+	  override "xterm" as the name of the program to run in the threaded
+	  configuration.
+
+20160130
+	+ improve formatting of man/curs_refresh.3x and man/tset.1 manpages
+	+ regenerate HTML manpages using newer man2html to eliminate some
+	  unwanted blank lines.
+
+20160123
+	+ ifdef'd header-file definition of mouse_trafo() with NCURSES_NOMACROS
+	  (report by Corey Minyard).
+	+ fix some strict compiler-warnings in traces.
+
+20160116
+	+ tidy up comments about hardcoded 256color palette (report by
+	  Leonardo Brondani Schenkel) -TD
+	+ add putty-noapp entry, and amend putty entry to use application mode
+	  for better consistency with xterm (report by Leonardo Brondani
+	  Schenkel) -TD
+	+ modify _nc_viscbuf2() and _tracecchar_t2() to trace wide-characters
+	  as a whole rather than their multibyte equivalents.
+	+ minor fix in wadd_wchnstr() to ensure that each cell has nonzero
+	  width.
+	+ move PUTC_INIT calls next to wcrtomb calls, to avoid carry-over of
+	  error status when processing Unicode values which are not mapped.
+
+20160102
+	+ modify ncurses c/C color test-screens to take advantage of wide
+	  screens, reducing the number of lines used for 88- and 256-colors.
+	+ minor refinement to check versus ncv to ignore two parameters of
+	  SGR 38 and 48 when those come from color-capabilities.
+
+20151226
+	+ add check in tic for use of bold, etc., video attributes in the
+	  color capabilities, accounting whether the feature is listed in ncv.
+	+ add check in tic for conflict between ritm, rmso, rmul versus sgr0.
+
+20151219
+	+ add a paragraph to curs_getch.3x discussing key naming (discussion
+	  with James Crippen).
+	+ amend workaround for Solaris vs line-drawing to take the configure
+	  check into account.
+	+ add a configure check for wcwidth() versus the ncurses line-drawing
+	  characters, to use in special-casing systems such as Solaris.
+
+20151212
+	+ improve CF_XOPEN_CURSES macro used in test/configure, to define as
+	  needed NCURSES_WIDECHAR for platforms where _XOPEN_SOURCE_EXTENDED
+	  does not work.  Also modified the test program to ensure that if
+	  building with ncurses, that the cchar_t type is checked, since that
+	  normally is since 20111030 ifdef'd depending on this test.
+	+ improve 20121222 workaround for broken acs, letting Solaris "work"
+	  in spite of its misconfigured wcwidth which marks all of the line
+	  drawing characters as double-width.
+
+20151205
+	+ update form_cursor.3x, form_post.3x, menu_attributes.3x to list
+	  function names in NAME section (patch by Jason McIntyre).
+	+ minor fixes to manpage NAME/SYNOPSIS sections to consistently use
+	  rule that either all functions which are prototyped in SYNOPSIS are
+	  listed in the NAME section, or the manual-page name is the sole item
+	  listed in the NAME section.  The latter is used to reduce clutter,
+	  e.g., for the top-level library manual pages as well as for certain
+	  feature-pages such as SP-funcs and threading (prompted by patches by
+	  Jason McIntyre).
+
+20151128
+	+ add option to preserve leading whitespace in form fields (patch by
+	  Leon Winter).
+	+ add missing assignment in lib_getch.c to make notimeout() work
+	  (Debian #805618).
+	+ add 't' toggle for notimeout() function in test/ncurses.c a/A screens
+	+ add viewdata terminal description (Alexandre Montaron).
+	+ fix a case in tic/infocmp for formatting capabilities where a
+	  backslash at the end of a string was mishandled.
+	+ fix some typos in curs_inopts.3x (Benno Schulenberg).
+
+20151121
+	+ fix some inconsistencies in the pccon* entries -TD
+	+ add bold to pccon+sgr+acs and pccon-base (Tati Chevron).
+	+ add keys f12-f124 to pccon+keys (Tati Chevron).
+	+ add test/test_sgr.c program to exercise all combinations of sgr.
+
+20151107
+	+ modify tset's assignment to TERM in its output to reflect the name by
+	  which the terminal description is found, rather than the primary
+	  name.  That was an unnecessary part from the initial conversion of
+	  tset from termcap to terminfo.  The termcap program in 4.3BSD did
+	  this to avoid using the short 2-character name (report by Rich
+	  Burridge).
+	+ minor fix to configure script to ensure that rules for resulting.map
+	  are only generated when needed (cf: 20151101).
+	+ modify configure script to handle the case where tic-library is
+	  renamed, but the --with-debug option is used by itself without
+	  normal or shared libraries (prompted by comment in Debian #803482).
+
+20151101
+	+ amend change for pkg-config which allows build of pc-files when no
+	  valid pkg-config library directory was configured to suppress the
+	  actual install if it is not overridden to a valid directory at
+	  install time (cf: 20150822).
+	+ modify editing script which generates resulting.map to work with the
+	  clang configuration on recent FreeBSD, which gives an error on an
+	  empty "local" section.
+	+ fix a spurious "(Part)" message in test/ncurses.c b/B tests due
+	  to incorrect attribute-masking.
+
+20151024
+	+ modify MKexpanded.sh to update the expansion of a temporary filename
+	  to "expanded.c", for use in trace statements.
+	+ modify layout of b/B tests in test/ncurses.c to allow for additional
+	  annotation on the right margin; some terminals with partial support
+	  did not display well.
+	+ fix typo in curs_attr.3x (patch by Sven Joachim).
+	+ fix typo in INSTALL (patch by Tomas Cech).
+	+ improve configure check for setting WILDCARD_SYMS variable; on ppc64
+	  the variable is in the Data section rather than Text (patch by Michel
+	  Normand, Novell #946048).
+	+ using configure option "--without-fallbacks" incorrectly caused
+	  FALLBACK_LIST to be set to "no" (patch by Tomas Cech).
+	+ updated minitel entries to fix kel problem with emacs, and add
+	  minitel1b-nb (Alexandre Montaron).
+	+ reviewed/updated nsterm entry Terminal.app in OSX -TD
+	+ replace some dead URLs in comments with equivalents from the
+	  Internet Archive -TD
+	+ update config.guess, config.sub from
+		http://git.savannah.gnu.org/cgit/config.git
+
+20151017
+	+ modify ncurses/Makefile.in to sort keys.list in POSIX locale
+	  (Debian #801864, patch by Esa Peuha).
+	+ remove an early-return from _nc_do_color, which can interfere with
+	  data needed by bkgd when ncurses is configured with extended colors
+	  (patch by Denis Tikhomirov).
+	> fixes for OS/2 (patches by KO Myung-Hun)
+	+ use button instead of kbuf[0] in EMX-specific part of lib_mouse.c
+	+ support building with libtool on OS/2
+	+ use stdc++ on OS/2 kLIBC
+	+ clear cf_XOPEN_SOURCE on OS/2
+
+20151010
+	+ add configure check for openpty to test/configure script, for ditto.
+	+ minor fixes to test/view.c in investigating Debian #790847.
+	+ update autoconf patch to 2.52.20150926, incorporates a fix for Cdk.
+	+ add workaround for breakage of POSIX makefiles by recent binutils
+	  change.
+	+ improve check for working poll() by using posix_openpt() as a
+	  fallback in case there is no valid terminal on the standard input
+	  (prompted by discussion on bug-ncurses mailing list, Debian #676461).
+
+20150926
+	+ change makefile rule for removing resulting.map to distclean rather
+	  than clean.
+	+ add /lib/terminfo to terminfo-dirs in ".deb" test-package.
+	+ add note on portability of resizeterm and wresize to manual pages.
+
+20150919
+	+ clarify in resizeterm.3x how KEY_RESIZE is pushed onto the input
+	  stream.
+	+ clarify in curs_getch.3x that the keypad mode affects ability to
+	  read KEY_MOUSE codes, but does not affect KEY_RESIZE.
+	+ add overlooked build-fix needed with Cygwin for separate Ada95
+	  configure script, cf: 20150606 (report by Nicolas Boulenguez)
+
+20150912
+	+ fixes for configure/build using clang on OSX (prompted by report by
+	  William Gallafent).
+	  + do not redefine "inline" in ncurses_cfg.h; this was originally to
+	    solve a problem with gcc/g++, but is aggravated by clang's misuse
+	    of symbols to pretend it is gcc.
+	  + add braces to configure script to prevent unwanted add of
+	    "-lstdc++" to the CXXLIBS symbol.
+	  + improve/update test-program used for checking existence of stdc++
+	    library.
+	  + if $CXXLIBS is set, the linkage test uses that in addition to $LIBS
+
+20150905
+	+ add note in curs_addch.3x about line-drawing when it depends upon
+	  UTF-8.
+	+ add tic -q option for consistency with infocmp, use it to suppress
+	  all comments from the "tic -I" output.
+	+ modify infocmp -q option to suppress the "Reconstructed from"
+	  header.
+	+ add infocmp/tic -Q option, which allows one to dump the compiled
+	  form of the terminal entry, in hexadecimal or base64.
+
+20150822
+	+ sort options in usage message for infocmp, to make it simpler to
+	  see unused letters.
+	+ update usage message for tic, adding "-0" option.
+	+ documented differences in ESCDELAY versus AIX's implementation.
+	+ fix some compiler warnings from ports.
+	+ modify --with-pkg-config-libdir option to make it possible to install
+	  ".pc" files even if pkg-config is not found (adapted from patch by
+	  Joshua Root).
+
+20150815
+	+ disallow "no" as a possible value for "--with-shlib-version" option,
+	  overlooked in cleanup-changes for 20000708 (report by Tommy Alex).
+	+ update release notes in INSTALL.
+	+ regenerate llib-* files to help with review for release notes.
+
+20150810
+	+ workaround for Debian #65617, which was fixed in mawk's upstream
+	  releases in 2009 (report by Sven Joachim).  See
+	  	https://invisible-island.net/mawk/CHANGES.html#t20090727
 
 20150808 6.0 release for upload to ftp.gnu.org
 
@@ -757,7 +2048,7 @@ it is not possible to add this information.
 20131221
 	+ further improved man2html, used this to fix broken links in html
 	  manpages.  See
-	  ftp://invisible-island.net/ncurses/patches/man2html
+	  ftp://ftp.invisible-island.net/ncurses/patches/man2html
 
 20131214
 	+ modify configure-script/ifdef's to allow OLD_TTY feature to be
@@ -1646,7 +2937,7 @@ it is not possible to add this information.
 	+ modify check_existence() in db_iterator.c to simply check if the
 	  path is a directory or file, according to the need.  Checking for
 	  directory size also gives no usable result with OS/2 (cf: 20120107).
-	+ support OS/2 kLIBC (patch by KO Myung-Han).
+	+ support OS/2 kLIBC (patch by KO Myung-Hun).
 
 20120114
 	+ several improvements to test/movewindow.c (prompted by discussion on
@@ -1660,7 +2951,7 @@ it is not possible to add this information.
 	+ regenerated html manpages.
 
 20120107
-	+ various improvments for MinGW (Juergen Pfeifer):
+	+ various improvements for MinGW (Juergen Pfeifer):
 	  + modify stat() calls to ignore the st_size member
 	  + drop mk-dlls.sh script.
 	  + change recommended regular expression library.
@@ -3452,7 +4743,7 @@ it is not possible to add this information.
 
 20080209
 	+ update test programs to build/work with various UNIX curses for
-	  comparisons.  This was to reinvestigate statement in X/Open curses
+	  comparisons.  This was to reinvestigate statement in X/Open Curses
 	  that insnstr and winsnstr perform wrapping.  None of the Unix-branded
 	  implementations do this, as noted in manpage (cf: 20040228).
 
@@ -4111,7 +5402,7 @@ it is not possible to add this information.
 	+ fix ifdef in c++/internal.h for QNX 6.1
 	+ test-compiled with (old) egcs-1.1.2, modified configure script to
 	  not unset the $CXX and related variables which would prevent this.
-	+ fix a few terminfo.src typos exposed by improvments to "-f" option.
+	+ fix a few terminfo.src typos exposed by improvements to "-f" option.
 	+ improve infocmp/tic "-f" option formatting.
 
 20060923
@@ -4715,7 +6006,7 @@ it is not possible to add this information.
 	+ document error conditions for ncurses library functions (report by
 	  Stanislav Ievlev).
 	+ regenerated html documentation for ada binding.
-	  see ftp://invisible-island.net/ncurses/patches/gnathtml
+	  see ftp://ftp.invisible-island.net/ncurses/patches/gnathtml
 
 20050507
 	+ regenerated html documentation for manpages.
@@ -10654,7 +11945,7 @@ it is not possible to add this information.
 	  (SVr4) curses, which doesn't use 'const' in its prototypes.
 	+ modify ifdef's in test/hashtest.c and test/view.c to compile with
 	  Solaris curses.
-	+ modify _tracedump() to pad pad colors & attrs lines to match change
+	+ modify _tracedump() to pad colors & attrs lines to match change
 	  in 970101 showing first/last changes.
 	+ corrected location of terminating null on dynamically allocated forms
 	  fields (patch by Per Foreby).

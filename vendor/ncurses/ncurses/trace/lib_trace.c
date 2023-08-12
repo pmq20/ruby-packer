@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 1998-2012,2013 Free Software Foundation, Inc.              *
+ * Copyright (c) 1998-2016,2017 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -47,7 +47,7 @@
 
 #include <ctype.h>
 
-MODULE_ID("$Id: lib_trace.c,v 1.82 2013/07/06 19:42:09 tom Exp $")
+MODULE_ID("$Id: lib_trace.c,v 1.86 2017/01/14 17:53:42 tom Exp $")
 
 NCURSES_EXPORT_VAR(unsigned) _nc_tracing = 0; /* always define this */
 
@@ -85,54 +85,61 @@ NCURSES_EXPORT_VAR(const char *) _nc_tputs_trace = "";
 NCURSES_EXPORT_VAR(long) _nc_outchars = 0;
 #endif
 
-#define TraceFP		_nc_globals.trace_fp
-#define TracePath	_nc_globals.trace_fname
-#define TraceLevel	_nc_globals.trace_level
+#define MyFP		_nc_globals.trace_fp
+#define MyFD		_nc_globals.trace_fd
+#define MyInit		_nc_globals.trace_opened
+#define MyPath		_nc_globals.trace_fname
+#define MyLevel		_nc_globals.trace_level
+#define MyNested	_nc_globals.nested_tracef
 
 NCURSES_EXPORT(void)
 trace(const unsigned int tracelevel)
 {
-    if ((TraceFP == 0) && tracelevel) {
-	const char *mode = _nc_globals.init_trace ? "ab" : "wb";
-
-	if (TracePath[0] == '\0') {
-	    size_t size = sizeof(TracePath) - 12;
-	    if (getcwd(TracePath, size) == 0) {
-		perror("curses: Can't get working directory");
-		exit(EXIT_FAILURE);
+    if ((MyFP == 0) && tracelevel) {
+	MyInit = TRUE;
+	if (MyFD >= 0) {
+	    MyFP = fdopen(MyFD, "wb");
+	} else {
+	    if (MyPath[0] == '\0') {
+		size_t size = sizeof(MyPath) - 12;
+		if (getcwd(MyPath, size) == 0) {
+		    perror("curses: Can't get working directory");
+		    exit(EXIT_FAILURE);
+		}
+		MyPath[size] = '\0';
+		assert(strlen(MyPath) <= size);
+		_nc_STRCAT(MyPath, "/trace", sizeof(MyPath));
+		if (_nc_is_dir_path(MyPath)) {
+		    _nc_STRCAT(MyPath, ".log", sizeof(MyPath));
+		}
 	    }
-	    TracePath[size] = '\0';
-	    assert(strlen(TracePath) <= size);
-	    _nc_STRCAT(TracePath, "/trace", sizeof(TracePath));
-	    if (_nc_is_dir_path(TracePath)) {
-		_nc_STRCAT(TracePath, ".log", sizeof(TracePath));
+	    if (_nc_access(MyPath, W_OK) < 0
+		|| (MyFD = open(MyPath, O_CREAT | O_EXCL | O_RDWR, 0600)) < 0
+		|| (MyFP = fdopen(MyFD, "wb")) == 0) {
+		;		/* EMPTY */
 	    }
 	}
-
-	_nc_globals.init_trace = TRUE;
 	_nc_tracing = tracelevel;
-	if (_nc_access(TracePath, W_OK) < 0
-	    || (TraceFP = fopen(TracePath, mode)) == 0) {
-	    perror("curses: Can't open 'trace' file");
-	    exit(EXIT_FAILURE);
-	}
 	/* Try to set line-buffered mode, or (failing that) unbuffered,
 	 * so that the trace-output gets flushed automatically at the
 	 * end of each line.  This is useful in case the program dies. 
 	 */
+	if (MyFP != 0) {
 #if HAVE_SETVBUF		/* ANSI */
-	(void) setvbuf(TraceFP, (char *) 0, _IOLBF, (size_t) 0);
+	    (void) setvbuf(MyFP, (char *) 0, _IOLBF, (size_t) 0);
 #elif HAVE_SETBUF /* POSIX */
-	(void) setbuffer(TraceFP, (char *) 0);
+	    (void) setbuffer(MyFP, (char *) 0);
 #endif
+	}
 	_tracef("TRACING NCURSES version %s.%d (tracelevel=%#x)",
 		NCURSES_VERSION,
 		NCURSES_VERSION_PATCH,
 		tracelevel);
     } else if (tracelevel == 0) {
-	if (TraceFP != 0) {
-	    fclose(TraceFP);
-	    TraceFP = 0;
+	if (MyFP != 0) {
+	    MyFD = dup(MyFD);	/* allow reopen of same file */
+	    fclose(MyFP);
+	    MyFP = 0;
 	}
 	_nc_tracing = tracelevel;
     } else if (_nc_tracing != tracelevel) {
@@ -151,16 +158,23 @@ _nc_va_tracef(const char *fmt, va_list ap)
     bool after = FALSE;
     unsigned doit = _nc_tracing;
     int save_err = errno;
+    FILE *fp = MyFP;
+
+#ifdef TRACE
+    /* verbose-trace in the command-line utilities relies on this */
+    if (fp == 0 && !MyInit && _nc_tracing >= DEBUG_LEVEL(1))
+	fp = stderr;
+#endif
 
     if (strlen(fmt) >= sizeof(Called) - 1) {
 	if (!strncmp(fmt, Called, sizeof(Called) - 1)) {
 	    before = TRUE;
-	    TraceLevel++;
+	    MyLevel++;
 	} else if (!strncmp(fmt, Return, sizeof(Return) - 1)) {
 	    after = TRUE;
 	}
 	if (before || after) {
-	    if ((TraceLevel <= 1)
+	    if ((MyLevel <= 1)
 		|| (doit & TRACE_ICALLS) != 0)
 		doit &= (TRACE_CALLS | TRACE_CCALLS);
 	    else
@@ -168,9 +182,7 @@ _nc_va_tracef(const char *fmt, va_list ap)
 	}
     }
 
-    if (doit != 0) {
-	if (TraceFP == 0)
-	    TraceFP = stderr;
+    if (doit != 0 && fp != 0) {
 #ifdef USE_PTHREADS
 	/*
 	 * TRACE_ICALLS is "really" needed to show normal use with threaded
@@ -185,23 +197,23 @@ _nc_va_tracef(const char *fmt, va_list ap)
 	if ((pthread_self))
 # endif
 #ifdef __MINGW32__
-	    fprintf(TraceFP, "%#lx:", (long) (intptr_t) pthread_self().p);
+	    fprintf(fp, "%#lx:", (long) (intptr_t) pthread_self().p);
 #else
-	    fprintf(TraceFP, "%#lx:", (long) (intptr_t) pthread_self());
+	    fprintf(fp, "%#lx:", (long) (intptr_t) pthread_self());
 #endif
 #endif
 	if (before || after) {
 	    int n;
-	    for (n = 1; n < TraceLevel; n++)
-		fputs("+ ", TraceFP);
+	    for (n = 1; n < MyLevel; n++)
+		fputs("+ ", fp);
 	}
-	vfprintf(TraceFP, fmt, ap);
-	fputc('\n', TraceFP);
-	fflush(TraceFP);
+	vfprintf(fp, fmt, ap);
+	fputc('\n', fp);
+	fflush(fp);
     }
 
-    if (after && TraceLevel)
-	TraceLevel--;
+    if (after && MyLevel)
+	MyLevel--;
 
     errno = save_err;
 }
@@ -310,13 +322,13 @@ _nc_use_tracef(unsigned mask)
     bool result = FALSE;
 
     _nc_lock_global(tst_tracef);
-    if (!_nc_globals.nested_tracef++) {
+    if (!MyNested++) {
 	if ((result = (_nc_tracing & (mask))) != 0
 	    && _nc_try_global(tracef) == 0) {
 	    /* we will call _nc_locked_tracef(), no nesting so far */
 	} else {
 	    /* we will not call _nc_locked_tracef() */
-	    _nc_globals.nested_tracef = 0;
+	    MyNested = 0;
 	}
     } else {
 	/* we may call _nc_locked_tracef(), but with nested_tracef > 0 */
@@ -339,7 +351,7 @@ _nc_locked_tracef(const char *fmt,...)
     _nc_va_tracef(fmt, ap);
     va_end(ap);
 
-    if (--(_nc_globals.nested_tracef) == 0) {
+    if (--(MyNested) == 0) {
 	_nc_unlock_global(tracef);
     }
 }

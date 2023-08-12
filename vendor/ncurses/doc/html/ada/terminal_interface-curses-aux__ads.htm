@@ -56,21 +56,21 @@
 <span class="comment"><EM>--  Binding Version 01.00</EM></span>
 <span class="comment"><EM>------------------------------------------------------------------------------</EM></span>
 <b>with</b> System;
-<b>with</b> <A HREF="interfac__ads.htm#ref_36_9">Interfaces</A>.C;
-<b>with</b> <A HREF="interfac__ads.htm#ref_36_9">Interfaces</A>.C.Strings; <b>use</b> <A HREF="interfac__ads.htm#ref_36_9">Interfaces</A>.C.Strings;
+<b>with</b> <A HREF="interfac__ads.htm#ref_38_9">Interfaces</A>.C;
+<b>with</b> <A HREF="interfac__ads.htm#ref_38_9">Interfaces</A>.C.Strings; <b>use</b> <A HREF="interfac__ads.htm#ref_38_9">Interfaces</A>.C.Strings;
 
 <b>package</b> <A HREF="terminal_interface__ads.htm#ref_42_9">Terminal_Interface</A>.<A HREF="terminal_interface-curses__ads.htm#ref_47_28">Curses</A>.<span class="symbol"><A NAME="ref_45_35" HREF="terminal_interface-curses-aux__adb.htm#ref_41_40">Aux</A></span> <b>is</b>
    <b>pragma</b> Preelaborate (<A HREF="terminal_interface__ads.htm#ref_42_9">Terminal_Interface</A>.<A HREF="terminal_interface-curses__ads.htm#ref_47_28">Curses</A>.<A HREF="terminal_interface-curses-aux__ads.htm#ref_45_35">Aux</A>);
 
-   <b>use</b> <b>type</b> <A HREF="interfac__ads.htm#ref_36_9">Interfaces</A>.C.int;
+   <b>use</b> <b>type</b> <A HREF="interfac__ads.htm#ref_38_9">Interfaces</A>.C.int;
 
-   <b>subtype</b> <span class="symbol"><A NAME="ref_50_12">C_Int</A></span>      <b>is</b> <A HREF="interfac__ads.htm#ref_36_9">Interfaces</A>.C.int;
-   <b>subtype</b> <span class="symbol"><A NAME="ref_51_12">C_Short</A></span>    <b>is</b> <A HREF="interfac__ads.htm#ref_36_9">Interfaces</A>.C.short;
-   <b>subtype</b> <span class="symbol"><A NAME="ref_52_12">C_Long_Int</A></span> <b>is</b> <A HREF="interfac__ads.htm#ref_36_9">Interfaces</A>.C.long;
-   <b>subtype</b> <span class="symbol"><A NAME="ref_53_12">C_Size_T</A></span>   <b>is</b> <A HREF="interfac__ads.htm#ref_36_9">Interfaces</A>.C.size_t;
-   <b>subtype</b> <span class="symbol"><A NAME="ref_54_12">C_UInt</A></span>     <b>is</b> <A HREF="interfac__ads.htm#ref_36_9">Interfaces</A>.C.unsigned;
-   <b>subtype</b> <span class="symbol"><A NAME="ref_55_12">C_ULong</A></span>    <b>is</b> <A HREF="interfac__ads.htm#ref_36_9">Interfaces</A>.C.unsigned_long;
-   <b>subtype</b> <span class="symbol"><A NAME="ref_56_12">C_Char_Ptr</A></span> <b>is</b> <A HREF="interfac__ads.htm#ref_36_9">Interfaces</A>.C.Strings.chars_ptr;
+   <b>subtype</b> <span class="symbol"><A NAME="ref_50_12">C_Int</A></span>      <b>is</b> <A HREF="interfac__ads.htm#ref_38_9">Interfaces</A>.C.int;
+   <b>subtype</b> <span class="symbol"><A NAME="ref_51_12">C_Short</A></span>    <b>is</b> <A HREF="interfac__ads.htm#ref_38_9">Interfaces</A>.C.short;
+   <b>subtype</b> <span class="symbol"><A NAME="ref_52_12">C_Long_Int</A></span> <b>is</b> <A HREF="interfac__ads.htm#ref_38_9">Interfaces</A>.C.long;
+   <b>subtype</b> <span class="symbol"><A NAME="ref_53_12">C_Size_T</A></span>   <b>is</b> <A HREF="interfac__ads.htm#ref_38_9">Interfaces</A>.C.size_t;
+   <b>subtype</b> <span class="symbol"><A NAME="ref_54_12">C_UInt</A></span>     <b>is</b> <A HREF="interfac__ads.htm#ref_38_9">Interfaces</A>.C.unsigned;
+   <b>subtype</b> <span class="symbol"><A NAME="ref_55_12">C_ULong</A></span>    <b>is</b> <A HREF="interfac__ads.htm#ref_38_9">Interfaces</A>.C.unsigned_long;
+   <b>subtype</b> <span class="symbol"><A NAME="ref_56_12">C_Char_Ptr</A></span> <b>is</b> <A HREF="interfac__ads.htm#ref_38_9">Interfaces</A>.C.Strings.chars_ptr;
    <b>type</b>    <span class="symbol"><A NAME="ref_57_12">C_Void_Ptr</A></span> <b>is</b> <b>new</b> System.Address;
 
    <span class="comment"><EM>--  This is how those constants are defined in ncurses. I see them also</EM></span>
@@ -85,7 +85,7 @@
    <span class="symbol"><A NAME="ref_68_4">Curses_False</A></span> : <b>constant</b> <A HREF="terminal_interface-curses-aux__ads.htm#ref_50_12">C_Int</A> := <A HREF="terminal_interface-curses_constants__ads.htm#ref_6_28">Curses_Constants</A>.<A HREF="terminal_interface-curses_constants__ads.htm#ref_16_4">FALSE</A>;
 
    <span class="comment"><EM>--  Eti_Error: type for error codes returned by the menu and form subsystem</EM></span>
-   <b>type</b> <span class="symbol"><A NAME="ref_71_9">Eti_Error</A></span> <b>is</b>
+   <b>type</b> <span class="symbol"><A NAME="ref_71_9" HREF="terminal_interface-curses-aux__ads.htm#ref_45_35">Eti_Error</A></span> <b>is</b>
      (<span class="symbol"><A NAME="ref_72_7">E_Current</A></span>,
       <span class="symbol"><A NAME="ref_73_7">E_Invalid_Field</A></span>,
       <span class="symbol"><A NAME="ref_74_7">E_Request_Denied</A></span>,

@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 1998-2011,2012 Free Software Foundation, Inc.              *
+ * Copyright (c) 1998-2016,2017 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -29,7 +29,7 @@
 /*
  * Author: Thomas E. Dickey (1998-on)
  *
- * $Id: ditto.c,v 1.42 2012/11/24 20:16:18 tom Exp $
+ * $Id: ditto.c,v 1.47 2017/10/18 23:04:42 tom Exp $
  *
  * The program illustrates how to set up multiple screens from a single
  * program.
@@ -43,6 +43,8 @@
  */
 #include <test.priv.h>
 #include <sys/stat.h>
+
+#if HAVE_DELSCREEN
 
 #ifdef USE_PTHREADS
 #include <pthread.h>
@@ -112,7 +114,7 @@ failed(const char *s)
 static void
 usage(void)
 {
-    fprintf(stderr, "usage: ditto [terminal1 ...]\n");
+    fprintf(stderr, "Usage: ditto [terminal1 ...]\n");
     ExitProgram(EXIT_FAILURE);
 }
 
@@ -155,6 +157,10 @@ open_tty(char *path)
     int aslave;
     char slave_name[1024];
     char s_option[sizeof(slave_name) + 80];
+    const char *xterm_prog = 0;
+
+    if ((xterm_prog = getenv("XTERM_PROG")) == 0)
+	xterm_prog = "xterm";
 
     if (openpty(&amaster, &aslave, slave_name, 0, 0) != 0
 	|| strlen(slave_name) > sizeof(slave_name) - 1)
@@ -163,9 +169,10 @@ open_tty(char *path)
 	errno = EISDIR;
 	failed(slave_name);
     }
-    sprintf(s_option, "-S%s/%d", slave_name, aslave);
+    _nc_SPRINTF(s_option, _nc_SLIMIT(sizeof(s_option))
+		"-S%s/%d", slave_name, aslave);
     if (fork()) {
-	execlp("xterm", "xterm", s_option, "-title", path, (char *) 0);
+	execlp(xterm_prog, xterm_prog, s_option, "-title", path, (char *) 0);
 	_exit(0);
     }
     fp = fdopen(amaster, "r+");
@@ -445,3 +452,11 @@ main(int argc, char *argv[])
     }
     ExitProgram(EXIT_SUCCESS);
 }
+#else
+int
+main(void)
+{
+    printf("This program requires the curses delscreen function\n");
+    ExitProgram(EXIT_FAILURE);
+}
+#endif

@@ -4,7 +4,7 @@ Section: misc
 Priority: optional
 Standards-Version: 3.8.4
 Build-Depends: debhelper (>= 5)
-Homepage: http://invisible-island.net/adacurses/
+Homepage: https://invisible-island.net/adacurses/
 
 Package: adacurses
 Architecture: any

@@ -1,5 +1,5 @@
 .\"***************************************************************************
-.\" Copyright (c) 1998-2013,2015 Free Software Foundation, Inc.              *
+.\" Copyright (c) 1998-2017,2018 Free Software Foundation, Inc.              *
 .\"                                                                          *
 .\" Permission is hereby granted, free of charge, to any person obtaining a  *
 .\" copy of this software and associated documentation files (the            *
@@ -26,10 +26,11 @@
 .\" authorization.                                                           *
 .\"***************************************************************************
 .\"
-.\" $Id: curs_termcap.3x,v 1.31 2015/04/26 00:49:10 tom Exp $
+.\" $Id: curs_termcap.3x,v 1.37 2018/01/23 10:14:38 tom Exp $
 .TH curs_termcap 3X ""
 .de bP
-.IP \(bu 4
+.ie n  .IP \(bu 4
+.el    .IP \(bu 2
 ..
 .na
 .hy 0
@@ -146,8 +147,29 @@ Only the first two characters of the \fBid\fR parameter of
 \fBtgetstr\fR are compared in lookups.
 .SS FORMATTING CAPABILITIES
 .PP
-The \fBtgoto\fR routine instantiates the parameters into the given capability.
-The output from this routine is to be passed to \fBtputs\fR.
+The \fBtgoto\fR routine expands the given capability using the parameters.
+.bP
+Because the capability may have padding characters,
+the output of \fBtgoto\fP should be passed to \fBtputs\fR
+rather than some other output function such as \fBprintf\fP.
+.bP
+While \fBtgoto\fP is assumed to be used for the two-parameter
+cursor positioning capability,
+termcap applications also use it for single-parameter capabilities.
+.IP
+Doing this shows a quirk in \fBtgoto\fP: most hardware
+terminals use cursor addressing with \fIrow\fP first,
+but the original developers of the termcap interface chose to
+put the \fIcolumn\fP parameter first.
+The \fBtgoto\fP function swaps the order of parameters.
+It does this also for calls requiring only a single parameter.
+In that case, the first parameter is merely a placeholder.
+.bP
+Normally the ncurses library is compiled with terminfo support.
+In that case, \fBtgoto\fP uses \fBtparm\fP(3X) (a more capable formatter).
+.IP
+However, \fBtparm\fP is not a \fItermcap\fP feature,
+and portable \fItermcap\fP applications should not rely upon its availability.
 .PP
 The \fBtputs\fR routine is described on the \fBcurs_terminfo\fR(3X) manual
 page.  It can retrieve capabilities by either termcap or terminfo name.
@@ -237,4 +259,4 @@ extended capability names which are longer than two characters.
 \fBterm_variables\fR(3X),
 \fBputc\fR(3).
 .sp
-http://invisible-island.net/ncurses/tctest.html
+https://invisible-island.net/ncurses/tctest.html

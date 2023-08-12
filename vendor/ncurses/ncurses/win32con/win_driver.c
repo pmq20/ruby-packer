@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 1998-2014,2015 Free Software Foundation, Inc.              *
+ * Copyright (c) 1998-2016,2017 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -52,9 +52,9 @@
 #define PSAPI_VERSION 2
 #include <psapi.h>
 
-#define CUR my_term.type.
+#define CUR TerminalType(my_term).
 
-MODULE_ID("$Id: win_driver.c,v 1.55 2015/02/28 21:30:23 tom Exp $")
+MODULE_ID("$Id: win_driver.c,v 1.59 2017/07/22 21:10:28 tom Exp $")
 
 #ifndef __GNUC__
 #  error We need GCC to compile for MinGW
@@ -494,7 +494,7 @@ wcon_doupdate(TERMINAL_CONTROL_BLOCK * TCB)
 	   CurScreen(sp)->_clear,
 	   NewScreen(sp)->_clear));
 
-	if (SP_PARM->_endwin) {
+	if (SP_PARM->_endwin == ewSuspend) {
 
 	    T(("coming back from shell mode"));
 	    NCURSES_SP_NAME(reset_prog_mode) (NCURSES_SP_ARG);
@@ -503,7 +503,7 @@ wcon_doupdate(TERMINAL_CONTROL_BLOCK * TCB)
 	    NCURSES_SP_NAME(_nc_screen_resume) (NCURSES_SP_ARG);
 	    SP_PARM->_mouse_resume(SP_PARM);
 
-	    SP_PARM->_endwin = FALSE;
+	    SP_PARM->_endwin = ewRunning;
 	}
 
 	if ((CurScreen(sp)->_clear || NewScreen(sp)->_clear)) {
@@ -648,8 +648,11 @@ wcon_CanHandle(TERMINAL_CONTROL_BLOCK * TCB,
      * This is intentional, to avoid unnecessary breakage of applications
      * using <term.h> symbols.
      */
-    if (code && (TCB->term.type.Booleans == 0)) {
-	_nc_init_termtype(&(TCB->term.type));
+    if (code && (TerminalType(&TCB->term).Booleans == 0)) {
+	_nc_init_termtype(&TerminalType(&TCB->term));
+#if NCURSES_EXT_NUMBERS
+	_nc_export_termtype2(&TCB->term.type, &TerminalType(&TCB->term));
+#endif
     }
 
     if (!code) {
@@ -2108,7 +2111,7 @@ _nc_mingw_console_read(
 	if (b && nRead > 0) {
 	    if (rc < 0)
 		rc = 0;
-	    rc += nRead;
+	    rc = rc + (int) nRead;
 	    if (inp_rec.EventType == KEY_EVENT) {
 		if (!inp_rec.Event.KeyEvent.bKeyDown)
 		    continue;

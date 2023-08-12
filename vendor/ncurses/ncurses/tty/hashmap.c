@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 1998-2014,2015 Free Software Foundation, Inc.              *
+ * Copyright (c) 1998-2015,2016 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -73,7 +73,7 @@ AUTHOR
 #define CUR SP_TERMTYPE
 #endif
 
-MODULE_ID("$Id: hashmap.c,v 1.65 2015/07/25 20:13:56 tom Exp $")
+MODULE_ID("$Id: hashmap.c,v 1.66 2016/05/28 23:32:40 tom Exp $")
 
 #ifdef HASHDEBUG
 
@@ -198,9 +198,8 @@ cost_effective(SCREEN *sp, const int from, const int to, const int blank)
 static void
 grow_hunks(SCREEN *sp)
 {
-    int start, end, shift;
-    int back_limit, forward_limit;	/* limits for cells to fill */
-    int back_ref_limit, forward_ref_limit;	/* limits for refrences */
+    int back_limit;		/* limits for cells to fill */
+    int back_ref_limit;		/* limit for references */
     int i;
     int next_hunk;
 
@@ -215,8 +214,11 @@ grow_hunks(SCREEN *sp)
     while (i < screen_lines(sp) && OLDNUM(sp, i) == _NEWINDEX)
 	i++;
     for (; i < screen_lines(sp); i = next_hunk) {
-	start = i;
-	shift = OLDNUM(sp, i) - i;
+	int forward_limit;
+	int forward_ref_limit;
+	int end;
+	int start = i;
+	int shift = OLDNUM(sp, i) - i;
 
 	/* get forward limit */
 	i = start + 1;
@@ -285,7 +287,6 @@ NCURSES_SP_NAME(_nc_hash_map) (NCURSES_SP_DCL0)
 {
     HASHMAP *hsp;
     register int i;
-    int start, shift, size;
 
     if (screen_lines(SP_PARM) > lines_alloc(SP_PARM)) {
 	if (hashtab(SP_PARM))
@@ -387,6 +388,8 @@ NCURSES_SP_NAME(_nc_hash_map) (NCURSES_SP_DCL0)
      * more than carry.
      */
     for (i = 0; i < screen_lines(SP_PARM);) {
+	int start, shift, size;
+
 	while (i < screen_lines(SP_PARM) && OLDNUM(SP_PARM, i) == _NEWINDEX)
 	    i++;
 	if (i >= screen_lines(SP_PARM))

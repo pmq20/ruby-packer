@@ -1,5 +1,5 @@
 .\"***************************************************************************
-.\" Copyright (c) 2010,2013 Free Software Foundation, Inc.                   *
+.\" Copyright (c) 2010-2015,2017 Free Software Foundation, Inc.              *
 .\"                                                                          *
 .\" Permission is hereby granted, free of charge, to any person obtaining a  *
 .\" copy of this software and associated documentation files (the            *
@@ -26,18 +26,20 @@
 .\" authorization.                                                           *
 .\"***************************************************************************
 .\"
-.\" $Id: curs_sp_funcs.3x,v 1.6 2013/06/22 17:53:59 tom Exp $
+.\" $Id: curs_sp_funcs.3x,v 1.9 2017/03/27 08:35:44 tom Exp $
 .TH curs_sp_funcs 3X ""
 .na
 .hy 0
 .SH NAME
-new_prescr \- \fBcurses\fR screen-pointer extension
+curs_sp_funcs \- \fBcurses\fR screen-pointer extension
 .ad
 .hy
 .SH SYNOPSIS
 \fB#include <curses.h>\fR
 .nf
 .sp
+\fBint alloc_pair_sp(SCREEN*, int, int);\fR
+.br
 \fBint assume_default_colors_sp(SCREEN*, int, int);\fR
 .br
 \fBint baudrate_sp(SCREEN*);\fR
@@ -68,7 +70,17 @@ new_prescr \- \fBcurses\fR screen-pointer extension
 .br
 \fBint erasechar_sp(SCREEN*);\fR
 .br
+\fBint extended_color_content_sp(SCREEN *, int, int *, int *, int *);\fR
+.br
+\fBint extended_pair_content_sp(SCREEN*, int, int *, int *);\fR
+.br
+\fBint extended_slk_color_sp(SCREEN*, int);\fR
+.br
 \fBint filter_sp(SCREEN*);\fR
+.br
+\fBint find_pair_sp(SCREEN*, int, int);\fR
+.br
+\fBint free_pair_sp(SCREEN*, int);\fR
 .br
 \fBint flash_sp(SCREEN*);\fR
 .br
@@ -94,6 +106,10 @@ new_prescr \- \fBcurses\fR screen-pointer extension
 .br
 \fBint init_color_sp(SCREEN*, short, short, short, short);\fR
 .br
+\fBint init_extended_color_sp(SCREEN*, int, int, int, int);\fR
+.br
+\fBint init_extended_pair_sp(SCREEN*, int, int, int);\fR
+.br
 \fBint init_pair_sp(SCREEN*, short, short, short);\fR
 .br
 \fBint intrflush_sp(SCREEN*, WINDOW*, bool);\fR
@@ -111,6 +127,8 @@ new_prescr \- \fBcurses\fR screen-pointer extension
 \fBint keyok_sp(SCREEN*, int, bool);\fR
 .br
 \fBchar killchar_sp(SCREEN*);\fR
+.br
+\fBchar* longname_sp(SCREEN*);\fR
 .br
 \fBint mcprint_sp(SCREEN*, char *, int);\fR
 .br
@@ -227,6 +245,8 @@ new_prescr \- \fBcurses\fR screen-pointer extension
 \fBint use_default_colors_sp(SCREEN*);\fR
 .br
 \fBvoid use_env_sp(SCREEN*, bool);\fR
+.br
+\fBvoid use_tioctl_sp (SCREEN *, bool)\fR
 .br
 \fBint use_legacy_coding_sp(SCREEN*, int);\fR
 .br

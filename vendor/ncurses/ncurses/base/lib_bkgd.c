@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 1998-2012,2014 Free Software Foundation, Inc.              *
+ * Copyright (c) 1998-2014,2016 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -36,7 +36,7 @@
 
 #include <curses.priv.h>
 
-MODULE_ID("$Id: lib_bkgd.c,v 1.49 2014/09/04 09:36:20 tom Exp $")
+MODULE_ID("$Id: lib_bkgd.c,v 1.50 2016/05/28 23:11:26 tom Exp $")
 
 /*
  * Set the window's background information.
@@ -118,13 +118,13 @@ static NCURSES_INLINE int
 wbkgrnd(WINDOW *win, const ARG_CH_T ch)
 {
     int code = ERR;
-    int x, y;
 
     T((T_CALLED("wbkgd(%p,%s)"), (void *) win, _tracech_t(ch)));
 
     if (win) {
 	NCURSES_CH_T new_bkgd = CHDEREF(ch);
 	NCURSES_CH_T old_bkgrnd;
+	int y;
 
 	memset(&old_bkgrnd, 0, sizeof(old_bkgrnd));
 	(void) wgetbkgrnd(win, &old_bkgrnd);
@@ -133,6 +133,8 @@ wbkgrnd(WINDOW *win, const ARG_CH_T ch)
 	(void) wattrset(win, (int) AttrOf(win->_nc_bkgd));
 
 	for (y = 0; y <= win->_maxy; y++) {
+	    int x;
+
 	    for (x = 0; x <= win->_maxx; x++) {
 		if (CharEq(win->_line[y].text[x], old_bkgrnd)) {
 		    win->_line[y].text[x] = win->_nc_bkgd;

@@ -1,6 +1,6 @@
 '\" t
 .\"***************************************************************************
-.\" Copyright (c) 1998-2007,2010 Free Software Foundation, Inc.              *
+.\" Copyright (c) 1998-2010,2016 Free Software Foundation, Inc.              *
 .\"                                                                          *
 .\" Permission is hereby granted, free of charge, to any person obtaining a  *
 .\" copy of this software and associated documentation files (the            *
@@ -27,7 +27,7 @@
 .\" authorization.                                                           *
 .\"***************************************************************************
 .\"
-.\" $Id: captoinfo.1m,v 1.25 2010/12/04 18:36:44 tom Exp $
+.\" $Id: captoinfo.1m,v 1.26 2016/10/15 17:26:09 tom Exp $
 .TH @CAPTOINFO@ 1M ""
 .ds n 5
 .ds d @TERMINFO@
@@ -152,7 +152,7 @@ GG	acs magic cookie count
 .TE
 .PP
 If the single-line capabilities occur in an entry, they will automatically
-be composed into an \fIacsc\fR string.
+be composed into an \fBacsc\fR string.
 The double-line capabilities and
 \fBGG\fR are discarded with a warning message.
 .PP
@@ -174,10 +174,10 @@ font3	s3ds
 .TE
 .PP
 Additionally, the AIX \fIbox1\fR capability will be automatically translated to
-an \fIacsc\fR string.
+an \fBacsc\fR string.
 .PP
 Hewlett-Packard's terminfo library supports two nonstandard terminfo
-capabilities \fImeml\fR (memory lock) and \fImemu\fR (memory unlock).
+capabilities \fBmeml\fR (memory lock) and \fBmemu\fR (memory unlock).
 These will be discarded with a warning message.
 .SH NOTES
 This utility is actually a link to \fB@TIC@\fR(1M), running in \fI\-I\fR mode.

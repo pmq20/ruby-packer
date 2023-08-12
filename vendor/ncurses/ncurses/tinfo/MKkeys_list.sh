@@ -1,7 +1,7 @@
 #! /bin/sh
-# $Id: MKkeys_list.sh,v 1.4 2003/10/25 16:19:54 tom Exp $
+# $Id: MKkeys_list.sh,v 1.5 2017/08/12 12:22:06 tom Exp $
 ##############################################################################
-# Copyright (c) 2001,2003 Free Software Foundation, Inc.                     #
+# Copyright (c) 2001-2003,2017 Free Software Foundation, Inc.                #
 #                                                                            #
 # Permission is hereby granted, free of charge, to any person obtaining a    #
 # copy of this software and associated documentation files (the "Software"), #
@@ -38,7 +38,7 @@
 DATA=${1-../../include/Caps}
 
 data=data$$
-trap 'rm -f $data' 0 1 2 5 15
+trap 'rm -f $data' 0 1 2 3 15
 sed -e 's/[	][	]*/	/g' < $DATA >$data
 
 cat <<EOF

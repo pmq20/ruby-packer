@@ -1,10 +1,10 @@
 #!/bin/sh
-# $Id: MKterminfo.sh,v 1.12 2003/01/11 21:42:12 tom Exp $
+# $Id: MKterminfo.sh,v 1.13 2017/08/12 12:22:06 tom Exp $
 #
 # MKterminfo.sh -- generate terminfo.5 from Caps tabular data
 #
 #***************************************************************************
-# Copyright (c) 1998,2002,2003 Free Software Foundation, Inc.              *
+# Copyright (c) 1998-2003,2017 Free Software Foundation, Inc.              *
 #                                                                          *
 # Permission is hereby granted, free of charge, to any person obtaining a  *
 # copy of this software and associated documentation files (the            *
@@ -65,7 +65,7 @@ cat $head
 temp=temp$$
 sorted=sorted$$
 unsorted=unsorted$$
-trap "rm -f $sorted $temp $unsorted; exit 99" 1 2 5 15
+trap "rm -f $sorted $temp $unsorted; exit 99" 1 2 3 15
 
 sed -n <$caps "\
 /%%-STOP-HERE-%%/q

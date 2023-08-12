@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 1998-2011,2015 Free Software Foundation, Inc.              *
+ * Copyright (c) 1998-2017,2018 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -41,7 +41,7 @@
 #define CUR SP_TERMTYPE
 #endif
 
-MODULE_ID("$Id: lib_screen.c,v 1.77 2015/07/04 22:54:14 tom Exp $")
+MODULE_ID("$Id: lib_screen.c,v 1.93 2018/01/14 17:39:47 tom Exp $")
 
 #define MAX_SIZE 0x3fff		/* 16k is big enough for a window or pad */
 
@@ -51,8 +51,17 @@ MODULE_ID("$Id: lib_screen.c,v 1.77 2015/07/04 22:54:14 tom Exp $")
 #define L_CURL '{'
 #define R_CURL '}'
 
+#if USE_STRING_HACKS && HAVE_SNPRINTF
+#define ARG_SLIMIT(name) size_t name,
+#else
+#define ARG_SLIMIT(name)	/* nothing */
+#endif
+
+#define CUR_SLIMIT _nc_SLIMIT(limit - (target - base))
+#define TOP_SLIMIT _nc_SLIMIT(sizeof(buffer))
+
 /*
- * Use 0x8888 as the magic number for new-format files, since it cannot be
+ * Use 0x888888 as the magic number for new-format files, since it cannot be
  * mistaken for the _cury/_curx pair of 16-bit numbers which start the old
  * format.  It happens to be unused in the file 5.22 database (2015/03/07).
  */
@@ -161,12 +170,12 @@ static char *
 read_txt(FILE *fp)
 {
     size_t limit = 1024;
-    size_t used = 0;
     char *result = malloc(limit);
     char *buffer;
 
     if (result != 0) {
 	int ch = 0;
+	size_t used = 0;
 
 	clearerr(fp);
 	result[used] = '\0';
@@ -356,7 +365,7 @@ decode_cchar(char *source, cchar_t *fillin, cchar_t *target)
 	    chars[append] = (wchar_t) value;
 	}
     }
-    setcchar(target, chars, attr, (short) color, NULL);
+    setcchar(target, chars, attr, (short) color, &color);
     return source;
 }
 #endif
@@ -365,9 +374,6 @@ static int
 read_win(WINDOW *win, FILE *fp)
 {
     int code = ERR;
-    char *txt;
-    char *name;
-    char *value;
     size_t n;
     int color;
 #if NCURSES_WIDECHAR
@@ -377,7 +383,10 @@ read_win(WINDOW *win, FILE *fp)
 
     memset(win, 0, sizeof(WINDOW));
     for (;;) {
-	txt = read_txt(fp);
+	char *name;
+	char *value;
+	char *txt = read_txt(fp);
+
 	if (txt == 0)
 	    break;
 	if (!strcmp(txt, "rows:")) {
@@ -435,10 +444,13 @@ read_row(char *source, NCURSES_CH_T * prior, NCURSES_CH_T * target, int length)
 {
     while (*source != '\0' && length > 0) {
 #if NCURSES_WIDECHAR
-	int n, len;
+	int len;
+
 	source = decode_cchar(source, prior, target);
 	len = wcwidth(target->chars[0]);
 	if (len > 1) {
+	    int n;
+
 	    SetWidecExt(CHDEREF(target), 0);
 	    for (n = 1; n < len; ++n) {
 		target[n] = target[0];
@@ -490,7 +502,6 @@ NCURSES_EXPORT(WINDOW *)
 NCURSES_SP_NAME(getwin) (NCURSES_SP_DCLx FILE *filep)
 {
     WINDOW tmp, *nwin;
-    int n;
     bool old_format = FALSE;
 
     T((T_CALLED("getwin(%p)"), (void *) filep));
@@ -546,6 +557,7 @@ NCURSES_SP_NAME(getwin) (NCURSES_SP_DCLx FILE *filep)
      * made sense is probably gone.
      */
     if (nwin != 0) {
+	int n;
 	size_t linesize = sizeof(NCURSES_CH_T) * (size_t) (tmp._maxx + 1);
 
 	nwin->_curx = tmp._curx;
@@ -588,7 +600,7 @@ NCURSES_SP_NAME(getwin) (NCURSES_SP_DCLx FILE *filep)
 	}
 #if NCURSES_EXT_PUTWIN
 	else {
-	    char *txt;
+	    char *txt = 0;
 	    bool success = TRUE;
 	    NCURSES_CH_T prior = blank;
 
@@ -641,13 +653,20 @@ getwin(FILE *filep)
 
 #if NCURSES_EXT_PUTWIN
 static void
-encode_attr(char *target, attr_t source, attr_t prior)
+encode_attr(char *target, ARG_SLIMIT(limit)
+	    attr_t source,
+	    attr_t prior,
+	    int source_color,
+	    int prior_color)
 {
+#if USE_STRING_HACKS && HAVE_SNPRINTF
+    char *base = target;
+#endif
     source &= ~A_CHARTEXT;
     prior &= ~A_CHARTEXT;
 
     *target = '\0';
-    if (source != prior) {
+    if ((source != prior) || (source_color != prior_color)) {
 	size_t n;
 	bool first = TRUE;
 
@@ -663,14 +682,14 @@ encode_attr(char *target, attr_t source, attr_t prior)
 		} else {
 		    *target++ = '|';
 		}
-		strcpy(target, scr_attrs[n].name);
+		_nc_STRCPY(target, scr_attrs[n].name, limit);
 		target += strlen(target);
 	    }
 	}
-	if ((source & A_COLOR) != (prior & A_COLOR)) {
+	if (source_color != prior_color) {
 	    if (!first)
 		*target++ = '|';
-	    sprintf(target, "C%d", PAIR_NUMBER((int) source));
+	    _nc_SPRINTF(target, CUR_SLIMIT "C%d", source_color);
 	    target += strlen(target);
 	}
 
@@ -680,19 +699,29 @@ encode_attr(char *target, attr_t source, attr_t prior)
 }
 
 static void
-encode_cell(char *target, CARG_CH_T source, CARG_CH_T previous)
+encode_cell(char *target, ARG_SLIMIT(limit) CARG_CH_T source, CARG_CH_T previous)
 {
+#if USE_STRING_HACKS && HAVE_SNPRINTF
+    char *base = target;
+#endif
 #if NCURSES_WIDECHAR
     size_t n;
+    int source_pair = GetPair(*source);
+    int previous_pair = GetPair(*previous);
 
     *target = '\0';
-    if (previous->attr != source->attr) {
-	encode_attr(target, source->attr, previous->attr);
+    if ((previous->attr != source->attr) || (previous_pair != source_pair)) {
+	encode_attr(target, CUR_SLIMIT
+		    source->attr,
+		    previous->attr,
+		    source_pair,
+		    previous_pair);
     }
     target += strlen(target);
 #if NCURSES_EXT_COLORS
     if (previous->ext_color != source->ext_color) {
-	sprintf(target, "%c%cC%d%c", MARKER, L_CURL, source->ext_color, R_CURL);
+	_nc_SPRINTF(target, CUR_SLIMIT
+		    "%c%cC%d%c", MARKER, L_CURL, source->ext_color, R_CURL);
     }
 #endif
     for (n = 0; n < SIZEOF(source->chars); ++n) {
@@ -705,22 +734,23 @@ encode_cell(char *target, CARG_CH_T source, CARG_CH_T previous)
 	}
 	*target++ = MARKER;
 	if (uch > 0xffff) {
-	    sprintf(target, "U%08x", uch);
+	    _nc_SPRINTF(target, CUR_SLIMIT "U%08x", uch);
 	} else if (uch > 0xff) {
-	    sprintf(target, "u%04x", uch);
+	    _nc_SPRINTF(target, CUR_SLIMIT "u%04x", uch);
 	} else if (uch < 32 || uch >= 127) {
-	    sprintf(target, "%03o", uch & 0xff);
+	    _nc_SPRINTF(target, CUR_SLIMIT "%03o", uch & 0xff);
 	} else {
 	    switch (uch) {
 	    case ' ':
-		strcpy(target, "s");
+		_nc_STRCPY(target, "s", limit);
 		break;
 	    case MARKER:
 		*target++ = MARKER;
 		*target = '\0';
 		break;
 	    default:
-		sprintf(--target, "%c", uch);
+		--target;
+		_nc_SPRINTF(target, CUR_SLIMIT "%c", uch);
 		break;
 	    }
 	}
@@ -731,27 +761,31 @@ encode_cell(char *target, CARG_CH_T source, CARG_CH_T previous)
 
     *target = '\0';
     if (AttrOfD(previous) != AttrOfD(source)) {
-	encode_attr(target, AttrOfD(source), AttrOfD(previous));
+	encode_attr(target, CUR_SLIMIT
+		    AttrOfD(source),
+		    AttrOfD(previous),
+		    GetPair(source),
+		    GetPair(previous));
     }
     target += strlen(target);
     *target++ = MARKER;
     if (ch < 32 || ch >= 127) {
-	sprintf(target, "%03o", UChar(ch));
+	_nc_SPRINTF(target, CUR_SLIMIT "%03o", UChar(ch));
     } else {
 	switch (ch) {
 	case ' ':
-	    strcpy(target, "s");
+	    _nc_STRCPY(target, "s", limit);
 	    break;
 	case MARKER:
 	    *target++ = MARKER;
 	    *target = '\0';
 	    break;
 	default:
-	    sprintf(--target, "%c", UChar(ch));
+	    --target;
+	    _nc_SPRINTF(target, CUR_SLIMIT "%c", UChar(ch));
 	    break;
 	}
     }
-    target += strlen(target);
 #endif
 }
 #endif
@@ -760,7 +794,6 @@ NCURSES_EXPORT(int)
 putwin(WINDOW *win, FILE *filep)
 {
     int code = ERR;
-    int y;
 
     T((T_CALLED("putwin(%p,%p)"), (void *) win, (void *) filep));
 
@@ -769,6 +802,7 @@ putwin(WINDOW *win, FILE *filep)
 	const char *version = curses_version();
 	char buffer[1024];
 	NCURSES_CH_T last_cell;
+	int y;
 
 	memset(&last_cell, 0, sizeof(last_cell));
 
@@ -786,6 +820,7 @@ putwin(WINDOW *win, FILE *filep)
 	    const char *name = scr_params[y].name;
 	    const char *data = (char *) win + scr_params[y].offset;
 	    const void *dp = (const void *) data;
+	    attr_t attr;
 
 	    *buffer = '\0';
 	    if (!strncmp(name, "_pad.", 5) && !(win->_flags & _ISPAD)) {
@@ -793,36 +828,50 @@ putwin(WINDOW *win, FILE *filep)
 	    }
 	    switch (scr_params[y].type) {
 	    case pATTR:
-		encode_attr(buffer, (*(const attr_t *) dp) & ~A_CHARTEXT, A_NORMAL);
+		attr = (*(const attr_t *) dp) & ~A_CHARTEXT;
+		encode_attr(buffer, TOP_SLIMIT
+			    (*(const attr_t *) dp) & ~A_CHARTEXT,
+			    A_NORMAL,
+			    COLOR_PAIR((int) attr),
+			    0);
 		break;
 	    case pBOOL:
 		if (!(*(const bool *) data)) {
 		    continue;
 		}
-		strcpy(buffer, name);
+		_nc_STRCPY(buffer, name, sizeof(buffer));
 		name = "flag";
 		break;
 	    case pCHAR:
-		encode_attr(buffer, *(const attr_t *) dp, A_NORMAL);
+		attr = (*(const attr_t *) dp);
+		encode_attr(buffer, TOP_SLIMIT
+			    * (const attr_t *) dp,
+			    A_NORMAL,
+			    COLOR_PAIR((int) attr),
+			    0);
 		break;
 	    case pINT:
 		if (!(*(const int *) dp))
 		    continue;
-		sprintf(buffer, "%d", *(const int *) dp);
+		_nc_SPRINTF(buffer, TOP_SLIMIT
+			    "%d", *(const int *) dp);
 		break;
 	    case pSHORT:
 		if (!(*(const short *) dp))
 		    continue;
-		sprintf(buffer, "%d", *(const short *) dp);
+		_nc_SPRINTF(buffer, TOP_SLIMIT
+			    "%d", *(const short *) dp);
 		break;
 	    case pSIZE:
 		if (!(*(const NCURSES_SIZE_T *) dp))
 		    continue;
-		sprintf(buffer, "%d", *(const NCURSES_SIZE_T *) dp);
+		_nc_SPRINTF(buffer, TOP_SLIMIT
+			    "%d", *(const NCURSES_SIZE_T *) dp);
 		break;
 #if NCURSES_WIDECHAR
 	    case pCCHAR:
-		encode_cell(buffer, (CARG_CH_T) dp, CHREF(last_cell));
+		encode_cell(buffer, TOP_SLIMIT
+			    (CARG_CH_T) dp, CHREF(last_cell));
 		break;
 #endif
 	    }
@@ -846,19 +895,20 @@ putwin(WINDOW *win, FILE *filep)
 	    for (x = 0; x <= win->_maxx; x++) {
 #if NCURSES_WIDECHAR
 		int len = wcwidth(data[x].chars[0]);
-		encode_cell(buffer, CHREF(data[x]), CHREF(last_cell));
+		encode_cell(buffer, TOP_SLIMIT CHREF(data[x]), CHREF(last_cell));
 		last_cell = data[x];
 		PUTS(buffer);
 		if (len > 1)
 		    x += (len - 1);
 #else
-		encode_cell(buffer, CHREF(data[x]), CHREF(last_cell));
+		encode_cell(buffer, TOP_SLIMIT CHREF(data[x]), CHREF(last_cell));
 		last_cell = data[x];
 		PUTS(buffer);
 #endif
 	    }
 	    PUTS("\n");
 	}
+	code = OK;
     }
 #else
     /*
@@ -869,6 +919,7 @@ putwin(WINDOW *win, FILE *filep)
      */
     if (win != 0) {
 	size_t len = (size_t) (win->_maxx + 1);
+	int y;
 
 	clearerr(filep);
 	if (fwrite(win, sizeof(WINDOW), (size_t) 1, filep) != 1
@@ -941,7 +992,6 @@ scr_dump(const char *file)
 NCURSES_EXPORT(int)
 NCURSES_SP_NAME(scr_init) (NCURSES_SP_DCLx const char *file)
 {
-    FILE *fp = 0;
     int code = ERR;
 
     T((T_CALLED("scr_init(%p,%s)"), (void *) SP_PARM, _nc_visbuf(file)));
@@ -953,6 +1003,8 @@ NCURSES_SP_NAME(scr_init) (NCURSES_SP_DCLx const char *file)
 	!(exit_ca_mode && non_rev_rmcup)
 #endif
 	) {
+	FILE *fp = 0;
+
 	if (_nc_access(file, R_OK) >= 0
 	    && (fp = fopen(file, "rb")) != 0) {
 	    delwin(CurScreen(SP_PARM));

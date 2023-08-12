@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 2014 Free Software Foundation, Inc.                        *
+ * Copyright (c) 2014,2017 Free Software Foundation, Inc.                   *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -29,7 +29,7 @@
 /*
  * Author: Thomas E. Dickey
  *
- * $Id: dots_curses.c,v 1.3 2014/08/09 22:28:42 tom Exp $
+ * $Id: dots_curses.c,v 1.12 2017/11/24 19:25:28 tom Exp $
  *
  * A simple demo of the curses interface used for comparison with termcap.
  */
@@ -41,8 +41,6 @@
 
 #include <time.h>
 
-#define valid(s) ((s != 0) && s != (char *)-1)
-
 static bool interrupted = FALSE;
 static long total_chars = 0;
 static time_t started;
@@ -52,7 +50,7 @@ cleanup(void)
 {
     endwin();
 
-    printf("\n\n%ld total chars, rate %.2f/sec\n",
+    printf("\n\n%ld total cells, rate %.2f/sec\n",
 	   total_chars,
 	   ((double) (total_chars) / (double) (time((time_t *) 0) - started)));
 }
@@ -86,40 +84,104 @@ set_colors(int fg, int bg)
     }
 }
 
+static void
+usage(void)
+{
+    static const char *msg[] =
+    {
+	"Usage: dots_curses [options]"
+	,""
+	,"Options:"
+	," -T TERM  override $TERM"
+#if HAVE_USE_DEFAULT_COLORS
+	," -d       invoke use_default_colors()"
+#endif
+#if HAVE_USE_ENV
+	," -e       allow environment $LINES / $COLUMNS"
+#endif
+	," -m SIZE  set margin (default: 2)"
+	," -s MSECS delay 1% of the time (default: 1 msecs)"
+    };
+    size_t n;
+
+    for (n = 0; n < SIZEOF(msg); n++)
+	fprintf(stderr, "%s\n", msg[n]);
+
+    ExitProgram(EXIT_FAILURE);
+}
+
 int
-main(int argc GCC_UNUSED,
-     char *argv[]GCC_UNUSED)
+main(int argc, char *argv[])
 {
     int x, y, z, p;
     int fg, bg;
     double r;
     double c;
+#if HAVE_USE_DEFAULT_COLORS
+    bool d_option = FALSE;
+#endif
+    int m_option = 2;
+    int s_option = 1;
 
-    CATCHALL(onsig);
+    while ((x = getopt(argc, argv, "T:dem:s:")) != -1) {
+	switch (x) {
+	case 'T':
+	    putenv(strcat(strcpy(malloc(6 + strlen(optarg)), "TERM="), optarg));
+	    break;
+#if HAVE_USE_DEFAULT_COLORS
+	case 'd':
+	    d_option = TRUE;
+	    break;
+#endif
+#if HAVE_USE_ENV
+	case 'e':
+	    use_env(TRUE);
+	    break;
+#endif
+	case 'm':
+	    m_option = atoi(optarg);
+	    break;
+	case 's':
+	    s_option = atoi(optarg);
+	    break;
+	default:
+	    usage();
+	    break;
+	}
+    }
 
     srand((unsigned) time(0));
 
-    initscr();
+    InitAndCatch(initscr(), onsig);
     if (has_colors()) {
 	start_color();
+#if HAVE_USE_DEFAULT_COLORS
+	if (d_option)
+	    use_default_colors();
+#endif
 	for (fg = 0; fg < COLORS; fg++) {
 	    for (bg = 0; bg < COLORS; bg++) {
-		int pair = mypair(fg, bg);
+		int pair;
+		if (interrupted) {
+		    cleanup();
+		    ExitProgram(EXIT_FAILURE);
+		}
+		pair = mypair(fg, bg);
 		if (pair > 0)
 		    init_pair((short) pair, (short) fg, (short) bg);
 	    }
 	}
     }
 
-    r = (double) (LINES - 4);
-    c = (double) (COLS - 4);
+    r = (double) (LINES - (m_option * 2));
+    c = (double) (COLS - (m_option * 2));
     started = time((time_t *) 0);
 
     fg = COLOR_WHITE;
     bg = COLOR_BLACK;
     while (!interrupted) {
-	x = (int) (c * ranf()) + 2;
-	y = (int) (r * ranf()) + 2;
+	x = (int) (c * ranf()) + m_option;
+	y = (int) (r * ranf()) + m_option;
 	p = (ranf() > 0.9) ? '*' : ' ';
 
 	move(y, x);
@@ -130,7 +192,7 @@ main(int argc GCC_UNUSED,
 		attron(COLOR_PAIR(mypair(fg, bg)));
 	    } else {
 		set_colors(fg, bg = z);
-		napms(1);
+		napms(s_option);
 	    }
 	} else {
 	    if (ranf() <= 0.01) {
@@ -139,10 +201,10 @@ main(int argc GCC_UNUSED,
 		} else {
 		    attroff(A_REVERSE);
 		}
-		napms(1);
+		napms(s_option);
 	    }
 	}
-	addch((chtype) p);
+	AddCh(p);
 	refresh();
 	++total_chars;
     }

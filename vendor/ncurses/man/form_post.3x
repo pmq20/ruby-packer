@@ -1,6 +1,6 @@
 '\" t
 .\"***************************************************************************
-.\" Copyright (c) 1998-2006,2010 Free Software Foundation, Inc.              *
+.\" Copyright (c) 1998-2010,2017 Free Software Foundation, Inc.              *
 .\"                                                                          *
 .\" Permission is hereby granted, free of charge, to any person obtaining a  *
 .\" copy of this software and associated documentation files (the            *
@@ -27,10 +27,11 @@
 .\" authorization.                                                           *
 .\"***************************************************************************
 .\"
-.\" $Id: form_post.3x,v 1.9 2010/12/04 18:40:45 tom Exp $
+.\" $Id: form_post.3x,v 1.11 2017/01/07 19:25:15 tom Exp $
 .TH form_post 3X ""
 .SH NAME
-\fBform_post\fR \- write or erase forms from associated subwindows
+\fBpost_form\fR,
+\fBunpost_form\fR \- write or erase forms from associated subwindows
 .SH SYNOPSIS
 \fB#include <form.h>\fR
 .br
@@ -40,7 +41,7 @@ int unpost_form(FORM *form);
 .br
 .SH DESCRIPTION
 The function \fBpost_form\fR displays a form to its associated subwindow.  To
-trigger physical display of the subwindow, use \fBrefresh\fR or some equivalent
+trigger physical display of the subwindow, use \fBrefresh\fR(3X) or some equivalent
 \fBcurses\fR routine (the implicit \fBdoupdate\fR triggered by an \fBcurses\fR
 input request will do).
 .PP

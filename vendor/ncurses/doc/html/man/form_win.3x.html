@@ -33,7 +33,7 @@
 <HTML>
 <HEAD>
 <meta http-equiv="Content-Type" content="text/html; charset=us-ascii">
-<meta name="generator" content="Manpage converted by man2html - see http://invisible-island.net/scripts/readme.html#others_scripts">
+<meta name="generator" content="Manpage converted by man2html - see https://invisible-island.net/scripts/readme.html#others_scripts">
 <TITLE>form_win 3x</TITLE>
 <link rev=made href="mailto:bug-ncurses@gnu.org">
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
@@ -41,19 +41,16 @@
 <BODY>
 <H1 class="no-header">form_win 3x</H1>
 <PRE>
-<STRONG><A HREF="form_win.3x.html">form_win(3x)</A></STRONG>                                               <STRONG><A HREF="form_win.3x.html">form_win(3x)</A></STRONG>
+<STRONG><A HREF="form_win.3x.html">form_win(3x)</A></STRONG>                                                      <STRONG><A HREF="form_win.3x.html">form_win(3x)</A></STRONG>
 
 
 
 
-</PRE>
-<H2><a name="h2-NAME">NAME</a></H2><PRE>
-       <STRONG>form_win</STRONG>  - make and break form window and subwindow asso-
-       ciations
+</PRE><H2><a name="h2-NAME">NAME</a></H2><PRE>
+       <STRONG>form_win</STRONG> - make and break form window and subwindow associations
 
 
-</PRE>
-<H2><a name="h2-SYNOPSIS">SYNOPSIS</a></H2><PRE>
+</PRE><H2><a name="h2-SYNOPSIS">SYNOPSIS</a></H2><PRE>
        <STRONG>#include</STRONG> <STRONG>&lt;form.h&gt;</STRONG>
        int set_form_win(FORM *form, WINDOW *win);
        WINDOW *form_win(const FORM *form);
@@ -62,31 +59,27 @@
        int scale_form(const FORM *form, int *rows, int *columns);
 
 
-</PRE>
-<H2><a name="h2-DESCRIPTION">DESCRIPTION</a></H2><PRE>
-       Every form has an associated pair of <STRONG>curses</STRONG> windows.   The
-       form  window displays any title and border associated with
-       the window; the form subwindow displays the items  of  the
-       form that are currently available for selection.
+</PRE><H2><a name="h2-DESCRIPTION">DESCRIPTION</a></H2><PRE>
+       Every  form  has an associated pair of <STRONG>curses</STRONG> windows.  The form window
+       displays any title and border associated with the window; the form sub-
+       window  displays the items of the form that are currently available for
+       selection.
 
-       The first four functions get and set those windows.  It is
-       not necessary to set either window; by default, the driver
-       code uses <STRONG>stdscr</STRONG> for both.
+       The first four functions get and set those windows.  It is  not  neces-
+       sary  to set either window; by default, the driver code uses <STRONG>stdscr</STRONG> for
+       both.
 
-       In  the <STRONG>set_</STRONG> functions, window argument of <STRONG>NULL</STRONG> is treated
-       as though it were <STRONG>stsdcr</STRONG>.  A  form  argument  of  <STRONG>NULL</STRONG>  is
-       treated  as  a  request  to change the system default form
-       window or subwindow.
+       In the <STRONG>set_</STRONG> functions, window argument of <STRONG>NULL</STRONG> is treated as though  it
+       were <STRONG>stsdcr</STRONG>.  A form argument of <STRONG>NULL</STRONG> is treated as a request to change
+       the system default form window or subwindow.
 
-       The function <STRONG>scale_form</STRONG> returns the minimum size  required
-       for the subwindow of <EM>form</EM>.
+       The function <STRONG>scale_form</STRONG> returns the minimum size required for the  sub-
+       window of <EM>form</EM>.
 
 
-</PRE>
-<H2><a name="h2-RETURN-VALUE">RETURN VALUE</a></H2><PRE>
-       Routines  that return pointers return <STRONG>NULL</STRONG> on error.  Rou-
-       tines that return an integer return one of  the  following
-       error codes:
+</PRE><H2><a name="h2-RETURN-VALUE">RETURN VALUE</a></H2><PRE>
+       Routines  that  return  pointers  return  <STRONG>NULL</STRONG> on error.  Routines that
+       return an integer return one of the following error codes:
 
        <STRONG>E_OK</STRONG> The routine succeeded.
 
@@ -94,8 +87,7 @@
             System error occurred (see <STRONG>errno</STRONG>).
 
        <STRONG>E_BAD_ARGUMENT</STRONG>
-            Routine  detected  an incorrect or out-of-range argu-
-            ment.
+            Routine detected an incorrect or out-of-range argument.
 
        <STRONG>E_POSTED</STRONG>
             The form has already been posted.
@@ -104,31 +96,27 @@
             No items are connected to the form.
 
 
-</PRE>
-<H2><a name="h2-SEE-ALSO">SEE ALSO</a></H2><PRE>
+</PRE><H2><a name="h2-SEE-ALSO">SEE ALSO</a></H2><PRE>
        <STRONG><A HREF="ncurses.3x.html">curses(3x)</A></STRONG>, <STRONG><A HREF="curs_variables.3x.html">curs_variables(3x)</A></STRONG>, <STRONG><A HREF="form.3x.html">form(3x)</A></STRONG>.
 
 
-</PRE>
-<H2><a name="h2-NOTES">NOTES</a></H2><PRE>
-       The header file <STRONG>&lt;form.h&gt;</STRONG> automatically includes the header
-       file <STRONG>&lt;curses.h&gt;</STRONG>.
+</PRE><H2><a name="h2-NOTES">NOTES</a></H2><PRE>
+       The  header  file  <STRONG>&lt;form.h&gt;</STRONG>  automatically  includes  the  header  file
+       <STRONG>&lt;curses.h&gt;</STRONG>.
 
 
-</PRE>
-<H2><a name="h2-PORTABILITY">PORTABILITY</a></H2><PRE>
-       These  routines  emulate the System V forms library.  They
-       were not supported on Version 7 or BSD versions.
+</PRE><H2><a name="h2-PORTABILITY">PORTABILITY</a></H2><PRE>
+       These  routines emulate the System V forms library.  They were not sup-
+       ported on Version 7 or BSD versions.
 
 
-</PRE>
-<H2><a name="h2-AUTHORS">AUTHORS</a></H2><PRE>
-       Juergen Pfeifer.  Manual  pages  and  adaptation  for  new
-       curses by Eric S. Raymond.
+</PRE><H2><a name="h2-AUTHORS">AUTHORS</a></H2><PRE>
+       Juergen Pfeifer.  Manual pages and adaptation for new curses by Eric S.
+       Raymond.
 
 
 
-                                                           <STRONG><A HREF="form_win.3x.html">form_win(3x)</A></STRONG>
+                                                                  <STRONG><A HREF="form_win.3x.html">form_win(3x)</A></STRONG>
 </PRE>
 <div class="nav">
 <ul>

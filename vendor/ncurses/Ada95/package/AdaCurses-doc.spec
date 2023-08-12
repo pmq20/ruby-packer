@@ -3,13 +3,13 @@ Summary: AdaCurses - Ada95 binding documentation for ncurses
 %define AppVersion MAJOR.MINOR
 %define AppRelease YYYYMMDD
 %define AppPackage %{AppProgram}-doc
-# $Id: AdaCurses-doc.spec,v 1.3 2015/04/26 23:39:31 tom Exp $
+# $Id: AdaCurses-doc.spec,v 1.4 2017/12/09 20:41:39 tom Exp $
 Name: %{AppPackage}
 Version: %{AppVersion}
 Release: %{AppRelease}
 License: MIT
 Group: Applications/Development
-URL: ftp://invisible-island.net/%{AppProgram}
+URL: ftp://ftp.invisible-island.net/%{AppProgram}
 Source0: %{AppProgram}-%{AppRelease}.tgz
 Packager: Thomas Dickey <dickey@invisible-island.net>
 

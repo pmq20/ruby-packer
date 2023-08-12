@@ -2,7 +2,7 @@
  *  newdemo.c	-	A demo program using PDCurses. The program illustrate
  *  	 		the use of colours for text output.
  *
- * $Id: newdemo.c,v 1.41 2014/08/02 23:10:56 tom Exp $
+ * $Id: newdemo.c,v 1.45 2017/09/30 15:43:08 tom Exp $
  */
 
 #include <test.priv.h>
@@ -50,7 +50,7 @@ static const char *messages[] =
 static void
 trap(int sig GCC_UNUSED)
 {
-    endwin();
+    exit_curses();
     ExitProgram(EXIT_FAILURE);
 }
 
@@ -230,9 +230,7 @@ main(int argc GCC_UNUSED, char *argv[]GCC_UNUSED)
 
     setlocale(LC_ALL, "");
 
-    CATCHALL(trap);
-
-    initscr();
+    InitAndCatch(initscr(), trap);
     if (has_colors())
 	start_color();
     cbreak();
@@ -241,7 +239,7 @@ main(int argc GCC_UNUSED, char *argv[]GCC_UNUSED)
     height = 14;		/* Create a drawing window */
     win = newwin(height, width, (LINES - height) / 2, (COLS - width) / 2);
     if (win == NULL) {
-	endwin();
+	exit_curses();
 	ExitProgram(EXIT_FAILURE);
     }
 
@@ -299,11 +297,11 @@ main(int argc GCC_UNUSED, char *argv[]GCC_UNUSED)
 	message = messages[j = 0];
 	i = 1;
 	w = width - 2;
-	strcpy(buffer, message);
+	_nc_STRCPY(buffer, message, sizeof(buffer));
 	while (j < NMESSAGES) {
 	    while ((int) strlen(buffer) < w) {
-		strcat(buffer, " ... ");
-		strcat(buffer, messages[++j % NMESSAGES]);
+		_nc_STRCAT(buffer, " ... ", sizeof(buffer));
+		_nc_STRCAT(buffer, messages[++j % NMESSAGES], sizeof(buffer));
 	    }
 
 	    if (i < w)
@@ -360,6 +358,6 @@ main(int argc GCC_UNUSED, char *argv[]GCC_UNUSED)
 	if (WaitForUser(win) == 1)
 	    break;
     }
-    endwin();
+    exit_curses();
     ExitProgram(EXIT_SUCCESS);
 }

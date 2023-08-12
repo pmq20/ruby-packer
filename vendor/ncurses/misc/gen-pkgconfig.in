@@ -1,7 +1,7 @@
 #!@SHELL@
-# $Id: gen-pkgconfig.in,v 1.29 2015/07/04 20:37:01 tom Exp $
+# $Id: gen-pkgconfig.in,v 1.33 2018/01/01 22:51:23 tom Exp $
 ##############################################################################
-# Copyright (c) 2009-2014,2015 Free Software Foundation, Inc.                #
+# Copyright (c) 2009-2015,2018 Free Software Foundation, Inc.                #
 #                                                                            #
 # Permission is hereby granted, free of charge, to any person obtaining a    #
 # copy of this software and associated documentation files (the "Software"), #
@@ -90,18 +90,7 @@ NEED_TINFO=no
 if test "x@TINFO_LIBS@" != "x" && \
    test "x$TINFO_ARG_SUFFIX" != "x$MAIN_LIBRARY"
 then
-	case "x$LDFLAGS" in
-	(*--as-needed*)
-		NEED_TINFO=yes
-		;;
-	esac
-	case "x$LDFLAGS" in
-	(*,-rpath,*)
-		;;
-	(*)
-		NEED_TINFO=yes
-		;;
-	esac
+	NEED_TINFO=yes
 fi
 
 for name in @PC_MODULES_TO_MAKE@
@@ -149,10 +138,10 @@ version=@NCURSES_MAJOR@.@NCURSES_MINOR@.@NCURSES_PATCH@
 Name: ${name}${suffix}
 Description: $desc
 Version: \${version}
-URL: http://invisible-island.net/ncurses
+URL: https://invisible-island.net/ncurses
 Requires.private: $reqs
 Libs: $LDFLAGS $LIBS
-Libs.private: @LIBS@
+Libs.private: @LIBS@ @PTHREAD@
 Cflags: $CFLAGS
 EOF
 

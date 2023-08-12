@@ -1,5 +1,5 @@
 .\"***************************************************************************
-.\" Copyright (c) 2002-2010,2012 Free Software Foundation, Inc.              *
+.\" Copyright (c) 2002-2012,2017 Free Software Foundation, Inc.              *
 .\"                                                                          *
 .\" Permission is hereby granted, free of charge, to any person obtaining a  *
 .\" copy of this software and associated documentation files (the            *
@@ -26,7 +26,7 @@
 .\" authorization.                                                           *
 .\"***************************************************************************
 .\"
-.\" $Id: curs_get_wstr.3x,v 1.9 2012/11/03 23:03:59 tom Exp $
+.\" $Id: curs_get_wstr.3x,v 1.12 2017/11/21 00:45:48 tom Exp $
 .TH curs_get_wstr 3X ""
 .na
 .hy 0
@@ -66,7 +66,7 @@ The effect of
 \fBget_wstr\fR
 is as though a series of calls
 to
-\fBget_wch\fR
+\fBget_wch\fR(3X)
 were made, until a newline, other end-of-line, or end-of-file condition is processed.
 An end-of-file condition is represented by \fBWEOF\fR, as defined in \fB<wchar.h>\fR.
 The newline and end-of-line conditions are represented by the \fB\\n\fR \fBwchar_t\fR value.
@@ -161,14 +161,24 @@ or if the window pointer is null.
 .SH PORTABILITY
 These functions are described in The Single Unix Specification, Version 2.
 No error conditions are defined.
-This implementation returns ERR if the window pointer is null,
-or if the lower-level \fBwget_wch\fR call returns an ERR.
+This implementation returns \fBERR\fP if the window pointer is null,
+or if the lower-level \fBwget_wch\fR call returns an \fBERR\fP.
 In the latter case,
-an ERR return without other data is treated as an end-of-file condition,
+an \fBERR\fP return without other data is treated as an end-of-file condition,
 and the returned array contains a \fBWEOF\fR followed by a null \fBwchar_t\fR.
 .PP
-X/Open curses documents these functions to pass an array of \fBwchar_t\fR,
-but all of the vendors implement this using \fBwint_t\fR.
+X/Open curses documented these functions to pass an array of \fBwchar_t\fR
+in 1997, but that was an error because of this part of the description:
+.RS
+.PP
+The effect of \fIget_wstr()\fP is as though a series of calls to
+\fIget_wch()\fP were made, until a newline character, end-of-line character, or
+end-of-file character is processed.
+.RE
+.PP
+The latter function \fIget_wch()\fP can return a negative value,
+while \fBwchar_t\fP is a unsigned type.
+All of the vendors implement this using \fBwint_t\fR, following the standard.
 .SH SEE ALSO
 Functions:
 \fBcurses\fR(3X),

@@ -1,5 +1,5 @@
 ------------------------------------------------------------------------------
--- Copyright (c) 2010-2011,2014 Free Software Foundation, Inc.              --
+-- Copyright (c) 2010-2016,2018 Free Software Foundation, Inc.              --
 --                                                                          --
 -- Permission is hereby granted, free of charge, to any person obtaining a  --
 -- copy of this software and associated documentation files (the            --
@@ -25,10 +25,10 @@
 -- sale, use or other dealings in this Software without prior written       --
 -- authorization.                                                           --
 ------------------------------------------------------------------------------
--- $Id: library.gpr,v 1.9 2014/06/01 01:13:09 tom Exp $
+-- $Id: library.gpr,v 1.12 2018/01/14 22:21:37 tom Exp $
 -- http://gcc.gnu.org/onlinedocs/gnat_ugn_unw/Library-Projects.html
 -- http://www.adaworld.com/debian/debian-ada-policy.html
-project Library is
+project AdaCurses is
   Build_Dir := External ("BUILD_DIR");
   Source_Dir := External ("SOURCE_DIR");
   Source_Dir2 := External ("SOURCE_DIR2");
@@ -43,7 +43,7 @@ project Library is
   for Source_Dirs use (Source_Dir & "/src",
                        Source_Dir2,
                        Build_Dir & "/src");
-  for Library_Options use ("-lncurses", "-lpanel", "-lmenu", "-lform");
+  -- for Library_Options use ("-lncurses", "-lpanel", "-lmenu", "-lform");
   package Compiler is
      for Default_Switches ("Ada") use
        ("-g",
@@ -51,6 +51,7 @@ project Library is
         "-gnatafno",
         "-gnatVa",   -- All validity checks
         "-gnatwa");  -- Activate all optional errors
+     -- for Default_Switches ("C") use 
   end Compiler;
   for Languages use ("C", "Ada");
-end Library;
+end AdaCurses;

@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 1998-2011,2012 Free Software Foundation, Inc.              *
+ * Copyright (c) 1998-2012,2016 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -37,7 +37,7 @@
 
 #include "menu.priv.h"
 
-MODULE_ID("$Id: m_driver.c,v 1.31 2012/03/10 23:43:41 tom Exp $")
+MODULE_ID("$Id: m_driver.c,v 1.32 2016/03/26 21:51:52 tom Exp $")
 
 /* Macros */
 
@@ -530,7 +530,11 @@ menu_driver(MENU * menu, int c)
 		}
 	    }
 	  else
-	    result = E_REQUEST_DENIED;
+	    {
+	      if (menu->opt & O_MOUSE_MENU)
+		ungetmouse(&event);	/* let someone else handle this */
+	      result = E_REQUEST_DENIED;
+	    }
 	}
 #endif /* NCURSES_MOUSE_VERSION */
       else

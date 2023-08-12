@@ -1,5 +1,5 @@
 dnl***************************************************************************
-dnl Copyright (c) 1998-2014,2015 Free Software Foundation, Inc.              *
+dnl Copyright (c) 1998-2017,2018 Free Software Foundation, Inc.              *
 dnl                                                                          *
 dnl Permission is hereby granted, free of charge, to any person obtaining a  *
 dnl copy of this software and associated documentation files (the            *
@@ -26,9 +26,9 @@ dnl sale, use or other dealings in this Software without prior written       *
 dnl authorization.                                                           *
 dnl***************************************************************************
 dnl
-dnl Author: Thomas E. Dickey 1996, etc.
+dnl Author: Thomas E. Dickey 1996-on
 dnl
-dnl $Id: configure.in,v 1.124 2015/08/08 20:24:49 tom Exp $
+dnl $Id: configure.in,v 1.149 2018/01/15 16:13:05 tom Exp $
 dnl This is a simple configuration-script for the ncurses test programs that
 dnl allows the test-directory to be separately configured against a reference
 dnl system (i.e., sysvr4 curses)
@@ -36,9 +36,11 @@ dnl
 dnl If you're configuring ncurses, you shouldn't need to use this script.
 dnl It's only for testing purposes.
 dnl
-dnl See http://invisible-island.net/autoconf/ for additional information.
+dnl For additional information, see
+dnl		https://invisible-island.net/autoconf/
+dnl		https://invisible-island.net/ncurses/ncurses-examples.html
 dnl ---------------------------------------------------------------------------
-AC_PREREQ(2.52.20030208)
+AC_PREREQ(2.52.20170501)
 AC_INIT(ncurses.c)
 AC_CONFIG_HEADER(ncurses_cfg.h:ncurses_tst.hin)
 
@@ -48,11 +50,15 @@ CF_CHECK_CACHE
 
 AC_ARG_PROGRAM
 
+CF_HELP_MESSAGE(General Options:)
+
 AC_PROG_MAKE_SET
 CF_PROG_CC
+AC_C_INLINE
 AC_PROG_CPP
 AC_PROG_AWK
 CF_PROG_INSTALL
+CF_INSTALL_OPTS
 CF_PROG_LINT
 CF_MAKE_TAGS
 
@@ -97,11 +103,17 @@ AC_EXEEXT
 AC_OBJEXT
 
 CF_GCC_ATTRIBUTES
+CF_ENABLE_STRING_HACKS
 CF_XOPEN_SOURCE
 CF_SIG_ATOMIC_T
 
+# Work around breakage on OS X
+CF_SIGWINCH
+
+# Checks for CODESET support.
+AM_LANGINFO_CODESET
+
 dnl ---------------------------------------------------------------------------
-CF_HELP_MESSAGE(General Options:)
 CF_PKG_CONFIG
 CF_DISABLE_ECHO
 
@@ -125,37 +137,98 @@ case $cf_cv_screen in
 (ncurses*)
 	cf_cv_libtype=`echo "$cf_cv_screen" | sed -e 's/^ncurses//'`
 	;;
-(curses|curses_*)
-	CF_NETBSD_FORM_H
-	CF_NETBSD_MENU_H
-	;;
 esac
+
+CF_WITH_X11_RGB
 
 dnl If we've not specified a library, assume we're using sysvr4 libraries
 dnl installed conventionally (e.g., SunOS 5.x - solaris).
 
 dnl Autoconf builds up the $LIBS in reverse order
 
+cf_curses_headers=
+
 case $cf_cv_screen in
 (pdcurses)
+	cf_default_panel=no
+	cf_default_form=no
+	cf_default_menu=no
+	cf_default_tinfo=no
+	;;
+(xcurses|bsdcurses)
+	cf_default_panel=no
+	cf_default_form=no
+	cf_default_menu=no
+	cf_default_tinfo=yes
 	;;
 (*)
-	# look for curses-related libraries
-	CF_CHECK_CURSES_LIB(panel,$cf_cv_libtype,new_panel)
-	CF_CHECK_CURSES_LIB(menu,$cf_cv_libtype,menu_driver)
-	CF_CHECK_CURSES_LIB(form,$cf_cv_libtype,form_driver)
-
-	# look for curses-related headers
-	AC_CHECK_HEADERS( \
-		nc_alloc.h \
-		nomacros.h \
-		form.h \
-		menu.h \
-		panel.h \
-		term_entry.h \
-		)
+	cf_default_panel=yes
+	cf_default_form=yes
+	cf_default_menu=yes
+	cf_default_tinfo=yes
+	case $cf_cv_screen in
+	(ncurses*)
+		cf_curses_headers="nc_alloc.h nomacros.h term_entry.h"
+		;;
+	esac
 	;;
 esac
+
+AC_MSG_CHECKING(if you want to check for panel functions)
+CF_ARG_DISABLE(panel,
+	[  --disable-panel         disable checks for panel functions],
+	cf_enable_panel=no,
+	cf_enable_panel=$cf_default_panel,
+	yes)
+AC_MSG_RESULT($cf_enable_panel)
+if test $cf_enable_panel = yes
+then
+	CF_CHECK_CURSES_LIB(panel,$cf_cv_libtype,new_panel,0)
+	cf_curses_headers="$cf_curses_headers panel.h"
+fi
+
+AC_MSG_CHECKING(if you want to check for menu functions)
+CF_ARG_DISABLE(menu,
+	[  --disable-menu          disable checks for menu functions],
+	cf_enable_menu=no,
+	cf_enable_menu=$cf_default_menu,
+	yes)
+AC_MSG_RESULT($cf_enable_menu)
+if test $cf_enable_menu = yes
+then
+	case $cf_cv_screen in
+	(ncurses*)
+		;;
+	(curses*)
+		CF_NETBSD_MENU_H
+		;;
+	esac
+	CF_CHECK_CURSES_LIB(menu,$cf_cv_libtype,menu_driver,[0,0])
+	cf_curses_headers="$cf_curses_headers menu.h"
+fi
+
+AC_MSG_CHECKING(if you want to check for form functions)
+CF_ARG_DISABLE(form,
+	[  --disable-form          disable checks for form functions],
+	cf_enable_form=no,
+	cf_enable_form=$cf_default_form,
+	yes)
+AC_MSG_RESULT($cf_enable_form)
+if test $cf_enable_form = yes
+then
+	case $cf_cv_screen in
+	(ncurses*)
+		;;
+	(curses*)
+		CF_NETBSD_FORM_H
+		;;
+	esac
+	CF_CHECK_CURSES_LIB(form,$cf_cv_libtype,form_driver,[0,0])
+	cf_curses_headers="$cf_curses_headers form.h"
+fi
+
+# look for curses-related headers
+AC_CHECK_HEADERS( $cf_curses_headers )
 
 AC_STDC_HEADERS
 AC_HEADER_TIME
@@ -164,6 +237,7 @@ getopt.h \
 locale.h \
 math.h \
 stdarg.h \
+stdint.h \
 sys/ioctl.h \
 sys/select.h \
 sys/time.h \
@@ -176,7 +250,20 @@ CF_GETOPT_HEADER
 AC_CHECK_FUNCS( \
 getopt \
 gettimeofday \
+tdestroy \
+tsearch \
 )
+
+# use a compile-check to work with ncurses*-config and subdirectory includes
+AC_CACHE_CHECK(if we can use termcap.h,cf_cv_have_termcap_h,[
+	AC_TRY_COMPILE([
+#include <curses.h>
+#include <termcap.h>
+],
+	[return 0;],
+	[cf_cv_have_termcap_h=yes],
+	[cf_cv_have_termcap_h=no])])
+test "x$cf_cv_have_termcap_h" = xyes && AC_DEFINE(HAVE_TERMCAP_H)
 
 if test "x$ac_cv_func_getopt" = xno; then
 	AC_MSG_ERROR(getopt is required for building programs)
@@ -196,9 +283,14 @@ wcstombs \
 fi
 
 CF_CURSES_FUNCS( \
+alloc_pair \
 assume_default_colors \
 chgat \
+color_content \
 color_set \
+copywin \
+delscreen \
+dupwin \
 filter \
 getbegx \
 getcurx \
@@ -206,12 +298,19 @@ getmaxx \
 getnstr \
 getparx \
 getwin \
+halfdelay \
+init_extended_color \
+mvderwin \
 mvvline \
+mvwin \
 mvwvline \
 napms \
+newpad \
 putwin \
+reset_color_pairs \
 resize_term \
 resizeterm \
+restartterm \
 ripoffline \
 scr_dump \
 setupterm \
@@ -221,6 +320,7 @@ termattrs \
 tgetent \
 tigetnum \
 tigetstr \
+tputs_sp \
 typeahead \
 use_default_colors \
 use_env \
@@ -232,9 +332,11 @@ vidputs \
 vsscanf \
 vw_printw \
 wchgat \
+winsdelln \
 winsstr \
 wresize \
 wsyncdown \
+_tracef \
 )
 
 CF_TPUTS_PROTO
@@ -302,6 +404,17 @@ extern void _nc_init_pthreads(void);
 test $cf_cv_use_pthreads = yes && AC_DEFINE(USE_PTHREADS)
 
 CF_SYS_TIME_SELECT
+
+# special check for test/ditto.c
+CF_FUNC_OPENPTY
+if test "$cf_cv_func_openpty" != no ; then
+	AC_DEFINE_UNQUOTED(USE_OPENPTY_HEADER,<$cf_cv_func_openpty>,[Define to actual header for openpty function])
+	AC_DEFINE(USE_XTERM_PTY,1,[Define to 1 if we should assume xterm pseudoterminal interface])
+	if test "x$cf_cv_lib_util" = xyes ; then
+		CF_ADD_LIB(util,TEST_LIBS)
+	fi
+fi
+
 CF_FUNC_CURSES_VERSION
 
 CF_CURSES_ACS_MAP
@@ -330,13 +443,16 @@ if test "$cf_enable_widec" = yes; then
 	fi
 fi
 
-CF_CURSES_CHECK_DATA(ospeed)
-CF_CURSES_CHECK_DATA(boolnames)
-CF_CURSES_CHECK_DATA(boolfnames)
+CF_CURSES_CHECK_DATA(\
+curscr \
+ospeed \
+boolnames \
+boolfnames \
+ttytype)
 
 dnl ---------------------------------------------------------------------------
 CF_HELP_MESSAGE(Testing/development Options:)
-CF_ENABLE_WARNINGS
+CF_ENABLE_WARNINGS(Wno-unknown-pragmas)
 CF_DISABLE_LEAKS
 CF_DISABLE_RPATH_HACK
 
@@ -363,7 +479,7 @@ do
 	\$(srcdir)/test.priv.h \\
 	ncurses_cfg.h
 	$SHOW_CC
-	$ECHO_CC\$(CC) -c \$(CFLAGS_DEFAULT) \$(srcdir)/$N.c
+	$ECHO_CC\$(CC) -c \$(CFLAGS_DEFAULT) -DMODULE_NAME="$N" \$(srcdir)/$N.c
 TEST_EOF
 done
 

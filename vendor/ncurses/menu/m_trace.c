@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 2004-2005,2010 Free Software Foundation, Inc.              *
+ * Copyright (c) 2004-2010,2016 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -32,7 +32,7 @@
 
 #include "menu.priv.h"
 
-MODULE_ID("$Id: m_trace.c,v 1.4 2010/01/23 21:20:10 tom Exp $")
+MODULE_ID("$Id: m_trace.c,v 1.5 2016/01/23 21:32:00 tom Exp $")
 
 NCURSES_EXPORT(ITEM *)
 _nc_retrace_item(ITEM * code)
@@ -65,7 +65,7 @@ _nc_retrace_menu(MENU * code)
 NCURSES_EXPORT(Menu_Hook)
 _nc_retrace_menu_hook(Menu_Hook code)
 {
-  T((T_RETURN("%p"), code));
+  T((T_RETURN("%p"), TR_FUNC(code)));
   return code;
 }
 

@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 1998-2012,2013 Free Software Foundation, Inc.              *
+ * Copyright (c) 1998-2013,2017 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -44,7 +44,7 @@
 
 #include <ctype.h>
 
-MODULE_ID("$Id: make_hash.c,v 1.13 2013/09/28 20:55:47 tom Exp $")
+MODULE_ID("$Id: make_hash.c,v 1.15 2017/10/23 21:19:54 tom Exp $")
 
 /*
  *	_nc_make_hash_table()
@@ -326,5 +326,11 @@ main(int argc, char **argv)
     printf("#endif\n\n");
 
     free(hash_table);
+#if NO_LEAKS
+    for (n = 0; (n < CAPTABSIZE); ++n) {
+	free((void *) name_table[n].nte_name);
+    }
+    free(name_table);
+#endif
     return EXIT_SUCCESS;
 }

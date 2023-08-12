@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 1998-2013,2014 Free Software Foundation, Inc.              *
+ * Copyright (c) 1998-2016,2017 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -43,6 +43,8 @@
  *
  *-----------------------------------------------------------------*/
 
+#define NEW_PAIR_INTERNAL 1
+
 #include <curses.priv.h>
 
 #ifndef CUR
@@ -82,7 +84,7 @@
 
 #include <ctype.h>
 
-MODULE_ID("$Id: tty_update.c,v 1.280 2014/08/23 19:25:18 tom Exp $")
+MODULE_ID("$Id: tty_update.c,v 1.297 2017/09/02 21:45:44 Jeb.Rosen Exp $")
 
 /*
  * This define controls the line-breakout optimization.  Every once in a
@@ -207,6 +209,75 @@ GoTo(NCURSES_SP_DCLx int const row, int const col)
 		   SP_PARM->_curscol, "GoTo2");
 }
 
+#if !NCURSES_WCWIDTH_GRAPHICS
+static bool
+is_wacs_value(unsigned ch)
+{
+    bool result;
+    switch (ch) {
+    case 0x00a3:		/* FALLTHRU - ncurses pound-sterling symbol */
+    case 0x00b0:		/* FALLTHRU - VT100 degree symbol */
+    case 0x00b1:		/* FALLTHRU - VT100 plus/minus */
+    case 0x00b7:		/* FALLTHRU - VT100 bullet */
+    case 0x03c0:		/* FALLTHRU - ncurses greek pi */
+    case 0x2190:		/* FALLTHRU - Teletype arrow pointing left */
+    case 0x2191:		/* FALLTHRU - Teletype arrow pointing up */
+    case 0x2192:		/* FALLTHRU - Teletype arrow pointing right */
+    case 0x2193:		/* FALLTHRU - Teletype arrow pointing down */
+    case 0x2260:		/* FALLTHRU - ncurses not-equal */
+    case 0x2264:		/* FALLTHRU - ncurses less-than-or-equal-to */
+    case 0x2265:		/* FALLTHRU - ncurses greater-than-or-equal-to */
+    case 0x23ba:		/* FALLTHRU - VT100 scan line 1 */
+    case 0x23bb:		/* FALLTHRU - ncurses scan line 3 */
+    case 0x23bc:		/* FALLTHRU - ncurses scan line 7 */
+    case 0x23bd:		/* FALLTHRU - VT100 scan line 9 */
+    case 0x2500:		/* FALLTHRU - VT100 horizontal line */
+    case 0x2501:		/* FALLTHRU - thick horizontal line */
+    case 0x2502:		/* FALLTHRU - VT100 vertical line */
+    case 0x2503:		/* FALLTHRU - thick vertical line */
+    case 0x250c:		/* FALLTHRU - VT100 upper left corner */
+    case 0x250f:		/* FALLTHRU - thick upper left corner */
+    case 0x2510:		/* FALLTHRU - VT100 upper right corner */
+    case 0x2513:		/* FALLTHRU - thick upper right corner */
+    case 0x2514:		/* FALLTHRU - VT100 lower left corner */
+    case 0x2517:		/* FALLTHRU - thick lower left corner */
+    case 0x2518:		/* FALLTHRU - VT100 lower right corner */
+    case 0x251b:		/* FALLTHRU - thick lower right corner */
+    case 0x251c:		/* FALLTHRU - VT100 tee pointing left */
+    case 0x2523:		/* FALLTHRU - thick tee pointing left */
+    case 0x2524:		/* FALLTHRU - VT100 tee pointing right */
+    case 0x252b:		/* FALLTHRU - thick tee pointing right */
+    case 0x252c:		/* FALLTHRU - VT100 tee pointing down */
+    case 0x2533:		/* FALLTHRU - thick tee pointing down */
+    case 0x2534:		/* FALLTHRU - VT100 tee pointing up */
+    case 0x253b:		/* FALLTHRU - thick tee pointing up */
+    case 0x253c:		/* FALLTHRU - VT100 large plus or crossover */
+    case 0x254b:		/* FALLTHRU - thick large plus or crossover */
+    case 0x2550:		/* FALLTHRU - double horizontal line */
+    case 0x2551:		/* FALLTHRU - double vertical line */
+    case 0x2554:		/* FALLTHRU - double upper left corner */
+    case 0x2557:		/* FALLTHRU - double upper right corner */
+    case 0x255a:		/* FALLTHRU - double lower left corner */
+    case 0x255d:		/* FALLTHRU - double lower right corner */
+    case 0x2560:		/* FALLTHRU - double tee pointing right */
+    case 0x2563:		/* FALLTHRU - double tee pointing left */
+    case 0x2566:		/* FALLTHRU - double tee pointing down */
+    case 0x2569:		/* FALLTHRU - double tee pointing up */
+    case 0x256c:		/* FALLTHRU - double large plus or crossover */
+    case 0x2592:		/* FALLTHRU - VT100 checker board (stipple) */
+    case 0x25ae:		/* FALLTHRU - Teletype solid square block */
+    case 0x25c6:		/* FALLTHRU - VT100 diamond */
+    case 0x2603:		/* FALLTHRU - Teletype lantern symbol */
+	result = TRUE;
+	break;
+    default:
+	result = FALSE;
+	break;
+    }
+    return result;
+}
+#endif
+
 static NCURSES_INLINE void
 PutAttrChar(NCURSES_SP_DCLx CARG_CH_T ch)
 {
@@ -268,7 +339,11 @@ PutAttrChar(NCURSES_SP_DCLx CARG_CH_T ch)
 
     if ((AttrOf(attr) & A_ALTCHARSET)
 	&& SP_PARM->_acs_map != 0
-	&& CharOfD(ch) < ACS_LEN) {
+	&& ((CharOfD(ch) < ACS_LEN)
+#if !NCURSES_WCWIDTH_GRAPHICS
+	    || is_wacs_value(CharOfD(ch))
+#endif
+	)) {
 	my_ch = CHDEREF(ch);	/* work around const param */
 #if USE_WIDEC_SUPPORT
 	/*
@@ -277,15 +352,22 @@ PutAttrChar(NCURSES_SP_DCLx CARG_CH_T ch)
 	 * character, and uses the wide-character mapping when we expect the
 	 * normal one to be broken (by mis-design ;-).
 	 */
-	if (SP_PARM->_screen_acs_fix
-	    && SP_PARM->_screen_acs_map[CharOf(my_ch)]) {
-	    RemAttr(attr, A_ALTCHARSET);
-	    my_ch = _nc_wacs[CharOf(my_ch)];
-	} else if (SP_PARM->_screen_unicode
-		   && !SP_PARM->_screen_acs_map[CharOf(my_ch)]
-		   && _nc_wacs[CharOf(my_ch)].chars[0]) {
-	    RemAttr(attr, A_ALTCHARSET);
-	    my_ch = _nc_wacs[CharOf(my_ch)];
+	if (SP_PARM->_screen_unicode
+	    && _nc_wacs[CharOf(my_ch)].chars[0]) {
+	    if (SP_PARM->_screen_acs_map[CharOf(my_ch)]) {
+		if (SP_PARM->_screen_acs_fix) {
+		    RemAttr(attr, A_ALTCHARSET);
+		    my_ch = _nc_wacs[CharOf(my_ch)];
+		}
+	    } else {
+		RemAttr(attr, A_ALTCHARSET);
+		my_ch = _nc_wacs[CharOf(my_ch)];
+	    }
+#if !NCURSES_WCWIDTH_GRAPHICS
+	    if (!(AttrOf(attr) & A_ALTCHARSET)) {
+		chlen = 1;
+	    }
+#endif /* !NCURSES_WCWIDTH_GRAPHICS */
 	}
 #endif
 	/*
@@ -307,6 +389,11 @@ PutAttrChar(NCURSES_SP_DCLx CARG_CH_T ch)
 	}
 	ch = CHREF(my_ch);
     }
+#if USE_WIDEC_SUPPORT && !NCURSES_WCWIDTH_GRAPHICS
+    else if (chlen > 1 && is_wacs_value(CharOfD(ch))) {
+	chlen = 1;
+    }
+#endif
     if (tilde_glitch && (CharOfD(ch) == L('~'))) {
 	SetChar(tilde, L('`'), AttrOf(attr));
 	ch = CHREF(tilde);
@@ -493,14 +580,15 @@ can_clear_with(NCURSES_SP_DCLx ARG_CH_T ch)
 
 	if (!SP_PARM->_default_color)
 	    return FALSE;
-	if (SP_PARM->_default_fg != C_MASK || SP_PARM->_default_bg != C_MASK)
+	if (!(isDefaultColor(SP_PARM->_default_fg) &&
+	      isDefaultColor(SP_PARM->_default_bg)))
 	    return FALSE;
 	if ((pair = GetPair(CHDEREF(ch))) != 0) {
 	    NCURSES_COLOR_T fg, bg;
 	    if (NCURSES_SP_NAME(pair_content) (NCURSES_SP_ARGx
 					       (short) pair,
 					       &fg, &bg) == ERR
-		|| (fg != C_MASK || bg != C_MASK)) {
+		|| !(isDefaultColor(fg) && isDefaultColor(bg))) {
 		return FALSE;
 	    }
 	}
@@ -578,7 +666,14 @@ EmitRange(NCURSES_SP_DCLx const NCURSES_CH_T * ntext, int num)
 		} else {
 		    return 1;	/* cursor stays in the middle */
 		}
-	    } else if (repeat_char && runcount > SP_PARM->_rep_cost) {
+	    } else if (repeat_char != 0 &&
+#if USE_WIDEC_SUPPORT
+		       (!SP_PARM->_screen_unicode &&
+			((AttrOf(ntext0) & A_ALTCHARSET) == 0 ||
+			 (CharOf(ntext0) < ACS_LEN))) &&
+#endif
+		       runcount > SP_PARM->_rep_cost) {
+		NCURSES_CH_T temp;
 		bool wrap_possible = (SP_PARM->_curscol + runcount >=
 				      screen_columns(SP_PARM));
 		int rep_count = runcount;
@@ -587,11 +682,19 @@ EmitRange(NCURSES_SP_DCLx const NCURSES_CH_T * ntext, int num)
 		    rep_count--;
 
 		UpdateAttrs(SP_PARM, ntext0);
+		temp = ntext0;
+		if ((AttrOf(temp) & A_ALTCHARSET) &&
+		    SP_PARM->_acs_map != 0 &&
+		    (SP_PARM->_acs_map[CharOf(temp)] & A_CHARTEXT) != 0) {
+		    SetChar(temp,
+			    (SP_PARM->_acs_map[CharOf(ntext0)] & A_CHARTEXT),
+			    AttrOf(ntext0) | A_ALTCHARSET);
+		}
 		NCURSES_SP_NAME(tputs) (NCURSES_SP_ARGx
 					TPARM_2(repeat_char,
-						CharOf(ntext0),
+						CharOf(temp),
 						rep_count),
-					rep_count,
+					1,
 					NCURSES_SP_NAME(_nc_outch));
 		SP_PARM->_curscol += rep_count;
 
@@ -627,7 +730,6 @@ PutRange(NCURSES_SP_DCLx
 	 int row,
 	 int first, int last)
 {
-    int i, j, same;
     int rc;
 
     TR(TRACE_CHARPUT, ("PutRange(%p, %p, %p, %d, %d, %d)",
@@ -638,6 +740,8 @@ PutRange(NCURSES_SP_DCLx
 
     if (otext != ntext
 	&& (last - first + 1) > SP_PARM->_inline_cost) {
+	int i, j, same;
+
 	for (j = first, same = 0; j <= last; j++) {
 	    if (!same && isWidecExt(otext[j]))
 		continue;
@@ -680,9 +784,12 @@ TINFO_DOUPDATE(NCURSES_SP_DCL0)
 
     T((T_CALLED("_nc_tinfo:doupdate(%p)"), (void *) SP_PARM));
 
-    if (SP_PARM == 0)
-	returnCode(ERR);
+    _nc_lock_global(update);
 
+    if (SP_PARM == 0) {
+	_nc_unlock_global(update);
+	returnCode(ERR);
+    }
 #if !USE_REENTRANT
     /*
      * It is "legal" but unlikely that an application could assign a new
@@ -703,9 +810,10 @@ TINFO_DOUPDATE(NCURSES_SP_DCL0)
 
     if (CurScreen(SP_PARM) == 0
 	|| NewScreen(SP_PARM) == 0
-	|| StdScreen(SP_PARM) == 0)
+	|| StdScreen(SP_PARM) == 0) {
+	_nc_unlock_global(update);
 	returnCode(ERR);
-
+    }
 #ifdef TRACE
     if (USE_TRACEF(TRACE_UPDATE)) {
 	if (CurScreen(SP_PARM)->_clear)
@@ -723,7 +831,8 @@ TINFO_DOUPDATE(NCURSES_SP_DCL0)
 	SP_PARM->_fifohold--;
 
 #if USE_SIZECHANGE
-    if (SP_PARM->_endwin || _nc_handle_sigwinch(SP_PARM)) {
+    if ((SP_PARM->_endwin == ewSuspend)
+	|| _nc_handle_sigwinch(SP_PARM)) {
 	/*
 	 * This is a transparent extension:  XSI does not address it,
 	 * and applications need not know that ncurses can do it.
@@ -736,7 +845,7 @@ TINFO_DOUPDATE(NCURSES_SP_DCL0)
     }
 #endif
 
-    if (SP_PARM->_endwin) {
+    if (SP_PARM->_endwin == ewSuspend) {
 
 	T(("coming back from shell mode"));
 	NCURSES_SP_NAME(reset_prog_mode) (NCURSES_SP_ARG);
@@ -745,7 +854,7 @@ TINFO_DOUPDATE(NCURSES_SP_DCL0)
 	NCURSES_SP_NAME(_nc_screen_resume) (NCURSES_SP_ARG);
 	SP_PARM->_mouse_resume(SP_PARM);
 
-	SP_PARM->_endwin = FALSE;
+	SP_PARM->_endwin = ewRunning;
     }
 #if USE_TRACE_TIMES
     /* zero the metering machinery */
@@ -1013,6 +1122,7 @@ TINFO_DOUPDATE(NCURSES_SP_DCL0)
 
     _nc_signal_handler(TRUE);
 
+    _nc_unlock_global(update);
     returnCode(OK);
 }
 
@@ -1084,10 +1194,10 @@ ClrUpdate(NCURSES_SP_DCL0)
 static void
 ClrToEOL(NCURSES_SP_DCLx NCURSES_CH_T blank, int needclear)
 {
-    int j;
-
     if (CurScreen(SP_PARM) != 0
 	&& SP_PARM->_cursrow >= 0) {
+	int j;
+
 	for (j = SP_PARM->_curscol; j < screen_columns(SP_PARM); j++) {
 	    if (j >= 0) {
 		NCURSES_CH_T *cp =
@@ -1158,16 +1268,17 @@ ClrToEOS(NCURSES_SP_DCLx NCURSES_CH_T blank)
 static int
 ClrBottom(NCURSES_SP_DCLx int total)
 {
-    int row;
-    int col;
     int top = total;
     int last = min(screen_columns(SP_PARM), NewScreen(SP_PARM)->_maxx + 1);
     NCURSES_CH_T blank = NewScreen(SP_PARM)->_line[total - 1].text[last - 1];
-    bool ok;
 
     if (clr_eos && can_clear_with(NCURSES_SP_ARGx CHREF(blank))) {
+	int row;
 
 	for (row = total - 1; row >= 0; row--) {
+	    int col;
+	    bool ok;
+
 	    for (col = 0, ok = TRUE; ok && col < last; col++) {
 		ok = (CharEq(NewScreen(SP_PARM)->_line[row].text[col], blank));
 	    }
@@ -1258,8 +1369,8 @@ TransformLine(NCURSES_SP_DCLx int const lineno)
 		    && unColor(oldLine[n]) == unColor(newLine[n])) {
 		    if (oldPair < SP_PARM->_pair_limit
 			&& newPair < SP_PARM->_pair_limit
-			&& (SP_PARM->_color_pairs[oldPair] ==
-			    SP_PARM->_color_pairs[newPair])) {
+			&& (isSamePair(SP_PARM->_color_pairs[oldPair],
+				       SP_PARM->_color_pairs[newPair]))) {
 			SetPair(oldLine[n], GetPair(newLine[n]));
 		    }
 		}
@@ -1649,16 +1760,16 @@ InsStr(NCURSES_SP_DCLx NCURSES_CH_T * line, int count)
 	TPUTS_TRACE("parm_ich");
 	NCURSES_SP_NAME(tputs) (NCURSES_SP_ARGx
 				TPARM_1(parm_ich, count),
-				count,
+				1,
 				NCURSES_SP_NAME(_nc_outch));
-	while (count) {
+	while (count > 0) {
 	    PutAttrChar(NCURSES_SP_ARGx CHREF(*line));
 	    line++;
 	    count--;
 	}
     } else if (enter_insert_mode && exit_insert_mode) {
 	NCURSES_PUTP2("enter_insert_mode", enter_insert_mode);
-	while (count) {
+	while (count > 0) {
 	    PutAttrChar(NCURSES_SP_ARGx CHREF(*line));
 	    if (insert_padding) {
 		NCURSES_PUTP2("insert_padding", insert_padding);
@@ -1668,7 +1779,7 @@ InsStr(NCURSES_SP_DCLx NCURSES_CH_T * line, int count)
 	}
 	NCURSES_PUTP2("exit_insert_mode", exit_insert_mode);
     } else {
-	while (count) {
+	while (count > 0) {
 	    NCURSES_PUTP2("insert_character", insert_character);
 	    PutAttrChar(NCURSES_SP_ARGx CHREF(*line));
 	    if (insert_padding) {
@@ -1693,8 +1804,6 @@ InsStr(NCURSES_SP_DCLx NCURSES_CH_T * line, int count)
 static void
 DelChar(NCURSES_SP_DCLx int count)
 {
-    int n;
-
     TR(TRACE_UPDATE, ("DelChar(%p, %d) called, position = (%ld,%ld)",
 		      (void *) SP_PARM, count,
 		      (long) NewScreen(SP_PARM)->_cury,
@@ -1704,9 +1813,11 @@ DelChar(NCURSES_SP_DCLx int count)
 	TPUTS_TRACE("parm_dch");
 	NCURSES_SP_NAME(tputs) (NCURSES_SP_ARGx
 				TPARM_1(parm_dch, count),
-				count,
+				1,
 				NCURSES_SP_NAME(_nc_outch));
     } else {
+	int n;
+
 	for (n = 0; n < count; n++) {
 	    NCURSES_PUTP2("delete_character", delete_character);
 	}
@@ -2085,16 +2196,16 @@ NCURSES_SP_NAME(_nc_screen_resume) (NCURSES_SP_DCL0)
 	NCURSES_SP_NAME(_nc_reset_colors) (NCURSES_SP_ARG);
 
     /* restore user-defined colors, if any */
-    if (SP_PARM->_color_defs < 0) {
+    if (SP_PARM->_color_defs < 0 && !SP_PARM->_direct_color.value) {
 	int n;
 	SP_PARM->_color_defs = -(SP_PARM->_color_defs);
 	for (n = 0; n < SP_PARM->_color_defs; ++n) {
 	    if (SP_PARM->_color_table[n].init) {
-		NCURSES_SP_NAME(init_color) (NCURSES_SP_ARGx
-					     (short) n,
-					     SP_PARM->_color_table[n].r,
-					     SP_PARM->_color_table[n].g,
-					     SP_PARM->_color_table[n].b);
+		_nc_init_color(SP_PARM,
+			       n,
+			       SP_PARM->_color_table[n].r,
+			       SP_PARM->_color_table[n].g,
+			       SP_PARM->_color_table[n].b);
 	    }
 	}
     }

@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 1998-2014,2015 Free Software Foundation, Inc.              *
+ * Copyright (c) 1998-2016,2017 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -84,7 +84,7 @@
 #define CUR SP_TERMTYPE
 #endif
 
-MODULE_ID("$Id: lib_mouse.c,v 1.166 2015/07/05 00:28:27 tom Exp $")
+MODULE_ID("$Id: lib_mouse.c,v 1.176 2017/11/18 22:12:06 Vassili.Courzakis Exp $")
 
 #include <tic.h>
 
@@ -225,7 +225,7 @@ write_event(SCREEN *sp, int down, int button, int x, int y)
     char buf[6];
     unsigned long ignore;
 
-    strcpy(buf, "\033[M");	/* should be the same as key_mouse */
+    _nc_STRCPY(buf, "\033[M", sizeof(buf));	/* should be the same as key_mouse */
     buf[3] = ' ' + (button - 1) + (down ? 0 : 0x40);
     buf[4] = ' ' + x - LEFT_COL + 1;
     buf[5] = ' ' + y - TOP_ROW + 1;
@@ -486,10 +486,17 @@ load_gpm_library(SCREEN *sp)
 {
     sp->_mouse_gpm_found = FALSE;
     if ((sp->_dlopen_gpm = dlopen(LIBGPM_SONAME, my_RTLD)) != 0) {
+#if (defined(__GNUC__) && (__GNUC__ >= 5)) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#endif
 	if (GET_DLSYM(gpm_fd) == 0 ||
 	    GET_DLSYM(Gpm_Open) == 0 ||
 	    GET_DLSYM(Gpm_Close) == 0 ||
 	    GET_DLSYM(Gpm_GetEvent) == 0) {
+#if (defined(__GNUC__) && (__GNUC__ >= 5)) || defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 	    T(("GPM initialization failed: %s", dlerror()));
 	    unload_gpm_library(sp);
 	} else {
@@ -597,7 +604,7 @@ initialize_mousetype(SCREEN *sp)
     /* OS/2 VIO */
 #if USE_EMX_MOUSE
     if (!sp->_emxmouse_thread
-	&& strstr(TerminalOf(sp)->type.term_names, "xterm") == 0
+	&& strstr(SP_TERMTYPE term_names, "xterm") == 0
 	&& key_mouse) {
 	int handles[2];
 
@@ -641,13 +648,14 @@ initialize_mousetype(SCREEN *sp)
 
 #if USE_SYSMOUSE
     {
+	static char dev_tty[] = "/dev/tty";
 	struct mouse_info the_mouse;
 	char *the_device = 0;
 
 	if (NC_ISATTY(sp->_ifd))
 	    the_device = ttyname(sp->_ifd);
 	if (the_device == 0)
-	    the_device = "/dev/tty";
+	    the_device = dev_tty;
 
 	sp->_mouse_fd = open(the_device, O_RDWR);
 
@@ -710,10 +718,10 @@ initialize_mousetype(SCREEN *sp)
     /* we know how to recognize mouse events under "xterm" */
     if (key_mouse != 0) {
 	if (!strcmp(key_mouse, xterm_kmous)
-	    || strstr(TerminalOf(sp)->type.term_names, "xterm") != 0) {
+	    || strstr(SP_TERMTYPE term_names, "xterm") != 0) {
 	    init_xterm_mouse(sp);
 	}
-    } else if (strstr(TerminalOf(sp)->type.term_names, "xterm") != 0) {
+    } else if (strstr(SP_TERMTYPE term_names, "xterm") != 0) {
 	if (_nc_add_to_try(&(sp->_keytry), xterm_kmous, KEY_MOUSE) == OK)
 	    init_xterm_mouse(sp);
     }
@@ -727,10 +735,11 @@ _nc_mouse_init(SCREEN *sp)
 /* initialize the mouse */
 {
     bool result = FALSE;
-    int i;
 
     if (sp != 0) {
 	if (!sp->_mouse_initialized) {
+	    int i;
+
 	    sp->_mouse_initialized = TRUE;
 
 	    TR(MY_TRACE, ("_nc_mouse_init() called"));
@@ -888,7 +897,7 @@ _nc_mouse_event(SCREEN *sp)
     do { \
 	    eventp->bstate = MASK_PRESS(n); \
 	    sp->_mouse_bstate |= MASK_PRESS(n); \
-	    if (kbuf[0] & 0x40) { \
+	    if (button & 0x40) { \
 		    eventp->bstate = MASK_RELEASE(n); \
 		    sp->_mouse_bstate &= ~MASK_PRESS(n); \
 	    } \
@@ -896,7 +905,7 @@ _nc_mouse_event(SCREEN *sp)
 #else
 #define PRESS_POSITION(n) \
     do { \
-	    eventp->bstate = (mmask_t) (sp->_mouse_bstate & MASK_PRESS(n) \
+	    eventp->bstate = (mmask_t) ((sp->_mouse_bstate & MASK_PRESS(n)) \
 				    ? REPORT_MOUSE_POSITION \
 				    : MASK_PRESS(n)); \
 	    sp->_mouse_bstate |= MASK_PRESS(n); \
@@ -946,11 +955,11 @@ static bool
 decode_X10_bstate(SCREEN *sp, MEVENT * eventp, unsigned intro)
 {
     bool result;
-    int b;
 
     eventp->bstate = 0;
 
     if (!handle_wheel(sp, eventp, (int) intro, (intro & 96) == 96)) {
+
 	/*
 	 * Release events aren't reported for individual buttons, just for
 	 * the button set as a whole.  However, because there are normally
@@ -959,6 +968,8 @@ decode_X10_bstate(SCREEN *sp, MEVENT * eventp, unsigned intro)
 	 * the previous event.
 	 */
 	if (sp->_mouse_bstate & BUTTON_PRESSED) {
+	    int b;
+
 	    eventp->bstate = BUTTON_RELEASED;
 	    for (b = 1; b <= MAX_BUTTONS; ++b) {
 		if (!(sp->_mouse_bstate & MASK_PRESS(b)))
@@ -1019,7 +1030,8 @@ decode_X10_bstate(SCREEN *sp, MEVENT * eventp, unsigned intro)
 static bool
 decode_xterm_X10(SCREEN *sp, MEVENT * eventp)
 {
-    unsigned char kbuf[4];
+#define MAX_KBUF 3
+    unsigned char kbuf[MAX_KBUF + 1];
     size_t grabbed;
     int res;
     bool result;
@@ -1030,7 +1042,7 @@ decode_xterm_X10(SCREEN *sp, MEVENT * eventp)
 #  endif
 	_nc_globals.read_thread = pthread_self();
 # endif
-    for (grabbed = 0; grabbed < 3; grabbed += (size_t) res) {
+    for (grabbed = 0; grabbed < MAX_KBUF; grabbed += (size_t) res) {
 
 	/* For VIO mouse we add extra bit 64 to disambiguate button-up. */
 	res = (int) read(
@@ -1039,14 +1051,14 @@ decode_xterm_X10(SCREEN *sp, MEVENT * eventp)
 #else
 			    sp->_ifd,
 #endif
-			    kbuf + grabbed, 3 - grabbed);
+			    kbuf + grabbed, (size_t) (MAX_KBUF - (int) grabbed));
 	if (res == -1)
 	    break;
     }
 #if USE_PTHREADS_EINTR
     _nc_globals.read_thread = 0;
 #endif
-    kbuf[3] = '\0';
+    kbuf[MAX_KBUF] = '\0';
 
     TR(TRACE_IEVENT,
        ("_nc_mouse_inline sees the following xterm data: '%s'", kbuf));
@@ -1074,7 +1086,6 @@ decode_xterm_1005(SCREEN *sp, MEVENT * eventp)
     size_t grabbed;
     size_t limit = (sizeof(kbuf) - 1);
     unsigned coords[2];
-    int res;
     bool result;
 
     coords[0] = 0;
@@ -1087,6 +1098,7 @@ decode_xterm_1005(SCREEN *sp, MEVENT * eventp)
 	_nc_globals.read_thread = pthread_self();
 # endif
     for (grabbed = 0; grabbed < limit;) {
+	int res;
 
 	res = (int) read(
 #if USE_EMX_MOUSE
@@ -1101,8 +1113,10 @@ decode_xterm_1005(SCREEN *sp, MEVENT * eventp)
 	if (grabbed > 1) {
 	    size_t check = 1;
 	    int n;
-	    int rc;
+
 	    for (n = 0; n < 2; ++n) {
+		int rc;
+
 		if (check >= grabbed)
 		    break;
 		rc = _nc_conv_to_utf32(&coords[n], kbuf + check, (unsigned)
@@ -1156,7 +1170,6 @@ read_SGR(SCREEN *sp, SGR_DATA * result)
 {
     char kbuf[80];		/* bigger than any possible mouse response */
     int grabbed = 0;
-    int res;
     int ch = 0;
     int now = -1;
     int marker = 1;
@@ -1168,7 +1181,10 @@ read_SGR(SCREEN *sp, SGR_DATA * result)
 #  endif
 	_nc_globals.read_thread = pthread_self();
 # endif
+
     do {
+	int res;
+
 	res = (int) read(
 #if USE_EMX_MOUSE
 			    (M_FD(sp) >= 0) ? M_FD(sp) : sp->_ifd,
@@ -1178,7 +1194,7 @@ read_SGR(SCREEN *sp, SGR_DATA * result)
 			    kbuf + grabbed, 1);
 	if (res == -1)
 	    break;
-	if ((grabbed + 3) >= (int) sizeof(kbuf)) {
+	if ((grabbed + MAX_KBUF) >= (int) sizeof(kbuf)) {
 	    result->nerror++;
 	    break;
 	}
@@ -1738,11 +1754,14 @@ NCURSES_EXPORT(int)
 NCURSES_SP_NAME(getmouse) (NCURSES_SP_DCLx MEVENT * aevent)
 {
     int result = ERR;
+    MEVENT *eventp;
 
     T((T_CALLED("getmouse(%p,%p)"), (void *) SP_PARM, (void *) aevent));
 
-    if ((aevent != 0) && (SP_PARM != 0) && (SP_PARM->_mouse_type != M_NONE)) {
-	MEVENT *eventp = SP_PARM->_mouse_eventp;
+    if ((aevent != 0) &&
+	(SP_PARM != 0) &&
+	(SP_PARM->_mouse_type != M_NONE) &&
+	(eventp = SP_PARM->_mouse_eventp) != 0) {
 	/* compute the current-event pointer */
 	MEVENT *prev = PREV(eventp);
 
@@ -1791,11 +1810,13 @@ NCURSES_EXPORT(int)
 NCURSES_SP_NAME(ungetmouse) (NCURSES_SP_DCLx MEVENT * aevent)
 {
     int result = ERR;
+    MEVENT *eventp;
 
     T((T_CALLED("ungetmouse(%p,%p)"), (void *) SP_PARM, (void *) aevent));
 
-    if (aevent != 0 && SP_PARM != 0) {
-	MEVENT *eventp = SP_PARM->_mouse_eventp;
+    if (aevent != 0 &&
+	SP_PARM != 0 &&
+	(eventp = SP_PARM->_mouse_eventp) != 0) {
 
 	/* stick the given event in the next-free slot */
 	*eventp = *aevent;
@@ -1823,7 +1844,6 @@ NCURSES_SP_NAME(mousemask) (NCURSES_SP_DCLx mmask_t newmask, mmask_t * oldmask)
 /* set the mouse event mask */
 {
     mmask_t result = 0;
-    int b;
 
     T((T_CALLED("mousemask(%p,%#lx,%p)"),
        (void *) SP_PARM,
@@ -1836,7 +1856,10 @@ NCURSES_SP_NAME(mousemask) (NCURSES_SP_DCLx mmask_t newmask, mmask_t * oldmask)
 
 	if (newmask || SP_PARM->_mouse_initialized) {
 	    _nc_mouse_init(SP_PARM);
+
 	    if (SP_PARM->_mouse_type != M_NONE) {
+		int b;
+
 		result = newmask &
 		    (REPORT_MOUSE_POSITION
 		     | BUTTON_ALT

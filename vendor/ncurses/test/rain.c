@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 1998-2012,2014 Free Software Foundation, Inc.              *
+ * Copyright (c) 1998-2014,2017 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -26,9 +26,10 @@
  * authorization.                                                           *
  ****************************************************************************/
 /*
- * $Id: rain.c,v 1.41 2014/08/02 17:24:07 tom Exp $
+ * $Id: rain.c,v 1.47 2017/09/30 18:10:05 tom Exp $
  */
 #include <test.priv.h>
+#include <popup_msg.h>
 
 /* rain 11/3/1980 EPS/CITHEP */
 
@@ -69,8 +70,7 @@ static STATS drop_threads[MAX_THREADS];
 static void
 onsig(int n GCC_UNUSED)
 {
-    curs_set(1);
-    endwin();
+    exit_curses();
     ExitProgram(EXIT_FAILURE);
 }
 
@@ -288,27 +288,73 @@ get_input(void)
     return USING_WINDOW(stdscr, wgetch);
 }
 
-int
-main(int argc GCC_UNUSED,
-     char *argv[]GCC_UNUSED)
+static void
+usage(void)
 {
+    static const char *msg[] =
+    {
+	"Usage: rain [options]"
+	,""
+	,"Options:"
+#if HAVE_USE_DEFAULT_COLORS
+	," -d       invoke use_default_colors"
+#endif
+    };
+    size_t n;
+
+    for (n = 0; n < SIZEOF(msg); n++)
+	fprintf(stderr, "%s\n", msg[n]);
+
+    ExitProgram(EXIT_FAILURE);
+}
+
+int
+main(int argc, char *argv[])
+{
+    static const char *help[] =
+    {
+	"Commands:",
+	" q/Q        exit the program",
+	" s          do single-step",
+	" <space>    undo single-step",
+	"",
+	0
+    };
+
     bool done = FALSE;
     DATA drop;
 #ifndef USE_PTHREADS
     DATA last[MAX_DROP];
 #endif
     int j = 0;
+    int ch;
+#if HAVE_USE_DEFAULT_COLORS
+    bool d_option = FALSE;
+#endif
+
+    while ((ch = getopt(argc, argv, "d")) != -1) {
+	switch (ch) {
+#if HAVE_USE_DEFAULT_COLORS
+	case 'd':
+	    d_option = TRUE;
+	    break;
+#endif
+	default:
+	    usage();
+	    /* NOTREACHED */
+	}
+    }
+    if (optind < argc)
+	usage();
 
     setlocale(LC_ALL, "");
 
-    CATCHALL(onsig);
-
-    initscr();
+    InitAndCatch(initscr(), onsig);
     if (has_colors()) {
 	int bg = COLOR_BLACK;
 	start_color();
 #if HAVE_USE_DEFAULT_COLORS
-	if (use_default_colors() == OK)
+	if (d_option && (use_default_colors() == OK))
 	    bg = -1;
 #endif
 	init_pair(1, COLOR_BLUE, (short) bg);
@@ -373,11 +419,17 @@ main(int argc GCC_UNUSED,
 	case (KEY_RESIZE):
 	    break;
 #endif
+	case HELP_KEY_1:
+	    popup_msg(stdscr, help);
+	    break;
+	case ERR:
+	    break;
+	default:
+	    beep();
 	}
 	napms(50);
     }
-    curs_set(1);
-    endwin();
+    exit_curses();
 #ifdef USE_PTHREADS
     printf("Counts per thread:\n");
     for (j = 0; j < MAX_THREADS; ++j)

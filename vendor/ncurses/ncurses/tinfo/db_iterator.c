@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 2006-2013,2014 Free Software Foundation, Inc.              *
+ * Copyright (c) 2006-2016,2017 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -43,7 +43,7 @@
 #include <hashed_db.h>
 #endif
 
-MODULE_ID("$Id: db_iterator.c,v 1.39 2014/11/01 14:47:00 tom Exp $")
+MODULE_ID("$Id: db_iterator.c,v 1.46 2017/07/01 22:54:42 tom Exp $")
 
 #define HaveTicDirectory _nc_globals.have_tic_directory
 #define KeepTicDirectory _nc_globals.keep_tic_directory
@@ -72,20 +72,44 @@ check_existence(const char *name, struct stat *sb)
 {
     bool result = FALSE;
 
-    if (stat(name, sb) == 0
-	&& (S_ISDIR(sb->st_mode) || S_ISREG(sb->st_mode))) {
+    if (quick_prefix(name)) {
+	result = TRUE;
+    } else if (stat(name, sb) == 0
+	       && (S_ISDIR(sb->st_mode)
+		   || (S_ISREG(sb->st_mode) && sb->st_size))) {
 	result = TRUE;
     }
 #if USE_HASHED_DB
     else if (strlen(name) < PATH_MAX - sizeof(DBM_SUFFIX)) {
 	char temp[PATH_MAX];
 	_nc_SPRINTF(temp, _nc_SLIMIT(sizeof(temp)) "%s%s", name, DBM_SUFFIX);
-	if (stat(temp, sb) == 0 && S_ISREG(sb->st_mode)) {
+	if (stat(temp, sb) == 0 && S_ISREG(sb->st_mode) && sb->st_size) {
 	    result = TRUE;
 	}
     }
 #endif
     return result;
+}
+
+/*
+ * Trim newlines (and backslashes preceding those) and tab characters to
+ * help simplify scripting of the quick-dump feature.  Leave spaces and
+ * other backslashes alone.
+ */
+static void
+trim_formatting(char *source)
+{
+    char *target = source;
+    char ch;
+
+    while ((ch = *source++) != '\0') {
+	if (ch == '\\' && *source == '\n')
+	    continue;
+	if (ch == '\n' || ch == '\t')
+	    continue;
+	*target++ = ch;
+    }
+    *target = '\0';
 }
 
 /*
@@ -99,19 +123,21 @@ update_getenv(const char *name, DBDIRS which)
 
     if (which < dbdLAST) {
 	char *value;
+	char *cached_value = my_vars[which].value;
+	bool same_value;
 
-	if ((value = getenv(name)) == 0 || (value = strdup(value)) == 0) {
-	    ;
-	} else if (my_vars[which].name == 0 || strcmp(my_vars[which].name, name)) {
-	    FreeIfNeeded(my_vars[which].value);
-	    my_vars[which].name = name;
-	    my_vars[which].value = value;
-	    result = TRUE;
-	} else if ((my_vars[which].value != 0) ^ (value != 0)) {
-	    FreeIfNeeded(my_vars[which].value);
-	    my_vars[which].value = value;
-	    result = TRUE;
-	} else if (value != 0 && strcmp(value, my_vars[which].value)) {
+	if ((value = getenv(name)) != 0) {
+	    value = strdup(value);
+	}
+	same_value = ((value == 0 && cached_value == 0) ||
+		      (value != 0 &&
+		       cached_value != 0 &&
+		       strcmp(value, cached_value) == 0));
+
+	/* Set variable name to enable checks in cache_expired(). */
+	my_vars[which].name = name;
+
+	if (!same_value) {
 	    FreeIfNeeded(my_vars[which].value);
 	    my_vars[which].value = value;
 	    result = TRUE;
@@ -251,7 +277,7 @@ _nc_first_db(DBDIRS * state, int *offset)
     *state = dbdTIC;
     *offset = 0;
 
-    T(("_nc_first_db"));
+    T((T_CALLED("_nc_first_db")));
 
     /* build a blob containing all of the strings we will use for a lookup
      * table.
@@ -260,7 +286,7 @@ _nc_first_db(DBDIRS * state, int *offset)
 	size_t blobsize = 0;
 	const char *values[dbdLAST];
 	struct stat *my_stat;
-	int j, k;
+	int j;
 
 	if (cache_has_expired)
 	    free_cache();
@@ -330,10 +356,12 @@ _nc_first_db(DBDIRS * state, int *offset)
 	    my_list = typeCalloc(char *, blobsize);
 	    my_stat = typeCalloc(struct stat, blobsize);
 	    if (my_list != 0 && my_stat != 0) {
-		k = 0;
+		int k = 0;
 		my_list[k++] = my_blob;
 		for (j = 0; my_blob[j] != '\0'; ++j) {
-		    if (my_blob[j] == NCURSES_PATHSEP) {
+		    if (my_blob[j] == NCURSES_PATHSEP
+			&& ((&my_blob[j] - my_list[k - 1]) != 3
+			    || !quick_prefix(my_list[k - 1]))) {
 			my_blob[j] = '\0';
 			my_list[k++] = &my_blob[j + 1];
 		    }
@@ -347,8 +375,10 @@ _nc_first_db(DBDIRS * state, int *offset)
 		    if (*my_list[j] == '\0')
 			my_list[j] = strdup(TERMINFO);
 #endif
+		    trim_formatting(my_list[j]);
 		    for (k = 0; k < j; ++k) {
 			if (!strcmp(my_list[j], my_list[k])) {
+			    T(("duplicate %s", my_list[j]));
 			    k = j - 1;
 			    while ((my_list[j] = my_list[j + 1]) != 0) {
 				++j;
@@ -377,6 +407,7 @@ _nc_first_db(DBDIRS * state, int *offset)
 		    }
 #endif
 		    if (!found) {
+			T(("not found %s", my_list[j]));
 			k = j;
 			while ((my_list[k] = my_list[k + 1]) != 0) {
 			    ++k;
@@ -392,6 +423,7 @@ _nc_first_db(DBDIRS * state, int *offset)
 	    free(my_stat);
 	}
     }
+    returnVoid;
 }
 
 #if NO_LEAKS

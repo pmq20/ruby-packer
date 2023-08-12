@@ -1,7 +1,7 @@
 #!/bin/sh
-# $Id: make-tar.sh,v 1.15 2015/05/16 17:12:37 tom Exp $
+# $Id: make-tar.sh,v 1.16 2017/08/12 12:22:06 tom Exp $
 ##############################################################################
-# Copyright (c) 2010-2013,2015 Free Software Foundation, Inc.                #
+# Copyright (c) 2010-2015,2017 Free Software Foundation, Inc.                #
 #                                                                            #
 # Permission is hereby granted, free of charge, to any person obtaining a    #
 # copy of this software and associated documentation files (the "Software"), #
@@ -80,7 +80,7 @@ test -d ./Ada95 && cd ./Ada95
 SOURCE=`cd ..;pwd`
 
 BUILD=$TMPDIR/make-tar$$
-trap "cd /; rm -rf $BUILD; exit 0" 0 1 2 5 15
+trap "cd /; rm -rf $BUILD; exit 0" 0 1 2 3 15
 
 umask 077
 if ! ( mkdir $BUILD )

@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 1998-2014,2015 Free Software Foundation, Inc.              *
+ * Copyright (c) 1998-2015,2016 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -75,7 +75,7 @@
 #endif
 #undef CUR
 
-MODULE_ID("$Id: lib_twait.c,v 1.70 2015/07/04 21:01:02 tom Exp $")
+MODULE_ID("$Id: lib_twait.c,v 1.71 2016/05/28 23:32:40 tom Exp $")
 
 static long
 _nc_gettime(TimeType * t0, int first)
@@ -113,9 +113,9 @@ NCURSES_EXPORT(int)
 _nc_eventlist_timeout(_nc_eventlist * evl)
 {
     int event_delay = -1;
-    int n;
 
     if (evl != 0) {
+	int n;
 
 	for (n = 0; n < evl->count; ++n) {
 	    _nc_event *ev = evl->events[n];

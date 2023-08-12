@@ -1,7 +1,7 @@
 #! /bin/sh
-# $Id: adacurses-config.in,v 1.9 2014/06/07 19:32:22 Pascal.Pignard Exp $
+# $Id: adacurses-config.in,v 1.11 2016/11/05 20:48:35 tom Exp $
 ##############################################################################
-# Copyright (c) 2007-2010,2014 Free Software Foundation, Inc.                #
+# Copyright (c) 2007-2012,2016 Free Software Foundation, Inc.                #
 #                                                                            #
 # Permission is hereby granted, free of charge, to any person obtaining a    #
 # copy of this software and associated documentation files (the "Software"), #
@@ -44,6 +44,7 @@ CFLAGS="-aI$ADA_INCLUDE -aO$ADA_OBJECTS"
 LIBS="-L$ADA_OBJECTS -lAdaCurses"
 
 THIS="adacurses"
+THIS_CFG="$THIS@DFT_ARG_SUFFIX@-config"
 
 case "x$1" in
 	x--version)
@@ -61,7 +62,7 @@ case "x$1" in
 		;;
 	x--help)
 		cat <<ENDHELP
-Usage: ${THIS}-config [options]
+Usage: ${THIS_CFG} [options]
 
 Options:
   --cflags           echos the gnat (Ada compiler) flags needed to compile with ${THIS}
@@ -75,7 +76,7 @@ If no options are given, echos the full set of flags needed by gnatmake.
 ENDHELP
 		;;
 	*)
-		echo 'Usage: adacurses@DFT_ARG_SUFFIX@-config [--version | --cflags | --libs]' >&2
+		echo 'Usage: $THIS_CFG [--version | --cflags | --libs]' >&2
 		exit 1
 		;;
 esac

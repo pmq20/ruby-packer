@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 2003-2013,2014 Free Software Foundation, Inc.              *
+ * Copyright (c) 2003-2016,2017 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -26,7 +26,7 @@
  * authorization.                                                           *
  ****************************************************************************/
 /*
- * $Id: demo_forms.c,v 1.50 2014/10/10 00:38:00 tom Exp $
+ * $Id: demo_forms.c,v 1.53 2017/04/10 00:28:54 tom Exp $
  *
  * Demonstrate a variety of functions from the form library.
  * Thomas Dickey - 2003/4/26
@@ -149,8 +149,8 @@ read_data(const char *filename)
 		    char *value = typeRealloc(char, need, prior);
 		    if (value == 0)
 			failed("realloc");
-		    strcat(value, "\n");
-		    strcat(value, buffer);
+		    _nc_STRCAT(value, "\n", need);
+		    _nc_STRCAT(value, buffer, need);
 		    my_data[more - 1].value = value;
 		} else {
 		    more = 0;
@@ -227,7 +227,7 @@ make_field(const char *label, int frow, int fcol, int rows, int cols)
 }
 
 static void
-display_form(FORM * f)
+display_form(FORM *f)
 {
     WINDOW *w;
     int rows, cols;
@@ -250,7 +250,7 @@ display_form(FORM * f)
 }
 
 static void
-erase_form(FORM * f)
+erase_form(FORM *f)
 {
     WINDOW *w = form_win(f);
     WINDOW *s = form_sub(f);
@@ -273,7 +273,7 @@ show_insert_mode(bool insert_mode)
 #define O_SELECTABLE (O_ACTIVE | O_VISIBLE)
 
 static FIELD *
-another_field(FORM * form, FIELD * field)
+another_field(FORM *form, FIELD *field)
 {
     FIELD **f = form_fields(form);
     FIELD *result = 0;
@@ -290,7 +290,7 @@ another_field(FORM * form, FIELD * field)
 }
 
 static int
-my_form_driver(FORM * form, int c)
+my_form_driver(FORM *form, int c)
 {
     static bool insert_mode = TRUE;
     FIELD *field;
@@ -337,7 +337,7 @@ my_form_driver(FORM * form, int c)
 }
 
 static void
-show_current_field(WINDOW *win, FORM * form)
+show_current_field(WINDOW *win, FORM *form)
 {
     FIELD *field;
     FIELDTYPE *type;
@@ -456,7 +456,8 @@ demo_forms(void)
     memset(f, 0, sizeof(f));
     for (pg = 0; pg < 4; ++pg) {
 	char label[80];
-	sprintf(label, "Sample Form Page %d", pg + 1);
+	_nc_SPRINTF(label, _nc_SLIMIT(sizeof(label))
+		    "Sample Form Page %d", pg + 1);
 	f[n++] = make_label(label, 0, 15);
 	set_new_page(f[n - 1], TRUE);
 
@@ -558,8 +559,7 @@ demo_forms(void)
 	free_form(form);
     }
     for (c = 0; f[c] != 0; c++) {
-	void *ptr = field_userptr(f[c]);
-	free(ptr);
+	free_edit_field(f[c]);
 	free_field(f[c]);
     }
     noraw();

@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 1998-2009,2014 Free Software Foundation, Inc.              *
+ * Copyright (c) 1998-2016,2017 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -45,14 +45,12 @@
 #include <sys/termio.h>		/* needed for ISC */
 #endif
 
-MODULE_ID("$Id: lib_initscr.c,v 1.40 2014/04/26 18:47:51 juergen Exp $")
+MODULE_ID("$Id: lib_initscr.c,v 1.43 2017/06/17 18:42:45 tom Exp $")
 
 NCURSES_EXPORT(WINDOW *)
 initscr(void)
 {
     WINDOW *result;
-
-    NCURSES_CONST char *name;
 
     START_TRACE();
     T((T_CALLED("initscr()")));
@@ -62,11 +60,15 @@ initscr(void)
 
     /* Portable applications must not call initscr() more than once */
     if (!_nc_globals.init_screen) {
+	NCURSES_CONST char *name;
+
 	_nc_globals.init_screen = TRUE;
 
 	if ((name = getenv("TERM")) == 0
-	    || *name == '\0')
-	    name = "unknown";
+	    || *name == '\0') {
+	    static char unknown_name[] = "unknown";
+	    name = unknown_name;
+	}
 #ifdef __CYGWIN__
 	/*
 	 * 2002/9/21
@@ -86,7 +88,7 @@ initscr(void)
 #endif
 	if (newterm(name, stdout, stdin) == 0) {
 	    fprintf(stderr, "Error opening terminal: %s.\n", name);
-	    exit(EXIT_FAILURE);
+	    ExitProgram(EXIT_FAILURE);
 	}
 
 	/* def_shell_mode - done in newterm/_nc_setupscreen */

@@ -1,6 +1,6 @@
 '\" t
 .\"***************************************************************************
-.\" Copyright (c) 1998-2014,2015 Free Software Foundation, Inc.              *
+.\" Copyright (c) 1998-2016,2017 Free Software Foundation, Inc.              *
 .\"                                                                          *
 .\" Permission is hereby granted, free of charge, to any person obtaining a  *
 .\" copy of this software and associated documentation files (the            *
@@ -27,12 +27,13 @@
 .\" authorization.                                                           *
 .\"***************************************************************************
 .\"
-.\" $Id: curs_getch.3x,v 1.42 2015/07/21 08:44:04 tom Exp $
+.\" $Id: curs_getch.3x,v 1.51 2017/11/21 00:45:48 tom Exp $
 .TH curs_getch 3X ""
 .na
 .hy 0
 .de bP
-.IP \(bu 4
+.ie n  .IP \(bu 4
+.el    .IP \(bu 2
 ..
 .SH NAME
 \fBgetch\fR,
@@ -95,10 +96,17 @@ is read.
 .SS Keypad mode
 .PP
 If \fBkeypad\fR is \fBTRUE\fR, and a function key is pressed, the token for
-that function key is returned instead of the raw characters.
-Possible function
-keys are defined in \fB<curses.h>\fR as macros with values outside the range
-of 8-bit characters whose names begin with \fBKEY_\fR.
+that function key is returned instead of the raw characters:
+.bP
+The predefined function
+keys are listed in \fB<curses.h>\fR as macros with values outside the range
+of 8-bit characters.
+Their names begin with \fBKEY_\fR.
+.bP
+Other (user-defined) function keys which may be defined using \fBdefine_key\fP(3X)
+have no names, but also are expected to have values outside the range of
+8-bit characters.
+.PP
 Thus, a variable
 intended to hold the return value of a function key must be of short size or
 larger.
@@ -111,6 +119,13 @@ time, the character is passed through;
 otherwise, the function key value is returned.
 For this reason, many terminals experience a delay between the time
 a user presses the escape key and the escape is returned to the program.
+.PP
+In \fBncurses\fP, the timer normally expires after the value in \fBESCDELAY\fP (see \fBcurs_variables\fP(3X)).
+If \fBnotimeout\fP is \fBTRUE\fP, the timer does not expire;
+it is an infinite (or very large) value.
+Because function keys usually begin with an escape character,
+the terminal may appear to hang in notimeout mode after pressing the escape key
+until another key is pressed.
 .SS Ungetting characters
 .PP
 The \fBungetch\fR routine places \fIch\fR back onto the input queue to be
@@ -118,9 +133,17 @@ returned by the next call to \fBwgetch\fR.
 There is just one input queue for all windows.
 .PP
 .SS Predefined key-codes
-The following special keys, defined in \fB<curses.h>\fR, may be returned by
-\fBgetch\fR if \fBkeypad\fR has been enabled.
+The following special keys are defined in \fB<curses.h>\fR.
+.bP
+Except for the special case \fBKEY_RESIZE\fP,
+it is necessary to enable \fBkeypad\fR for \fBgetch\fP to return these codes.
+.bP
 Not all of these are necessarily supported on any particular terminal.
+.bP
+The naming convention may seem obscure, with some apparent
+misspellings (such as "RSUME" for "resume").
+The names correspond to the long terminfo capability names for the keys,
+and were defined long ago, in the 1980s.
 .PP
 .TS
 center tab(/) ;
@@ -240,9 +263,14 @@ A few of these predefined values do \fInot\fP correspond to a real key:
 .B KEY_RESIZE
 is returned when the \fBSIGWINCH\fP signal has been detected
 (see \fBinitscr\fP(3X) and \fBresizeterm\fR(3X)).
+This code is returned whether or not \fBkeypad\fP has been enabled.
 .bP
 .B KEY_MOUSE
 is returned for mouse-events (see \fBcurs_mouse\fR(3X)).
+This code relies upon whether or not \fBkeypad\fP(3X) has been enabled,
+because (e.g., with \fIxterm\fP mouse prototocol) ncurses must
+read escape sequences,
+just like a function key.
 .SS Testing key-codes
 .PP
 The \fBhas_key\fR routine takes a key-code value from the above list, and
@@ -262,18 +290,20 @@ string (see \fBkey_defined\fP(3X)).
 .PP
 .SH RETURN VALUE
 All routines return the integer \fBERR\fR upon failure and an integer value
-other than \fBERR\fR (\fBOK\fR in the case of ungetch()) upon successful
+other than \fBERR\fR (\fBOK\fR in the case of \fBungetch\fP) upon successful
 completion.
 .RS 3
 .TP 5
 \fBungetch\fP
-returns ERR
+returns \fBERR\fP
 if there is no more room in the FIFO.
 .TP
 \fBwgetch\fP
-returns ERR
+returns \fBERR\fP
 if the window pointer is null, or
-if its timeout expires without having any data.
+if its timeout expires without having any data, or
+if the execution was interrupted by a signal (\fBerrno\fR will be set to
+\fBEINTR\fR).
 .RE
 .PP
 Functions with a "mv" prefix first perform a cursor movement using
@@ -347,12 +377,17 @@ implementation of handled signal receipt interrupts a \fBread\fR(2) call in
 progress or not, and also (in some implementations) depending on whether an
 input timeout or non-blocking mode has been set.
 .PP
+\fBKEY_MOUSE\fP is mentioned in XSI Curses, along with a few related
+terminfo capabilities, but no higher-level functions use the feature.
+The implementation in ncurses is an extension.
+.PP
+\fBKEY_RESIZE\fP is an extension first implemented for ncurses. 
+NetBSD curses later added this extension.
+.PP
 Programmers concerned about portability should be prepared for either of two
 cases: (a) signal receipt does not interrupt \fBgetch\fR; (b) signal receipt
-interrupts \fBgetch\fR and causes it to return ERR with \fBerrno\fR set to
+interrupts \fBgetch\fR and causes it to return \fBERR\fP with \fBerrno\fR set to
 \fBEINTR\fR.
-Under the \fBncurses\fR implementation, handled signals never
-interrupt \fBgetch\fR.
 .PP
 The \fBhas_key\fR function is unique to \fBncurses\fR.
 We recommend that
@@ -364,6 +399,7 @@ any code using it be conditionalized on the \fBNCURSES_VERSION\fR feature macro.
 \fBcurs_mouse\fR(3X),
 \fBcurs_move\fR(3X),
 \fBcurs_refresh\fR(3X),
+\fBcurs_variables\fR(3X),
 \fBresizeterm\fR(3X).
 .PP
 Comparable functions in the wide-character (ncursesw) library are

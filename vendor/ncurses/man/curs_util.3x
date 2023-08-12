@@ -1,6 +1,6 @@
 '\" t
 .\"***************************************************************************
-.\" Copyright (c) 1998-2013,2015 Free Software Foundation, Inc.              *
+.\" Copyright (c) 1998-2015,2017 Free Software Foundation, Inc.              *
 .\"                                                                          *
 .\" Permission is hereby granted, free of charge, to any person obtaining a  *
 .\" copy of this software and associated documentation files (the            *
@@ -27,14 +27,15 @@
 .\" authorization.                                                           *
 .\"***************************************************************************
 .\"
-.\" $Id: curs_util.3x,v 1.43 2015/06/06 23:36:27 tom Exp $
+.\" $Id: curs_util.3x,v 1.52 2017/11/18 23:47:37 tom Exp $
 .TH curs_util 3X ""
 .ie \n(.g .ds `` \(lq
 .el       .ds `` ``
 .ie \n(.g .ds '' \(rq
 .el       .ds '' ''
 .de bP
-.IP \(bu 4
+.ie n  .IP \(bu 4
+.el    .IP \(bu 2
 ..
 .na
 .hy 0
@@ -103,7 +104,7 @@ DEL (character 127) is displayed as \fB^?\fP.
 .bP
 Values above 128 are either meta characters
 (if the screen has not been initialized,
-or if \fBmeta\fP has been called with a \fBTRUE\fP parameter),
+or if \fBmeta\fP(3X) has been called with a \fBTRUE\fP parameter),
 shown in the \fBM\-\fR\fIX\fR notation,
 or are displayed as themselves.
 In the latter case, the values may not be printable;
@@ -124,10 +125,23 @@ the latter returns null where the former would display a meta character.
 .PP
 The \fBfilter\fR routine, if used, must be called before \fBinitscr\fR or
 \fBnewterm\fR are called.
-The effect is that, during those calls, \fBLINES\fR
-is set to 1; the capabilities \fBclear\fR, \fBcup\fR, \fBcud\fR, \fBcud1\fR,
-\fBcuu1\fR, \fBcuu\fR, \fBvpa\fR are disabled; and the \fBhome\fR string is
-set to the value of \fBcr\fR.
+Calling \fBfilter\fP causes these changes in initialization:
+.bP
+\fBLINES\fR is set to 1;
+.bP
+the capabilities
+\fBclear\fR,
+\fBcud1\fR,
+\fBcud\fR,
+\fBcup\fR,
+\fBcuu1\fR,
+\fBcuu\fR,
+\fBvpa\fR
+are disabled;
+.bP
+the capability \fBed\fP is disabled if \fBbce\fP is set;
+.bP
+and the \fBhome\fR string is set to the value of \fBcr\fR.
 .PP
 The \fBnofilter\fP routine cancels the effect of a preceding \fBfilter\fP
 call.
@@ -144,22 +158,22 @@ should be called before \fBinitscr\fR or
 It modifies the way \fBncurses\fP treats environment variables
 when determining the screen size.
 .bP
-Normally ncurses looks first at the terminal database for the screen size.
+Normally \fBncurses\fP looks first at the terminal database for the screen size.
 .IP
 If \fBuse_env\fP was called with \fBFALSE\fP for parameter,
 it stops here unless
-If \fBuse_tioctl\fP was also called with \fBTRUE\fP for parameter.
+\fBuse_tioctl\fP was also called with \fBTRUE\fP for parameter.
 .bP
 Then it asks for the screen size via operating system calls.
 If successful,
 it overrides the values from the terminal database.
 .bP
 Finally (unless \fBuse_env\fP was called with \fBFALSE\fP parameter),
-ncurses examines the \fBLINES\fR or \fBCOLUMNS\fR environment variables,
+\fBncurses\fP examines the \fBLINES\fR or \fBCOLUMNS\fR environment variables,
 using a value in those to override the results
 from the operating system or terminal database.
 .IP
-Ncurses also updates the screen size in response to SIGWINCH,
+\fBNcurses\fP also updates the screen size in response to \fBSIGWINCH\fP,
 unless overridden by the \fBLINES\fR or \fBCOLUMNS\fR environment variables,
 .SS use_tioctl
 .PP
@@ -167,16 +181,16 @@ The \fBuse_tioctl\fR routine, if used,
 should be called before \fBinitscr\fR or \fBnewterm\fR are called
 (because those compute the screen size).
 After \fBuse_tioctl\fR is called with \fBTRUE\fR as an argument,
-ncurses modifies the last step in its computation of screen size as follows:
+\fBncurses\fP modifies the last step in its computation of screen size as follows:
 .bP
 checks if the \fBLINES\fR and \fBCOLUMNS\fR environment variables
 are set to a number greater than zero.
 .bP
-for each, ncurses updates the corresponding environment variable
+for each, \fBncurses\fP updates the corresponding environment variable
 with the value that it has obtained via operating system call
 or from the terminal database.
 .bP
-ncurses re-fetches the value of the environment variables so that
+\fBncurses\fP re-fetches the value of the environment variables so that
 it is still the environment variables which set the screen size.
 .PP
 The \fBuse_env\fP and \fBuse_tioctl\fP routines combine as
@@ -189,17 +203,17 @@ lw7 lw7 lw40.
 \fIuse_env\fR/\fIuse_tioctl\fR/\fISummary\fR
 TRUE/FALSE/T{
 This is the default behavior.
-ncurses uses operating system calls
+\fBncurses\fP uses operating system calls
 unless overridden by $LINES or $COLUMNS environment variables.
 T}
 TRUE/TRUE/T{
-ncurses updates $LINES and $COLUMNS based on operating system calls.
+\fBncurses\fP updates $LINES and $COLUMNS based on operating system calls.
 T}
 FALSE/TRUE/T{
-ncurses ignores $LINES and $COLUMNS, uses operating system calls to obtain size.
+\fBncurses\fP ignores $LINES and $COLUMNS, uses operating system calls to obtain size.
 T}
 FALSE/FALSE/T{
-ncurses relies on the terminal database to determine size.
+\fBncurses\fP relies on the terminal database to determine size.
 T}
 .TE
 .SS putwin/getwin
@@ -257,9 +271,6 @@ In this implementation
 \fBflushinp\fR
 returns an error if the terminal was not initialized.
 .TP 5
-\fBmeta\fR
-returns an error if the terminal was not initialized.
-.TP 5
 \fBputwin\fP
 returns an error if the associated \fBfwrite\fP calls return an error.
 .RE
@@ -280,13 +291,13 @@ user-defined strings which begin with "k".
 The keycodes start at KEY_MAX, but are not guaranteed to be
 the same value for different runs because user-defined codes are
 merged from all terminal descriptions which have been loaded.
-The \fBuse_extended_names\fP function controls whether this data is
+The \fBuse_extended_names\fP(3X) function controls whether this data is
 loaded when the terminal description is read by the library.
 .SS nofilter/use_tioctl
 .PP
-The \fBnofilter\fP and \fBuse_tioctl\fP routines are specific to ncurses.
+The \fBnofilter\fP and \fBuse_tioctl\fP routines are specific to \fBncurses\fP.
 They were not supported on Version 7, BSD or System V implementations.
-It is recommended that any code depending on ncurses extensions
+It is recommended that any code depending on \fBncurses\fP extensions
 be conditioned using NCURSES_VERSION.
 .SS putwin/getwin
 .PP
@@ -305,7 +316,7 @@ and were later (in 1988) incorporated into SVr4.
 Oddly, there are no such functions in the 4.3BSD curses sources.
 .bP
 Most implementations simply dump the binary \fBWINDOW\fP structure to the file.
-These include SVr4 curses, NetBSD and PDCurses, as well as older ncurses versions.
+These include SVr4 curses, NetBSD and PDCurses, as well as older \fBncurses\fP versions.
 This implementation (as well as the X/Open variant of Solaris curses, dated 1995)
 uses textual dumps.
 .IP
@@ -344,9 +355,9 @@ parameter values outside the 0 to 255 range.
 .PP
 The strings returned by \fBunctrl\fR in this implementation are determined
 at compile time,
-showing C1 controls from the upper-128 codes with a `~' prefix rather than `^'.
+showing C1 controls from the upper-128 codes with a \*(``~\*('' prefix rather than \*(``^\*(''.
 Other implementations have different conventions.
-For example, they may show both sets of control characters with `^',
+For example, they may show both sets of control characters with \*(``^\*('',
 and strip the parameter to 7 bits.
 Or they may ignore C1 controls and treat all of the upper-128 codes as
 printable.
@@ -355,9 +366,9 @@ locale.
 The \fBuse_legacy_coding\fP function allows the caller to
 change the output of \fBunctrl\fP.
 .PP
-Likewise, the \fBmeta\fP function allows the caller to change the
+Likewise, the \fBmeta\fP(3X) function allows the caller to change the
 output of \fBkeyname\fP, i.e.,
-it determines whether to use the `M\-' prefix
+it determines whether to use the \*(``M\-\*('' prefix
 for \*(``meta\*('' keys (codes in the range 128 to 255).
 Both \fBuse_legacy_coding\fP and \fBmeta\fP succeed only after
 curses is initialized.
@@ -365,11 +376,21 @@ X/Open Curses does not document the treatment of codes 128 to 159.
 When treating them as \*(``meta\*('' keys
 (or if \fBkeyname\fP is called before initializing curses),
 this implementation returns strings \*(``M\-^@\*('', \*(``M\-^A\*('', etc.
+.SS use_env/use_tioctl
+.PP
+If \fBncurses\fP is configured to provide the sp-functions extension,
+the state of \fBuse_env\fP and \fBuse_tioctl\fP may be updated before
+creating each \fIscreen\fP rather than once only
+(\fBcurs_sp_funcs\fR(3X)).
+This feature of \fBuse_env\fP
+is not provided by other implementation of curses.
 .SH SEE ALSO
 \fBlegacy_coding\fR(3X),
 \fBcurses\fR(3X),
 \fBcurs_initscr\fR(3X),
+\fBcurs_inopts\fR(3X),
 \fBcurs_kernel\fR(3X),
 \fBcurs_scr_dump\fR(3X),
+\fBcurs_sp_funcs\fR(3X),
 \fBcurs_variables\fR(3X),
 \fBlegacy_coding\fR(3X).

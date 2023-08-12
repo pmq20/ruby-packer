@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 2015 Free Software Foundation, Inc.                        *
+ * Copyright (c) 2015,2016 Free Software Foundation, Inc.                   *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -29,7 +29,7 @@
 /*
  * Author: Thomas E. Dickey
  *
- * $Id: test_setupterm.c,v 1.8 2015/06/28 00:53:46 tom Exp $
+ * $Id: test_setupterm.c,v 1.9 2016/06/18 23:54:35 tom Exp $
  *
  * A simple demo of setupterm/restartterm.
  */
@@ -96,11 +96,12 @@ test_setupterm(NCURSES_CONST char *name)
     int rc;
     int err = -99;
 
-    if (r_opt) {
+#if HAVE_RESTARTTERM
+    if (r_opt)
 	rc = restartterm(name, 0, f_opt ? NULL : &err);
-    } else {
+    else
+#endif
 	rc = setupterm(name, 0, f_opt ? NULL : &err);
-    }
     test_rc(name, rc, err);
 }
 
@@ -118,7 +119,9 @@ usage(void)
 	" -f       treat errors as fatal",
 	" -n       set environment to disable terminfo database, assuming",
 	"          the compiled-in paths for database also fail",
+#if HAVE_RESTARTTERM
 	" -r       test restartterm rather than setupterm",
+#endif
     };
     unsigned n;
     for (n = 0; n < SIZEOF(msg); ++n) {
@@ -143,9 +146,11 @@ main(int argc, char *argv[])
 	case 'n':
 	    n_opt = TRUE;
 	    break;
+#if HAVE_RESTARTTERM
 	case 'r':
 	    r_opt = TRUE;
 	    break;
+#endif
 	default:
 	    usage();
 	    break;

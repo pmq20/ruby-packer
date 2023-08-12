@@ -1,5 +1,5 @@
 .\"***************************************************************************
-.\" Copyright (c) 1998-2005,2010 Free Software Foundation, Inc.              *
+.\" Copyright (c) 1998-2010,2017 Free Software Foundation, Inc.              *
 .\"                                                                          *
 .\" Permission is hereby granted, free of charge, to any person obtaining a  *
 .\" copy of this software and associated documentation files (the            *
@@ -26,8 +26,12 @@
 .\" authorization.                                                           *
 .\"***************************************************************************
 .\"
-.\" $Id: curs_getstr.3x,v 1.19 2010/12/04 18:36:44 tom Exp $
+.\" $Id: curs_getstr.3x,v 1.23 2017/11/21 00:45:48 tom Exp $
 .TH curs_getstr 3X ""
+.ie \n(.g .ds `` \(lq
+.el       .ds `` ``
+.ie \n(.g .ds '' \(rq
+.el       .ds '' ''
 .na
 .hy 0
 .SH NAME
@@ -81,7 +85,7 @@ backspace is echoed as deletion of the previous character (typically a left
 motion).
 .SH RETURN VALUE
 All routines return the integer \fBERR\fR upon failure and an \fBOK\fR (SVr4
-specifies only "an integer value other than \fBERR\fR") upon successful
+specifies only \*(``an integer value other than \fBERR\fR\*('') upon successful
 completion.
 .PP
 X/Open defines no error conditions.
@@ -92,10 +96,10 @@ if the window pointer is null, or
 if its timeout expires without having any data.
 .PP
 This implementation provides an extension as well.
-If a SIGWINCH interrupts the function, it will return \fBKEY_RESIZE\fP
+If a \fBSIGWINCH\fP interrupts the function, it will return \fBKEY_RESIZE\fP
 rather than \fBOK\fP or \fBERR\fP.
 .PP
-Functions with a "mv" prefix first perform a cursor movement using
+Functions with a \*(``mv\*('' prefix first perform a cursor movement using
 \fBwmove\fP, and return an error if the position is outside the window,
 or if the window pointer is null.
 .SH NOTES
@@ -104,13 +108,18 @@ Note that \fBgetstr\fR, \fBmvgetstr\fR, and \fBmvwgetstr\fR may be macros.
 These functions are described in the XSI Curses standard, Issue 4.
 They read single-byte characters only.
 The standard does not define any error conditions.
-This implementation returns ERR if the window pointer is null,
-or if the lower-level \fBwgetch\fR call returns an ERR.
+This implementation returns \fBERR\fP if the window pointer is null,
+or if the lower-level \fBwgetch\fR(3X) call returns an \fBERR\fP.
 .PP
 SVr3 and early SVr4 curses implementations did not reject function keys;
-the SVr4.0 documentation claimed that "special keys" (such as function
-keys, "home" key, "clear" key, \fIetc\fR.) are "interpreted", without
-giving details.  It lied.  In fact, the `character' value appended to the
+the SVr4.0 documentation claimed that \*(``special keys\*(''
+(such as function keys,
+\*(``home\*('' key,
+\*(``clear\*('' key,
+\fIetc\fR.) are \*(``interpreted\*('',
+without giving details.
+It lied.
+In fact, the \*(``character\*('' value appended to the
 string by those implementations was predictable but not useful
 (being, in fact, the low-order eight bits of the key's KEY_ value).
 .PP

@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 1998-2013,2014 Free Software Foundation, Inc.              *
+ * Copyright (c) 1998-2014,2016 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -32,7 +32,7 @@
 
 /*
     Version Control
-    $Id: gen.c,v 1.69 2014/05/31 21:00:08 tom Exp $
+    $Id: gen.c,v 1.70 2016/02/13 22:00:22 tom Exp $
   --------------------------------------------------------------------------*/
 /*
   This program prints on its standard output the source for the
@@ -108,7 +108,7 @@ bit_is_set(const UCHAR * const data,
   else				/* or */
     bit = ~offset;		/* 7 - offset */
   bit &= 7;			/* modulo 8 */
-  return byte & (UCHAR) (1 << bit);
+  return (UCHAR) (byte & (1 << bit));
 }
 
 /* Find lowest and highest used offset in a byte array. */

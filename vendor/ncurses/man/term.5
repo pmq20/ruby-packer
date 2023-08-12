@@ -1,5 +1,5 @@
 .\"***************************************************************************
-.\" Copyright (c) 1998-2010,2015 Free Software Foundation, Inc.              *
+.\" Copyright (c) 1998-2016,2017 Free Software Foundation, Inc.              *
 .\"                                                                          *
 .\" Permission is hereby granted, free of charge, to any person obtaining a  *
 .\" copy of this software and associated documentation files (the            *
@@ -26,8 +26,29 @@
 .\" authorization.                                                           *
 .\"***************************************************************************
 .\"
-.\" $Id: term.5,v 1.22 2015/04/26 14:50:23 tom Exp $
+.\" $Id: term.5,v 1.27 2017/12/16 21:27:20 tom Exp $
 .TH term 5
+.ie \n(.g .ds `` \(lq
+.el       .ds `` ``
+.ie \n(.g .ds '' \(rq
+.el       .ds '' ''
+.de NS
+.ie n  .sp
+.el    .sp .5
+.ie n  .in +4
+.el    .in +2
+.nf
+.ft C			\" Courier
+..
+.de NE
+.fi
+.ft R
+.in -4
+..
+.de bP
+.ie n  .IP \(bu 4
+.el    .IP \(bu 2
+..
 .ds n 5
 .ds d @TERMINFO@
 .SH NAME
@@ -68,15 +89,13 @@ ncurses distinguishes the two cases in the TERMINFO and TERMINFO_DIRS
 environment variable by assuming a directory tree for entries that
 correspond to an existing directory,
 and hashed database otherwise.
-.SS STORAGE FORMAT
+.SS LEGACY STORAGE FORMAT
 The format has been chosen so that it will be the same on all hardware.
 An 8 or more bit byte is assumed, but no assumptions about byte ordering
 or sign extension are made.
 .PP
-The compiled file is created with the
-.B @TIC@
-program, and read by the routine
-.IR setupterm .
+The compiled file is created with the \fB@TIC@\fP program,
+and read by the routine \fBsetupterm\fP(3X).
 The file is divided into six parts:
 the header,
 terminal names,
@@ -120,7 +139,7 @@ integers as two bytes and compute the little-endian value.
 The terminal names section comes next.
 It contains the first line of the terminfo description,
 listing the various names for the terminal,
-separated by the `|' character.
+separated by the \*(``|\*('' character.
 The section is terminated with an \s-1ASCII NUL\s+1 character.
 .PP
 The boolean flags have one byte for each flag.
@@ -194,21 +213,41 @@ The extended string table contains values for string capabilities.
 After the end of these values, it contains the names for each of
 the extended capabilities in order, e.g., booleans, then numbers and
 finally strings.
+.PP
+Applications which manipulate terminal data can use the definitions
+described in \fBterm_variables\fP(3X) which associate the long capability
+names with members of a \fBTERMTYPE\fP structure.
 .
+.SS EXTENDED NUMBER FORMAT
+.PP
+On occasion, 16-bit signed integers are not large enough.
+With ncurses 6.1, a new format is introduced by making a few changes
+to the legacy format:
+.bP
+a different magic number (0542)
+.bP
+changing the type for the \fInumber\fP array from signed 16-bit integers
+to signed 32-bit integers.
+.PP
+To maintain compatibility, the library presents the same data structures
+to direct users of the \fBTERMTYPE\fP structure as in previous formats.
+However, that cannot provide callers with the extended numbers.
+The library uses a similar but hidden data structure \fBTERMTYPE2\fP
+to provide data for the terminfo functions.
 .SH PORTABILITY
 Note that it is possible for
-.I setupterm
+.B setupterm
 to expect a different set of capabilities
 than are actually present in the file.
 Either the database may have been updated since
-.I setupterm
+.B setupterm
 has been recompiled
 (resulting in extra unrecognized entries in the file)
 or the program may have been recompiled more recently
 than the database was updated
 (resulting in missing entries).
 The routine
-.I setupterm
+.B setupterm
 must be prepared for both possibilities \-
 this is why the numbers and sizes are included.
 Also, new capabilities must always be added at the end of the lists
@@ -222,18 +261,32 @@ diverged from System V terminfo after SVr1, and have added extension
 capabilities to the string table that (in the binary format) collide with
 System V and XSI Curses extensions.  See \fBterminfo\fR(\*n) for detailed
 discussion of terminfo source compatibility issues.
+.PP
+Direct access to the \fBTERMTYPE\fP structure is provided for legacy
+applications.
+Portable applications should use the \fBtigetflag\fP and related functions
+described in \fBcurs_terminfo\fP(3X) for reading terminal capabilities.
+.PP
+A small number of terminal descriptions use uppercase characters in
+their names.
+If the underlying filesystem ignores the difference between
+uppercase and lowercase,
+ncurses represents the \*(``first character\*('' of the terminal name used as
+the intermediate level of a directory tree in (two-character) hexadecimal form.
 .SH EXAMPLE
-As an example, here is a hex dump of the description for the Lear-Siegler
+As an example, here is a description for the Lear-Siegler
 ADM\-3, a popular though rather stupid early terminal:
-.nf
-.sp
+.NS
 adm3a|lsi adm3a,
         am,
         cols#80, lines#24,
         bel=^G, clear=\032$<1>, cr=^M, cub1=^H, cud1=^J,
         cuf1=^L, cup=\\E=%p1%{32}%+%c%p2%{32}%+%c, cuu1=^K,
         home=^^, ind=^J,
-.sp
+.NS
+.PP
+and a hexadecimal dump of the compiled terminal description:
+.NS
 .ft CW
 \s-20000  1a 01 10 00 02 00 03 00  82 00 31 00 61 64 6d 33  ........ ..1.adm3
 0010  61 7c 6c 73 69 20 61 64  6d 33 61 00 00 01 50 00  a|lsi ad m3a...P.
@@ -258,11 +311,16 @@ adm3a|lsi adm3a,
 0140  25 70 32 25 7b 33 32 7d  25 2b 25 63 00 0a 00 1e  %p2%{32} %+%c....
 0150  00 08 00 0c 00 0b 00 0a  00                       ........ .\s+2
 .ft R
-.fi
+.NE
 .sp
 .SH LIMITS
-Some limitations: total compiled entries cannot exceed 4096 bytes.
-The name field cannot exceed 128 bytes.
+Some limitations:
+.bP
+total compiled entries cannot exceed 4096 bytes in the legacy format.
+.bP
+total compiled entries cannot exceed 32768 bytes in the extended format.
+.bP
+the name field cannot exceed 128 bytes.
 .SH FILES
 \*d/*/*	compiled terminal capability data base
 .SH SEE ALSO
@@ -273,5 +331,9 @@ Thomas E. Dickey
 extended terminfo format for ncurses 5.0
 .br
 hashed database support for ncurses 5.6
+.br
+extended number support for ncurses 6.1
 .sp
 Eric S. Raymond
+.br
+documented legacy terminfo format, e.g., from pcurses.
