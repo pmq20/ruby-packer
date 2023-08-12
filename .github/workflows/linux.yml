@@ -58,7 +58,7 @@ jobs:
           export RUBYC_ARCHIVE_FILENAME=${RUBYC_FILENAME}.tar.gz
           cp rubyc pkg/rubyc-$(uname -s)-$(uname -m)
           cd pkg
-          tar -czvf $RUBYC_FILENAME -c > $RUBYC_ARCHIVE_FILENAME
+          tar -czvf $RUBYC_ARCHIVE_FILENAME $RUBYC_FILENAME
           echo "RUBYC_FILENAME=$RUBYC_FILENAME" >> $GITHUB_ENV
           echo "RUBYC_ARCHIVE_FILENAME=$RUBYC_ARCHIVE_FILENAME" >> $GITHUB_ENV
           ls -l
