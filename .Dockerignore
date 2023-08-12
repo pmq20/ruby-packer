@@ -9,3 +9,9 @@
 !vendor
 !Gemfile
 !Gemfile.lock
+!patch_ruby_source.sh
+!download_vendors.sh
+!download-ruby-source.sh
+!ruby-enclose
+!ruby-enclose-3.2.2-patch
+!vendor-enclose

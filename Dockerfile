@@ -17,6 +17,7 @@ COPY . .
 # ENV LD_LIBRARY_PATH="/temp/rubyc/local/lib:$LD_LIBRARY_PATH"
 # ENTRYPOINT [ "bin/rubyc" ]
 # CMD [ "bin/rubyc", "-o", "rubyc" ]
+RUN ./patch_ruby_source.sh
 RUN bin/rubyc bin/rubyc -o rubyc
 
 RUN wget https://www.openssl.org/source/openssl-1.1.1o.tar.gz && \

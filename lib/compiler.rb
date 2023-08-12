@@ -656,8 +656,8 @@ class Compiler
       Dir['**/*.m4'].each do |x|
         File.utime(Time.at(0), Time.at(0), x)
       end
-
-      @utils.run(compile_env, './autogen.sh')
+      # doesn't exist in ffi source without arm64 patch
+      # @utils.run(compile_env, './autogen.sh')
       @utils.run(compile_env,
                  './configure',
                  '--with-pic',

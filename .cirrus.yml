@@ -110,9 +110,12 @@ macos_arm_task:
     find .  -name 'install-sh' -type f | xargs chmod +x
   deps_script: |
     brew install automake texinfo libtool squashfs bison
+  get_ruby_source_and_patch_script: |
+    ./patch_ruby_source.sh
   build_script: |
     bin/rubyc bin/rubyc -o rubyc --openssl-dir=/opt/homebrew/opt/openssl@1.1
-  test_script:
+  test_script: |
+    chmod +x ./rubyc
     ./rubyc --help
   mv_binary_script: |
       mkdir -p pkg
@@ -125,13 +128,13 @@ macos_arm_task:
 # DYLD_LIBRARY_PATH=/opt/homebrew/opt/openssl@1.1/lib rubyc --help
 
 task:
-  arm_container:
-    matrix:
-      - dockerfile: Dockerfile
-        docker_arguments:
-          - matrix:
-              - ARCH: arm64
-              - ARCH: amd64
+  matrix:
+    - arm_container:
+        matrix:
+          - dockerfile: Dockerfile
+    - container:
+        matrix:
+          - dockerfile: Dockerfile
   test_script: |
     rubyc --help
     rubyc --version
@@ -141,8 +144,16 @@ task:
     mkdir -p pkg
     cp /usr/local/bin/rubyc pkg/rubyc-$(uname -s)-$(uname -m)
   setup_gh_cli_script: |
-    curl -L https://github.com/cli/cli/releases/download/v2.32.1/gh_2.32.1_linux_$ARCH.tar.gz | tar xz
-    mv gh_2.32.1_linux_$ARCH/bin/gh /usr/local/bin
-    rm -rf gh_2.32.1_linux_$ARCH
+    if [ "$(uname -m)" == 'x86_64' ]; then
+            GH_CLI_ARCH=amd64
+    elif [ "$(uname -m)" == 'aarch64' ]; then
+            GH_CLI_ARCH=arm64
+    else
+            echo "Unknown architecture $(uname -m)"
+            exit 1
+    fi
+    curl -L https://github.com/cli/cli/releases/download/v2.32.1/gh_2.32.1_linux_$GH_CLI_ARCH.tar.gz | tar xz
+    mv gh_2.32.1_linux_$GH_CLI_ARCH/bin/gh /usr/local/bin
+    rm -rf gh_2.32.1_linux_$GH_CLI_ARCH
   <<: *UPLOAD_TASK
   <<: *BINARY_ARTIFACTS
