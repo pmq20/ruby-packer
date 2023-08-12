@@ -4,16 +4,24 @@ macos_arm_task:
   ruby_version_script: ruby --version
   env:
     BISON_PATH: "/opt/homebrew/opt/bison/bin"
-    OPENSSL_1_1_PATH: "/opt/homebrew/opt/openssl@1.1/lib"
+    # OPENSSL_1_1_PATH: "/opt/homebrew/opt/openssl@1.1/lib"
     PATH: "$BISON_PATH:$PATH"
+  openssl_tweak_for_cirrus_ci_script: |
+    brew unlink openssl
+    brew install openssl@1.1
+    brew link openssl@1.1
   cirrus_cli_script: |
     chmod +x bin/*
     find . -name '*onfigure' -type f | xargs chmod +x
     find . -name '*.sh' -type f | xargs chmod +x
     find .  -name 'install-sh' -type f | xargs chmod +x
+  deps_script: |
     brew install automake texinfo libtool squashfs bison
+  build_script: |
     bin/rubyc bin/rubyc -o rubyc --openssl-dir=/opt/homebrew/opt/openssl@1.1
-    rubyc --help
+  test_script:
+    ./rubyc --help
+  package_script:
     mkdir pkg
     mv rubyc pkg/rubyc-darwin-arm64
 # DYLD_LIBRARY_PATH=/opt/homebrew/opt/openssl@1.1/lib rubyc --help
@@ -29,5 +37,8 @@ task:
           - matrix:
               - ARCH: arm64
               - ARCH: x86_64
+  package_script:
+    mkdir pkg
+    cp /usr/local/bin/rubyc pkg/rubyc-$(uname -s)-$(uname -m)
   binary_artifacts:
-    path: /usr/local/bin/rubyc
+    path: pkg

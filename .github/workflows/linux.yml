@@ -28,6 +28,11 @@ jobs:
           lscpu
           which mksquashfs
           mksquashfs -version
+      - name: Set up Clang
+        uses: egor-tensin/setup-clang@v1
+        with:
+          version: latest
+          platform: 6
       - name: "[Enclose.IO] Set up Ruby"
         uses: ruby/setup-ruby@v1
         with:
@@ -36,10 +41,12 @@ jobs:
         run: gem install rubocop
       - name: "[Enclose.IO] Run rubocop"
         run: rubocop
-      - name: "[Enclose.IO] Bundle install"
-        run: bundle install
-      - name: "[Enclose.IO] Rake"
-        run: bundle exec rake
+      # - name: "[Enclose.IO] Bundle install"
+      #   run: bundle install
+      # - name: "[Enclose.IO] Rake"
+      #   run: bundle exec rake
+      - name: "Package rubyc"
+        run: bin/rubyc bin/rubyc -o rubyc
       - name: "[Enclose.IO] Create Linux Test run upload"
         uses: actions/upload-artifact@v3
         with:

@@ -57,11 +57,19 @@ jobs:
           where bundle
           bundle -v
         shell: cmd
-      - name: "[Enclose.IO] Rake"
+      # - name: "[Enclose.IO] Rake"
+      #   run: |
+      #     call "C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+      #     mkdir C:\rubyc_tmp
+      #     bundle exec rake
+      #   shell: cmd
+          - name: "Package rubyc"
+        run: bin/rubyc bin/rubyc -o rubyc
+      - name: "Package rubyc"
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           mkdir C:\rubyc_tmp
-          bundle exec rake
+          bin/rubyc.bat bin/rubyc -o rubyc.exe
         shell: cmd
       - name: "[Enclose.IO] Create Windows Test run upload"
         uses: actions/upload-artifact@v3

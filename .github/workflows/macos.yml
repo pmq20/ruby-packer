@@ -39,10 +39,12 @@ jobs:
         run: gem install rubocop
       - name: "[Enclose.IO] Run rubocop"
         run: rubocop
-      - name: "[Enclose.IO] Install dependencies"
-        run: bundle install
-      - name: "[Enclose.IO] Rake"
-        run: bundle exec rake
+      # - name: "[Enclose.IO] Install dependencies"
+      #   run: bundle install
+      # - name: "[Enclose.IO] Rake"
+      #   run: bundle exec rake
+      - name: "Package rubyc"
+        run: bin/rubyc bin/rubyc -o rubyc
       - name: "[Enclose.IO] Create MacOS Test run upload"
         uses: actions/upload-artifact@v3
         with:
