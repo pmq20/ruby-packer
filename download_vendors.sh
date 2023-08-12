@@ -9,26 +9,28 @@ RUNTIME_DIR=vendor
 function download_and_extract()
 {
 	local BASENAME="$1"
-	local DIRNAME="$2"
-	local URL="$3"
+	local LIB="$2"
+	local LIB_PLUS_VERSION="$3"
+	local URL="$4"
 	local regex='\.bz2$'
-
-	if [[ ! -e "$BASENAME" ]]; then
-		run rm -f "$BASENAME.tmp"
-		run curl --fail -L -o "$BASENAME.tmp" "$URL"
-		run mv "$BASENAME.tmp" "$BASENAME"
-	fi
+    cd $BASENAME
+	# if [[ ! -e "$BASENAME" ]]; then
+    rm -f "$LIB_PLUS_VERSION.tmp"
+    curl --fail -L -o "$LIB_PLUS_VERSION.tmp" "$URL"
+    # mv "$LIB_PLUS_VERSION.tmp" "$LIB_PLUS_VERSION"
+	# # fi
 	if [[ "$URL" =~ $regex ]]; then
-		run tar xjf "$BASENAME"
+		tar xjf "$LIB_PLUS_VERSION.tmp"
 	else
-		run tar xzf "$BASENAME"
+		tar xzf "$LIB_PLUS_VERSION.tmp"
 	fi
-
-	echo "Entering $RUNTIME_DIR/$DIRNAME"
-	pushd "$DIRNAME" >/dev/null
+    mv "$LIB_PLUS_VERSION" "$LIB"
+    rm -f "$LIB_PLUS_VERSION.tmp"
+    cd ..
 }
 
-download_and_extract libffi-$LIBFFI_VERSION.tar.bz2 \
+rm -rf "vendor/libffi"
+download_and_extract vendor libffi libffi-$LIBFFI_VERSION \
     https://github.com/libffi/libffi/releases/download/v$LIBFFI_VERSION/libffi-$LIBFFI_VERSION.tar.gz
 
 # download_and_extract yaml-$LIBYAML_VERSION.tar.gz \

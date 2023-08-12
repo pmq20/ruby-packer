@@ -1,3 +1,0 @@
-set CC_FOR_TARGET "gcc"
-set CXX_FOR_TARGET "g++"
-set compiler_vendor "clang"
