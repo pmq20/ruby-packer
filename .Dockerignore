@@ -9,6 +9,7 @@
 !vendor
 !Gemfile
 !Gemfile.lock
+!Rakefile
 !patch_ruby_source.sh
 !download_vendors.sh
 !download-ruby-source.sh

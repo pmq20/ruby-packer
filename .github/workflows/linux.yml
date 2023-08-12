@@ -47,6 +47,8 @@ jobs:
       #   run: bundle install
       # - name: "[Enclose.IO] Rake"
       #   run: bundle exec rake
+      - name: "Download and Patch ruby source"
+        run: ./patch_ruby_source.sh
       - name: "Build rubyc"
         run: bin/rubyc bin/rubyc -o rubyc
       - name: "Package rubyc"
@@ -56,11 +58,11 @@ jobs:
           RUBYC_ARCHIVE_FILENAME=${RUBYC_FILENAME}.tar.gz
           cp rubyc pkg/rubyc-$(uname -s)-$(uname -m)
           cd pkg
-          gzip $RUBYC_FILENAME -c > $RUBYC_ARCHIVE_FILENAME
+          tar -czvf $RUBYC_FILENAME -c > $RUBYC_ARCHIVE_FILENAME
           echo "RUBYC_FILENAME=$RUBYC_FILENAME" >> $GITHUB_ENV
           echo "RUBYC_ARCHIVE_FILENAME=$RUBYC_ARCHIVE_FILENAME" >> $GITHUB_ENV
           ls -l
-          if [[ $GITHUB_BRANCH == $PUBLISH_BRANCH ]]; then
+          if [[ $GITHUB_REF == "refs/heads/$PUBLISH_BRANCH" ]]; then
             gh release upload "${NEXT_TAG}" $RUBYC_ARCHIVE_FILENAME --repo "${REPO}" --clobber
           else
             echo "Not on $PUBLISH_BRANCH branch, skipping upload"
