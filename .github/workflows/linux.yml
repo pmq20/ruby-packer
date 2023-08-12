@@ -5,6 +5,11 @@ on:
   pull_request:
     branches: [ master, ci_test  ]
   workflow_dispatch:
+env:
+  REPO: you54f/ruby-packer
+  PKG_DATE: 20230812
+  NEXT_TAG: rel-20230812
+  PUBLISH_BRANCH: ci_test
 jobs:
   make:
     strategy:
@@ -56,7 +61,7 @@ jobs:
           mkdir -p pkg
           export RUBYC_FILENAME=rubyc-$(uname -s)-$(uname -m)-gha
           export RUBYC_ARCHIVE_FILENAME=${RUBYC_FILENAME}.tar.gz
-          cp rubyc pkg/rubyc-$(uname -s)-$(uname -m)
+          cp rubyc pkg/$RUBYC_FILENAME
           cd pkg
           tar -czvf $RUBYC_ARCHIVE_FILENAME $RUBYC_FILENAME
           echo "RUBYC_FILENAME=$RUBYC_FILENAME" >> $GITHUB_ENV
