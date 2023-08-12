@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2021 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2016-2022 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the OpenSSL license (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -118,6 +118,8 @@ static int use_ecc(SSL *s)
     int i, end, ret = 0;
     unsigned long alg_k, alg_a;
     STACK_OF(SSL_CIPHER) *cipher_stack = NULL;
+    const uint16_t *pgroups = NULL;
+    size_t num_groups, j;
 
     /* See if we support any ECC ciphersuites */
     if (s->version == SSL3_VERSION)
@@ -139,7 +141,19 @@ static int use_ecc(SSL *s)
     }
 
     sk_SSL_CIPHER_free(cipher_stack);
-    return ret;
+    if (!ret)
+        return 0;
+
+    /* Check we have at least one EC supported group */
+    tls1_get_supported_groups(s, &pgroups, &num_groups);
+    for (j = 0; j < num_groups; j++) {
+        uint16_t ctmp = pgroups[j];
+
+        if (tls_curve_allowed(s, ctmp, SSL_SECOP_CURVE_SUPPORTED))
+            return 1;
+    }
+
+    return 0;
 }
 
 EXT_RETURN tls_construct_ctos_ec_pt_formats(SSL *s, WPACKET *pkt,
@@ -1741,7 +1755,9 @@ int tls_parse_stoc_etm(SSL *s, PACKET *pkt, unsigned int context, X509 *x,
     /* Ignore if inappropriate ciphersuite */
     if (!(s->options & SSL_OP_NO_ENCRYPT_THEN_MAC)
             && s->s3->tmp.new_cipher->algorithm_mac != SSL_AEAD
-            && s->s3->tmp.new_cipher->algorithm_enc != SSL_RC4)
+            && s->s3->tmp.new_cipher->algorithm_enc != SSL_RC4
+            && s->s3->tmp.new_cipher->algorithm_enc != SSL_eGOST2814789CNT
+            && s->s3->tmp.new_cipher->algorithm_enc != SSL_eGOST2814789CNT12)
         s->ext.use_etm = 1;
 
     return 1;
@@ -1872,6 +1888,7 @@ int tls_parse_stoc_key_share(SSL *s, PACKET *pkt, unsigned int context, X509 *x,
     if (skey == NULL || EVP_PKEY_copy_parameters(skey, ckey) <= 0) {
         SSLfatal(s, SSL_AD_INTERNAL_ERROR, SSL_F_TLS_PARSE_STOC_KEY_SHARE,
                  ERR_R_MALLOC_FAILURE);
+        EVP_PKEY_free(skey);
         return 0;
     }
     if (!EVP_PKEY_set1_tls_encodedpoint(skey, PACKET_data(&encoded_pt),

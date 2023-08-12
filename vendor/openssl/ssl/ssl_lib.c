@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2021 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2022 The OpenSSL Project Authors. All Rights Reserved.
  * Copyright (c) 2002, Oracle and/or its affiliates. All rights reserved
  * Copyright 2005 Nokia. All rights reserved.
  *
@@ -1684,6 +1684,8 @@ static int ssl_start_async_job(SSL *s, struct ssl_async_args *args,
         if (s->waitctx == NULL)
             return -1;
     }
+
+    s->rwstate = SSL_NOTHING;
     switch (ASYNC_start_job(&s->job, s->waitctx, &ret, func, args,
                             sizeof(struct ssl_async_args))) {
     case ASYNC_ERR:
@@ -2082,6 +2084,7 @@ int SSL_shutdown(SSL *s)
         if ((s->mode & SSL_MODE_ASYNC) && ASYNC_get_current_job() == NULL) {
             struct ssl_async_args args;
 
+            memset(&args, 0, sizeof(args));
             args.s = s;
             args.type = OTHERFUNC;
             args.f.func_other = s->method->ssl_shutdown;
@@ -3707,6 +3710,7 @@ int SSL_do_handshake(SSL *s)
         if ((s->mode & SSL_MODE_ASYNC) && ASYNC_get_current_job() == NULL) {
             struct ssl_async_args args;
 
+            memset(&args, 0, sizeof(args));
             args.s = s;
 
             ret = ssl_start_async_job(s, &args, ssl_do_handshake_intern);
