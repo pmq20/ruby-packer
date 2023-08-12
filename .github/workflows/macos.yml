@@ -59,8 +59,8 @@ jobs:
       - name: "Package rubyc"
         run: |
           mkdir -p pkg
-          RUBYC_FILENAME=rubyc-$(uname -s)-$(uname -m)
-          RUBYC_ARCHIVE_FILENAME=${RUBYC_FILENAME}.tar.gz
+          export RUBYC_FILENAME=rubyc-$(uname -s)-$(uname -m)
+          export RUBYC_ARCHIVE_FILENAME=${RUBYC_FILENAME}.tar.gz
           cp rubyc pkg/rubyc-$(uname -s)-$(uname -m)
           cd pkg
           tar -czvf $RUBYC_FILENAME -c > $RUBYC_ARCHIVE_FILENAME
