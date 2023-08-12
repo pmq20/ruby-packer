@@ -19,8 +19,8 @@ jobs:
       - uses: actions/checkout@v3
       - name: "[Enclose.IO] Install dependencies"
         run: |
-          brew install openssl@1.1
-          brew upgrade
+          # brew install openssl@1.1
+          # brew upgrade
           brew install squashfs automake bison
           brew info bison
           echo "PATH=$(brew --prefix bison)/bin:$PATH" >>$GITHUB_ENV

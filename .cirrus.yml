@@ -6,7 +6,6 @@ env:
   REPO: you54f/ruby-packer
   PKG_DATE: 20230812
   NEXT_TAG: rel-$PKG_DATE
-  GITHUB_TOKEN: ENCRYPTED[0dbc5b1451b523311b9a9987d31c308598ce6ecd0aae8bf3e7b54613e2bfbde050d97845e951bf0153d9c402dc57d6a7]
   PUBLISH_BRANCH: ci_test
 
 INSTALL_GH_CLI: &INSTALL_GH_CLI
@@ -30,6 +29,8 @@ UPLOAD_TASK: &UPLOAD_TASK
     gzip rubyc-$(uname -s)-$(uname -m) -c > rubyc-$(uname -s)-$(uname -m).tar.gz
     ls -l
     if [[ $CIRRUS_BRANCH == $PUBLISH_BRANCH ]]; then
+      export GITHUB_TOKEN=ENCRYPTED[0dbc5b1451b523311b9a9987d31c308598ce6ecd0aae8bf3e7b54613e2bfbde050d97845e951bf0153d9c402dc57d6a7]
+      export GH_TOKEN=$GITHUB_TOKEN
       gh release upload "${NEXT_TAG}" rubyc-$(uname -s)-$(uname -m).tar.gz --repo "${REPO}" --clobber
     else
       echo "Not on $PUBLISH_BRANCH branch, skipping upload"
@@ -114,13 +115,12 @@ macos_arm_task:
     bin/rubyc bin/rubyc -o rubyc --openssl-dir=/opt/homebrew/opt/openssl@1.1
   test_script:
     ./rubyc --help
-  package_script: |
-    mkdir pkg
-    mv rubyc pkg/rubyc-darwin-arm64
-# DYLD_LIBRARY_PATH=/opt/homebrew/opt/openssl@1.1/lib rubyc --help
-  # << : *BUILD_TEST_TASK_TEMPLATE
   <<: *UPLOAD_TASK
   <<: *BINARY_ARTIFACTS
+  # package_script: |
+  #   mkdir pkg
+  #   mv rubyc pkg/rubyc-darwin-arm64
+# DYLD_LIBRARY_PATH=/opt/homebrew/opt/openssl@1.1/lib rubyc --help
 
 task:
   arm_container:
@@ -129,9 +129,12 @@ task:
         docker_arguments:
           - matrix:
               - ARCH: arm64
-              - ARCH: x86_64
   package_script: |
     mkdir pkg
     cp /usr/local/bin/rubyc pkg/rubyc-$(uname -s)-$(uname -m)
-  # <<: *UPLOAD_TASK ## TODO - add gh cli to centos image
-  <<: *BINARY_ARTIFACTS
+  setup_gh_cli_script: |
+    dnf install 'dnf-command(config-manager)'
+    dnf config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo
+    dnf install gh
+  # <<: *UPLOAD_TASK
+  # <<: *BINARY_ARTIFACTS
