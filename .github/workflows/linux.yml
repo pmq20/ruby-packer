@@ -9,7 +9,7 @@ jobs:
   make:
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-20.04]
         ruby: ['3.2']
       fail-fast: false
     runs-on: ${{ matrix.os }}
@@ -18,6 +18,8 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y build-essential squashfs-tools automake libtool bison
+      # - name: Install GCC 9
+      #   run: sudo apt-get update && sudo apt-get install -y gcc-9 g++-9 && sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 90 --slave /usr/bin/g++ g++ /usr/bin/g++-9
       - uses: actions/checkout@v3
       - name: "[Enclose.IO] Check dependencies"
         run: |

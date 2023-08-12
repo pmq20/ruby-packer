@@ -21,7 +21,7 @@ macos_arm_task:
     bin/rubyc bin/rubyc -o rubyc --openssl-dir=/opt/homebrew/opt/openssl@1.1
   test_script:
     ./rubyc --help
-  package_script:
+  package_script: |
     mkdir pkg
     mv rubyc pkg/rubyc-darwin-arm64
 # DYLD_LIBRARY_PATH=/opt/homebrew/opt/openssl@1.1/lib rubyc --help
@@ -37,7 +37,7 @@ task:
           - matrix:
               - ARCH: arm64
               - ARCH: x86_64
-  package_script:
+  package_script: |
     mkdir pkg
     cp /usr/local/bin/rubyc pkg/rubyc-$(uname -s)-$(uname -m)
   binary_artifacts:

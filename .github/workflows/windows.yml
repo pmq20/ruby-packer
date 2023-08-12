@@ -63,7 +63,7 @@ jobs:
       #     mkdir C:\rubyc_tmp
       #     bundle exec rake
       #   shell: cmd
-          - name: "Package rubyc"
+      - name: "Package rubyc"
         run: bin/rubyc bin/rubyc -o rubyc
       - name: "Package rubyc"
         run: |
