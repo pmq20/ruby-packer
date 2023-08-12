@@ -1,3 +1,96 @@
+# ========================================
+# Release Tasks
+# ========================================
+
+env:
+  REPO: you54f/ruby-packer
+  PKG_DATE: 20230812
+  NEXT_TAG: rel-$PKG_DATE
+  GITHUB_TOKEN: ENCRYPTED[0dbc5b1451b523311b9a9987d31c308598ce6ecd0aae8bf3e7b54613e2bfbde050d97845e951bf0153d9c402dc57d6a7]
+  PUBLISH_BRANCH: ci_test
+
+INSTALL_GH_CLI: &INSTALL_GH_CLI
+  install_gh_cli_script: |
+    curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+    && chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+    && apt update \
+    && apt install gh -y
+
+PRE_RELEASE_TASK: &PRE_RELEASE_TASK
+  prerelease_script: |
+    RELEASE_NOTES=$(git log --pretty=format:"%s" $(git describe --tags --abbrev=0)..HEAD)
+    gh release create "${NEXT_TAG}" --prerelease --draft --repo "${REPO}" --title "${NEXT_TAG}" --notes "${RELEASE_NOTES}"
+
+UPLOAD_TASK: &UPLOAD_TASK
+  upload_script: |
+    mkdir pkg
+    mv rubyc pkg/rubyc-$(uname -s)-$(uname -m)
+    cd pkg
+    gzip rubyc-$(uname -s)-$(uname -m) -c > rubyc-$(uname -s)-$(uname -m).tar.gz
+    ls -l
+    if [[ $CIRRUS_BRANCH == $PUBLISH_BRANCH ]]; then
+      gh release upload "${NEXT_TAG}" rubyc-$(uname -s)-$(uname -m).tar.gz --repo "${REPO}" --clobber
+    else
+      echo "Not on $PUBLISH_BRANCH branch, skipping upload"
+    fi
+
+DOWNLOAD_TASK: &DOWNLOAD_TASK
+  download_script: |
+    gh release download  "${NEXT_TAG}" --repo "${REPO}" -p *$PLATFORM-$CIRRUS_ARCH*
+
+BINARY_ARTIFACTS: &BINARY_ARTIFACTS
+  binary_artifacts:
+    path: pkg/*
+    
+## General tasks for GitHub Releases
+## These tasks are used to create a release, upload the binaries
+## and download the binaries for testing
+
+## The available tasks are:
+## prerelease_task: Creates a prerelease
+## release_task: Creates a release
+## upload_task: Uploads the binaries to the release
+## download_task: Downloads the binaries from the release
+
+prerelease_task:
+  only_if: $CIRRUS_CHANGE_TITLE =~ 'ci\(prerelease\).*'
+  macos_instance:
+    image: ghcr.io/cirruslabs/macos-ventura-base:latest
+  env:
+    GH_TOKEN: $GITHUB_TOKEN
+  <<: *PRE_RELEASE_TASK
+
+upload_task:
+  only_if: $CIRRUS_CHANGE_TITLE =~ 'ci\(upload\).*'
+  macos_instance:
+    image: ghcr.io/cirruslabs/macos-ventura-base:latest
+  env:
+    GH_TOKEN: $GITHUB_TOKEN
+  <<: *UPLOAD_TASK
+
+# release_task: 
+#   macos_instance:
+#     image: ghcr.io/cirruslabs/macos-ventura-base:latest
+#   env:
+#     GH_TOKEN: $GITHUB_TOKEN
+#   <<: *RELEASE_TASK
+
+download_task:
+  only_if: $CIRRUS_CHANGE_TITLE =~ 'ci\(download\).*'
+  macos_instance:
+    image: ghcr.io/cirruslabs/macos-ventura-base:latest
+  env:
+    GH_TOKEN: $GITHUB_TOKEN
+  <<: *DOWNLOAD_TASK
+  script: ls
+
+
+# ========================================
+# Builder Tasks
+# ========================================
+
+
 macos_arm_task: 
   macos_instance:
     image: ghcr.io/cirruslabs/macos-ventura-base:latest
@@ -26,8 +119,8 @@ macos_arm_task:
     mv rubyc pkg/rubyc-darwin-arm64
 # DYLD_LIBRARY_PATH=/opt/homebrew/opt/openssl@1.1/lib rubyc --help
   # << : *BUILD_TEST_TASK_TEMPLATE
-  binary_artifacts:
-    path: "pkg/*"
+  <<: *UPLOAD_TASK
+  <<: *BINARY_ARTIFACTS
 
 task:
   arm_container:
@@ -40,5 +133,5 @@ task:
   package_script: |
     mkdir pkg
     cp /usr/local/bin/rubyc pkg/rubyc-$(uname -s)-$(uname -m)
-  binary_artifacts:
-    path: pkg
+  # <<: *UPLOAD_TASK ## TODO - add gh cli to centos image
+  <<: *BINARY_ARTIFACTS
