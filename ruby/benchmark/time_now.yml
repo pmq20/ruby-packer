@@ -1,3 +1,0 @@
-benchmark:
-  - 'Time.now'
-  - 'Time.now(in: "+09:00")'

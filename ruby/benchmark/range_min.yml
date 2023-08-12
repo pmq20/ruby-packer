@@ -1,2 +1,0 @@
-benchmark:
-  - (1..10).min

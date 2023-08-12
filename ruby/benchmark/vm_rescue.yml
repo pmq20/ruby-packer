@@ -1,6 +1,0 @@
-benchmark:
-  vm_rescue: |
-    begin
-    rescue
-    end
-loop_count: 30000000

@@ -1,6 +1,0 @@
-Returns the integer ordinal of the first character of +self+:
-
-  'h'.ord         # => 104
-  'hello'.ord     # => 104
-  'тест'.ord      # => 1090
-  'こんにちは'.ord  # => 12371
