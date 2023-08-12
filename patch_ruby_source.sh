@@ -1,14 +1,7 @@
 #!/usr/bin/env bash
-mv ruby-enclose/dir.c ruby/dir.c
-mv ruby-enclose/dln.c ruby/dln.c
-mv ruby-enclose/file.c ruby/file.c
-mv ruby-enclose/io.c ruby/io.c
-mv ruby-enclose/main.c ruby/main.c
-mv ruby-enclose/process.c ruby/process.c
-mv ruby-enclose/ruby.c ruby/ruby.c
-mv ruby-enclose/util.c ruby/util.c
-mv ruby-enclose/lib/rubygems/path_support.rb ruby/lib/rubygems/path_support.rb
-mv ruby-enclose/tool/mkconfig.rb ruby/tool/mkconfig.rb
-mv ruby-enclose/win32/file.c ruby/win32/file.c
-mv ruby-enclose/win32/win32.c ruby/win32/win32.c
-mv vendor/gdbm/src/gdbmopen.c vendor/gdbm/src/gdbmopen.c
+rm -rf ruby
+./download-ruby-source.sh
+mv ruby-3.2.2 ruby
+git status -s -uno | wc -l | grep -q 62 && echo "successful diff against ruby source" || echo "unexpected diff count" && exit 1
+find ruby-enclose -type f | wc -l | grep -q 62 && echo "successful count against enclose patch" || echo "not enough files to patch" && exit 1
+cp -r ruby-enclose/* ruby
