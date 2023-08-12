@@ -23,8 +23,8 @@ jobs:
           # brew upgrade
           brew install squashfs automake bison
           brew info bison
-          echo "PATH=$(brew --prefix bison)/bin:$PATH" >>$GITHUB_ENV
-          echo "PATH=$(brew --prefix openssl@1.1)/bin:$PATH" >>$GITHUB_ENV
+          echo "$(brew --prefix bison)/bin" >>$GITHUB_PATH
+          echo "$(brew --prefix openssl@1.1)/bin" >>$GITHUB_PATH
       - name: "[Enclose.IO] Check dependencies"
         run: |
           sw_vers

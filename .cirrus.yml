@@ -7,6 +7,7 @@ env:
   PKG_DATE: 20230812
   NEXT_TAG: rel-$PKG_DATE
   PUBLISH_BRANCH: ci_test
+  GITHUB_TOKEN: ENCRYPTED[0dbc5b1451b523311b9a9987d31c308598ce6ecd0aae8bf3e7b54613e2bfbde050d97845e951bf0153d9c402dc57d6a7]
 
 INSTALL_GH_CLI: &INSTALL_GH_CLI
   install_gh_cli_script: |
@@ -23,13 +24,11 @@ PRE_RELEASE_TASK: &PRE_RELEASE_TASK
 
 UPLOAD_TASK: &UPLOAD_TASK
   upload_script: |
-    mkdir pkg
-    mv rubyc pkg/rubyc-$(uname -s)-$(uname -m)
+    mkdir -p pkg
     cd pkg
     gzip rubyc-$(uname -s)-$(uname -m) -c > rubyc-$(uname -s)-$(uname -m).tar.gz
     ls -l
     if [[ $CIRRUS_BRANCH == $PUBLISH_BRANCH ]]; then
-      export GITHUB_TOKEN=ENCRYPTED[0dbc5b1451b523311b9a9987d31c308598ce6ecd0aae8bf3e7b54613e2bfbde050d97845e951bf0153d9c402dc57d6a7]
       export GH_TOKEN=$GITHUB_TOKEN
       gh release upload "${NEXT_TAG}" rubyc-$(uname -s)-$(uname -m).tar.gz --repo "${REPO}" --clobber
     else
@@ -42,7 +41,7 @@ DOWNLOAD_TASK: &DOWNLOAD_TASK
 
 BINARY_ARTIFACTS: &BINARY_ARTIFACTS
   binary_artifacts:
-    path: pkg/*
+    path: pkg/*.tar.gz
     
 ## General tasks for GitHub Releases
 ## These tasks are used to create a release, upload the binaries
@@ -115,6 +114,9 @@ macos_arm_task:
     bin/rubyc bin/rubyc -o rubyc --openssl-dir=/opt/homebrew/opt/openssl@1.1
   test_script:
     ./rubyc --help
+  mv_binary_script: |
+      mkdir -p pkg
+      cp rubyc pkg/rubyc-$(uname -s)-$(uname -m)
   <<: *UPLOAD_TASK
   <<: *BINARY_ARTIFACTS
   # package_script: |
@@ -129,12 +131,18 @@ task:
         docker_arguments:
           - matrix:
               - ARCH: arm64
-  package_script: |
-    mkdir pkg
+              - ARCH: amd64
+  test_script: |
+    rubyc --help
+    rubyc --version
+    rubyc --ruby-version
+    rubyc --ruby-api-version
+  mv_binary_script: |
+    mkdir -p pkg
     cp /usr/local/bin/rubyc pkg/rubyc-$(uname -s)-$(uname -m)
   setup_gh_cli_script: |
-    dnf install 'dnf-command(config-manager)'
-    dnf config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo
-    dnf install gh
-  # <<: *UPLOAD_TASK
-  # <<: *BINARY_ARTIFACTS
+    curl -L https://github.com/cli/cli/releases/download/v2.32.1/gh_2.32.1_linux_$ARCH.tar.gz | tar xz
+    mv gh_2.32.1_linux_$ARCH/bin/gh /usr/local/bin
+    rm -rf gh_2.32.1_linux_$ARCH
+  <<: *UPLOAD_TASK
+  <<: *BINARY_ARTIFACTS
