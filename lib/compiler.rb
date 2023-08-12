@@ -332,10 +332,9 @@ class Compiler
   end
 
   def local_toolchain_clean
-    # Dir["#{@work_dir_inner}/**/*.{a,dylib,so,dll,lib,bundle}"].each do |thisdl|
-    #   @utils.rm_f(thisdl)
-    # end
-
+    Dir["#{@work_dir_inner}/**/*.{a,dylib,so,dll,lib,bundle}"].each do |thisdl|
+      @utils.rm_f(thisdl) unless thisdl.match?(%r{/ruby.*/extensions})
+    end
     return unless Dir.exist?(@work_dir_local)
 
     @utils.chdir(@work_dir_local) do
@@ -847,8 +846,8 @@ class Compiler
       'CI' => 'true',
       'GEM_PATH' => File.join(@ruby_install, 'lib', 'ruby', 'gems', self.class.ruby_api_version),
       # TODO: `fetch': wrong number of arguments (given 0, expected 1..2) (ArgumentError)
-      # 'PATH' => "#{File.join(@ruby_install, 'bin')}:#{ENV.fetch('PATH', nil)}",
-      'PATH' => File.join(@ruby_install, 'bin').to_s,
+      'PATH' => "#{File.join(@ruby_install, 'bin')}:#{ENV.fetch('PATH', nil)}",
+      # 'PATH' => File.join(@ruby_install, 'bin').to_s,
       'ENCLOSE_IO_USE_ORIGINAL_RUBY' => 'true',
       'ENCLOSE_IO_RUBYC_1ST_PASS' => 'true',
       'ENCLOSE_IO_RUBYC_2ND_PASS' => nil
