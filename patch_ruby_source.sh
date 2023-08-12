@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-RUBY_VERSION=3.2.2
+RUBY_VERSION=${RUBY_VERSION:-3.2.2}
 RUBY_MAJOR=`echo $RUBY_VERSION | cut -d . -f 1`
 RUBY_MINOR=`echo $RUBY_VERSION | cut -d . -f 2`
 RUBY_PATCH=`echo $RUBY_VERSION | cut -d . -f 3 | cut -d - -f 1`

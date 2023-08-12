@@ -17,9 +17,6 @@ COPY . .
 # ENV LD_LIBRARY_PATH="/temp/rubyc/local/lib:$LD_LIBRARY_PATH"
 # ENTRYPOINT [ "bin/rubyc" ]
 # CMD [ "bin/rubyc", "-o", "rubyc" ]
-RUN ./patch_ruby_source.sh
-RUN bin/rubyc bin/rubyc -o rubyc
-
 RUN wget https://www.openssl.org/source/openssl-1.1.1o.tar.gz && \
     tar -xvf openssl-1.1.1o.tar.gz && \
     cd openssl-1.1.1o && \
@@ -28,6 +25,9 @@ RUN wget https://www.openssl.org/source/openssl-1.1.1o.tar.gz && \
     make && \
     make test || true && \
     make install
+RUN ./patch_ruby_source.sh
+RUN bin/rubyc bin/rubyc -o rubyc
+
 
 FROM centos:7
 

@@ -47,10 +47,28 @@ jobs:
       #   run: bundle install
       # - name: "[Enclose.IO] Rake"
       #   run: bundle exec rake
-      - name: "Package rubyc"
+      - name: "Build rubyc"
         run: bin/rubyc bin/rubyc -o rubyc
+      - name: "Package rubyc"
+        run: |
+          mkdir -p pkg
+          RUBYC_FILENAME=rubyc-$(uname -s)-$(uname -m)-gha
+          RUBYC_ARCHIVE_FILENAME=${RUBYC_FILENAME}.tar.gz
+          cp rubyc pkg/rubyc-$(uname -s)-$(uname -m)
+          cd pkg
+          gzip $RUBYC_FILENAME -c > $RUBYC_ARCHIVE_FILENAME
+          echo "RUBYC_FILENAME=$RUBYC_FILENAME" >> $GITHUB_ENV
+          echo "RUBYC_ARCHIVE_FILENAME=$RUBYC_ARCHIVE_FILENAME" >> $GITHUB_ENV
+          ls -l
+          if [[ $GITHUB_BRANCH == $PUBLISH_BRANCH ]]; then
+            gh release upload "${NEXT_TAG}" $RUBYC_ARCHIVE_FILENAME --repo "${REPO}" --clobber
+          else
+            echo "Not on $PUBLISH_BRANCH branch, skipping upload"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: "[Enclose.IO] Create Linux Test run upload"
         uses: actions/upload-artifact@v3
         with:
-          name: rubyc-${{ matrix.os }}
-          path: ./rubyc
+          name: ${{ github.env.RUBYC_ARCHIVE_FILENAME }}
+          path: pkg/${{ github.env.RUBYC_ARCHIVE_FILENAME }}

@@ -2,7 +2,11 @@ AllCops:
   NewCops: enable
   Exclude:
     - ruby/**/*
+    - ruby-/**/*
     - vendor/**/*
+    - vendor-enclose/**/*
+    - ruby-enclose/**/*
+    - ruby-enclose-*/**/*
 
 Metrics/AbcSize:
   Enabled: false
