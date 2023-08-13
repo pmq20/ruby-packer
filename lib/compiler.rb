@@ -263,7 +263,7 @@ class Compiler
                  '--prefix', @ruby_install,
                  '--enable-bundled-libyaml',
                  '--without-gmp',
-                #  "--with-openssl-dir=#{@local_build}",
+                 #  "--with-openssl-dir=#{@local_build}",
                  '--disable-dtrace',
                  '--enable-debug-env',
                  '--disable-install-doc')
