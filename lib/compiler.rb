@@ -334,7 +334,7 @@ class Compiler
   def local_toolchain_clean
     log '=> Cleaning local toolchain'
     Dir["#{@work_dir_inner}/**/*.{a,dylib,so,dll,lib,bundle}"].each do |thisdl|
-      log '=> Found extension:' + thisdl
+      log "=> Found extension: + #{thisdl}"
       @utils.rm_f(thisdl) unless thisdl.match?(%r{/ruby.*/extensions})
     end
     return unless Dir.exist?(@work_dir_local)
