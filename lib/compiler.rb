@@ -78,7 +78,7 @@ class Compiler
     if Gem.win_platform?
       'a.exe'
     else
-      [`uname`.delete("\n"), `uname -m`.delete("\n")].join('-')
+      'a.out'
     end
 
   def initialize(entrance, options = {})
@@ -201,7 +201,7 @@ class Compiler
 
     prepare_work_dir unless Dir.exist?(@work_dir)
     ext_setup
-    replace_linked_extensions
+    # replace_linked_extensions
     prepare_work_dir_squashfs unless File.exist?(@work_dir_squashfs)
     prepare_enclose_io_vars
     build_pass2
@@ -212,7 +212,6 @@ class Compiler
 
     ext_path = File.join(PRJ_ROOT, 'ext')
 
-    # if `uname -m`.start_with?('aarch64')
     Dir["#{ext_path}/*.{bundle,so}"].each do |lib|
       filename = lib.split('/').last
       Dir["#{@work_dir}/**/*#{filename}"].sort_by(&:length).reverse.each_with_index do |path, index|
@@ -264,10 +263,10 @@ class Compiler
                  '--prefix', @ruby_install,
                  '--enable-bundled-libyaml',
                  '--without-gmp',
-                 "--with-openssl-dir=#{@local_build}",
+                #  "--with-openssl-dir=#{@local_build}",
                  '--disable-dtrace',
                  '--enable-debug-env',
-                 '--disable-install-rdoc')
+                 '--disable-install-doc')
       @utils.run(compile_pass1_env, "make #{@options[:make_args]}")
       @utils.run(compile_pass1_env, 'make update-gems')
       @utils.run(compile_pass1_env, 'make extract-gems')
@@ -284,7 +283,7 @@ class Compiler
       @utils.run(compile_pass1_env,
                  'call', @ruby_configure,
                  '--target=x64-mswin64',
-                 '--disable-install-rdoc',
+                 '--disable-install-doc',
                  "--with-openssl-dir=#{@local_build}",
                  "--prefix=#{@ruby_install}")
       @utils.run(compile_pass1_env, "nmake #{@options[:nmake_args]}")
@@ -325,6 +324,7 @@ class Compiler
   end
 
   def local_toolchain_merge
+    log '=> Merging local toolchain'
     @utils.rm_rf(File.join(@ruby_install, 'lib', 'ruby', 'gems', self.class.ruby_api_version, 'cache'))
     Dir[File.join(@ruby_install, '*')].each do |path|
       @utils.cp_r(path, @work_dir_inner, preserve: true)
@@ -332,12 +332,15 @@ class Compiler
   end
 
   def local_toolchain_clean
+    log '=> Cleaning local toolchain'
     Dir["#{@work_dir_inner}/**/*.{a,dylib,so,dll,lib,bundle}"].each do |thisdl|
+      log '=> Found extension:' + thisdl
       @utils.rm_f(thisdl) unless thisdl.match?(%r{/ruby.*/extensions})
     end
     return unless Dir.exist?(@work_dir_local)
 
     @utils.chdir(@work_dir_local) do
+      log '=> Cleaning .git'
       # if Dir.exist?('.git')
       #   # log `git status` # removed so user doesnt need git installed
       @utils.rm_rf('.git')
@@ -380,7 +383,7 @@ class Compiler
                  '--without-gmp',
                  '--disable-dtrace',
                  '--enable-debug-env',
-                 '--disable-install-rdoc',
+                 '--disable-install-doc',
                  '--with-static-linked-ext')
       @utils.run(compile_pass2_env, "make #{@options[:make_args]}")
       @utils.cp('ruby', @options[:output])
@@ -679,26 +682,14 @@ class Compiler
       Dir['**/*.m4'].each do |x|
         File.utime(Time.at(0), Time.at(0), x)
       end
-      # ** Regarding -P **
-      # Ncurses fails to build with gcc-5.2.1 in OpenSuSE Leap
-      # https://trac.sagemath.org/ticket/19762
-      # if gem platform is linux add the std=c++14 flag
-      # if Gem::Platform.local.os == 'linux'
-      #   @utils.run(compile_env.merge({ 'CPPFLAGS' => '-P -std=c++14' }),
-      #   './configure',
-      #   '--without-shared',
-      #   '--without-cxx-shared',
-      #   "--prefix=#{@local_build}")
-      #   @utils.run(compile_env.merge({ 'CPPFLAGS' => '-P -std=c++14' }), "make #{@options[:make_args]}")
-      #   @utils.run(compile_env.merge({ 'CPPFLAGS' => '-P -std=c++14' }), 'make install.libs')
-      # elsif Gem::Platform.local.os == 'darwin'
-      @utils.run(compile_env.merge({ 'CPPFLAGS' => '-P' }),
+
+      @utils.run(compile_env,
                  './configure',
                  '--without-shared',
                  '--without-cxx-shared',
                  "--prefix=#{@local_build}")
-      @utils.run(compile_env.merge({ 'CPPFLAGS' => '-P' }), "make #{@options[:make_args]}")
-      @utils.run(compile_env.merge({ 'CPPFLAGS' => '-P' }), 'make install.libs')
+      @utils.run(compile_env, "make #{@options[:make_args]}")
+      @utils.run(compile_env, 'make install.libs')
       # end
     end
   end
@@ -805,7 +796,7 @@ class Compiler
 
       @cflags += " -I#{@utils.escape @ruby_source_dir} "
       @cflags += " -I#{@utils.escape File.join(@local_build, 'include')} "
-      @cflags += " -I#{@utils.escape File.join(lib, 'libffi-3.4.2', 'include')} "
+      @cflags += " -I#{@utils.escape File.join(lib, 'libffi-3.4.4', 'include')} "
     end
   end
 
@@ -845,7 +836,6 @@ class Compiler
     {
       'CI' => 'true',
       'GEM_PATH' => File.join(@ruby_install, 'lib', 'ruby', 'gems', self.class.ruby_api_version),
-      # TODO: `fetch': wrong number of arguments (given 0, expected 1..2) (ArgumentError)
       'PATH' => "#{File.join(@ruby_install, 'bin')}:#{ENV.fetch('PATH', nil)}",
       # 'PATH' => File.join(@ruby_install, 'bin').to_s,
       'ENCLOSE_IO_USE_ORIGINAL_RUBY' => 'true',

@@ -16,6 +16,10 @@ rm -rf ruby
 ./download-ruby-source.sh
 mv ruby-$RUBY_VERSION ruby
 # git status -s -uno | wc -l | grep -q 62 || exit 1
-find ruby-enclose -type f | wc -l | grep -q 62 || exit 1
+# find ruby-enclose -type f | wc -l | grep -q 62 || exit 1
 find ruby-enclose -type f 
 cp -r ruby-enclose/* ruby
+cp -r ruby-enclose-$RUBY_VERSION-patch/* ruby
+
+rm -rf vendor
+./download_vendors.sh

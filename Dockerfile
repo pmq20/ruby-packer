@@ -1,5 +1,5 @@
 FROM you54f/traveling-ruby-builder:latest AS rubyc_builder
-RUN yum -y update && yum install -y squashfs-tools bison texinfo
+RUN yum -y update && yum install -y squashfs-tools bison texinfo perl-IPC-Cmd
 RUN cat /etc/issue && \
           uname -a && \
           uname -p && \
@@ -14,21 +14,9 @@ RUN ruby --version
 RUN bundler --version
 WORKDIR /app
 COPY . .
-# ENV LD_LIBRARY_PATH="/temp/rubyc/local/lib:$LD_LIBRARY_PATH"
-# ENTRYPOINT [ "bin/rubyc" ]
-# CMD [ "bin/rubyc", "-o", "rubyc" ]
-RUN wget https://www.openssl.org/source/openssl-1.1.1o.tar.gz && \
-    tar -xvf openssl-1.1.1o.tar.gz && \
-    cd openssl-1.1.1o && \
-    # ./config --prefix=/usr/local/ssl --openssldir=/usr/local/ssl shared zlib && \
-    ./config && \
-    make && \
-    make test || true && \
-    make install
 RUN ./patch_ruby_source.sh
 RUN bin/rubyc bin/rubyc -o rubyc
-
-
+RUN LD_LIBRARY_PATH=/tmp/rubyc/local/lib:$LD_LIBRARY_PATH ./rubyc --help
 FROM centos:7
 
 COPY --from=rubyc_builder /app/rubyc /usr/local/bin/rubyc
@@ -37,3 +25,8 @@ COPY --from=rubyc_builder /tmp/rubyc/local/lib/libcrypto.so.1.1 /usr/lib64/libcr
 
 ENTRYPOINT [ "rubyc" ]
 CMD [ "--help" ]
+
+# perl-IPC-Cmd is needed for rubyc to work compiling with openssl 3.0.x
+# https://dev.to/nikolastojilj12/update-openssl-to-3-0-on-centos7-150o
+# https://bugs.ruby-lang.org/issues/18658
+# https://gist.github.com/yob/08d53a003181aa0fcce9812b1b533870
