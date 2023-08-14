@@ -1,0 +1,9 @@
+port: 9292
+log_stream: stdout
+log_level: info
+basic_auth_enabled: false # set to true to enable the user below
+basic_auth_username: "user"
+basic_auth_password: "pass"
+basic_auth_read_only_username: "rouser"
+basic_auth_read_only_password: "ropass"
+database_url: sqlite:////tmp/pact_broker.sqlite3
