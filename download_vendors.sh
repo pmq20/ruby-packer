@@ -19,8 +19,8 @@ LIBYAML_VERSION=0.2.5 # Latest to date of 0.2.x
 # https://www.openssl.org/source/
 # OPENSSL_VERSION=1.1.1g # Original version as of pmq20 source
 # OPENSSL_VERSION=1.1.1v # Latest to date of 1.1.x
-# OPENSSL_VERSION=3.0.10 # Latest to date of 3.0.x
-OPENSSL_VERSION=3.1.2 # Latest to date of 3.1.x
+OPENSSL_VERSION=3.0.10 # Latest to date of 3.0.x
+# OPENSSL_VERSION=3.1.2 # Latest to date of 3.1.x
 
 # https://ftp.gnu.org/gnu/ncurses/
 # NCURSES_VERSION=6.0 # Original version as of pmq20 source
@@ -33,6 +33,8 @@ ZLIB_VERSION=1.2.13 # Latest to date of 1.2.x
 # https://ftp.gnu.org/gnu/readline/
 # READLINE_VERSION=7.0 # Original version as of pmq20 source
 READLINE_VERSION=8.2 # Latest to date of 8.x
+
+SQLITE3_VERSION=3420000
 
 RUNTIME_DIR=vendor
 mkdir -p $RUNTIME_DIR
@@ -75,3 +77,9 @@ download_and_extract vendor readline readline-$READLINE_VERSION https://ftp.gnu.
 
 rm -rf "vendor/gdbm"
 download_and_extract vendor gdbm gdbm-$LIBGDBM_VERSION https://ftp.gnu.org/gnu/gdbm/gdbm-$LIBGDBM_VERSION.tar.gz
+
+rm -rf "vendor/gdbm"
+download_and_extract vendor gdbm gdbm-$LIBGDBM_VERSION https://ftp.gnu.org/gnu/gdbm/gdbm-$LIBGDBM_VERSION.tar.gz
+
+rm -rf "vendor/sqlite"
+download_and_extract vendor sqlite3 sqlite-autoconf-$SQLITE3_VERSION https://www.sqlite.org/2023/sqlite-autoconf-$SQLITE3_VERSION.tar.gz
