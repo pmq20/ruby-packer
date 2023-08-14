@@ -1,0 +1,16 @@
+# Rakefile
+Dockerfile
+AUTHORS
+LICENSE
+NOTES.md
+README.md
+rakelib
+test
+tmp
+ruby-enclose
+vendor-enclose
+ruby-enclose-3.2.2-patch
+download-ruby-source.sh
+download_vendors.sh
+move_enclose_hacks_from_src.sh
+patch_ruby_source.sh
