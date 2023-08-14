@@ -9,7 +9,7 @@ env:
   REPO: you54f/ruby-packer
   PKG_DATE: 20230812
   NEXT_TAG: rel-20230812
-  PUBLISH_BRANCH: ci_test
+  PUBLISH_BRANCH: next
 jobs:
   make:
     strategy:
@@ -67,15 +67,37 @@ jobs:
           echo "RUBYC_FILENAME=$RUBYC_FILENAME" >> $GITHUB_ENV
           echo "RUBYC_ARCHIVE_FILENAME=$RUBYC_ARCHIVE_FILENAME" >> $GITHUB_ENV
           ls -l
-          if [[ $GITHUB_REF == "refs/heads/$PUBLISH_BRANCH" ]]; then
-            gh release upload "${NEXT_TAG}" $RUBYC_ARCHIVE_FILENAME --repo "${REPO}" --clobber
-          else
-            echo "Not on $PUBLISH_BRANCH branch, skipping upload"
-          fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: "[Enclose.IO] Create MacOS Test run upload"
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ github.env.RUBYC_FILENAME }}
-          path: pkg/${{ github.env.RUBYC_FILENAME }}
+          name: ${{ github.env.RUBYC_ARCHIVE_FILENAME }}
+          path: pkg/${{ github.env.RUBYC_ARCHIVE_FILENAME }}
+
+  upload:
+    defaults:
+      run:
+        shell: sh
+    needs: [make]
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ["macos-latest"]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v3
+    - name: Download all workflow run artifacts
+      uses: actions/download-artifact@v3
+    - name: test ${{ matrix.os }} package
+      run: |
+        export RUBYC_FILENAME=rubyc-$(uname -s)-$(uname -m)
+        export RUBYC_ARCHIVE_FILENAME=${RUBYC_FILENAME}.tar.gz
+        ls
+        if [[ $GITHUB_REF == "refs/heads/$PUBLISH_BRANCH" ]]; then
+        gh release upload $NEXT_TAG $RUBYC_ARCHIVE_FILENAME --repo $REPO --clobber
+        else
+          echo "Not on $PUBLISH_BRANCH branch, skipping upload"
+        fi
+      env: # note move publishing to a seperate job, token doesnt have perms for release upload
+        GITHUB_TOKEN: ${{ github.token }}
