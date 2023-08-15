@@ -37,8 +37,14 @@ Examples
   Compiling a Rails application:
     rails new yours
     cd yours
+    remove bootsnap from the Gemfile
+    comment out the line require 'bootsnap/setup' from config/boot.rb
+    bundle install
     rubyc bin/rails
-    ./a.out server (or a.exe server on Windows)
+    ./a.out server -e production (or a.exe server on Windows)
+
+    Note: Fails to compile? See https://github.com/pmq20/ruby-packer/issues/30
+
 }.strip
 
 options = {}
