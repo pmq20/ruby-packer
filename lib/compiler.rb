@@ -110,7 +110,7 @@ class Compiler
               elsif @options[:debug]
                 ' -DRUBY_DEBUG -fPIC -g -O0 -pipe '
               else
-                ' -DRUBY_DEBUG -fPIC -O3 -fno-fast-math -ggdb3 -Os -fdata-sections -ffunction-sections -pipe -Wno-error=implicit-function-declaration '
+                ' -fPIC -O3 -fno-fast-math -ggdb3 -Os -fdata-sections -ffunction-sections -pipe '
               end
 
     # install prefix for stuffed libraries
@@ -124,7 +124,6 @@ class Compiler
     @ruby_install_bin = File.join(@ruby_install, 'bin')
     @gem = File.join(@ruby_install_bin, 'gem')
     @bundle = File.join(@ruby_install_bin, 'bundle')
-
     # pass2 paths
     @work_dir = File.join(@options[:tmpdir], 'rubyc_work_dir')
     @work_dir_inner = File.join(@work_dir, '__enclose_io_memfs__')
@@ -193,6 +192,7 @@ class Compiler
     stuff_libffi
     stuff_ncurses
     stuff_readline
+    stuff_sqlite3
     prepare_pass1_flags
     patch_common_mk
     patch_win32_makefile_sub if Gem.win_platform?
@@ -263,7 +263,6 @@ class Compiler
                  '--prefix', @ruby_install,
                  '--enable-bundled-libyaml',
                  '--without-gmp',
-                 #  "--with-openssl-dir=#{@local_build}",
                  '--disable-dtrace',
                  '--enable-debug-env',
                  '--disable-install-doc')
@@ -306,9 +305,9 @@ class Compiler
 
     @utils.chdir(@work_dir_local) do
       log '=> gem env'
-      @utils.run local_toolchain_env, @gem, 'env'
-      @utils.run local_toolchain_env, @bundle, 'env'
-      @utils.run(local_toolchain_env, @bundle, 'install')
+      @utils.run_allow_failures(local_toolchain_env, @gem, 'env')
+      @utils.run_allow_failures(local_toolchain_env, @bundle, 'env')
+      @utils.run_allow_failures(local_toolchain_env, @bundle, 'install')
       # detect Rails
       if @utils.run_allow_failures(local_toolchain_env, @bundle, 'show', 'rails').exitstatus.zero?
         log '=> Detected a Rails project'
@@ -333,18 +332,19 @@ class Compiler
 
   def local_toolchain_clean
     log '=> Cleaning local toolchain'
-    Dir["#{@work_dir_inner}/**/*.{a,dylib,so,dll,lib,bundle}"].each do |thisdl|
-      log "=> Found extension: + #{thisdl}"
-      @utils.rm_f(thisdl) unless thisdl.match?(%r{/ruby.*/extensions})
-    end
+    # These don't look to have been used in the source before
+
+    # @utils.copy_static_libs(@local_build, File.join(@work_dir_inner, 'lib'))
+    # @utils.remove_dynamic_libs(File.join(@work_dir_inner, 'lib'))
+
+    # Dir["#{@work_dir_inner}/**/*.{a,dylib,so,dll,lib,bundle}"].each do |thisdl|
+    #   log "=> Found extension: + #{thisdl}"
+    #   @utils.rm_f(thisdl) unless thisdl.match?(%r{/ruby.*/extensions})
+    # end
     return unless Dir.exist?(@work_dir_local)
 
     @utils.chdir(@work_dir_local) do
-      log '=> Cleaning .git'
-      # if Dir.exist?('.git')
-      #   # log `git status` # removed so user doesnt need git installed
       @utils.rm_rf('.git')
-      # end
       if File.exist?('a.exe')
         log `dir a.exe`
         @utils.rm_rf('a.exe')
@@ -573,10 +573,10 @@ class Compiler
         @utils.run(compile_env,
                    './Configure',
                    'darwin64-arm64-cc',
-                   'shared',
-                   'enable-rc5',
-                   'zlib',
-                   'no-asm',
+                   'no-shared',
+                   #  'enable-rc5',
+                   #  'zlib',
+                   #  'no-asm',
                    "--openssldir=#{@options[:openssl_dir]}",
                    "--prefix=#{@local_build}")
         @utils.run(compile_env, "make #{@options[:nmake_args]}")
@@ -586,7 +586,7 @@ class Compiler
                    'perl',
                    'Configure',
                    'linux-aarch64',
-                   'shared',
+                   'no-shared',
                    "--openssldir=#{@options[:openssl_dir]}",
                    "--prefix=#{@local_build}")
         @utils.run(compile_env, "make #{@options[:nmake_args]}")
@@ -682,7 +682,6 @@ class Compiler
       Dir['**/*.m4'].each do |x|
         File.utime(Time.at(0), Time.at(0), x)
       end
-
       @utils.run(compile_env,
                  './configure',
                  '--without-shared',
@@ -690,7 +689,6 @@ class Compiler
                  "--prefix=#{@local_build}")
       @utils.run(compile_env, "make #{@options[:make_args]}")
       @utils.run(compile_env, 'make install.libs')
-      # end
     end
   end
 
@@ -708,6 +706,28 @@ class Compiler
       @utils.run(compile_env,
                  './configure',
                  '--disable-shared',
+                 '--enable-static',
+                 "--prefix=#{@local_build}")
+      @utils.run(compile_env, "make #{@options[:make_args]}")
+      @utils.run(compile_env, 'make install')
+    end
+  end
+
+  def stuff_sqlite3
+    return if Gem.win_platform? # TODO
+
+    stuff 'sqlite3' do
+      Dir['**/configure.ac'].each do |x|
+        File.utime(Time.at(0), Time.at(0), x)
+      end
+      Dir['**/*.m4'].each do |x|
+        File.utime(Time.at(0), Time.at(0), x)
+      end
+
+      @utils.run(compile_env,
+                 './configure',
+                 '--disable-shared',
+                 '--disable-dynamic-extension',
                  '--enable-static',
                  "--prefix=#{@local_build}")
       @utils.run(compile_env, "make #{@options[:make_args]}")
@@ -837,7 +857,6 @@ class Compiler
       'CI' => 'true',
       'GEM_PATH' => File.join(@ruby_install, 'lib', 'ruby', 'gems', self.class.ruby_api_version),
       'PATH' => "#{File.join(@ruby_install, 'bin')}:#{ENV.fetch('PATH', nil)}",
-      # 'PATH' => File.join(@ruby_install, 'bin').to_s,
       'ENCLOSE_IO_USE_ORIGINAL_RUBY' => 'true',
       'ENCLOSE_IO_RUBYC_1ST_PASS' => 'true',
       'ENCLOSE_IO_RUBYC_2ND_PASS' => nil
