@@ -53,9 +53,9 @@ jobs:
       # - name: "[Enclose.IO] Rake"
       #   run: bundle exec rake
       - name: "Download and Patch ruby source"
-        run: ./patch_ruby_source.sh
+        run: bundle exec rake patch_ruby_source
       - name: "Build rubyc"
-        run: bin/rubyc bin/rubyc -o rubyc
+        run: bundle exec rake rubyc
       - name: "Package rubyc"
         run: |
           mkdir -p pkg

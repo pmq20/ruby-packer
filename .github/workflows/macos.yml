@@ -51,11 +51,11 @@ jobs:
       # - name: "[Enclose.IO] Rake"
       #   run: bundle exec rake
       - name: "Download and Patch ruby source"
-        run: ./patch_ruby_source.sh
-      - name: "Unlink openssl" # this is unlinked after downloading the patch as curl needs openssl@3
-        run: brew unlink openssl
+        run: bundle exec rake patch_ruby_source
+      # - name: "Unlink openssl" # this is unlinked after downloading the patch as curl needs openssl@3
+      #   run: brew unlink openssl
       - name: "Build rubyc"
-        run: bin/rubyc bin/rubyc -o rubyc --openssl-dir=$(brew --prefix openssl@1.1)
+        run: bundle exec rake rubyc
       - name: "Package rubyc"
         run: |
           mkdir -p pkg
