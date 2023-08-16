@@ -16,10 +16,9 @@ gem 'pact-ffi', '0.0.3'
 gem 'sucker_punch', git: 'https://github.com/pact-foundation/sucker_punch.git', ref: 'fix/rename-is-singleton-class-method-2'
 
 ## Native extension gems
-gem 'pg', '1.5.3'
-gem 'puma', '6.3.0'
-gem 'sequel', '~> 5.71'
-gem 'sqlite3', '1.6.3'
-# gem "nokogiri", "1.15.3"
+gem 'nokogiri', '1.15.3', force_ruby_platform: true
+gem 'pg', '1.5.3', force_ruby_platform: true
+gem 'puma', '6.3.0', force_ruby_platform: true
+gem 'sqlite3', '1.6.3', force_ruby_platform: true
 # gem "racc", "1.7.1"
 # gem "ffi", "1.15.5"

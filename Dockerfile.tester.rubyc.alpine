@@ -1,0 +1,42 @@
+FROM alpine:3.13
+RUN wget -O - https://github.com/YOU54F/ruby-packer/releases/download/rel-20230812/rubyc_aarch64_alpine.gz | \
+            gunzip > rubyc && \
+            chmod +x rubyc && mv rubyc /usr/local/bin/rubyc
+RUN rubyc --version
+ENTRYPOINT ["rubyc"]
+CMD ["--help"]
+FROM alpine:3.14
+RUN wget -O - https://github.com/YOU54F/ruby-packer/releases/download/rel-20230812/rubyc_aarch64_alpine.gz | \
+            gunzip > rubyc && \
+            chmod +x rubyc && mv rubyc /usr/local/bin/rubyc
+RUN rubyc --version
+ENTRYPOINT ["rubyc"]
+CMD ["--help"]
+FROM alpine:3.15
+RUN wget -O - https://github.com/YOU54F/ruby-packer/releases/download/rel-20230812/rubyc_aarch64_alpine.gz | \
+            gunzip > rubyc && \
+            chmod +x rubyc && mv rubyc /usr/local/bin/rubyc
+RUN rubyc --version
+ENTRYPOINT ["rubyc"]
+CMD ["--help"]
+FROM alpine:3.16
+RUN wget -O - https://github.com/YOU54F/ruby-packer/releases/download/rel-20230812/rubyc_aarch64_alpine.gz | \
+            gunzip > rubyc && \
+            chmod +x rubyc && mv rubyc /usr/local/bin/rubyc
+RUN rubyc --version
+ENTRYPOINT ["rubyc"]
+CMD ["--help"]
+FROM alpine:3.17
+RUN wget -O - https://github.com/YOU54F/ruby-packer/releases/download/rel-20230812/rubyc_aarch64_alpine.gz | \
+            gunzip > rubyc && \
+            chmod +x rubyc && mv rubyc /usr/local/bin/rubyc
+RUN rubyc --version
+ENTRYPOINT ["rubyc"]
+CMD ["--help"]
+FROM alpine:3.18
+RUN wget -O - https://github.com/YOU54F/ruby-packer/releases/download/rel-20230812/rubyc_aarch64_alpine.gz | \
+            gunzip > rubyc && \
+            chmod +x rubyc && mv rubyc /usr/local/bin/rubyc
+RUN rubyc --version
+ENTRYPOINT ["rubyc"]
+CMD ["--help"]

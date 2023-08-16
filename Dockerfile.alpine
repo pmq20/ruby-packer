@@ -1,0 +1,84 @@
+FROM alpine:3.13 as stage1
+
+RUN apk add --no-cache \
+    build-base \
+    openssl-dev \
+    readline-dev \
+    zlib-dev \
+    yaml-dev \
+    libffi-dev \
+    gdbm-dev \
+    ncurses-dev \
+    procps \
+    wget \
+    tar \
+    squashfs-tools
+
+RUN wget https://cache.ruby-lang.org/pub/ruby/3.2/ruby-3.2.2.tar.gz && \
+    tar -xzvf ruby-3.2.2.tar.gz && \
+    cd ruby-3.2.2 && \
+    OPENSSL_DIR=$(pkg-config --variable=prefix openssl) ./configure \
+    --disable-shared \
+    --enable-static \
+    --prefix=/usr/local/ruby-3.2.2 \
+    --with-openssl-dir=$(pkg-config --variable=prefix openssl) && \
+    make && \
+    make install
+
+ENV PATH="/usr/local/ruby-3.2.2/bin:$PATH"
+RUN ruby -v
+
+RUN mkdir /app
+WORKDIR /app
+RUN ls /usr/local
+RUN apk add --no-cache git    mariadb-dev \
+    postgresql-dev \
+    sqlite-dev
+COPY ruby-enclose ./ruby-enclose
+# COPY vendor-enclose ./vendor-enclose
+COPY ruby-enclose-3.2.2-patch ./ruby-enclose-3.2.2-patch
+COPY examples/pact ./pact
+COPY bin ./bin
+COPY lib ./lib
+COPY rakelib ./rakelib
+COPY Gemfile .
+COPY Rakefile .
+COPY test ./test
+RUN bundle install
+RUN bundle exec rake patch_ruby_source
+RUN apk add --no-cache autoconf
+RUN bundle exec rake rubyc
+
+
+## Test Rubyc across various Alpine versions
+
+FROM alpine:3.13
+COPY --from=stage1 /app/rubyc /usr/local/bin/rubyc
+RUN rubyc --help
+ENTRYPOINT ["rubyc"]
+CMD ["--help"]
+FROM alpine:3.14
+COPY --from=stage1 /app/rubyc /usr/local/bin/rubyc
+RUN rubyc --help
+ENTRYPOINT ["rubyc"]
+CMD ["--help"]
+FROM alpine:3.15
+COPY --from=stage1 /app/rubyc /usr/local/bin/rubyc
+RUN rubyc --help
+ENTRYPOINT ["rubyc"]
+CMD ["--help"]
+FROM alpine:3.16
+COPY --from=stage1 /app/rubyc /usr/local/bin/rubyc
+RUN rubyc --help
+ENTRYPOINT ["rubyc"]
+CMD ["--help"]
+FROM alpine:3.17
+COPY --from=stage1 /app/rubyc /usr/local/bin/rubyc
+RUN rubyc --help
+ENTRYPOINT ["rubyc"]
+CMD ["--help"]
+FROM alpine:3.18
+COPY --from=stage1 /app/rubyc /usr/local/bin/rubyc
+RUN rubyc --help
+ENTRYPOINT ["rubyc"]
+CMD ["--help"]

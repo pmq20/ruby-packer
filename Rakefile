@@ -77,6 +77,11 @@ task patch_ruby_source: %i[download_ruby_source download_vendors] do
     puts 'Copying Ruby patch'
     FileUtils.cp_r('.', '../ruby')
   end
+
+  Dir.chdir('vendor-enclose') do
+    puts 'Copying vendor patchees'
+    FileUtils.cp_r('.', '../vendor')
+  end
 end
 
 desc 'Download and extract the Ruby source code'

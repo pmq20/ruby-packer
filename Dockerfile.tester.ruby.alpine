@@ -1,0 +1,42 @@
+FROM alpine:3.13
+RUN wget -O - https://github.com/YOU54F/ruby-packer/releases/download/rel-20230812/ruby_compiled_aarch64_alpine.gz | \
+            gunzip > ruby && \
+            chmod +x ruby && mv ruby /usr/local/bin/ruby
+RUN ruby --version
+ENTRYPOINT ["ruby"]
+CMD ["--version"]
+FROM alpine:3.14
+RUN wget -O - https://github.com/YOU54F/ruby-packer/releases/download/rel-20230812/ruby_compiled_aarch64_alpine.gz | \
+            gunzip > ruby && \
+            chmod +x ruby && mv ruby /usr/local/bin/ruby
+RUN ruby --version
+ENTRYPOINT ["ruby"]
+CMD ["--version"]
+FROM alpine:3.15
+RUN wget -O - https://github.com/YOU54F/ruby-packer/releases/download/rel-20230812/ruby_compiled_aarch64_alpine.gz | \
+            gunzip > ruby && \
+            chmod +x ruby && mv ruby /usr/local/bin/ruby
+RUN ruby --version
+ENTRYPOINT ["ruby"]
+CMD ["--version"]
+FROM alpine:3.16
+RUN wget -O - https://github.com/YOU54F/ruby-packer/releases/download/rel-20230812/ruby_compiled_aarch64_alpine.gz | \
+            gunzip > ruby && \
+            chmod +x ruby && mv ruby /usr/local/bin/ruby
+RUN ruby --version
+ENTRYPOINT ["ruby"]
+CMD ["--version"]
+FROM alpine:3.17
+RUN wget -O - https://github.com/YOU54F/ruby-packer/releases/download/rel-20230812/ruby_compiled_aarch64_alpine.gz | \
+            gunzip > ruby && \
+            chmod +x ruby && mv ruby /usr/local/bin/ruby
+RUN ruby --version
+ENTRYPOINT ["ruby"]
+CMD ["--version"]
+FROM alpine:3.18
+RUN wget -O - https://github.com/YOU54F/ruby-packer/releases/download/rel-20230812/ruby_compiled_aarch64_alpine.gz | \
+            gunzip > ruby && \
+            chmod +x ruby && mv ruby /usr/local/bin/ruby
+RUN ruby --version
+ENTRYPOINT ["ruby"]
+CMD ["--version"]

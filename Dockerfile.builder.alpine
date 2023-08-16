@@ -1,0 +1,63 @@
+FROM alpine:3.13 as stage1
+
+RUN apk add --no-cache \
+    build-base \
+    openssl-dev \
+    readline-dev \
+    zlib-dev \
+    yaml-dev \
+    libffi-dev \
+    gdbm-dev \
+    ncurses-dev \
+    procps \
+    wget \
+    tar \
+    squashfs-tools
+
+RUN wget https://cache.ruby-lang.org/pub/ruby/3.2/ruby-3.2.2.tar.gz && \
+    tar -xzvf ruby-3.2.2.tar.gz && \
+    cd ruby-3.2.2 && \
+    OPENSSL_DIR=$(pkg-config --variable=prefix openssl) ./configure \
+    --disable-shared \
+    --enable-static \
+    --prefix=/usr/local/ruby-3.2.2 \
+    --with-openssl-dir=$(pkg-config --variable=prefix openssl) && \
+    make && \
+    make install
+
+ENV PATH="/usr/local/ruby-3.2.2/bin:$PATH"
+RUN ruby -v
+
+RUN mkdir /app
+WORKDIR /app
+RUN ls /usr/local
+RUN apk add --no-cache git    mariadb-dev \
+    postgresql-dev \
+    sqlite-dev
+COPY examples/pact ./
+
+RUN bundle lock --add-platform aarch64-linux-musl && \
+        bundle install --deployment --without development test --path /usr/local/ruby-3.2.2
+RUN bundle exec pact-mock-service help
+COPY ./ /usr/local/ruby-3.2.2/app
+RUN tar -czvf ruby-3.2.2.tar.gz /usr/local/ruby-3.2.2
+RUN mksquashfs /usr/local/ruby-3.2.2 /app/ruby.sqfs
+# RUN bundle install --deployment --without development test
+
+
+CMD ["irb"]
+
+FROM alpine:3.13 as tester
+RUN apk add --no-cache \
+    squashfs-tools
+WORKDIR /app
+# COPY --from=stage1 /usr/local/ruby-3.2.2 /usr/local/ruby-3.2.2
+COPY --from=stage1 /app/ruby.sqfs /app/ruby.sqfs 
+RUN unsquashfs ruby.sqfs
+RUN ls squashfs-root
+ENV PATH="/app/squashfs-root/bin:$PATH"
+RUN ruby -v
+
+# COPY my_script.rb ./
+ENTRYPOINT ["ruby"]
+CMD ["--help"]

@@ -1,0 +1,66 @@
+FROM alpine:3.17 as stage1 
+# open ssl 3.0 support only added in linux 3.17 onwards https://debugpointnews.com/alpine-linux-3-17/
+
+RUN apk add --no-cache \
+    build-base \
+    openssl-dev \
+    readline-dev \
+    zlib-dev \
+    yaml-dev \
+    libffi-dev \
+    gdbm-dev \
+    ncurses-dev \
+    procps \
+    wget \
+    tar \
+    squashfs-tools \
+    git \
+    mariadb-dev \
+    postgresql-dev \
+    sqlite sqlite-dev sqlite-libs \
+    autoconf
+    # gcompat  # only required for pact broker due to nokogiri
+
+RUN wget https://cache.ruby-lang.org/pub/ruby/3.2/ruby-3.2.2.tar.gz && \
+    tar -xzvf ruby-3.2.2.tar.gz && \
+    cd ruby-3.2.2 && \
+    OPENSSL_DIR=$(pkg-config --variable=prefix openssl) ./configure \
+    --disable-shared \
+    --enable-static \
+    --prefix=/usr/local/ruby-3.2.2 \
+    --with-openssl-dir=$(pkg-config --variable=prefix openssl) && \
+    make && \
+    make install
+ENV PATH="/usr/local/ruby-3.2.2/bin:$PATH"
+RUN ruby -v
+WORKDIR /rubyc_wrkdir
+
+
+# RUN wget -O - https://github.com/YOU54F/ruby-packer/releases/download/rel-20230812/rubyc_aarch64_alpine.gz | \
+#             gunzip > rubyc && \
+#             chmod +x rubyc && mv rubyc /usr/local/bin/rubyc
+
+COPY ruby-enclose ./ruby-enclose
+COPY vendor-enclose ./vendor-enclose
+COPY ruby-enclose-3.2.2-patch ./ruby-enclose-3.2.2-patch
+COPY bin ./bin
+COPY lib ./lib
+COPY rakelib ./rakelib
+COPY Gemfile .
+COPY Rakefile .
+COPY test ./test
+RUN bundle install
+RUN bundle exec rake patch_ruby_source
+RUN bundle exec rake rubyc
+RUN rubyc --version
+RUN mv rubyc /usr/local/bin/rubyc
+WORKDIR /app
+
+COPY examples/pact .
+RUN bundle lock --add-platform aarch64-linux-musl && bundle install
+RUN bundle exec pact-mock-service help
+RUN ruby pact-cli.rb
+RUN rubyc pact-cli.rb -o pact-cli
+RUN mv /app/pact-cli /usr/local/bin/pact-cli
+ENTRYPOINT [ "pact-cli" ]
+CMD [ "--help" ]

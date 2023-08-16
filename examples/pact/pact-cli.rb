@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 require 'rubygems'
-require 'bundler/setup'
+# require 'bundler/setup'
 
 # Gem.use_gemdeps
 INTERNAL_APP = ARGV[0].to_s

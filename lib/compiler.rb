@@ -307,7 +307,8 @@ class Compiler
       log '=> gem env'
       @utils.run_allow_failures(local_toolchain_env, @gem, 'env')
       @utils.run_allow_failures(local_toolchain_env, @bundle, 'env')
-      @utils.run_allow_failures(local_toolchain_env, @bundle, 'install')
+      # @utils.run_allow_failures(local_toolchain_env, @bundle, 'install') # This should be user configurable, whether to include or not
+      @utils.run(local_toolchain_env, @bundle, 'install', '--without', 'development', 'test')
       # detect Rails
       if @utils.run_allow_failures(local_toolchain_env, @bundle, 'show', 'rails').exitstatus.zero?
         log '=> Detected a Rails project'
