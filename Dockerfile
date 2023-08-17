@@ -1,5 +1,5 @@
 FROM you54f/traveling-ruby-builder:latest AS rubyc_builder
-RUN yum -y update && yum install -y squashfs-tools bison texinfo
+RUN yum -y update && yum install -y squashfs-tools bison texinfo perl-IPC-Cmd
 RUN cat /etc/issue && \
           uname -a && \
           uname -p && \
@@ -15,6 +15,8 @@ RUN bundler --version
 WORKDIR /app
 COPY . .
 RUN bundle install
+ARG OPEN_SSL_VERSION=1.1.1v
+ENV OPEN_SSL_VERSION=$OPEN_SSL_VERSION
 RUN bundle exec rake patch_ruby_source 
 RUN bundle exec rake rubyc
 # RUN bin/rubyc bin/rubyc -o rubyc

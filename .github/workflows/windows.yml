@@ -1,9 +1,9 @@
 name: Windows
 on:
   push:
-    branches: [ master ]
+    branches: [ master, ci_test ]
   pull_request:
-    branches: [ master ]
+    branches: [ master, ci_test  ]
   workflow_dispatch:
 jobs:
   make:
@@ -12,6 +12,7 @@ jobs:
         # ruby: ['2.4','2.6','2.7', '3.0', '3.1', '3.2']
         ruby: ['3.2']
         vs: [2019]
+        os: [windows-2019]
         # include:
         #   - os: windows-2019
         #     vs: 2019
@@ -22,6 +23,9 @@ jobs:
     steps:
       - uses: ilammy/setup-nasm@v1
       - uses: actions/checkout@v3
+      - name: "allow add-path"
+        run: |
+          echo "ACTIONS_ALLOW_UNSECURE_COMMANDS=true" >> $GITHUB_ENV
       - name: "[Enclose.IO] Install libraries"
         run: |
           choco install --no-progress squashfs
@@ -76,5 +80,5 @@ jobs:
       - name: "[Enclose.IO] Create Windows Test run upload"
         uses: actions/upload-artifact@v3
         with:
-          name: rubyc-${{ runner.os }}
-          path: ./rubyc
+          name: rubyc ${{ matrix.os }} ${{ matrix.ruby }}
+          path: pkg/${{ github.env.RUBYC_ARCHIVE_FILENAME }}

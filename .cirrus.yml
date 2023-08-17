@@ -104,12 +104,12 @@ macos_arm_task:
   ruby_version_script: ruby --version
   env:
     BISON_PATH: "/opt/homebrew/opt/bison/bin"
-    # OPENSSL_1_1_PATH: "/opt/homebrew/opt/openssl@1.1/lib"
     PATH: "$BISON_PATH:$PATH"
-  openssl_tweak_for_cirrus_ci_script: |
-    brew unlink openssl
-    brew install openssl@1.1
-    brew link openssl@1.1
+  # openssl_tweak_for_cirrus_ci_script: |
+  #   brew unlink openssl
+  #   brew install openssl@1.1
+  #   brew link openssl@1.1
+# If you need openssl@1, uncomment the above section
   cirrus_cli_script: |
     chmod +x bin/*
     find . -name '*onfigure' -type f | xargs chmod +x
@@ -119,8 +119,12 @@ macos_arm_task:
     brew install automake texinfo libtool squashfs bison
   get_ruby_source_and_patch_script: |
     bundle install && bundle exec rake patch_ruby_source 
-  build_script: |
-    bin/rubyc bin/rubyc -o rubyc --openssl-dir=/opt/homebrew/opt/openssl@1.1
+  # build_script: | # For OpenSSL 3.1
+  #   bin/rubyc bin/rubyc -o rubyc --openssl-dir=brew --prefix openssl@3.1
+  build_script: | # For OpenSSL 3.0
+    bin/rubyc bin/rubyc -o rubyc --openssl-dir=brew --prefix openssl@3.0
+  # build_script: | # For OpenSSL 1.1
+  #   bin/rubyc bin/rubyc -o rubyc --openssl-dir=/opt/homebrew/opt/openssl@1.1
   test_script: |
     chmod +x ./rubyc
     ./rubyc --help
@@ -137,9 +141,6 @@ macos_arm_task:
 task:
   matrix:
     - arm_container:
-        matrix:
-          - dockerfile: Dockerfile
-    - container:
         matrix:
           - dockerfile: Dockerfile
   test_script: |

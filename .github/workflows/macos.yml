@@ -72,7 +72,7 @@ jobs:
       - name: "[Enclose.IO] Create MacOS Test run upload"
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ github.env.RUBYC_ARCHIVE_FILENAME }}
+          name: rubyc ${{ matrix.os }} ${{ matrix.ruby }}
           path: pkg/${{ github.env.RUBYC_ARCHIVE_FILENAME }}
 
   upload:
