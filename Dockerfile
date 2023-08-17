@@ -14,12 +14,13 @@ RUN ruby --version
 RUN bundler --version
 WORKDIR /app
 COPY . .
-RUN bundle install
-ARG OPEN_SSL_VERSION=1.1.1v
-ENV OPEN_SSL_VERSION=$OPEN_SSL_VERSION
+# The latest Traveling ruby 3.2.2 has bundler 2.4.18 installed
+RUN bundle _2.4.18_ install
+# ARG OPEN_SSL_VERSION=1.1.1v
+# ENV OPEN_SSL_VERSION=$OPEN_SSL_VERSION
 RUN bundle exec rake patch_ruby_source 
-RUN bundle exec rake rubyc
-# RUN bin/rubyc bin/rubyc -o rubyc
+# RUN bundle exec rake rubyc
+RUN bin/rubyc bin/rubyc -o rubyc
 RUN LD_LIBRARY_PATH=/tmp/rubyc/local/lib:$LD_LIBRARY_PATH ./rubyc --help
 
 

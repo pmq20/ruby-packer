@@ -75,8 +75,26 @@ jobs:
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           mkdir C:\rubyc_tmp
-          bundle exec rake rubyc
+          bundle exec rake rubyc.exe
         shell: cmd
+      - name: "Package rubyc"
+        run: |
+          mkdir -p pkg
+          export RUBYC_FILENAME=rubyc-$(uname -s)-$(uname -m).exe
+          export RUBYC_ARCHIVE_FILENAME=${RUBYC_FILENAME}.tar.gz
+          cp rubyc.exe pkg/$RUBYC_FILENAME
+          cd pkg
+          tar -czvf $RUBYC_ARCHIVE_FILENAME $RUBYC_FILENAME
+          echo "RUBYC_FILENAME=$RUBYC_FILENAME" >> $GITHUB_ENV
+          echo "RUBYC_ARCHIVE_FILENAME=$RUBYC_ARCHIVE_FILENAME" >> $GITHUB_ENV
+          ls -l
+          if [[ $GITHUB_REF == "refs/heads/$PUBLISH_BRANCH" ]]; then
+            gh release upload "${NEXT_TAG}" $RUBYC_ARCHIVE_FILENAME --repo "${REPO}" --clobber
+          else
+            echo "Not on $PUBLISH_BRANCH branch, skipping upload"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: "[Enclose.IO] Create Windows Test run upload"
         uses: actions/upload-artifact@v3
         with:

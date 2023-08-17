@@ -120,11 +120,11 @@ macos_arm_task:
   get_ruby_source_and_patch_script: |
     bundle install && bundle exec rake patch_ruby_source 
   # build_script: | # For OpenSSL 3.1
-  #   bin/rubyc bin/rubyc -o rubyc --openssl-dir=brew --prefix openssl@3.1
+  #   bin/rubyc bin/rubyc -o rubyc --openssl-dir=$(brew --prefix openssl@3.1)
   build_script: | # For OpenSSL 3.0
-    bin/rubyc bin/rubyc -o rubyc --openssl-dir=brew --prefix openssl@3.0
+    bin/rubyc bin/rubyc -o rubyc --openssl-dir=$(brew --prefix openssl@3.0)
   # build_script: | # For OpenSSL 1.1
-  #   bin/rubyc bin/rubyc -o rubyc --openssl-dir=/opt/homebrew/opt/openssl@1.1
+  #   bin/rubyc bin/rubyc -o rubyc --openssl-dir=$(brew --prefix openssl@1.1)
   test_script: |
     chmod +x ./rubyc
     ./rubyc --help
@@ -141,6 +141,9 @@ macos_arm_task:
 task:
   matrix:
     - arm_container:
+        matrix:
+          - dockerfile: Dockerfile
+    - ∂container:
         matrix:
           - dockerfile: Dockerfile
   test_script: |
