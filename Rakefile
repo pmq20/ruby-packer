@@ -136,7 +136,8 @@ task :download_vendors do
   FileUtils.mkdir_p(vendor_dir)
 
   download_and_extract(vendor_dir, 'libffi', "libffi-#{LIBFFI_VERSION}", "https://github.com/libffi/libffi/releases/download/v#{LIBFFI_VERSION}/libffi-#{LIBFFI_VERSION}.tar.gz")
-  download_and_extract(vendor_dir, 'yaml', "yaml-#{LIBYAML_VERSION}", "https://pyyaml.org/download/libyaml/yaml-#{LIBYAML_VERSION}.tar.gz")
+  download_and_extract(vendor_dir, 'yaml', "yaml-#{LIBYAML_VERSION}", "https://github.com/yaml/libyaml/releases/download/#{LIBYAML_VERSION}/yaml-#{LIBYAML_VERSION}.tar.gz")
+  # download_and_extract(vendor_dir, 'yaml', "yaml-#{LIBYAML_VERSION}", "https://pyyaml.org/download/libyaml/yaml-#{LIBYAML_VERSION}.tar.gz")
   download_and_extract(vendor_dir, 'openssl', "openssl-#{OPENSSL_VERSION}", "https://www.openssl.org/source/openssl-#{OPENSSL_VERSION}.tar.gz")
   download_and_extract(vendor_dir, 'ncurses', "ncurses-#{NCURSES_VERSION}", "https://ftp.gnu.org/pub/gnu/ncurses/ncurses-#{NCURSES_VERSION}.tar.gz")
   download_and_extract(vendor_dir, 'zlib', "zlib-#{ZLIB_VERSION}", "https://zlib.net/zlib-#{ZLIB_VERSION}.tar.gz")
@@ -148,7 +149,8 @@ end
 def download_and_extract(base_name, lib, lib_plus_version, url)
   Dir.chdir(base_name) do
     FileUtils.rm_rf(lib)
-    system("wget -O #{lib_plus_version}.tmp #{url}")
+    # No check only required for centos7 image
+    system("wget --no-check-certificate -O #{lib_plus_version}.tmp #{url}")
 
     if url.end_with?('.bz2')
       system("tar xjf #{lib_plus_version}.tmp")
