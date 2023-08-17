@@ -50,6 +50,8 @@ jobs:
       #   run: bundle exec rake
       # - name: "[Enclose.IO] Rake"
       #   run: bundle exec rake
+      - name: "Install bundle"
+        run: bundle install
       - name: "Download and Patch ruby source"
         run: bundle exec rake patch_ruby_source
       # - name: "Unlink openssl" # this is unlinked after downloading the patch as curl needs openssl@3

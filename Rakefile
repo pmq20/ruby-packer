@@ -1,14 +1,37 @@
 # frozen_string_literal: true
 
-LIBGDBM_VERSION = '1.23'
-LIBFFI_VERSION = '3.4.4'
-LIBYAML_VERSION = '0.2.5'
-OPENSSL_VERSION = '3.0.10'
-NCURSES_VERSION = '6.4'
-ZLIB_VERSION = '1.2.13'
-READLINE_VERSION = '8.2'
-SQLITE3_VERSION = '3420000'
 RP_RUBY_VERSION = ENV['RP_RUBY_VERSION'] || '3.2.2'
+# Note, you can use different ruby versions, but you will need to create
+# a ruby-enclose-x.x.x-patch folder with the patch files for that version.
+# You need to take the original ruby source, and apply entries
+# with [Enclose.IO Hack start] from the ruby-enclose-3.2.2-patch
+# You need to retain the original source code, for that version.
+LIBGDBM_VERSION = ENV['LIBGDBM_VERSION'] || '1.23'
+# LIBGDBM_VERSION=1.13 # Original version as of pmq20 source
+# has a vendored patch. Note these pmq20 original source patches two files
+# however since updating to 1.23, only one file is included in source and therefore is the 
+# only one patched
+LIBFFI_VERSION = ENV['LIBFFI_VERSION'] || '3.4.4'
+# LIBFFI_VERSION=3.2.1 # Original version as of pmq20 source, Note also update in compiler.rb
+# https://github.com/libffi/libffi
+LIBYAML_VERSION = ENV['LIBYAML_VERSION'] || '0.2.5'
+# LIBYAML_VERSION=0.1.7 # Original version as of pmq20 source
+# https://pyyaml.org/wiki/LibYAML
+OPENSSL_VERSION = ENV['OPENSSL_VERSION'] || '3.0.10'
+# https://www.openssl.org/source/
+# OPENSSL_VERSION=1.1.1g # Original version as of pmq20 source
+# OPENSSL_VERSION=1.1.1v # Latest to date of 1.1.x  # Pre Alpine 3.17
+# OPENSSL_VERSION=3.0.10 # Latest to date of 3.0.x # Alpine 3.17
+# OPENSSL_VERSION=3.1.2 # Latest to date of 3.1.x # Alpine 3.18
+NCURSES_VERSION = ENV['NCURSES_VERSION'] || '6.4'
+# NCURSES_VERSION=6.0 # Original version as of pmq20 source
+# https://ftp.gnu.org/gnu/ncurses/
+ZLIB_VERSION = ENV['ZLIB_VERSION'] || '1.2.13'
+# ZLIB_VERSION=1.2.13 # Original version as of pmq20 source, https://zlib.net/
+READLINE_VERSION = ENV['READLINE_VERSION'] || '8.2'
+# READLINE_VERSION=7.0 # Original version as of pmq20 source
+# https://ftp.gnu.org/gnu/readline/
+SQLITE3_VERSION = ENV['SQLITE3_VERSION'] || '3420000' # Unsure if this is needed atm.
 RUBY_MAJOR = RP_RUBY_VERSION.split('.')[0]
 RUBY_MINOR = RP_RUBY_VERSION.split('.')[1]
 RUBY_PATCH = RP_RUBY_VERSION.split('.')[2].split('-')[0]

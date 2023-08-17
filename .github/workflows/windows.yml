@@ -63,6 +63,8 @@ jobs:
       #     mkdir C:\rubyc_tmp
       #     bundle exec rake
       #   shell: cmd
+      - name: "Install bundle"
+        run: bundle install
       - name: "Download and Patch ruby source"
         run: bundle exec rake patch_ruby_source
       - name: "Package rubyc"

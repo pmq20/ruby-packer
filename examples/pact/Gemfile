@@ -12,7 +12,7 @@ gem 'pact-provider-verifier', '1.36.1'
 # gem "json", "2.6.3"
 # gem 'ffi'
 gem 'pact_broker', '2.107.1'
-gem 'pact-ffi', '0.0.3'
+# gem 'pact-ffi', '0.0.3'
 gem 'sucker_punch', git: 'https://github.com/pact-foundation/sucker_punch.git', ref: 'fix/rename-is-singleton-class-method-2'
 
 ## Native extension gems

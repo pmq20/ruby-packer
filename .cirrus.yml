@@ -118,7 +118,7 @@ macos_arm_task:
   deps_script: |
     brew install automake texinfo libtool squashfs bison
   get_ruby_source_and_patch_script: |
-    ./patch_ruby_source.sh
+    bundle install && bundle exec rake patch_ruby_source 
   build_script: |
     bin/rubyc bin/rubyc -o rubyc --openssl-dir=/opt/homebrew/opt/openssl@1.1
   test_script: |

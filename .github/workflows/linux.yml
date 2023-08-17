@@ -52,6 +52,8 @@ jobs:
       #   run: bundle install
       # - name: "[Enclose.IO] Rake"
       #   run: bundle exec rake
+      - name: "Install bundle"
+        run: bundle install
       - name: "Download and Patch ruby source"
         run: bundle exec rake patch_ruby_source
       - name: "Build rubyc"

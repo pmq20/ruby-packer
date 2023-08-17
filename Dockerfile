@@ -14,8 +14,10 @@ RUN ruby --version
 RUN bundler --version
 WORKDIR /app
 COPY . .
-RUN ./patch_ruby_source.sh
-RUN bin/rubyc bin/rubyc -o rubyc
+RUN bundle install
+RUN bundle exec rake patch_ruby_source 
+RUN bundle exec rake rubyc
+# RUN bin/rubyc bin/rubyc -o rubyc
 RUN LD_LIBRARY_PATH=/tmp/rubyc/local/lib:$LD_LIBRARY_PATH ./rubyc --help
 
 
