@@ -9,7 +9,7 @@ RP_RUBY_VERSION = ENV['RP_RUBY_VERSION'] || '3.2.2'
 LIBGDBM_VERSION = ENV['LIBGDBM_VERSION'] || '1.23'
 # LIBGDBM_VERSION=1.13 # Original version as of pmq20 source
 # has a vendored patch. Note these pmq20 original source patches two files
-# however since updating to 1.23, only one file is included in source and therefore is the 
+# however since updating to 1.23, only one file is included in source and therefore is the
 # only one patched
 LIBFFI_VERSION = ENV['LIBFFI_VERSION'] || '3.4.4'
 # LIBFFI_VERSION=3.2.1 # Original version as of pmq20 source, Note also update in compiler.rb
