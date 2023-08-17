@@ -135,11 +135,9 @@ macos_arm_task:
 task:
   matrix:
     - arm_container:
-      memory: 4
         matrix:
           - dockerfile: Dockerfile
     - container:
-      memory: 4
         matrix:
           - dockerfile: Dockerfile
   test_script: |
