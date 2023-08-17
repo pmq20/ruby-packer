@@ -80,7 +80,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: rubyc ${{ matrix.os }} ${{ matrix.ruby }}
-          path: pkg/${{ github.env.RUBYC_ARCHIVE_FILENAME }}
+          path: pkg/*.tar.gz
 
   upload:
     defaults:
@@ -98,7 +98,7 @@ jobs:
     - uses: actions/checkout@v3
     - name: Download all workflow run artifacts
       uses: actions/download-artifact@v3
-    - name: test ${{ matrix.os }} package
+    - name: upload ${{ matrix.os }} package
       run: |
         export RUBYC_FILENAME=rubyc-$(uname -s)-$(uname -m)-gha
         export RUBYC_ARCHIVE_FILENAME=${RUBYC_FILENAME}.tar.gz

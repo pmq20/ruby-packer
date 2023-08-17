@@ -24,12 +24,10 @@ PRE_RELEASE_TASK: &PRE_RELEASE_TASK
 
 UPLOAD_TASK: &UPLOAD_TASK
   upload_script: |
-    mkdir -p pkg
     export RUBYC_FILENAME=rubyc-$(uname -s)-$(uname -m)
     export RUBYC_ARCHIVE_FILENAME=${RUBYC_FILENAME}.tar.gz
     echo $RUBYC_FILENAME
     echo $RUBYC_ARCHIVE_FILENAME
-    cp rubyc pkg/rubyc-$(uname -s)-$(uname -m)
     cd pkg
     tar -czvf $RUBYC_ARCHIVE_FILENAME $RUBYC_FILENAME
     echo "RUBYC_FILENAME=$RUBYC_FILENAME" >> $CIRRUS_ENV
@@ -133,17 +131,15 @@ macos_arm_task:
       cp rubyc pkg/rubyc-$(uname -s)-$(uname -m)
   <<: *UPLOAD_TASK
   <<: *BINARY_ARTIFACTS
-  # package_script: |
-  #   mkdir pkg
-  #   mv rubyc pkg/rubyc-darwin-arm64
-# DYLD_LIBRARY_PATH=/opt/homebrew/opt/openssl@1.1/lib rubyc --help
 
 task:
   matrix:
     - arm_container:
+      memory: 4
         matrix:
           - dockerfile: Dockerfile
     - container:
+      memory: 4
         matrix:
           - dockerfile: Dockerfile
   test_script: |

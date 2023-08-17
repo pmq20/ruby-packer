@@ -33,6 +33,11 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
+      - uses: msys2/setup-msys2@v2 # Failed running [{"CI"=>"true", "ENCLOSE_IO_USE_ORIGINAL_RUBY"=>"true", "MAKE"=>"nmake", "CL"=>"/MP"}, "autoconf"]
+        with: # https://github.com/actions/runner-images/issues/5216#issuecomment-1074920412
+          update: true
+          install: >-
+            autotools
       - name: "[Enclose.IO] Install rubocop"
         run: gem install rubocop
       - name: "[Enclose.IO] Run rubocop"
@@ -99,4 +104,5 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: rubyc ${{ matrix.os }} ${{ matrix.ruby }}
-          path: pkg/${{ github.env.RUBYC_ARCHIVE_FILENAME }}
+          path: pkg/*.tar.gz
+
