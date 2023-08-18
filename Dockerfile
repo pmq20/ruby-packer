@@ -103,13 +103,16 @@ RUN ldconfig
 
 # Set environment variables
 ENV PATH="/usr/local/openssl/bin:${PATH}"
-ENV LD_LIBRARY_PATH="/usr/local/openssl/lib:${LD_LIBRARY_PATH}"
+ENV LD_LIBRARY_PATH="/usr/local/openssl/lib:/usr/local/openssl/lib64:${LD_LIBRARY_PATH}"
 
 # Verify installation
 RUN openssl version
+RUN find / -name libssl.so | xargs cp -t /tmp && \
+    find / -name libssl.so.3 | xargs cp -t /tmp && \
+    find / -name libcrypto.so | xargs cp -t /tmp && \
+    find / -name libcrypto.so.3 | xargs cp -t /tmp
 
 COPY --from=rubyc_builder /app/rubyc /usr/local/bin/rubyc
-
 RUN rubyc --help
 ENTRYPOINT [ "rubyc" ]
 CMD [ "--help" ]
@@ -117,10 +120,10 @@ CMD [ "--help" ]
 FROM centos:7 as openssl_3_0_tester
 
 COPY --from=rubyc_builder /app/rubyc /usr/local/bin/rubyc
-COPY --from=openssl_3_0_builder /usr/local/openssl/lib/libcrypto.so.3 /usr/lib64/libcrypto.so.3
-COPY --from=openssl_3_0_builder /usr/local/openssl/lib/libcrypto.so /usr/lib64/libcrypto.so
-COPY --from=openssl_3_0_builder /usr/local/openssl/lib/libssl.so.3 /usr/lib64/libssl.so.3
-COPY --from=openssl_3_0_builder /usr/local/openssl/lib/libssl.so /usr/lib64/libssl.so
+COPY --from=openssl_3_0_builder /tmp/libcrypto.so.3 /usr/lib64/libcrypto.so.3
+COPY --from=openssl_3_0_builder /tmp/libcrypto.so /usr/lib64/libcrypto.so
+COPY --from=openssl_3_0_builder /tmp/libssl.so.3 /usr/lib64/libssl.so.3
+COPY --from=openssl_3_0_builder /tmp/libssl.so /usr/lib64/libssl.so
 RUN rubyc --help
 ENTRYPOINT [ "rubyc" ]
 CMD [ "--help" ]

@@ -80,7 +80,7 @@ jobs:
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           mkdir C:\rubyc_tmp
-          bundle exec rake rubyc.exe
+          bundle exec rake
         shell: cmd
       - name: "Package rubyc"
         run: |
