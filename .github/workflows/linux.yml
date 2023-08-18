@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
 env:
   REPO: you54f/ruby-packer
-  PKG_DATE: 20230812
-  NEXT_TAG: rel-20230812
-  PUBLISH_BRANCH: next
+  PKG_DATE: 20230818
+  NEXT_TAG: rel-20230818
+  PUBLISH_BRANCH: master
 jobs:
   make:
     strategy:

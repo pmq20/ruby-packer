@@ -1,9 +1,9 @@
 name: Windows
 on:
   push:
-    branches: [ master, ci_test ]
+    branches: [ ci_test ]
   pull_request:
-    branches: [ master, ci_test  ]
+    branches: [ ci_test  ]
   workflow_dispatch:
 jobs:
   make:
